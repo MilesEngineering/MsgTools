@@ -1,0 +1,19 @@
+Messages:
+  - Name: CANheader
+    Description: Header for messages sent over the CANbus
+    Fields:
+      - Name: Source
+        Type: uint08
+        DefaultValue: 0
+      - Name: Destination
+        Type: uint08
+        DefaultValue: 0
+      - Name: ID
+        Type: uint16
+        DefaultValue: 0
+      - Name: Length
+        Type: uint16
+        DefaultValue: 0
+      - Name: Priority
+        Type: uint08
+        DefaultValue: 0

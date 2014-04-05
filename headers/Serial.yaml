@@ -1,0 +1,19 @@
+Messages:
+  - Name: SerialHeader
+    Description: Header for messages sent over a serial port.
+    Fields:
+      - Name: Source
+        Type: uint8
+        DefaultValue: 0
+      - Name: Destination
+        Type: uint8
+        DefaultValue: 0
+      - Name: ID
+        Type: uint16
+        DefaultValue: 0
+      - Name: Length
+        Type: uint16
+        DefaultValue: 0
+      - Name: Priority
+        Type: uint8
+        DefaultValue: 0
