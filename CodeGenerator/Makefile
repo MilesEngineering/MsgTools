@@ -2,7 +2,7 @@ PARSER:=python MsgParser.py
 
 install all:: Makefile C Cpp Matlab Python Simulink VHDL
 
-.PHONY: all C Cpp Matlab Python Simulink VHDL
+.PHONY: all C Cpp Matlab Python Simulink VHDL test
 
 colorecho  = @printf "\033[0;32m====> Generating $(1)\033[0m\n"
 
@@ -32,5 +32,8 @@ VHDL:
 	
 clean clobber::
 	rm -rf obj
+
+test:
+	python test/Test.py
 
 include ../makefile.inc
