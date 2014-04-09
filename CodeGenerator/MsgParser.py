@@ -26,8 +26,14 @@ def printMessage(msg):
         print field["Name"] + ": " + field["Type"]
 
 def fieldSize(field):
-    fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1}
-    return fieldSizes[field["Type"]]
+    fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
+    return fieldSizes[str.lower(field["Type"])]
+
+def fieldCount(field):
+    if "Count" in field and field["Count"] > 1:
+        return field["Count"]
+    else:
+        return 1
 
 def msgName(msg):
     return msg["Name"]
@@ -47,7 +53,10 @@ def ProcessFile(file):
         print ""
     for msg in Messages(file):
         printMessage(msg)
-    
+
+def Mask(numBits):
+    return str(hex(2 ** numBits - 1))
+        
 # main starts here
 if __name__ == '__main__':
     if len(sys.argv) < 5:

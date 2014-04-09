@@ -1,6 +1,6 @@
 all clobber clean install :: 
 
-.PHONY: all clobber clean install make_obj
+.PHONY: all clobber clean install test
 
 printdirs:
 	@echo THIS_MAKEFILE is $(THIS_MAKEFILE)
