@@ -40,7 +40,7 @@ def setFn(field, offset):
 def getBitsFn(field, bits, offset, bitOffset, numBits):
     ret =  fieldType(field) + " Get" + field["Name"] + bits["Name"] + "()\n"
     ret += "{\n"
-    ret += "    return (Get field["Name"] () >> "+str(bitOffset)+") & "+MsgParser.Mask(numBits)+";\n"
+    ret += "    return (Get"+field["Name"]+"() >> "+str(bitOffset)+") & "+MsgParser.Mask(numBits)+";\n"
     ret += "}\n"
     return ret
 
