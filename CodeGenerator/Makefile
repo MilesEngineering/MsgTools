@@ -33,7 +33,9 @@ VHDL:
 clean clobber::
 	rm -rf obj
 
-test:
-	python test/Test.py
+testCpp:
+	python test/TestCpp.py
+
+test: testCpp
 
 include ../makefile.inc

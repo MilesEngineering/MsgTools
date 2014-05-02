@@ -4,6 +4,7 @@ import yaml
 import json
 import os
 import io
+import string
 
 def Usage():
     sys.stderr.write('Usage: ' + sys.argv[0] + ' msgdir outputdir language template\n')
@@ -20,10 +21,11 @@ def readFile(filename):
     else:
         return NULL
 
-def printMessage(msg):
-    print msg["Name"] + ": " + msg["Description"]
-    for field in msg["Fields"]:
-        print field["Name"] + ": " + field["Type"]
+def printMessage(msg, outFile):
+    #print msg["Name"] + ": " + msg["Description"]
+    #for field in msg["Fields"]:
+    #    print field["Name"] + ": " + field["Type"]
+    outFile.write(language.accessors(msg))
 
 def fieldSize(field):
     fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
@@ -44,15 +46,15 @@ def Messages(file):
 def Enums(file):
     return file["Enums"]
 
-def ProcessFile(file):
+def ProcessFile(file, outFile):
     if "Enums" in file:
         for enum in Enums(file):
-            print "Enum " + enum["Name"] + ":"
+            outFile.write("Enum " + enum["Name"] + ":\n")
             for option in enum["Options"]:
-                print "    " + option["Name"] + " = " + str(option["Value"])
-        print ""
+                outFile.write("    " + option["Name"] + " = " + str(option["Value"]) + "\n")
+        outFile.write("\n");
     for msg in Messages(file):
-        printMessage(msg)
+        printMessage(msg, outFile)
 
 def Mask(numBits):
     return str(hex(2 ** numBits - 1))
@@ -67,11 +69,21 @@ if __name__ == '__main__':
     template = sys.argv[4]
     
     # import the language file
-    
+    sys.path.append(os.path.dirname(language))
+    import language
+
     # read the template file
     
     # loop over input message files
     for filename in os.listdir(msgDir):
         file = readFile(msgDir + '/' + filename);
-        ProcessFile(file)
+        outputFilename = outDir + "/" + string.split(filename,'.')[0] + '.' + string.split(os.path.basename(template), '.')[1]
+        print "outputFilename is " + outputFilename
+        # \todo! How to write a try with no except: statements?
+        try:
+            os.makedirs(os.path.dirname(outputFilename))
+        except:
+            print ""
+        with open(outputFilename,'w') as outFile:
+            ProcessFile(file, outFile)
     print ''

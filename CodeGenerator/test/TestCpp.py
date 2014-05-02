@@ -29,14 +29,15 @@ Messages:
         Count: 5
       - Name: FieldD
         Type: uint8
-        DefaultValue: 4
         Bitfields:
             - Name: BitsA
               NumBits: 4
+              DefaultValue: 7
             - Name: BitsB
               NumBits: 3
             - Name: BitsC
               NumBits: 1
+              DefaultValue: 1
       - Name: FieldE
         Type: Float32
         DefaultValue: 3.14159
@@ -129,6 +130,19 @@ void SetFieldE(float& value)
         self.assertMultiLineEqual(expected, observed)
         with self.assertRaises(IndexError):
             MsgParser.msgName(MsgParser.Messages(self.msgDict)[1])
+    
+    def test_initCode(self):
+        expected = """SetFieldA(1);
+SetFieldB(2);
+SetFieldC(3);
+SetFieldDBitsA(7);
+SetFieldDBitsC(1);
+SetFieldE(3.14159);
+"""
+        observed = language.initCode(MsgParser.Messages(self.msgDict)[0])
+        self.assertMultiLineEqual(expected, observed)
+        with self.assertRaises(IndexError):
+            language.initCode(MsgParser.Messages(self.msgDict)[1])
 
 if __name__ == '__main__':
     unittest.main()

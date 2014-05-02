@@ -75,3 +75,25 @@ def accessors(msg):
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return gets+sets
+
+def initField(field):
+    if "DefaultValue" in field:
+        return  "Set" + field["Name"] + "(" + str(field["DefaultValue"]) + ");\n"
+    return ""
+
+def initBitfield(field, bits):
+    if "DefaultValue" in bits:
+        return  "Set" + field["Name"] + bits["Name"] + "(" +str(bits["DefaultValue"]) + ");\n"
+    return ""
+
+def initCode(msg):
+    ret = ""
+    
+    offset = 0
+    for field in msg["Fields"]:
+        ret += initField(field)
+        if "Bitfields" in field:
+            for bits in field["Bitfields"]:
+                ret += initBitfield(field, bits)
+
+    return ret
