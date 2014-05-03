@@ -5,6 +5,7 @@ import json
 import os
 import io
 import string
+from time import gmtime, strftime
 
 def Usage():
     sys.stderr.write('Usage: ' + sys.argv[0] + ' msgdir outputdir language template\n')
@@ -13,11 +14,11 @@ def Usage():
 def readFile(filename):
     print "Processing " +  filename
     if filename.find(".yaml") != -1:
-        file = io.open(filename)
-        return yaml.load(file)
+        inFile = io.open(filename)
+        return yaml.load(inFile)
     elif filename.find(".json") != -1:
-        file = io.open(filename)
-        return json.load(file)
+        inFile = io.open(filename)
+        return json.load(inFile)
     else:
         return NULL
 
@@ -40,21 +41,54 @@ def fieldCount(field):
 def msgName(msg):
     return msg["Name"]
 
-def Messages(file):
-    return file["Messages"]
+def Messages(inFile):
+    return inFile["Messages"]
 
-def Enums(file):
-    return file["Enums"]
+def Enums(inFile):
+    return inFile["Enums"]
 
-def ProcessFile(file, outFile):
-    if "Enums" in file:
-        for enum in Enums(file):
+def printEnums(inFile):
+    if "Enums" in inFile:
+        for enum in Enums(inFile):
             outFile.write("Enum " + enum["Name"] + ":\n")
             for option in enum["Options"]:
                 outFile.write("    " + option["Name"] + " = " + str(option["Value"]) + "\n")
         outFile.write("\n");
-    for msg in Messages(file):
+
+def replace(line, pattern, replacement):
+    if pattern in line:
+        ret = ""
+        #print "replacing " + pattern + " with " + replacement
+        for newLine in replacement.split('\n'):
+            ret += string.replace(line, pattern, newLine)
+    else:
+        #print "NOT replacing " + pattern + " with " + replacement + " in " + line
+        ret = line
+    return ret
+
+def DoReplacements(line, msg):
+    ret = line + '\n'
+    ret = replace(ret, "<MSGNAME>", msgName(msg))
+    if "ID" in msg:
+        ret = replace(ret, "<MSGID>", msg["ID"])
+    ret = replace(ret, "<MSGSIZE>", str(language.msgSize(msg)))
+    #ret = replace(ret, "<ENUMERATIONS>", language.enums(msg))
+    ret = replace(ret, "<ACCESSORS>", language.accessors(msg))
+    ret = replace(ret, "<INIT_CODE>", language.initCode(msg))
+    ret = replace(ret, "<OUTPUTFILENAME>", outputFilename)
+    ret = replace(ret, "<INPUTFILENAME>", inputFilename)
+    ret = replace(ret, "<TEMPLATEFILENAME>", templateFilename)
+    ret = replace(ret, "<LANGUAGEFILENAME>", languageFilename)
+    ret = replace(ret, "<DATE>", currentDateTime)
+    return ret
+
+def ProcessFile(template, inFile, outFile):
+    #printEnums(inFile)
+    for msg in Messages(inFile):
         printMessage(msg, outFile)
+        for line in template:
+            line = DoReplacements(line, msg)
+            outFile.write(line)
 
 def Mask(numBits):
     return str(hex(2 ** numBits - 1))
@@ -65,25 +99,31 @@ if __name__ == '__main__':
         Usage();
     msgDir = sys.argv[1]
     outDir = sys.argv[2]
-    language = sys.argv[3]
-    template = sys.argv[4]
+    languageFilename = sys.argv[3]
+    templateFilename = sys.argv[4]
+    
+    currentDateTime = strftime("%d/%m/%Y at %H:%M:%S")
     
     # import the language file
-    sys.path.append(os.path.dirname(language))
+    sys.path.append(os.path.dirname(languageFilename))
+    language = languageFilename
     import language
 
     # read the template file
+    with open(templateFilename, 'r') as templateFile:
+        template = templateFile.read().splitlines() 
     
     # loop over input message files
     for filename in os.listdir(msgDir):
-        file = readFile(msgDir + '/' + filename);
-        outputFilename = outDir + "/" + string.split(filename,'.')[0] + '.' + string.split(os.path.basename(template), '.')[1]
-        print "outputFilename is " + outputFilename
+        inputFilename = msgDir + '/' + filename
+        inFile = readFile(inputFilename);
+        outputFilename = outDir + "/" + string.split(filename,'.')[0] + '.' + string.split(os.path.basename(templateFilename), '.')[1]
+        print "Creating " + outputFilename
         # \todo! How to write a try with no except: statements?
         try:
             os.makedirs(os.path.dirname(outputFilename))
         except:
             print ""
         with open(outputFilename,'w') as outFile:
-            ProcessFile(file, outFile)
+            ProcessFile(template, inFile, outFile)
     print ''
