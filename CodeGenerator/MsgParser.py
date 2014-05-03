@@ -26,7 +26,7 @@ def printMessage(msg, outFile):
     #print msg["Name"] + ": " + msg["Description"]
     #for field in msg["Fields"]:
     #    print field["Name"] + ": " + field["Type"]
-    outFile.write(language.accessors(msg))
+    outFile.write("\n".join(language.accessors(msg)))
 
 def fieldSize(field):
     fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
@@ -73,8 +73,8 @@ def DoReplacements(line, msg):
         ret = replace(ret, "<MSGID>", msg["ID"])
     ret = replace(ret, "<MSGSIZE>", str(language.msgSize(msg)))
     #ret = replace(ret, "<ENUMERATIONS>", language.enums(msg))
-    ret = replace(ret, "<ACCESSORS>", language.accessors(msg))
-    ret = replace(ret, "<INIT_CODE>", language.initCode(msg))
+    ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))
+    ret = replace(ret, "<INIT_CODE>", "\n".join(language.initCode(msg)))
     ret = replace(ret, "<OUTPUTFILENAME>", outputFilename)
     ret = replace(ret, "<INPUTFILENAME>", inputFilename)
     ret = replace(ret, "<TEMPLATEFILENAME>", templateFilename)

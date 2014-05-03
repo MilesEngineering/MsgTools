@@ -26,8 +26,7 @@ def getFn(field, offset):
 %s Get%s(%s)
 {
     return *(%s*)&m_data[%s];
-}
-''' % (fieldType(field), field["Name"], param, fieldType(field), loc)
+}''' % (fieldType(field), field["Name"], param, fieldType(field), loc)
     return ret
 
 def setFn(field, offset):
@@ -39,14 +38,14 @@ def setFn(field, offset):
     ret =  "void Set" + field["Name"] + "(" + param + ")\n"
     ret += "{\n"
     ret += "    *("+fieldType(field)+"*)&m_data["+loc+"] = value;\n"
-    ret += "}\n"
+    ret += "}"
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
     ret =  fieldType(field) + " Get" + field["Name"] + bits["Name"] + "()\n"
     ret += "{\n"
     ret += "    return (Get"+field["Name"]+"() >> "+str(bitOffset)+") & "+MsgParser.Mask(numBits)+";\n"
-    ret += "}\n"
+    ret += "}"
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
@@ -58,24 +57,23 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
 void Set%s%s(%s& value)
 {
     Set%s((Get%s() & ~(%s << %s)) | ((value & %s) << %s));
-}
-''' % (field["Name"], bits["Name"], fieldType(field), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), MsgParser.Mask(numBits), str(bitOffset))
+}''' % (field["Name"], bits["Name"], fieldType(field), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
-    gets = ""
-    sets = ""
+    gets = []
+    sets = []
     
     offset = 0
     for field in msg["Fields"]:
-        gets += getFn(field, offset)
-        sets += setFn(field, offset)
+        gets.append(getFn(field, offset))
+        sets.append(setFn(field, offset))
         bitOffset = 0
         if "Bitfields" in field:
             for bits in field["Bitfields"]:
                 numBits = bits["NumBits"]
-                gets += getBitsFn(field, bits, offset, bitOffset, numBits)
-                sets += setBitsFn(field, bits, offset, bitOffset, numBits)
+                gets.append(getBitsFn(field, bits, offset, bitOffset, numBits))
+                sets.append(setBitsFn(field, bits, offset, bitOffset, numBits))
                 bitOffset += numBits
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
@@ -83,22 +81,26 @@ def accessors(msg):
 
 def initField(field):
     if "DefaultValue" in field:
-        return  "Set" + field["Name"] + "(" + str(field["DefaultValue"]) + ");\n"
+        return  "Set" + field["Name"] + "(" + str(field["DefaultValue"]) + ");"
     return ""
 
 def initBitfield(field, bits):
     if "DefaultValue" in bits:
-        return  "Set" + field["Name"] + bits["Name"] + "(" +str(bits["DefaultValue"]) + ");\n"
+        return  "Set" + field["Name"] + bits["Name"] + "(" +str(bits["DefaultValue"]) + ");"
     return ""
 
 def initCode(msg):
-    ret = ""
+    ret = []
     
     offset = 0
     for field in msg["Fields"]:
-        ret += initField(field)
+        fieldInit = initField(field)
+        if fieldInit:
+            ret.append(fieldInit)
         if "Bitfields" in field:
             for bits in field["Bitfields"]:
-                ret += initBitfield(field, bits)
+                bits = initBitfield(field, bits)
+                if bits:
+                    ret.append(bits)
 
     return ret
