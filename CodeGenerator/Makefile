@@ -1,4 +1,4 @@
-PARSER:=python MsgParser.py
+PARSER:=python3 MsgParser.py
 
 install all:: Makefile C Cpp Matlab Python Simulink VHDL
 
