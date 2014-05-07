@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import sys
 import yaml
 import json
@@ -12,7 +12,7 @@ def Usage():
     sys.exit(1)
 
 def readFile(filename):
-    print "Processing " +  filename
+    print("Processing ", filename)
     if filename.find(".yaml") != -1:
         inFile = io.open(filename)
         return yaml.load(inFile)
@@ -58,11 +58,11 @@ def printEnums(inFile):
 def replace(line, pattern, replacement):
     if pattern in line:
         ret = ""
-        #print "replacing " + pattern + " with " + replacement
+        #print("replacing ", pattern, " with ", replacement)
         for newLine in replacement.split('\n'):
-            ret += string.replace(line, pattern, newLine)
+            ret += line.replace(pattern, newLine)
     else:
-        #print "NOT replacing " + pattern + " with " + replacement + " in " + line
+        #print("NOT replacing ", pattern, " with ", replacement, " in ", line)
         ret = line
     return ret
 
@@ -117,13 +117,13 @@ if __name__ == '__main__':
     for filename in os.listdir(msgDir):
         inputFilename = msgDir + '/' + filename
         inFile = readFile(inputFilename);
-        outputFilename = outDir + "/" + string.split(filename,'.')[0] + '.' + string.split(os.path.basename(templateFilename), '.')[1]
-        print "Creating " + outputFilename
+        outputFilename = outDir + "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
+        print("Creating ", outputFilename)
         # \todo! How to write a try with no except: statements?
         try:
             os.makedirs(os.path.dirname(outputFilename))
         except:
-            print ""
+            print("")
         with open(outputFilename,'w') as outFile:
             ProcessFile(template, inFile, outFile)
-    print ''
+    print("")
