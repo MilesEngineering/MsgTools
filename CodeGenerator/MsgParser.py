@@ -101,9 +101,7 @@ def DoReplacements(line, msg):
     return ret
 
 def ProcessFile(template, inFile, outFile):
-    #printEnums(inFile)
     for msg in Messages(inFile):
-        printMessage(msg, outFile)
         for line in template:
             line = DoReplacements(line, msg)
             outFile.write(line)
