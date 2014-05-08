@@ -36,6 +36,9 @@ clean clobber::
 testCpp:
 	python test/TestCpp.py
 
-test: testCpp
+testPython:
+	python test/TestPython.py
+
+test: testCpp testPython
 
 include ../makefile.inc
