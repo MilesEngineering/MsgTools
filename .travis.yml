@@ -6,4 +6,4 @@ python:
 # command to run tests
 install:
   - "pip install pyyaml"
-script: make test
+script: make && make test
