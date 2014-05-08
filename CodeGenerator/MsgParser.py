@@ -88,7 +88,7 @@ def DoReplacements(line, msg):
     ret = line + '\n'
     ret = replace(ret, "<MSGNAME>", msgName(msg))
     if "ID" in msg:
-        ret = replace(ret, "<MSGID>", msg["ID"])
+        ret = replace(ret, "<MSGID>", str(msg["ID"]))
     ret = replace(ret, "<MSGSIZE>", str(language.msgSize(msg)))
     #ret = replace(ret, "<ENUMERATIONS>", language.enums(msg))
     ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))

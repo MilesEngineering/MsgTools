@@ -11,7 +11,6 @@ from Messaging import Messaging
 import Messaging as msg
 
 class <MSGNAME> :
-    ID = <MSGID>
     SIZE = <MSGSIZE>
     @staticmethod
     def Create() :
@@ -24,5 +23,3 @@ class <MSGNAME> :
         return "<MSGNAME>"
     #<ENUMERATIONS>
     <ACCESSORS>
-
-Messaging.Register("<MSGNAME>", <MSGNAME>.ID, <MSGNAME>)

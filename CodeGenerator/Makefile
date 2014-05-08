@@ -16,7 +16,9 @@ Cpp:
 
 Python:
 	$(call colorecho,Python)
-	$(TRACE_FLAG)$(PARSER) ../headers obj/Python Python/language.py  Python/Template.py
+	$(TRACE_FLAG)$(PARSER) ../headers obj/Python Python/language.py  Python/HeaderTemplate.py
+	$(call colorecho,Python)
+	$(TRACE_FLAG)$(PARSER) ../messages obj/Python Python/language.py  Python/Template.py
 
 Matlab:
 	$(call colorecho,Matlab)
@@ -34,10 +36,10 @@ clean clobber::
 	rm -rf obj
 
 testCpp:
-	python test/TestCpp.py
+	python3 test/TestCpp.py
 
 testPython:
-	python test/TestPython.py
+	python3 test/TestPython.py
 
 test: testCpp testPython
 
