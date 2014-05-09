@@ -7,6 +7,8 @@ import io
 import string
 from time import gmtime, strftime
 
+from MsgUtils import *
+
 def Usage():
     sys.stderr.write('Usage: ' + sys.argv[0] + ' msgdir outputdir language template\n')
     sys.exit(1)
@@ -22,43 +24,6 @@ def readFile(filename):
     else:
         return NULL
 
-def printMessage(msg, outFile):
-    #print msg["Name"] + ": " + msg["Description"]
-    #for field in msg["Fields"]:
-    #    print field["Name"] + ": " + field["Type"]
-    outFile.write("\n".join(language.accessors(msg)))
-
-def fieldSize(field):
-    fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
-    return fieldSizes[str.lower(field["Type"])]
-
-def fieldUnits(field):
-    if "Units" in field:
-        return field["Units"]
-    else:
-        return ""
-
-def fieldDescription(field):
-    if "Description" in field:
-        return field["Description"]
-    else:
-        return ""
-
-def fieldDefault(field):
-    if "Default" in field:
-        return field["Default"]
-    else:
-        return ""
-
-def fieldCount(field):
-    if "Count" in field and field["Count"] > 1:
-        return field["Count"]
-    else:
-        return 1
-
-def msgName(msg):
-    return msg["Name"]
-
 def Messages(inFile):
     return inFile["Messages"]
 
@@ -67,26 +32,6 @@ def Enums(inFile):
         return inFile["Enums"]
     except:
         return {}
-
-def getMath(x, field, cast):
-    ret = x
-    if cast and ("Offset" in field or "Scale" in field):
-        ret = "%s(%s)" % (cast, ret)
-    if "Scale" in field:
-        ret = "(%s / %s)" % (ret, field["Scale"])
-    if "Offset" in field:
-        ret = "(%s + %s)" % (ret, field["Offset"])
-    return ret
-
-def setMath(x, field, cast):
-    ret = x
-    if "Offset" in field:
-        ret = "(%s - %s)" % (ret, field["Offset"])
-    if "Scale" in field:
-        ret = "%s * %s" % (ret, field["Scale"])
-    if cast and ("Offset" in field or "Scale" in field):
-        ret = "%s(%s)" % (cast, ret)
-    return ret
 
 def replace(line, pattern, replacement):
     if pattern in line:
