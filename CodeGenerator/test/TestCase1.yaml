@@ -21,28 +21,34 @@ Messages:
       - Name: FieldA
         Type: uint32
         Units: m/s
-        DefaultValue: 1
+        Default: 1
         Bitfields:
             - Name: BitsA
               NumBits: 31
       - Name: FieldB
         Type: uint16
-        DefaultValue: 2
+        Default: 2
       - Name: FieldC
         Type: uint8
-        DefaultValue: 3
+        Default: 3
         Count: 5
       - Name: FieldD
         Type: uint8
         Bitfields:
             - Name: BitsA
               NumBits: 4
-              DefaultValue: 7
+              Default: 7.1
+              Scale: 14.357
             - Name: BitsB
               NumBits: 3
             - Name: BitsC
               NumBits: 1
-              DefaultValue: 1
+              Default: 1
       - Name: FieldE
         Type: Float32
-        DefaultValue: 3.14159
+        Default: 3.14159
+      - Name: FieldF
+        Type: uint16
+        Default: 3.14
+        Scale: 2.7
+        Offset: 1.828

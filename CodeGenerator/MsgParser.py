@@ -68,6 +68,26 @@ def Enums(inFile):
     except:
         return {}
 
+def getMath(x, field, cast):
+    ret = x
+    if cast and ("Offset" in field or "Scale" in field):
+        ret = "%s(%s)" % (cast, ret)
+    if "Scale" in field:
+        ret = "(%s / %s)" % (ret, field["Scale"])
+    if "Offset" in field:
+        ret = "(%s + %s)" % (ret, field["Offset"])
+    return ret
+
+def setMath(x, field, cast):
+    ret = x
+    if "Offset" in field:
+        ret = "(%s - %s)" % (ret, field["Offset"])
+    if "Scale" in field:
+        ret = "%s * %s" % (ret, field["Scale"])
+    if cast and ("Offset" in field or "Scale" in field):
+        ret = "%s(%s)" % (cast, ret)
+    return ret
+
 def replace(line, pattern, replacement):
     if pattern in line:
         ret = ""

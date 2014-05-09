@@ -15,20 +15,20 @@ Messages:
     Fields:
       - Name: Source
         Type: uint32
-        DefaultValue: 0
+        Default: 0
       - Name: Destination
         Type: uint32
-        DefaultValue: 0
+        Default: 0
       - Name: ID
         Type: uint32
-        DefaultValue: 0
+        Default: 0
       - Name: Length
         Type: uint32
-        DefaultValue: 0
+        Default: 0
       - Name: Priority
         Type: uint32
-        DefaultValue: 0
+        Default: 0
       - Name: Type
         Type: uint8
         Enum: MsgType
-        DefaultValue: Command
+        Default: Command

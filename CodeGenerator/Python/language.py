@@ -14,6 +14,21 @@ def msgSize(msg):
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     return offset
 
+def fnHdr(field, count, name):
+    param = "bytes"
+    if str.find(name, "Set") == 0:
+        param += ", value"
+    if  count > 1:
+        param += ", idx"
+    ret = '''\
+@staticmethod
+@msg.units('%s')
+@msg.default('%s')
+@msg.count(%s)
+def %s(%s):
+    """%s"""''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(count), name, param, MsgParser.fieldDescription(field))
+    return ret
+
 def getFn(field, offset):
     loc = str(offset)
     param = "bytes"
@@ -30,16 +45,13 @@ def getFn(field, offset):
         else:
             loc += "+idx*" + str(MsgParser.fieldSize(field))
             param += ", idx"
+    if "Offset" in field or "Scale" in field:
+        cleanup = "value = " + MsgParser.getMath("value", field, "")+"\n    "
     ret = '''\
-@staticmethod
-@msg.units('%s')
-@msg.defaultValue('%s')
-@msg.count(%s)
-def Get%s(%s):
-    """%s"""
+%s
     value = struct.unpack_from('%s', bytes, %s)[0]
     %sreturn value
-''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(count), field["Name"], param, MsgParser.fieldDescription(field), type, loc, cleanup)
+''' % (fnHdr(field,count, "Get"+field["Name"]), type, loc, cleanup)
     return ret
 
 def setFn(field, offset):
@@ -47,7 +59,7 @@ def setFn(field, offset):
     loc = str(offset)
     count = MsgParser.fieldCount(field)
     type = fieldType(field)
-    math = "tmp = value"
+    math = "tmp = " + MsgParser.setMath("value", field, "int")
     if count > 1:
         if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
             type = str(count) + "s"
@@ -57,39 +69,26 @@ def setFn(field, offset):
             loc += "+idx*" + str(MsgParser.fieldSize(field))
             param += ", idx"
     ret  = '''\
-@staticmethod
-@msg.units('%s')
-@msg.defaultValue('%s')
-@msg.count(%s)
-def Set%s(%s):
-    """%s"""
+%s
     %s
     struct.pack_into('%s', bytes, %s, tmp)
-''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(count), field["Name"], param, MsgParser.fieldDescription(field), math, type, loc)
+''' % (fnHdr(field,count, "Set"+field["Name"]), math, type, loc)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
+    access = "(Get%s(bytes) >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+    access = MsgParser.getMath(access, bits, "float")
     ret  = '''\
-@staticmethod
-@msg.units('%s')
-@msg.defaultValue('%s')
-@msg.count(1)
-def Get%s%s(bytes):
-    """%s"""
-    return (Get%s(bytes) >> %s) & %s
-''' % (MsgParser.fieldUnits(bits), str(MsgParser.fieldDefault(field)), field["Name"], bits["Name"], MsgParser.fieldDescription(field), field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+%s
+    return %s
+''' % (fnHdr(bits,1,"Get"+field["Name"]+bits["Name"]), access)
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
     ret = '''\
-@staticmethod
-@msg.units('%s')
-@msg.defaultValue('%s')
-@msg.count(1)
-def Set%s%s(bytes, value):
-    """%s"""
-    Set%s(bytes, (Get%s(bytes) & ~(%s << %s)) | ((value & %s) << %s))
-''' % (MsgParser.fieldUnits(bits), str(MsgParser.fieldDefault(bits)), field["Name"], bits["Name"], MsgParser.fieldDescription(field), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), MsgParser.Mask(numBits), str(bitOffset))
+%s
+    Set%s(bytes, (Get%s(bytes) & ~(%s << %s)) | ((%s & %s) << %s))
+''' % (fnHdr(bits,1,"Set"+field["Name"]+bits["Name"]), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), MsgParser.setMath("value", bits, "int"), MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -112,13 +111,13 @@ def accessors(msg):
     return gets+sets
 
 def initField(field):
-    if "DefaultValue" in field:
-        return  "Set" + field["Name"] + "(" + str(field["DefaultValue"]) + ")"
+    if "Default" in field:
+        return  "Set" + field["Name"] + "(" + str(field["Default"]) + ")"
     return ""
 
 def initBitfield(field, bits):
-    if "DefaultValue" in bits:
-        return  "Set" + field["Name"] + bits["Name"] + "(" +str(bits["DefaultValue"]) + ")"
+    if "Default" in bits:
+        return  "Set" + field["Name"] + bits["Name"] + "(" +str(bits["Default"]) + ")"
     return ""
 
 def initCode(msg):

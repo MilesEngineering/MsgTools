@@ -13,11 +13,11 @@ def units(arg):
     return _units
 
 # A decorator to specify a default value for fields
-def defaultValue(arg):
-    def _defaultValue(fcn):
-        fcn.defaultValue = arg
+def default(arg):
+    def _default(fcn):
+        fcn.default = arg
         return fcn
-    return _defaultValue
+    return _default
 
 # A decorator to specify a count for fields
 def count(arg):
