@@ -18,7 +18,6 @@ Cpp:
 Python:
 	$(call colorecho,Python)
 	$(TRACE_FLAG)$(PARSER) ../headers obj/Python Python/language.py  Python/HeaderTemplate.py
-	$(call colorecho,Python)
 	$(TRACE_FLAG)$(PARSER) ../messages obj/Python Python/language.py  Python/Template.py
 
 Matlab:
@@ -43,5 +42,10 @@ testPython:
 	python3 test/TestPython.py
 
 test: testCpp testPython
+
+#generate regression tests?  To aid in refactoring, by using all generated code for regression tests, without having to manually write test cases.
+# would also allow new languages to be written 'test driven' by first writing an output file by hand, then programming until the 'regression' test passes.
+#    could have a makefile target ("make saveResults"?)that copies from CodeGenerator/obj to CodeGenerator/expected,
+#    and then the test rule ("make regressionTest") does a diff of the two directories!
 
 include ../makefile.inc

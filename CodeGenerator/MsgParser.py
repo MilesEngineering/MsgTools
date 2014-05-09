@@ -14,7 +14,7 @@ def Usage():
     sys.exit(1)
 
 def readFile(filename):
-    print("Processing ", filename)
+    #print("Processing ", filename)
     if filename.find(".yaml") != -1:
         inFile = io.open(filename)
         return yaml.load(inFile)
@@ -94,12 +94,11 @@ if __name__ == '__main__':
         inputFilename = msgDir + '/' + filename
         inFile = readFile(inputFilename);
         outputFilename = outDir + "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
-        print("Creating ", outputFilename)
+        print("Creating", outputFilename)
         # \todo! How to write a try with no except: statements?
         try:
             os.makedirs(os.path.dirname(outputFilename))
         except:
-            print("")
+            a=1
         with open(outputFilename,'w') as outFile:
             ProcessFile(template, inFile, outFile)
-    print("")
