@@ -136,3 +136,13 @@ def initCode(msg):
                     ret.append(bits)
 
     return ret
+
+def enums(e):
+    ret = ""
+    for enum in e:
+        ret +=  enum["Name"]+" = {"
+        for option in enum["Options"]:
+            ret += '"'+option["Name"]+'"'+" : "+str(option["Value"]) + ', '
+        ret = ret[:-2]
+        ret += "}\n"
+    return ret

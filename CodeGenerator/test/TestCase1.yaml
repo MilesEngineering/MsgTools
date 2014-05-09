@@ -1,3 +1,19 @@
+Enums:
+  - Name: EnumA
+    Description: Enumeration Type
+    Options:
+      - Name: OptionA
+        Value: 1
+        Description: A Option
+      - Name: OptionB
+        Value: 2
+        Description: B Option
+      - Name: OptionC
+        Value: 4
+        Description: C Option
+      - Name: OptionD
+        Value: 5
+        Description: D Option
 Messages:
   - Name: MsgA
     Description: blah

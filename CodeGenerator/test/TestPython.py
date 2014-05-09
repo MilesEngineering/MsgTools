@@ -204,6 +204,11 @@ def SetFieldE(bytes, value):
         with self.assertRaises(IndexError):
             MsgParser.msgName(MsgParser.Messages(self.msgDict)[1])
     
+    def test_enums(self):
+        expected = 'EnumA = {"OptionA" : 1, "OptionB" : 2, "OptionC" : 4, "OptionD" : 5}\n'
+        observed = language.enums(MsgParser.Enums(self.msgDict))
+        self.assertMultiLineEqual(expected, observed)
+    
     def test_initCode(self):
         expected = []
         expected.append("SetFieldA(1)")

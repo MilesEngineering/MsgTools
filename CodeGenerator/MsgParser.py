@@ -63,15 +63,10 @@ def Messages(inFile):
     return inFile["Messages"]
 
 def Enums(inFile):
-    return inFile["Enums"]
-
-def printEnums(inFile):
-    if "Enums" in inFile:
-        for enum in Enums(inFile):
-            outFile.write("Enum " + enum["Name"] + ":\n")
-            for option in enum["Options"]:
-                outFile.write("    " + option["Name"] + " = " + str(option["Value"]) + "\n")
-        outFile.write("\n");
+    try:
+        return inFile["Enums"]
+    except:
+        return {}
 
 def replace(line, pattern, replacement):
     if pattern in line:
@@ -84,13 +79,13 @@ def replace(line, pattern, replacement):
         ret = line
     return ret
 
-def DoReplacements(line, msg):
+def DoReplacements(line, msg, enums):
     ret = line + '\n'
     ret = replace(ret, "<MSGNAME>", msgName(msg))
     if "ID" in msg:
         ret = replace(ret, "<MSGID>", str(msg["ID"]))
     ret = replace(ret, "<MSGSIZE>", str(language.msgSize(msg)))
-    #ret = replace(ret, "<ENUMERATIONS>", language.enums(msg))
+    ret = replace(ret, "<ENUMERATIONS>", language.enums(enums))
     ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))
     ret = replace(ret, "<INIT_CODE>", "\n".join(language.initCode(msg)))
     ret = replace(ret, "<OUTPUTFILENAME>", outputFilename)
@@ -103,7 +98,7 @@ def DoReplacements(line, msg):
 def ProcessFile(template, inFile, outFile):
     for msg in Messages(inFile):
         for line in template:
-            line = DoReplacements(line, msg)
+            line = DoReplacements(line, msg, Enums(inFile))
             outFile.write(line)
 
 def Mask(numBits):

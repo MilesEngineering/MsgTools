@@ -21,5 +21,7 @@ class <MSGNAME> :
     @staticmethod
     def MsgName():
         return "<MSGNAME>"
-    #<ENUMERATIONS>
+    # Enumerations
+    <ENUMERATIONS>
+    # Accessors
     <ACCESSORS>
