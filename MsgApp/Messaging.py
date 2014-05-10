@@ -79,24 +79,17 @@ class Messaging:
             return m.func_code.co_firstlineno
         except AttributeError:
             return -1
-
-    def MsgAccessors(self, msg):
+    def MsgFns(self, msg, name):
         # getmembers() gives a list of (name, value) tuples, and we want a list of values (function objects)
-        #msgTupleList = inspect.getmembers(msg, lambda x: (inspect.ismethod(x) or inspect.isfunction(x) or inspect.ismethoddescriptor(x)) and "Get" in x.__name__)
         methods = inspect.getmembers(msg, predicate=inspect.ismethoddescriptor)
-        methods = filter(lambda method: method[0].startswith('Get'), methods)
-#        for i in methods:
-#            print(str(i))
-#            print("%s: %s" % (str(i[0]), str(i[1])))
+        methods = filter(lambda method: method[0].startswith(name), methods)
         fns = list(x[1] for x in methods)
         fns.sort(key=Messaging.linenumber_of_member)
         fns = list(x.__func__ for x in fns)
         return fns
 
-    # returns list of Set functions for fields of a message
+    def MsgAccessors(self, msg):
+        return self.MsgFns(msg, "Get")
+
     def MsgMutators(self, msg):
-        # getmembers() gives a list of (name, value) tuples, and we want a list of values (function objects)
-        msgTupleList = inspect.getmembers(msg, lambda x: inspect.isfunction(x) and "Set" in x.__name__)
-        fns = list(x[1] for x in msgTupleList)
-        fns.sort(key=Messaging.linenumber_of_member)
-        return fns
+        return self.MsgFns(msg, "Set")
