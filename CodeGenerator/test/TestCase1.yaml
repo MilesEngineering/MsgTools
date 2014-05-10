@@ -1,0 +1,48 @@
+Enums:
+  - Name: EnumA
+    Description: Enumeration Type
+    Options:
+      - Name: OptionA
+        Value: 1
+        Description: A Option
+      - Name: OptionB
+        Value: 2
+        Description: B Option
+      - Name: OptionC
+        Value: 4
+        Description: C Option
+      - Name: OptionD
+        Value: 5
+        Description: D Option
+Messages:
+  - Name: MsgA
+    Description: blah
+    Fields:
+      - Name: FieldA
+        Type: uint32
+        Units: m/s
+        DefaultValue: 1
+        Bitfields:
+            - Name: BitsA
+              NumBits: 31
+      - Name: FieldB
+        Type: uint16
+        DefaultValue: 2
+      - Name: FieldC
+        Type: uint8
+        DefaultValue: 3
+        Count: 5
+      - Name: FieldD
+        Type: uint8
+        Bitfields:
+            - Name: BitsA
+              NumBits: 4
+              DefaultValue: 7
+            - Name: BitsB
+              NumBits: 3
+            - Name: BitsC
+              NumBits: 1
+              DefaultValue: 1
+      - Name: FieldE
+        Type: Float32
+        DefaultValue: 3.14159

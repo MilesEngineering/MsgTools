@@ -1,6 +1,7 @@
 PARSER:=python3 MsgParser.py
 
-install all:: Makefile C Cpp Matlab Python Simulink VHDL
+install all:: Makefile Cpp Python
+#C Matlab Simulink VHDL
 
 .PHONY: all C Cpp Matlab Python Simulink VHDL test
 
@@ -16,7 +17,9 @@ Cpp:
 
 Python:
 	$(call colorecho,Python)
-	$(TRACE_FLAG)$(PARSER) ../headers obj/Python Python/language.py  Python/Template.py
+	$(TRACE_FLAG)$(PARSER) ../headers obj/Python Python/language.py  Python/HeaderTemplate.py
+	$(call colorecho,Python)
+	$(TRACE_FLAG)$(PARSER) ../messages obj/Python Python/language.py  Python/Template.py
 
 Matlab:
 	$(call colorecho,Matlab)
@@ -34,8 +37,11 @@ clean clobber::
 	rm -rf obj
 
 testCpp:
-	python test/TestCpp.py
+	python3 test/TestCpp.py
 
-test: testCpp
+testPython:
+	python3 test/TestPython.py
+
+test: testCpp testPython
 
 include ../makefile.inc

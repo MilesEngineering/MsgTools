@@ -1,0 +1,10 @@
+Messages:
+  - Name: Connect
+    ID: 0xFFFFFF01
+    Description: Connection message used to announce a client's existance to the server.
+    Fields:
+      - Name: Name
+        Type: uint8
+        Count: 64
+        Units: ASCII
+        Description: The name.
