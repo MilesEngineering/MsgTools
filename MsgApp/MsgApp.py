@@ -87,7 +87,7 @@ class MsgApp(QtGui.QMainWindow):
     
     #
     def displayError(self, socketError):
-        print("got error")
+        print("Socket Error: " + str(socketError))
 
     # Qt signal/slot based reading of TCP socket
     @QtCore.Slot(str)
