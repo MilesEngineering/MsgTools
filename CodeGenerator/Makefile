@@ -35,7 +35,7 @@ VHDL:
 	$(TRACE_FLAG)$(PARSER) $(hdir) obj/VHDL VHDL/language.py  VHDL/Template.vhdl
 	
 clean clobber::
-	rm -rf obj
+	rm -rf obj __pycache__ *.pyc
 
 testCpp:
 	python3 test/TestCpp.py
