@@ -47,7 +47,7 @@ class Messaging:
         Messaging.hdr = headerModule.NetworkHeader
         # add 32 for routing information
         Messaging.hdrSize = Messaging.hdr.SIZE
-        
+
         for filename in glob.glob( os.path.join(loadDir, '*.py') ):
             if filename != (loadDir+"/"+headerName+".py"):
                 moduleName = os.path.splitext(os.path.basename(filename))[0]
@@ -85,9 +85,9 @@ class Messaging:
         methods = list(filter(lambda method: method[0].startswith(name), methods))
         fns = [x[1] for x in methods]
         fns.sort(key=Messaging.linenumber_of_member)
-        for fn in fns:
+        for i in range(len(fns)):
             try:
-                fn = x.__func__
+                fns[i] = fns[i].__func__
             except:
                 pass
         return fns
