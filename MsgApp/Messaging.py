@@ -81,11 +81,15 @@ class Messaging:
             return -1
     def MsgFns(self, msg, name):
         # getmembers() gives a list of (name, value) tuples, and we want a list of values (function objects)
-        methods = inspect.getmembers(msg, predicate=inspect.ismethoddescriptor)
-        methods = filter(lambda method: method[0].startswith(name), methods)
-        fns = list(x[1] for x in methods)
+        methods = inspect.getmembers(msg, predicate=lambda x: inspect.ismethoddescriptor(x) or inspect.isfunction(x))
+        methods = list(filter(lambda method: method[0].startswith(name), methods))
+        fns = [x[1] for x in methods]
         fns.sort(key=Messaging.linenumber_of_member)
-        fns = list(x.__func__ for x in fns)
+        for fn in fns:
+            try:
+                fn = x.__func__
+            except:
+                pass
         return fns
 
     def MsgAccessors(self, msg):
