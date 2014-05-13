@@ -92,6 +92,8 @@ if __name__ == '__main__':
     # loop over input message files
     for filename in os.listdir(msgDir):
         inputFilename = msgDir + '/' + filename
+        if os.path.isdir(inputFilename):
+            continue
         inFile = readFile(inputFilename);
         outputFilename = outDir + "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
         print("Creating", outputFilename)
