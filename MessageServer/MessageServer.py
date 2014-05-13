@@ -1,5 +1,25 @@
 from PySide import QtCore, QtGui, QtNetwork
 
+class ClientSocket(QtCore.QObject):
+    disconnected = QtCore.Signal()
+
+    def __init__(self, tcpSocket):
+        super(ClientSocket, self).__init__(None)
+        self.tcpSocket = tcpSocket
+        self.tcpSocket.readyRead.connect(self.onReadyRead)
+        self.tcpSocket.disconnected.connect(self.onDisconnected)
+
+    def onReadyRead(self):
+        # Read from socket, emit data (to server)
+        # self.emit()
+        print("onReadyRead")
+
+    def onDisconnected(self):
+        print("onDisconnected")
+        self.tcpSocket.deleteLater()
+        self.disconnected.emit()
+
+
 class MessageServer(QtGui.QDialog):
     def __init__(self, parent=None):
         super(MessageServer, self).__init__(parent)
@@ -9,7 +29,7 @@ class MessageServer(QtGui.QDialog):
         quitButton.setAutoDefault(False)
 
         self.tcpServer = QtNetwork.QTcpServer(self)
-        self.clientList = []
+        self.clientSockets = []
 
         if not self.tcpServer.listen(port = 5678):
             QtGui.QMessageBox.critical(self, "MessageServer",
@@ -20,14 +40,14 @@ class MessageServer(QtGui.QDialog):
         statusLabel.setText("The server is running on port %d." % self.tcpServer.serverPort())
 
         quitButton.clicked.connect(self.close)
-        self.tcpServer.newConnection.connect(self.handleNewClientConnection)
+        self.tcpServer.newConnection.connect(self.onNewConnection)
 
         buttonLayout = QtGui.QHBoxLayout()
         buttonLayout.addStretch(1)
         buttonLayout.addWidget(quitButton)
         buttonLayout.addStretch(1)
 
-        self.clientListModel = QtGui.QStringListModel(self.clientList)
+        self.clientListModel = QtGui.QStringListModel()
         self.clientListView = QtGui.QListView()
         self.clientListView.setModel(self.clientListModel)
 
@@ -39,10 +59,26 @@ class MessageServer(QtGui.QDialog):
 
         self.setWindowTitle("MessageServer")
 
-    def handleNewClientConnection(self):
-        newConnection = self.tcpServer.nextPendingConnection()
-        self.clientList.append("Client %d: Port %d" % ( len(self.clientList) + 1, newConnection.peerPort() ))
-        self.clientListModel.setStringList(self.clientList)
+    def onNewConnection(self):
+        newClientSocket = ClientSocket(self.tcpServer.nextPendingConnection())
+
+        newClientSocket.disconnected.connect(lambda: self.onDisconnected(newClientSocket))
+
+        self.clientSockets.append(newClientSocket)
+        
+        self.updateClientListView()
+
+    def onDisconnected(self, newClientSocket):
+        self.clientSockets.remove(newClientSocket)
+        self.updateClientListView()
+
+    def updateClientListView(self):
+        clientsStringList = [];
+
+        for client in self.clientSockets:
+            clientsStringList.append("Client %d: Port %d" % ( len(self.clientSockets), client.tcpSocket.peerPort() ))
+        
+        self.clientListModel.setStringList(clientsStringList)
 
     def sampleCode(self):
         # clientConnection = self.tcpServer.nextPendingConnection()
