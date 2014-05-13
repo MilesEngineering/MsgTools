@@ -97,10 +97,9 @@ if __name__ == '__main__':
         inFile = readFile(inputFilename);
         outputFilename = outDir + "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
         print("Creating", outputFilename)
-        # \todo! How to write a try with no except: statements?
         try:
             os.makedirs(os.path.dirname(outputFilename))
         except:
-            a=1
+            pass
         with open(outputFilename,'w') as outFile:
             ProcessFile(template, inFile, outFile)
