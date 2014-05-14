@@ -85,9 +85,9 @@ class Messaging:
         methods = list(filter(lambda method: method[0].startswith(name), methods))
         fns = [x[1] for x in methods]
         fns.sort(key=Messaging.linenumber_of_member)
-        for fn in fns:
+        for idx in range(0, len(fns)):
             try:
-                fn = x.__func__
+                fns[idx] = fns[idx].__func__
             except:
                 pass
         return fns

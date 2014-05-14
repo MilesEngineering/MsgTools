@@ -6,9 +6,8 @@ from PySide import QtCore, QtGui, QtNetwork
 class MsgApp(QtGui.QMainWindow):
     RxMsg = QtCore.Signal(QtCore.QByteArray, QtCore.QObject)
     
-    def __init__(self, msgdir, name, argv, parent=None):
+    def __init__(self, msgdir, name, argv):
         # call base class init
-        QtGui.QMainWindow.__init__(self,parent)
         self.name = name
         
         # rx buffer, to receive a message with multiple signals
@@ -25,12 +24,6 @@ class MsgApp(QtGui.QMainWindow):
         
         # initialize the read function to None, so it's not accidentally called
         self.readFn = None
-
-        label = QtGui.QLabel("<font size=40>Some Text</font>")
-        self.setCentralWidget(label)
-         
-        self.resize(320, 240)
-        self.setWindowTitle(self.name)
 
         import Messaging
         self.msgLib = Messaging.Messaging(msgdir, 0)
