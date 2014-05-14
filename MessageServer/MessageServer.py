@@ -19,7 +19,6 @@ class ClientSocket(QtCore.QObject):
         self.tcpSocket.deleteLater()
         self.disconnected.emit()
 
-
 class MessageServer(QtGui.QDialog):
     def __init__(self, parent=None):
         super(MessageServer, self).__init__(parent)
@@ -62,13 +61,16 @@ class MessageServer(QtGui.QDialog):
     def onNewConnection(self):
         newClientSocket = ClientSocket(self.tcpServer.nextPendingConnection())
 
-        newClientSocket.disconnected.connect(lambda: self.onDisconnected(newClientSocket))
+        // newClientSocket.disconnected.connect(lambda: self.onDisconnected(newClientSocket))
+        newClientSocket.disconnected.connect(self.onDisconnected)
 
         self.clientSockets.append(newClientSocket)
-        
+
         self.updateClientListView()
 
+    @QtCore.Slot()
     def onDisconnected(self, newClientSocket):
+        newClientSocket = self()
         self.clientSockets.remove(newClientSocket)
         self.updateClientListView()
 
@@ -77,7 +79,7 @@ class MessageServer(QtGui.QDialog):
 
         for client in self.clientSockets:
             clientsStringList.append("Client %d: Port %d" % ( len(self.clientSockets), client.tcpSocket.peerPort() ))
-        
+
         self.clientListModel.setStringList(clientsStringList)
 
     def sampleCode(self):
