@@ -2,6 +2,7 @@
 import sys
 from PySide import QtCore, QtGui
 from PySide.QtGui import *
+from PySide.QtCore import Qt
 
 # import the MsgApp baseclass, for messages, and network I/O
 sys.path.append("../MsgApp")
@@ -9,20 +10,49 @@ import MsgGui
 
 class MessageScope(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
-        MsgGui.MsgGui.__init__(self, "../../../CodeGenerator/obj/Python/", "Message Scope 0.1", argv, parent)
+        #MsgGui.MsgGui.__init__(self, "../../../CodeGenerator/obj/Python/", "Message Scope 0.1", argv, parent)
+        MsgGui.MsgGui.__init__(self, "../CodeGenerator/obj/Python/", "Message Scope 0.1", argv, parent)
 
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
 
+        hSplitter = QSplitter(parent);
+        
+        txSplitter = QSplitter(parent);
+        rxSplitter = QSplitter(parent);
+        txSplitter.setOrientation(Qt.Vertical)
+        rxSplitter.setOrientation(Qt.Vertical)
+        hSplitter.addWidget(txSplitter)
+        hSplitter.addWidget(rxSplitter)
+        
+        self.txDictionary = QListWidget(parent);
+        self.rxDictionary = QListWidget(parent);
+        self.txMsgs = QTreeWidget(parent);
+        self.rxMsgs = QTreeWidget(parent);
+        txSplitter.addWidget(self.txDictionary);
+        txSplitter.addWidget(self.txMsgs);
+        rxSplitter.addWidget(self.rxDictionary);
+        rxSplitter.addWidget(self.rxMsgs);
+
         # tab widget to show multiple messages, one per tab
         self.tabWidget = QTabWidget(self)
-        self.setCentralWidget(self.tabWidget)
+        self.setCentralWidget(hSplitter)
         
         # hash table to lookup the widget for a message, by message ID
         self.msgWidgets = {}
         
         self.resize(800, 600)
+        
+        self.ReadTxDictionary()
 
+
+    def ReadTxDictionary(self):
+        print("Tx Dictionary:")
+        for id in self.msgLib.MsgNameFromID:
+            print(self.msgLib.MsgNameFromID[id], "=", id)
+            newItem = QListWidgetItem()
+            newItem.setText(self.msgLib.MsgNameFromID[id])
+            self.txDictionary.addItem(newItem)
 
     def ProcessMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
