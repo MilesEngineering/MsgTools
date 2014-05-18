@@ -5,11 +5,11 @@ from PySide.QtGui import *
 
 # import the MsgApp baseclass, for messages, and network I/O
 sys.path.append("../MsgApp")
-import MsgApp
+import MsgGui
 
-class MsgInspector(MsgApp.MsgApp):
+class MsgInspector(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
-        MsgApp.MsgApp.__init__(self, "../../../CodeGenerator/obj/Python/", "Message Inspector 0.1", argv, parent)
+        MsgGui.MsgGui.__init__(self, "../../../CodeGenerator/obj/Python/", "Message Inspector 0.1", argv, parent)
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
 
