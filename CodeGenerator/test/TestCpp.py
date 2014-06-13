@@ -77,61 +77,61 @@ uint16_t GetFieldF()
 }""")
         expected.append("""\
 //  m/s
-void SetFieldA(uint32_t& value)
+void SetFieldA(uint32_t value)
 {
     *(uint32_t*)&m_data[0] = value;
 }""")
         expected.append("""\
 //  
-void SetFieldABitsA(uint32_t& value)
+void SetFieldABitsA(uint32_t value)
 {
     SetFieldA((GetFieldA() & ~(0x7fffffff << 0)) | ((value & 0x7fffffff) << 0));
 }""")
         expected.append("""\
 //  
-void SetFieldB(uint16_t& value)
+void SetFieldB(uint16_t value)
 {
     *(uint16_t*)&m_data[4] = value;
 }""")
         expected.append("""\
 //  
-void SetFieldC(uint8_t& value, int idx)
+void SetFieldC(uint8_t value, int idx)
 {
     *(uint8_t*)&m_data[6+idx*1] = value;
 }""")
         expected.append("""\
 //  
-void SetFieldD(uint8_t& value)
+void SetFieldD(uint8_t value)
 {
     *(uint8_t*)&m_data[11] = value;
 }""")
         expected.append("""\
 //  
-void SetFieldDBitsA(uint8_t& value)
+void SetFieldDBitsA(uint8_t value)
 {
     SetFieldD((GetFieldD() & ~(0xf << 0)) | ((uint8_t(value * 14.357) & 0xf) << 0));
 }""")
         expected.append("""\
 //  
-void SetFieldDBitsB(uint8_t& value)
+void SetFieldDBitsB(uint8_t value)
 {
     SetFieldD((GetFieldD() & ~(0x7 << 4)) | ((value & 0x7) << 4));
 }""")
         expected.append("""\
 //  
-void SetFieldDBitsC(uint8_t& value)
+void SetFieldDBitsC(uint8_t value)
 {
     SetFieldD((GetFieldD() & ~(0x1 << 7)) | ((value & 0x1) << 7));
 }""")
         expected.append("""\
 //  
-void SetFieldE(float& value)
+void SetFieldE(float value)
 {
     *(float*)&m_data[12] = value;
 }""")
         expected.append("""\
 //  
-void SetFieldF(uint16_t& value)
+void SetFieldF(uint16_t value)
 {
     *(uint16_t*)&m_data[16] = uint16_t((value - 1.828) * 2.7);
 }""")
