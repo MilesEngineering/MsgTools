@@ -10,8 +10,8 @@
 */
 #include <stdint.h>
 
-#ifndef <MSGNAME>_H__
-#define <MSGNAME>_H__
+#ifndef <MSGNAME>Message_H__
+#define <MSGNAME>Message_H__
 
 class <MSGNAME>Message : public Message
 {

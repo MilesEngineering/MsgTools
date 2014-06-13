@@ -15,7 +15,8 @@ C:
 
 Cpp:
 	$(call colorecho,C++ Code)
-	$(TRACE_FLAG)$(PARSER) $(hdir) obj/Cpp Cpp/language.py  Cpp/CppTemplate.h
+	$(TRACE_FLAG)$(PARSER) $(hdir) obj/Cpp Cpp/language.py  Cpp/CppHeaderTemplate.h
+	$(TRACE_FLAG)$(PARSER) ../messages obj/Cpp Cpp/language.py  Cpp/CppTemplate.h
 
 Python:
 	$(call colorecho,Python)

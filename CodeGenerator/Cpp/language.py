@@ -37,7 +37,7 @@ def getFn(field, offset):
     return ret
 
 def setFn(field, offset):
-    param = fieldType(field) + "& value"
+    param = fieldType(field) + " value"
     loc = str(offset)
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
@@ -65,7 +65,7 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
     value = MsgParser.setMath("value", bits, fieldType(field))
     ret = '''\
 %s
-void Set%s%s(%s& value)
+void Set%s%s(%s value)
 {
     Set%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
 }''' % (fnHdr(bits), field["Name"], bits["Name"], fieldType(field), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), value, MsgParser.Mask(numBits), str(bitOffset))
