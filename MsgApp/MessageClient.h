@@ -12,7 +12,7 @@ class MessageClient : public QObject
           _gotHeader(false),
           _inProgressMessage(0)
         {
-            connect(&_ioDevice, SIGNAL(dataReady), this, SLOT(onDataReady));
+            connect(&_ioDevice, SIGNAL(readyRead()), this, SLOT(onDataReady()));
         }
 
     signals:
