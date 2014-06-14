@@ -1,10 +1,12 @@
 #include <QtCore>
 #include <QtGui>
+#include <QMainWindow>
 
 #include "./MessageClient.h"
-#include "./MessageTranslator.h"
 
-class MsgGUIApp : QMainWindow
+class MessageTranslator;
+
+class MessageGuiApp : public QMainWindow
 {
     Q_OBJECT
 
@@ -17,11 +19,11 @@ private:
     // status bar
     // settings persistence
 
-protected:
-    signal void newMessageReceived(Message* msg);
+signals:
+    void newMessageReceived(Message* msg);
 
 public:
-    MsgGUIApp(MsgTranslator* msgTranslator);
+    MessageGuiApp(MessageTranslator* msgTranslator);
 
 };
 

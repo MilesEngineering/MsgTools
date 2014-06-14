@@ -6,48 +6,50 @@
 #include <QVariant>
 #include <QHash>
 
-template class QTuple<T1, T2>
+class Message;
+class MessageTreeItem;
+
+class MessageTreeModel : QAbstractItemModel
 {
+    Q_OBJECT
+
 private:
-    T1 _first;
-    T2 _second;
+    bool _readOnly;
+    QHash<QPair<int, int>, MessageTreeItem*> _existingItems;
 
 public:
-    QTuple<T1, T2>(T1 first, T2 second)
-    {
-        _first = first;
-        _second = second;
-    }
+    MessageTreeModel(bool readOnly);
+    //MessageTreeModel(const QStringList &headers, const QString &data, QObject *parent = 0);
+    virtual ~MessageTreeModel();
 
-    T1 first() { return _first; }
-    T2 second() { return _second; }
+    QVariant data(const QModelIndex &index, int role) const;
+    QVariant headerData(int section, Qt::Orientation orientation,
+                        int role = Qt::DisplayRole) const;
 
-   inline bool operator==(const T &e1, const T &e2)
-    {
-        return e1.name() == e2.name()
-               && e1.dateOfBirth() == e2.dateOfBirth();
-    }
+    QModelIndex index(int row, int column,
+                      const QModelIndex &parent = QModelIndex()) const;
+    QModelIndex parent(const QModelIndex &index) const;
 
-    inline uint qHash(const Employee &key, uint seed)
-    {
-        return qHash(key.name(), seed) ^ key.dateOfBirth().day();
-    }
+    int rowCount(const QModelIndex &parent = QModelIndex()) const;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const;
 
-};
+    Qt::ItemFlags flags(const QModelIndex &index) const;
+    bool setData(const QModelIndex &index, const QVariant &value,
+                 int role = Qt::EditRole);
+    bool setHeaderData(int section, Qt::Orientation orientation,
+                       const QVariant &value, int role = Qt::EditRole);
 
-class MessagesTreeModel : QAbstractItemModel
-{
-private:
-    bool readOnly;
-    QHash<QTuple<int, int>, MessageTreeItem*> _existingItems;
+    bool insertColumns(int position, int columns,
+                       const QModelIndex &parent = QModelIndex());
+    bool removeColumns(int position, int columns,
+                       const QModelIndex &parent = QModelIndex());
+    bool insertRows(int position, int rows,
+                    const QModelIndex &parent = QModelIndex());
+    bool removeRows(int position, int rows,
+                    const QModelIndex &parent = QModelIndex());
 
-public:
-    MessagesTreeModel(bool readOnly)
-      : _readOnly(readOnly)
-    {
-    }
-
-    SLOT void onNewMessage(Message* msg)
+public slots:
+    void onNewMessage(Message* msg)
     {
         // if not in hash table, create new item
         // new item is a "TreeItem

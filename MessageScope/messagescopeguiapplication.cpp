@@ -1,9 +1,13 @@
 #include "messagescopeguiapplication.h"
 #include "ui_messagescopeguiapplication.h"
 
-MessageScopeGuiApplication::MessageScopeGuiApplication(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MessageScopeGuiApplication)
+#include "./MessageTranslator.h"
+
+MessageScopeGuiApplication::MessageScopeGuiApplication(QWidget *parent)
+  : MessageGuiApp(new MessageTranslator()),
+    ui(new Ui::MessageScopeGuiApplication),
+    _rxMessages(true),
+    _txMessages(false)
 {
     ui->setupUi(this);
 }
@@ -12,3 +16,4 @@ MessageScopeGuiApplication::~MessageScopeGuiApplication()
 {
     delete ui;
 }
+

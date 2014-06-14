@@ -1,11 +1,11 @@
+#include <QTcpSocket>
+
 #include "./MessageGuiApp.h"
 
-MessageGuiApp:MessageGuiApp(MessageTranslator* msgTranslator)
+MessageGuiApp::MessageGuiApp(MessageTranslator* msgTranslator)
+ : QMainWindow(),
+   _msgClient(new MessageClient(QTcpSocket())),
+   _msgTranslator(msgTranslator)
 {
-    msgClient = new  MsgClient(new QSocket("127.0.0.1:1234"));
-    // msgClient = new MsgClient(new QFile("file.bin"));
-
-    _msgTranslator = msgTranslator;
-
-    connect(msgClient, SIGNAL(newMessageComplete(Message*)), this, SIGNAL(newMessageReceived(Message*)));
+    connect(_msgClient, SIGNAL(newMessageComplete(Message*)), this, SIGNAL(newMessageReceived(Message*)));
 }

@@ -6,7 +6,7 @@
 #include <qendian.h>
 #include <assert.h>
 
-#include "obj/Cpp/Network.h"
+#include "../CodeGenerator/obj/Cpp/Network.h"
 
 #define MsgHeader NetworkHeader
 

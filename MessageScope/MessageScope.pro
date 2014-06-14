@@ -13,9 +13,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
            messagescopeguiapplication.cpp \
-           ../MsgApp/MessageGuiApp.cpp
+           ../MsgApp/MessageGuiApp.cpp \
+            MessageTranslator.cpp \
+            MessageTreeModel.cpp
 
 HEADERS  += messagescopeguiapplication.h \
-            ../MsgApp/MessageGuiApp.h
+            ../MsgApp/MessageGuiApp.h \
+            MessageTreeModel.h \
+            MessageTranslator.h \
+            ../MsgApp/MessageClient.h \
+            ../MsgApp/Message.h
 
 FORMS    += messagescopeguiapplication.ui

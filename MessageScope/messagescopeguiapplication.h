@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 
+#include "../MsgApp/MessageGuiApp.h"
 #include "./MessageTreeModel.h"
 
 namespace Ui
