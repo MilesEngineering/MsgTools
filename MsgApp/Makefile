@@ -1,4 +1,4 @@
 test:
-	python3 test/Test.py
+	python3 Test/Test.py
 
 include ../makefile.inc
