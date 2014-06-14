@@ -1,5 +1,5 @@
 #include "MessageTranslator.h"
 
-MessgeTranslator::MessgeTranslator()
+MessageTranslator::MessageTranslator()
 {
 }

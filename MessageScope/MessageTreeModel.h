@@ -49,7 +49,7 @@ public:
                     const QModelIndex &parent = QModelIndex());
 
 public slots:
-    void onNewMessage(Message* msg)
+    void onNewMessage(Message* /*msg*/)
     {
         // if not in hash table, create new item
         // new item is a "TreeItem
@@ -58,4 +58,4 @@ public slots:
     }
 };
 
-#endif MESSAGETREEMODEL_H
+#endif

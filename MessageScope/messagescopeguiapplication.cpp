@@ -3,7 +3,7 @@
 
 #include "./MessageTranslator.h"
 
-MessageScopeGuiApplication::MessageScopeGuiApplication(QWidget *parent)
+MessageScopeGuiApplication::MessageScopeGuiApplication(QWidget* /*parent*/)
   : MessageGuiApp(new MessageTranslator()),
     ui(new Ui::MessageScopeGuiApplication),
     _rxMessages(true),

@@ -7,8 +7,8 @@ class MessageClient : public QObject
 {
     Q_OBJECT
     public:
-        MessageClient(QIODevice& ioDevice)
-        : _ioDevice(ioDevice),
+        MessageClient(QIODevice* ioDevice)
+        : _ioDevice(*ioDevice),
           _gotHeader(false),
           _inProgressMessage(0)
         {

@@ -11,66 +11,66 @@ MessageTreeModel::~MessageTreeModel()
 }
 
 QVariant
-MessageTreeModel::data(const QModelIndex &index, int role) const
+MessageTreeModel::data(const QModelIndex& /*index*/, int /*role*/) const
 {
-    return NULL;
+    return "";
 }
 
 QVariant
-MessageTreeModel::headerData(int section, Qt::Orientation orientation,
-                    int role = Qt::DisplayRole) const
+MessageTreeModel::headerData(int /*section*/, Qt::Orientation /*orientation*/,
+                    int /*role*/) const
 {
-    return NULL;
+    return "";
 }
 
 QModelIndex
-MessageTreeModel::index(int row, int column,
-                  const QModelIndex &parent = QModelIndex()) const
+MessageTreeModel::index(int /*row*/, int /*column*/,
+                  const QModelIndex &/*parent*/) const
 {
-    return NULL;
+    return QModelIndex();
 }
 
 QModelIndex
-MessageTreeModel::parent(const QModelIndex &index) const
+MessageTreeModel::parent(const QModelIndex &/*index*/) const
 {
-    return NULL;
+    return QModelIndex();
 }
 
 int
-MessageTreeModel::rowCount(const QModelIndex &parent = QModelIndex()) const
+MessageTreeModel::rowCount(const QModelIndex &/*parent*/) const
 {
     return 0;
 }
 
 int
-MessageTreeModel::columnCount(const QModelIndex &parent = QModelIndex()) const
+MessageTreeModel::columnCount(const QModelIndex &/*parent*/) const
 {
     return 0;
 }
 
 Qt::ItemFlags
-MessageTreeModel::flags(const QModelIndex &index) const
+MessageTreeModel::flags(const QModelIndex &/*index*/) const
 {
     return 0;
 }
 
 bool
 MessageTreeModel::setData(const QModelIndex &index, const QVariant &value,
-             int role = Qt::EditRole)
+             int role)
 {
     return false;
 }
 
 bool
 MessageTreeModel::setHeaderData(int section, Qt::Orientation orientation,
-                   const QVariant &value, int role = Qt::EditRole)
+                   const QVariant &value, int role)
 {
     return false;
 }
 
 bool
 MessageTreeModel::insertColumns(int position, int columns,
-                   const QModelIndex &parent = QModelIndex())
+                   const QModelIndex &parent)
 
 {
     return false;
@@ -78,21 +78,21 @@ MessageTreeModel::insertColumns(int position, int columns,
 
 bool
 MessageTreeModel::removeColumns(int position, int columns,
-                   const QModelIndex &parent = QModelIndex())
+                   const QModelIndex &parent)
 {
     return false;
 }
 
 bool
 MessageTreeModel::insertRows(int position, int rows,
-                const QModelIndex &parent = QModelIndex())
+                const QModelIndex &parent)
 {
     return false;
 }
 
 bool
 MessageTreeModel::removeRows(int position, int rows,
-                const QModelIndex &parent = QModelIndex())
+                const QModelIndex &parent)
 {
     return false;
 }
