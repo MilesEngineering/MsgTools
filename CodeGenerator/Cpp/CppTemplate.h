@@ -34,6 +34,10 @@ class <MSGNAME>Message : public Message
         }
         <ENUMERATIONS>
         <ACCESSORS>
+        static MsgInfo* Reflection
+        {
+            <REFLECTION>
+        }
 };
 
 #endif

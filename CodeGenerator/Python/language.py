@@ -145,3 +145,6 @@ def enums(e):
         ret = ret[:-2]
         ret += "}\n"
     return ret
+
+def reflection(msg):
+    return ""

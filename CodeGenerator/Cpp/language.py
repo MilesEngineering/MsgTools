@@ -125,3 +125,42 @@ def enums(e):
         ret = ret[:-2]
         ret += "};\n"
     return ret
+
+def fieldReflection(field, offset):
+    loc = str(offset)
+    type = fieldType(field)
+    params = "{"
+    params += '"'+field["Name"] + '"'
+    params += ', "' + MsgParser.fieldDescription(field) + '"'
+    params += ', "' + MsgParser.fieldUnits(field) + '"'
+    params += ", " + loc
+    params += ", " + str(MsgParser.fieldSize(field))
+    params += ", " + str(MsgParser.fieldCount(field))
+    if "Offset" in field or "Scale" in field:
+        type = "ScaledFieldInfo"
+        if "Scale" in field:
+            params += ", " + field["Scale"]
+        else:
+            params += ", 1.0"
+        if "Offset" in field:
+            params = ", " + field["Offset"]
+        else:
+            params += ", 0.0"
+    params += "}"
+    return params
+
+def reflection(msg):
+    ret = []
+    
+    offset = 0
+    for field in msg["Fields"]:
+        ret.append(fieldReflection(field, offset))
+        bitOffset = 0
+        if "Bitfields" in field:
+            for bits in field["Bitfields"]:
+                numBits = bits["NumBits"]
+                ret.append(fieldBitsReflection(field, bits, offset, bitOffset, numBits))
+                bitOffset += numBits
+        offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
+
+    return ret
