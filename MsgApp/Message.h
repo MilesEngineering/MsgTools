@@ -12,21 +12,26 @@
 
 class Message
 {
-    private:
+    public:
         Message(uint16_t len)
         {
-            hdr.SetLength(len);
+            Allocate(len);
+            hdr->SetLength(len);
         }
-    public:
-        static Message* New(uint16_t datalen)
+        void Allocate(uint16_t datalen)
         {
             uint8_t* buffer = new uint8_t[sizeof(Message)+datalen];
-            Message* dbmsg = new(buffer) Message(datalen);
-            return dbmsg;
+            hdr = (MsgHeader*)buffer;
+            hdr->Init();
+            m_data = (uint8_t*)&hdr[1];
         }
-        uint8_t* GetDataPtr() { return (uint8_t*)(&hdr+1); }
+        uint8_t* GetDataPtr() { return m_data; }
+        void SetPayloadLength(int len) { hdr->SetLength(len); }
+        void SetMessageID(uint32_t id) { hdr->SetID(id); }
+        bool Exists() { return hdr != 0 && m_data != 0; }
     public:
-        MsgHeader hdr;
+        MsgHeader* hdr;
+        uint8_t* m_data;
 };
 
 #endif

@@ -20,6 +20,19 @@ def fnHdr(field):
     ret = "// %s %s" % (MsgParser.fieldDescription(field), MsgParser.fieldUnits(field))
     return ret
 
+def arrayAccessor(field, offset):
+    if MsgParser.fieldCount(field) > 1:
+        loc = str(offset)
+        access = "(%s*)&m_data[%s]" % (fieldType(field), loc)
+        ret = '''\
+%s
+%s* %s()
+{
+    return %s;
+}''' % (fnHdr(field), fieldType(field), field["Name"], access)
+        return ret
+    return ""
+
 def getFn(field, offset):
     loc = str(offset)
     param = ""
@@ -74,11 +87,13 @@ void Set%s%s(%s value)
 def accessors(msg):
     gets = []
     sets = []
+    arrayAccessors = []
     
     offset = 0
     for field in msg["Fields"]:
         gets.append(getFn(field, offset))
         sets.append(setFn(field, offset))
+        arrayAccessors.append(arrayAccessor(field, offset))
         bitOffset = 0
         if "Bitfields" in field:
             for bits in field["Bitfields"]:
@@ -88,7 +103,7 @@ def accessors(msg):
                 bitOffset += numBits
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
-    return gets+sets
+    return gets+sets+arrayAccessors
 
 def initField(field):
     if "Default" in field:
@@ -126,10 +141,32 @@ def enums(e):
         ret += "};\n"
     return ret
 
+def fieldReflectionType(field):
+    ret = fieldType(field)
+    if ret == "double" or ret == "float":
+        return "FloatFieldInfo"
+
+    if ret.startswith("int"):
+        ret = "IntFieldInfo"
+    if ret.startswith("uint"):
+        ret = "UIntFieldInfo"
+
+    if "NumBits" in field:
+        type = "BitfieldInfo"
+        if "Offset" in field or "Scale" in field:
+            type = "ScaledBitfieldInfo"
+    else:
+        if "Offset" in field or "Scale" in field:
+            type = "ScaledFieldInfo"
+    if "Enums" in field:
+        type = "EnumFieldInfo"
+    return ret
+
 def fieldReflection(field, offset):
     loc = str(offset)
-    type = fieldType(field)
-    params = "{"
+    type = fieldReflectionType(field)
+    params = type;
+    params += "("
     params += '"'+field["Name"] + '"'
     params += ', "' + MsgParser.fieldDescription(field) + '"'
     params += ', "' + MsgParser.fieldUnits(field) + '"'
@@ -137,7 +174,6 @@ def fieldReflection(field, offset):
     params += ", " + str(MsgParser.fieldSize(field))
     params += ", " + str(MsgParser.fieldCount(field))
     if "Offset" in field or "Scale" in field:
-        type = "ScaledFieldInfo"
         if "Scale" in field:
             params += ", " + field["Scale"]
         else:
@@ -146,7 +182,7 @@ def fieldReflection(field, offset):
             params = ", " + field["Offset"]
         else:
             params += ", 0.0"
-    params += "}"
+    params += ")"
     return params
 
 def reflection(msg):

@@ -15,7 +15,10 @@ SOURCES += main.cpp\
 
 HEADERS  += ../MessageClient.h \
     ../../CodeGenerator/obj/Cpp/Network.h \
-    ../Message.h
+    ../Message.h \
+    ../FieldInfo.h \
+    ../MsgInfo.h \
+    ../Reflection.h
 
 INCLUDEPATH += ../../CodeGenerator ../../ThirdParty/gmock-1.6.0/gtest/include
 

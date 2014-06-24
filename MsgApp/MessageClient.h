@@ -26,7 +26,7 @@ class MessageClient : public QObject
                 int length = _ioDevice.read((char*)&_inProgressHeader, sizeof(_inProgressHeader));
                 if(length == sizeof(_inProgressHeader))
                 {
-                    _inProgressMessage = Message::New(_inProgressHeader.GetLength());
+                    _inProgressMessage = new Message(_inProgressHeader.GetLength());
                     _gotHeader = true;
                 }
             }
@@ -48,7 +48,7 @@ class MessageClient : public QObject
     public slots:
         bool sendMessage(Message* msg)
         {
-            int count = sizeof(NetworkHeader) + msg->hdr.GetLength();
+            int count = sizeof(NetworkHeader) + msg->hdr->GetLength();
             return count == _ioDevice.write((char*)msg, count);
         }
     private:

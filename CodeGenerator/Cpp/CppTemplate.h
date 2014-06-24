@@ -34,9 +34,15 @@ class <MSGNAME>Message : public Message
         }
         <ENUMERATIONS>
         <ACCESSORS>
-        static MsgInfo* Reflection
+        static MsgInfo* ReflectionInfo()
         {
-            <REFLECTION>
+            static bool firstTime = true;
+            static MsgInfo msgInfo(MSG_ID, "<MSGNAME>", "<MSGDESCRIPTION>", MSG_SIZE);
+            if(firstTime)
+            {
+                msgInfo.AddField(new <REFLECTION>);
+            }
+            return &msgInfo;
         }
 };
 

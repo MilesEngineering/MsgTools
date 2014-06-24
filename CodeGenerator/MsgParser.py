@@ -50,6 +50,7 @@ def DoReplacements(line, msg, enums):
     if "ID" in msg:
         ret = replace(ret, "<MSGID>", str(msg["ID"]))
     ret = replace(ret, "<MSGSIZE>", str(language.msgSize(msg)))
+    ret = replace(ret, "<MSGDESCRIPTION>", str(msg["Description"]))
     ret = replace(ret, "<ENUMERATIONS>", language.enums(enums))
     ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))
     ret = replace(ret, "<REFLECTION>", "\n".join(language.reflection(msg)))
