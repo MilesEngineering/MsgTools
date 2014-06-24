@@ -93,7 +93,9 @@ def accessors(msg):
     for field in msg["Fields"]:
         gets.append(getFn(field, offset))
         sets.append(setFn(field, offset))
-        arrayAccessors.append(arrayAccessor(field, offset))
+        arrAcc = arrayAccessor(field, offset)
+        if arrAcc != "":
+            arrayAccessors.append(arrAcc)
         bitOffset = 0
         if "Bitfields" in field:
             for bits in field["Bitfields"]:

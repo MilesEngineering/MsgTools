@@ -135,6 +135,12 @@ void SetFieldF(uint16_t value)
 {
     *(uint16_t*)&m_data[16] = uint16_t((value - 1.828) * 2.7);
 }""")
+        expected.append("""\
+//  
+uint8_t* FieldC()
+{
+    return (uint8_t*)&m_data[6];
+}""")
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
         obsCount = len(observed)
