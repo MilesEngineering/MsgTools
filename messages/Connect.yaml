@@ -7,4 +7,4 @@ Messages:
         Type: uint8
         Count: 64
         Units: ASCII
-        Description: The name.
+        Description: The name of the client.
