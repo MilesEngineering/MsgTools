@@ -21,12 +21,14 @@ class MessageClient : public QObject
     private slots:
         void onDataReady()
         {
-            if(!_gotHeader && _ioDevice.bytesAvailable() >= (int)sizeof(_inProgressHeader))
+            int bytesAvailable = _ioDevice.bytesAvailable();
+            if(!_gotHeader && bytesAvailable >= (int)sizeof(_inProgressHeader))
             {
                 int length = _ioDevice.read((char*)&_inProgressHeader, sizeof(_inProgressHeader));
                 if(length == sizeof(_inProgressHeader))
                 {
                     _inProgressMessage = new Message(_inProgressHeader.GetLength());
+                    *_inProgressMessage->hdr = _inProgressHeader;
                     _gotHeader = true;
                 }
             }
@@ -34,8 +36,8 @@ class MessageClient : public QObject
             if(_gotHeader)
             {
                 int bytesWanted = _inProgressHeader.GetLength();
-
-                if(_ioDevice.bytesAvailable() >= bytesWanted)
+                bytesAvailable = _ioDevice.bytesAvailable();
+                if(bytesAvailable >= bytesWanted)
                 {
                     int length = _ioDevice.read((char*)_inProgressMessage->GetDataPtr(), bytesWanted);
                     if(length == bytesWanted)
@@ -49,7 +51,7 @@ class MessageClient : public QObject
         bool sendMessage(Message* msg)
         {
             int count = sizeof(NetworkHeader) + msg->hdr->GetLength();
-            return count == _ioDevice.write((char*)msg, count);
+            return count == _ioDevice.write((char*)msg->hdr, count);
         }
     private:
         QIODevice& _ioDevice;

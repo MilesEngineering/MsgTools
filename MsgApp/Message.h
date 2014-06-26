@@ -13,6 +13,11 @@
 class Message
 {
     public:
+        Message()
+        {
+            Allocate(0);
+            hdr->SetLength(0);
+        }
         Message(uint16_t len)
         {
             Allocate(len);

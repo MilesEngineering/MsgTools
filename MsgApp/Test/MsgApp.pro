@@ -6,7 +6,7 @@
 
 INCLUDEPATH += .
 
-QT       += core
+QT       += core testlib
 
 TARGET = MsgApp
 TEMPLATE = app
