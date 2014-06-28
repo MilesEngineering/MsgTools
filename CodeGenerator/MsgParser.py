@@ -88,6 +88,8 @@ if __name__ == '__main__':
     import language
 
     templateFileTime = os.path.getmtime(templateFilename)
+    languageFileTime = os.path.getmtime(languageFilename)
+    
     # read the template file
     with open(templateFilename, 'r') as templateFile:
         template = templateFile.read().splitlines() 
@@ -104,7 +106,7 @@ if __name__ == '__main__':
             outputFileTime = os.path.getmtime(outputFilename)
         except:
             outputFileTime = 0
-        if (inputFileTime > outputFileTime or templateFileTime > outputFileTime):
+        if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
             inFile = readFile(inputFilename);
             print("Creating", outputFilename)
             try:
