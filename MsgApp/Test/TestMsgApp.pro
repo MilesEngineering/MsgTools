@@ -8,7 +8,7 @@ INCLUDEPATH += .
 
 QT       += core testlib
 
-TARGET = MsgApp
+TARGET = TestMsgApp
 TEMPLATE = app
 
 SOURCES += main.cpp\
@@ -24,3 +24,5 @@ INCLUDEPATH += ../../CodeGenerator ../../ThirdParty/gmock-1.6.0/gtest/include
 
 
 LIBS += -L../../ThirdParty/gmock-1.6.0/obj/ -lgtest
+
+include(../../mk/qtcommon.pri)
