@@ -87,6 +87,7 @@ if __name__ == '__main__':
     language = languageFilename
     import language
 
+    templateFileTime = os.path.getmtime(templateFilename)
     # read the template file
     with open(templateFilename, 'r') as templateFile:
         template = templateFile.read().splitlines() 
@@ -94,14 +95,21 @@ if __name__ == '__main__':
     # loop over input message files
     for filename in os.listdir(msgDir):
         inputFilename = msgDir + '/' + filename
+        outputFilename = outDir + "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
         if os.path.isdir(inputFilename):
             continue
-        inFile = readFile(inputFilename);
-        outputFilename = outDir + "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
-        print("Creating", outputFilename)
+        
+        inputFileTime = os.path.getmtime(inputFilename)
         try:
-            os.makedirs(os.path.dirname(outputFilename))
+            outputFileTime = os.path.getmtime(outputFilename)
         except:
-            pass
-        with open(outputFilename,'w') as outFile:
-            ProcessFile(template, inFile, outFile)
+            outputFileTime = 0
+        if (inputFileTime > outputFileTime or templateFileTime > outputFileTime):
+            inFile = readFile(inputFilename);
+            print("Creating", outputFilename)
+            try:
+                os.makedirs(os.path.dirname(outputFilename))
+            except:
+                pass
+            with open(outputFilename,'w') as outFile:
+                ProcessFile(template, inFile, outFile)
