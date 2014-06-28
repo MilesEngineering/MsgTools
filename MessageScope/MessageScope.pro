@@ -25,3 +25,5 @@ HEADERS  += messagescopeguiapplication.h \
             ../MsgApp/Message.h
 
 FORMS    += messagescopeguiapplication.ui
+
+include(../mk/qtcommon.pri)

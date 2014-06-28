@@ -24,13 +24,11 @@ $(TARGET) : $(TARGET).pro Makefile.qt
 
 clean ::
 	rm -f Makefile.qt
-	rm -rf ../obj.$(TARGET)/release
-	rm -rf ../obj.$(TARGET)/debug
+	rm -rf ../obj/$(TARGET)
 
 clobber ::
 	rm -f Makefile.qt
-	rm -rf ../obj.$(TARGET)/release
-	rm -rf ../obj.$(TARGET)/debug
+	rm -rf ../obj/$(TARGET)
 
 .PRECIOUS: Makefile.qt
 

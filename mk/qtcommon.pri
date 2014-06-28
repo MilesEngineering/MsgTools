@@ -1,8 +1,8 @@
 # qmake often sets both debug and release, for debug builds.
 CONFIG(debug, debug|release) {
-    DESTDIR=../obj.$$TARGET/debug
+    DESTDIR=../obj/$$TARGET/debug
 } else {
-    DESTDIR=../obj.$$TARGET/release
+    DESTDIR=../obj/$$TARGET/release
 }
 
 UI_DIR = $$DESTDIR
