@@ -25,4 +25,6 @@ INCLUDEPATH += ../../CodeGenerator ../../ThirdParty/gmock-1.6.0/gtest/include
 
 LIBS += -L../../ThirdParty/gmock-1.6.0/obj/ -lgtest
 
+QMAKE_CXXFLAGS += -fno-strict-aliasing
+
 include(../../mk/qtcommon.pri)

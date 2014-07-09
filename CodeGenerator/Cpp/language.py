@@ -109,7 +109,12 @@ def accessors(msg):
 
 def initField(field):
     if "Default" in field:
-        return  "Set" + field["Name"] + "(" + str(field["Default"]) + ");"
+        if MsgParser.fieldCount(field) > 1:
+            ret = "for (int i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
+            ret += "    Set" + field["Name"] + "(" + str(field["Default"]) + ", i);" 
+            return ret;
+        else:
+            return  "Set" + field["Name"] + "(" + str(field["Default"]) + ");"
     return ""
 
 def initBitfield(field, bits):
@@ -154,14 +159,35 @@ def fieldReflectionType(field):
         ret = "UIntFieldInfo"
 
     if "NumBits" in field:
-        type = "BitfieldInfo"
+        ret = "BitfieldInfo"
         if "Offset" in field or "Scale" in field:
-            type = "ScaledBitfieldInfo"
+            ret = "ScaledBitfieldInfo"
     else:
         if "Offset" in field or "Scale" in field:
-            type = "ScaledFieldInfo"
+            ret = "ScaledFieldInfo"
     if "Enums" in field:
-        type = "EnumFieldInfo"
+        ret = "EnumFieldInfo"
+    return ret
+
+def fieldReflectionBitsType(field, bits):
+    ret = fieldType(field)
+    if ret == "double" or ret == "float":
+        return "FloatFieldInfo"
+
+    if ret.startswith("int"):
+        ret = "IntFieldInfo"
+    if ret.startswith("uint"):
+        ret = "UIntFieldInfo"
+
+    if "NumBits" in bits:
+        ret = "BitfieldInfo"
+        if "Offset" in bits or "Scale" in bits:
+            ret = "ScaledBitfieldInfo"
+    else:
+        if "Offset" in field or "Scale" in field:
+            ret = "ScaledFieldInfo"
+    if "Enums" in field:
+        ret = "EnumFieldInfo"
     return ret
 
 def fieldReflection(field, offset):
@@ -177,11 +203,36 @@ def fieldReflection(field, offset):
     params += ", " + str(MsgParser.fieldCount(field))
     if "Offset" in field or "Scale" in field:
         if "Scale" in field:
-            params += ", " + field["Scale"]
+            params += ", " + str(field["Scale"])
         else:
             params += ", 1.0"
         if "Offset" in field:
-            params = ", " + field["Offset"]
+            params += ", " + str(field["Offset"])
+        else:
+            params += ", 0.0"
+    params += ")"
+    return params
+
+def fieldBitsReflection(field, bits, offset, bitOffset, numBits):
+    loc = str(offset)
+    type = fieldReflectionBitsType(field, bits)
+    params = type;
+    params += "("
+    params += '"'+bits["Name"] + '"'
+    params += ', "' + MsgParser.fieldDescription(bits) + '"'
+    params += ', "' + MsgParser.fieldUnits(bits) + '"'
+    params += ", " + loc
+    params += ", " + str(bitOffset)
+    params += ", " + str(numBits)
+    params += ", " + str(MsgParser.fieldSize(field))
+    params += ", " + str(MsgParser.fieldCount(bits))
+    if "Offset" in bits or "Scale" in bits:
+        if "Scale" in bits:
+            params += ", " + str(bits["Scale"])
+        else:
+            params += ", 1.0"
+        if "Offset" in bits:
+            params += ", " + str(bits["Offset"])
         else:
             params += ", 0.0"
     params += ")"

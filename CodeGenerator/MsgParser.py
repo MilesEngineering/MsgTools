@@ -22,7 +22,7 @@ def readFile(filename):
         inFile = io.open(filename)
         return json.load(inFile)
     else:
-        return NULL
+        return 0
 
 def Messages(inFile):
     return inFile["Messages"]
@@ -107,11 +107,12 @@ if __name__ == '__main__':
         except:
             outputFileTime = 0
         if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
-            inFile = readFile(inputFilename);
-            print("Creating", outputFilename)
-            try:
-                os.makedirs(os.path.dirname(outputFilename))
-            except:
-                pass
-            with open(outputFilename,'w') as outFile:
-                ProcessFile(template, inFile, outFile)
+            inFile = readFile(inputFilename)
+            if inFile != 0:
+                print("Creating", outputFilename)
+                try:
+                    os.makedirs(os.path.dirname(outputFilename))
+                except:
+                    pass
+                with open(outputFilename,'w') as outFile:
+                    ProcessFile(template, inFile, outFile)

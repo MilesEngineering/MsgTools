@@ -3,6 +3,7 @@
 #include "../MsgInfo.h"
 #include "../Reflection.h"
 #include "../../CodeGenerator/obj/Cpp/Connect.h"
+#include "../../MsgApp/Test/obj/Cpp/TestCase1.h"
 
 #include <iostream>
 #include <string>
@@ -80,6 +81,18 @@ TEST(MessageClientTest, Reflection)
         QString v = fi->Value(*cm);
         EXPECT_STREQ(v.toUtf8().constData(), "test1");
     }
+
+    /** \todo This is bad!  Need to have the message info get added automatically to reflection! */
+    Reflection::AddMsg(MsgAMessage::ReflectionInfo());
+    MsgAMessage* mam = new MsgAMessage();
+    MsgInfo* maMsgInfo = Reflection::FindMsgByID(mam->MSG_ID);
+    EXPECT_TRUE(maMsgInfo != NULL);
+    if(maMsgInfo)
+    {
+        EXPECT_STREQ(maMsgInfo->Name().toUtf8().constData(), "MsgA");
+        EXPECT_EQ(maMsgInfo->ID(), mam->MSG_ID);
+    }
+    /** \todo Add tests for setting/getting fields of MsgA, using regular accessors as well as reflection */
 }
 
 

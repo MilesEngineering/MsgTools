@@ -16,6 +16,7 @@ Enums:
         Description: D Option
 Messages:
   - Name: MsgA
+    ID: 123
     Description: blah
     Fields:
       - Name: FieldA
