@@ -14,3 +14,5 @@ BUILD_DIR = $$DESTDIR
 QMAKE_MAKEFILE = Makefile.qt
 
 CONFIG -= debug_and_release
+
+QMAKE_CXXFLAGS += -fno-strict-aliasing

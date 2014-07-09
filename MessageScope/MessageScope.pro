@@ -26,6 +26,4 @@ HEADERS  += messagescopeguiapplication.h \
 
 FORMS    += messagescopeguiapplication.ui
 
-QMAKE_CXXFLAGS += -fno-strict-aliasing
-
 include(../mk/qtcommon.pri)
