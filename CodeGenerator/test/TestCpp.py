@@ -167,7 +167,7 @@ uint8_t* FieldC()
         expected = []
         expected.append("SetFieldA(1);")
         expected.append("SetFieldB(2);")
-        expected.append("SetFieldC(3);")
+        expected.append("for (int i=0; i<5; i++)\n    SetFieldC(3, i);")
         expected.append("SetFieldDBitsA(7.1);")
         expected.append("SetFieldDBitsC(1);")
         expected.append("SetFieldE(3.14159);")
