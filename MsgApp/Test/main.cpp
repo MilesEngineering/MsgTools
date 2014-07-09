@@ -3,7 +3,7 @@
 #include "../MsgInfo.h"
 #include "../Reflection.h"
 #include "../../CodeGenerator/obj/Cpp/Connect.h"
-#include "../../MsgApp/Test/obj/Cpp/TestCase1.h"
+#include "obj/Cpp/TestCase1.h"
 
 #include <iostream>
 #include <string>
