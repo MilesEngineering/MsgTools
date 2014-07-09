@@ -6,7 +6,9 @@ python:
 # command to run tests
 install:
   - "pip install pyyaml"
-script: make && make test
+script:
+  - cd ThirdParty/gmock-1.6.0/ && make -f MsgTools.mk && cd -
+  - make && make test
 
 before_install:
   - sudo add-apt-repository --yes ppa:ubuntu-sdk-team/ppa
