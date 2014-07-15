@@ -1,8 +1,4 @@
-all clobber clean install project :: echorule
-
-all :: echorule check_objectdir proj endrule
-
-include $(MK_DIR)/include.mk
+all :: make_obj proj
 
 ###################################################
 # might want separate obj dirs for release vs. debug, or for different processors,
@@ -15,8 +11,14 @@ OBJ_DIR = obj
 -include $(wildcard $(OBJ_DIR)/*.d)
 
 ###################################################
+# check for a gcc in the path.  if it's there, use it.  else, look for one in a relative directory.
+GCC_ARM_VERSION := $(shell arm-none-eabi-gcc --version 2>/dev/null)
+ifdef GCC_ARM_VERSION
+BIN_DIR=
+else
 TOOLCHAIN?=launchpad
 BIN_DIR=$(BUILDROOT)/Tools/gccCortexM/$(TOOLCHAIN).$(UNAME)/bin/
+endif
 
 CC=$(BIN_DIR)arm-none-eabi-gcc
 AR=$(BIN_DIR)arm-none-eabi-ar
@@ -64,11 +66,11 @@ $(OBJ_DIR)/%.o: %.s
 ###################################################
 # for building an entire project
 ifdef PROJ_NAME
-CFLAGS += -I$(WINBUILDROOT)/cortex/stmlib
-CFLAGS += -I$(WINBUILDROOT)/cortex/stmlib/inc 
-CFLAGS += -I$(WINBUILDROOT)/cortex/stmlib/inc/core
-CFLAGS += -I$(WINBUILDROOT)/cortex/stmlib/inc/peripherals 
-LFLAGS += -T$(WINBUILDROOT)/cortex/stmlib/stm32_flash.ld 
+CFLAGS += -I$(WINBUILDROOT)/stm32/stmlib
+CFLAGS += -I$(WINBUILDROOT)/stm32/stmlib/inc 
+CFLAGS += -I$(WINBUILDROOT)/stm32/stmlib/inc/core
+CFLAGS += -I$(WINBUILDROOT)/stm32/stmlib/inc/peripherals 
+LFLAGS += -T$(WINBUILDROOT)/stm32/stmlib/stm32_flash.ld 
 
 PROJ_NAME := $(OBJ_DIR)/$(PROJ_NAME).elf
 PROJ_BIN_NAME := $(PROJ_NAME:.elf=.bin)

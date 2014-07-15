@@ -1,4 +1,4 @@
-#SUBDIRS :=
+SUBDIRS := testChibiOS testBareMetal
 
 all:: ChibiOS
 
@@ -12,6 +12,8 @@ OS_URL:=http://sourceforge.net/projects/chibios/files/ChibiOS_RT%20stable/Versio
 ChibiOS: $(OS_FILENAME)
 	unzip $(OS_FILENAME)
 	mv $(OS_NAME) $@
+	sed -i -e 's/^all: /all:: /' ChibiOS/os/ports/GCC/ARMCMx/rules.mk
+	sed -i -e 's/^clean:/clean::/' ChibiOS/os/ports/GCC/ARMCMx/rules.mk
 
 $(OS_FILENAME):
 	wget $(OS_URL)
@@ -21,5 +23,5 @@ test::
 	@echo $(OS_NAME)
 	@echo $(OS_URL)
 
-MK_DIR=../mk
+include ../makefile.inc
 include $(MK_DIR)/subdir.mk
