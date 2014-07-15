@@ -1,4 +1,4 @@
-SUBDIRS := testChibiOS testBareMetal
+SUBDIRS := stmlib testChibiOS testBareMetal
 
 all:: ChibiOS
 
