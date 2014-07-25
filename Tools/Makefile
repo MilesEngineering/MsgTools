@@ -45,3 +45,5 @@ stlink:
 	mkdir stlink
 	git clone https://github.com/texane/stlink/
 	cd stlink; ./autogen.sh; ./configure; make #; sudo make install
+
+test:
