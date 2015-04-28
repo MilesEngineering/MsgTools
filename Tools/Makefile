@@ -2,15 +2,15 @@ all:: gccCortexM
 
 GCC_ARM_VERSION := $(shell arm-none-eabi-gcc --version 2>/dev/null)
 
-TOOLCHAIN_NAME:=gcc-arm-none-eabi-4_8-2014q2
+TOOLCHAIN_NAME:=gcc-arm-none-eabi-4_9-2015q1
 
 ifeq ($(UNAME),Cygwin)
-TOOLCHAIN_FILE_NAME:=$(addsuffix -20140609-win32.zip, $(TOOLCHAIN_NAME))
+TOOLCHAIN_FILE_NAME:=$(addsuffix -20150306-win32.zip, $(TOOLCHAIN_NAME))
 else
-TOOLCHAIN_FILE_NAME:=$(addsuffix -20140609-linux.tar.bz2, $(TOOLCHAIN_NAME))
+TOOLCHAIN_FILE_NAME:=$(addsuffix -20150306-linux.tar.bz2, $(TOOLCHAIN_NAME))
 endif
 
-TOOLCHAIN_URL:=https://launchpad.net/gcc-arm-embedded/4.8/4.8-2014-q2-update/+download/$(TOOLCHAIN_FILE_NAME)
+TOOLCHAIN_URL:=https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q1-update/+download/$(TOOLCHAIN_FILE_NAME)
 
 .PHONY: all
 .INTERMEDIATE: $(TOOLCHAIN_FILE_NAME)

@@ -140,8 +140,7 @@ GCC_ARM_VERSION := $(shell arm-none-eabi-gcc --version 2>/dev/null)
 ifdef GCC_ARM_VERSION
 BIN_DIR=
 else
-TOOLCHAIN?=launchpad
-BIN_DIR=$(BUILDROOT)/Tools/gccCortexM/$(TOOLCHAIN).$(UNAME)/bin/
+BIN_DIR=$(BUILDROOT)/Tools/gccCortexM/bin/
 endif
 
 #TRGT = arm-elf-
