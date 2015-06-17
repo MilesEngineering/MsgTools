@@ -5,17 +5,14 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 from PySide.QtNetwork import *
 
-sys.path.append("../MsgApp")
-from MsgApp import *
-
 from MessageServer import *
 from ConnectionsTableModel import *
 
 class MessageServerGUI(QMainWindow):
     def __init__(self, msgdir, argv):
-        QtGui.QMainWindow.__init__(self)
+        QMainWindow.__init__(self)
 
-        self.server = MessageServer()
+        self.server = MessageServer(msgdir)
         
         self.server.connectionfailure.connect(self.onServerConnectionFailure)
         self.server.newconnectionaccepted.connect(self.onServerNewConnectionAccepted)

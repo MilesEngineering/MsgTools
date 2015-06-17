@@ -5,10 +5,6 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 from PySide.QtNetwork import *
 
-sys.path.append("../MsgApp")
-
-from MsgApp import *
-
 from TcpClientConnection import *
 
 class MessageServer(QObject):
@@ -16,9 +12,10 @@ class MessageServer(QObject):
     newconnectionaccepted = Signal()
     connectiondisconnected = Signal()
 
-    def __init__(self):
+    def __init__(self, msgdir):
         super(MessageServer, self).__init__(None)
 
+        self.msgdir = msgdir
         self.connections = {}
         self.tcpServer = QTcpServer()
         self.tcpServer.newConnection.connect(self.onNewConnection)
@@ -29,7 +26,7 @@ class MessageServer(QObject):
             return
 
     def onNewConnection(self):
-        newConnection = TcpClientConnection(self.tcpServer.nextPendingConnection())
+        newConnection = TcpClientConnection(self.tcpServer.nextPendingConnection(), self.msgdir)
         newConnection.disconnected.connect(self.onConnectionDisconnected)
 
         self.connections[newConnection] = newConnection
