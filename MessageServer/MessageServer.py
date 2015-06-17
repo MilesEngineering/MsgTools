@@ -10,16 +10,16 @@ sys.path.append("../MsgApp")
 from MsgApp import *
 
 from TcpClientConnection import *
-from MessageServerConnectionsTableModel import *
 
 class MessageServer(QObject):
     connectionfailure = Signal()
     newconnectionaccepted = Signal()
+    connectiondisconnected = Signal()
 
     def __init__(self):
         super(MessageServer, self).__init__(None)
-        self.connections = []
 
+        self.connections = {}
         self.tcpServer = QTcpServer()
         self.tcpServer.newConnection.connect(self.onNewConnection)
 
@@ -32,10 +32,9 @@ class MessageServer(QObject):
         newConnection = TcpClientConnection(self.tcpServer.nextPendingConnection())
         newConnection.disconnected.connect(self.onConnectionDisconnected)
 
-        self.connections.append(newConnection)
-        
+        self.connections[newConnection] = newConnection
         self.newconnectionaccepted.emit()
 
-    def onConnectionDisconnected(self, connectionId):
-        # Remove the connection from the connection table model in order to update the UI.
-        pass
+    def onConnectionDisconnected(self, connection):
+        del self.connections[connection]
+        self.connectiondisconnected.emit()

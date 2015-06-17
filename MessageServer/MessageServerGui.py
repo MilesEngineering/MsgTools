@@ -9,8 +9,9 @@ sys.path.append("../MsgApp")
 from MsgApp import *
 
 from MessageServer import *
+from ConnectionsTableModel import *
 
-class MsgServerGUI(QMainWindow):
+class MessageServerGUI(QMainWindow):
     def __init__(self, msgdir, argv):
         QtGui.QMainWindow.__init__(self)
 
@@ -28,7 +29,9 @@ class MsgServerGUI(QMainWindow):
     def initializeGui(self):
 
         # Components
+        self.connectionsModel = ConnectionsTableModel(self.server.connections)
         self.connectionsTable = QTableView()
+        self.connectionsTable.setModel(self.connectionsModel)
 
         # Layout
         grid = QGridLayout()
@@ -48,12 +51,13 @@ class MsgServerGUI(QMainWindow):
         self.statusBar().showMessage("Connection Failures...")
 
     def onServerNewConnectionAccepted(self):
-        print("New Connection!")
+        # Just let the AbstractTableModel know data has changed so that the table view will re-render
+        self.connectionsModel.refresh()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    server = MsgServerGUI("../../../CodeGenerator/obj/Python/", sys.argv)
+    server = MessageServerGUI("../../../CodeGenerator/obj/Python/", sys.argv)
     server.show()
 
     sys.exit(app.exec_())
