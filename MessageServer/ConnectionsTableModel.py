@@ -35,7 +35,6 @@ class ConnectionsTableModel(QAbstractTableModel):
         return None
 
     def sort(self, col, order):
-        """sort table by given column number col"""
         self.emit(SIGNAL("layoutAboutToBeChanged()"))
         self.connectionsList = sorted(self.connectionsList, key = operator.itemgetter(col))
 

@@ -27,7 +27,10 @@ class MessageServer(QObject):
 
     def onNewConnection(self):
         newConnection = TcpClientConnection(self.tcpServer.nextPendingConnection(), self.msgdir)
+
         newConnection.disconnected.connect(self.onConnectionDisconnected)
+        newConnection.datareceived.connect(self.onDataReceived)
+        newConnection.messagereceived.connect(self.onMessageReceived)
 
         self.connections[newConnection] = newConnection
         self.newconnectionaccepted.emit()
@@ -35,3 +38,11 @@ class MessageServer(QObject):
     def onConnectionDisconnected(self, connection):
         del self.connections[connection]
         self.connectiondisconnected.emit()
+
+    def onDataReceived(self, data):
+        # forward to all available client connections
+        for connection in self.connections.values():
+            connection.send(data)
+
+    def onMessageReceived(self, message):
+        pass

@@ -12,29 +12,29 @@ class TcpClientConnection(QObject):
     disconnected = Signal(object)
     messagereceived = Signal(object, object)
 
-    def __init__(self, tcpConnection, msgdir):
+    def __init__(self, tcpSocket, msgdir):
         super(TcpClientConnection, self).__init__(None)
 
         msgLib = Messaging(msgdir, 0)
 
-        self.tcpConnection = tcpConnection
-        self.tcpConnection.readyRead.connect(self.onReadyRead)
-        self.tcpConnection.disconnected.connect(self.onDisconnected)
-        self.tcpConnection.error.connect(self.onError)
+        self.tcpSocket = tcpSocket
+        self.tcpSocket.readyRead.connect(self.onReadyRead)
+        self.tcpSocket.disconnected.connect(self.onDisconnected)
+        self.tcpSocket.error.connect(self.onError)
 
         self.rxBuffer = bytearray()
 
-        self.name = "Client " + str(self.tcpConnection.peerAddress())
+        self.name = "Client " + str(self.tcpSocket.peerAddress())
 
     @Slot()
     def onReadyRead(self):
-        input_stream = QDataStream(self.tcpConnection)
+        inputStream = QDataStream(self.tcpSocket)
 
-        while(self.tcpConnection.bytesAvailable() > 0):
+        while(self.tcpSocket.bytesAvailable() > 0):
             # read the header, unless we have the header
             if(len(self.rxBuffer) < Messaging.hdrSize):
                 print("reading", Messaging.hdrSize - len(self.rxBuffer), "bytes for header")
-                self.rxBuffer += input_stream.readRawData(Messaging.hdrSize - len(self.rxBuffer))
+                self.rxBuffer += inputStream.readRawData(Messaging.hdrSize - len(self.rxBuffer))
                 print("have", len(self.rxBuffer), "bytes")
             
             # if we still don't have the header, break
@@ -48,7 +48,7 @@ class TcpClientConnection(QObject):
             # read the body, unless we have the body
             if(len(self.rxBuffer) < Messaging.hdrSize + bodyLen):
                 print("reading", Messaging.hdrSize + bodyLen - len(self.rxBuffer), "bytes for body")
-                self.rxBuffer += input_stream.readRawData(Messaging.hdrSize + bodyLen - len(self.rxBuffer))
+                self.rxBuffer += inputStream.readRawData(inputStream, Messaging.hdrSize + bodyLen - len(self.rxBuffer))
             
             # if we still don't have the body, break
             if(len(self.rxBuffer) < Messaging.hdrSize + bodyLen):

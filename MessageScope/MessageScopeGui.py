@@ -1,16 +1,15 @@
 #!/cygdrive/c/Python34/python.exe
 import sys
+
 from PySide import QtCore, QtGui
 from PySide.QtGui import *
 from PySide.QtCore import Qt
 
-# import the MsgApp baseclass, for messages, and network I/O
 sys.path.append("../MsgApp")
 import MsgGui
 
-class MessageScope(MsgGui.MsgGui):
+class MessageScopeGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
-        #MsgGui.MsgGui.__init__(self, "../../../CodeGenerator/obj/Python/", "Message Scope 0.1", argv, parent)
         MsgGui.MsgGui.__init__(self, "../CodeGenerator/obj/Python/", "Message Scope 0.1", argv, parent)
 
         # event-based way of getting messages
@@ -104,6 +103,14 @@ class MessageScope(MsgGui.MsgGui):
                     #print("body.",msgClass.__name__, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
                     columnText += ", " + str(method(msg,i))
             msgStringList.append(columnText)
+
         msgItem = QTreeWidgetItem(None,msgStringList)
         self.msgWidgets[id].addTopLevelItem(msgItem)
-        
+
+
+# main starts here
+if __name__ == '__main__':
+    app = QtGui.QApplication(sys.argv)
+    msgScopeGui = MessageScopeGui(sys.argv)
+    msgScopeGui.show()
+    sys.exit(app.exec_())
