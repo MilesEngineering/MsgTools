@@ -8,7 +8,7 @@ QSPEC := $(QT_ROOT)/mkspecs/win32-msvc2013
 
 else
 
-QMAKE := qmake
+QMAKE := qmake -qt=qt5
 MAKE_FOR_QT := make
 QSPEC :=  linux-g++
 
