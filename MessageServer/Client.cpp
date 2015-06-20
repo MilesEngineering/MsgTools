@@ -2,9 +2,9 @@
 
 Client::Client(QTcpSocket* sock)
 : ServerPort(sock->peerAddress().toString()),
-  _tcpSocket(sock),
   _rxHeader(Message::New(0)),
-  _receivedHeader(false)
+  _receivedHeader(false),
+  _tcpSocket(sock)
 {
     connect(sock, SIGNAL(readyRead()), this, SLOT(HandleIncomingPacket()));
     connect(_tcpSocket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(SocketStateChanged(QAbstractSocket::SocketState)));

@@ -9,9 +9,7 @@ SOURCES += main.cpp \
 HEADERS += MessageServer.h \
     Client.h \
     ServerPort.h \
-    MessageServer.h \
     Message.h \
-    Client.h \
     ServerInterface.h
 
 QT += network xml widgets core gui
