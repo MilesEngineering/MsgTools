@@ -1,12 +1,13 @@
 #!/cygdrive/c/Python34/python.exe
 import sys
 
-from PySide import QtCore, QtGui
 from PySide.QtGui import *
-from PySide.QtCore import Qt
+from PySide.QtCore import *
 
 sys.path.append("../MsgApp")
 import MsgGui
+
+from TxMessageTreeWidgetItem import *
 
 class MessageScopeGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
@@ -15,27 +16,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
 
-        hSplitter = QSplitter(parent);
-        
-        txSplitter = QSplitter(parent);
-        rxSplitter = QSplitter(parent);
-        txSplitter.setOrientation(Qt.Vertical)
-        rxSplitter.setOrientation(Qt.Vertical)
-        hSplitter.addWidget(txSplitter)
-        hSplitter.addWidget(rxSplitter)
-        
-        self.txDictionary = QListWidget(parent);
-        self.rxDictionary = QListWidget(parent);
-        self.txMsgs = QTreeWidget(parent);
-        self.rxMsgs = QTreeWidget(parent);
-        txSplitter.addWidget(self.txDictionary);
-        txSplitter.addWidget(self.txMsgs);
-        rxSplitter.addWidget(self.rxDictionary);
-        rxSplitter.addWidget(self.rxMsgs);
-
-        # tab widget to show multiple messages, one per tab
-        self.tabWidget = QTabWidget(self)
-        self.setCentralWidget(hSplitter)
+        self.ConfigureGui(parent)
         
         # hash table to lookup the widget for a message, by message ID
         self.msgWidgets = {}
@@ -44,6 +25,40 @@ class MessageScopeGui(MsgGui.MsgGui):
         
         self.ReadTxDictionary()
 
+    def ConfigureGui(self, parent):   
+        hSplitter = QSplitter(parent);
+        
+        txSplitter = QSplitter(parent);
+        rxSplitter = QSplitter(parent);
+
+        txSplitter.setOrientation(Qt.Vertical)
+        rxSplitter.setOrientation(Qt.Vertical)
+
+        hSplitter.addWidget(txSplitter)
+        hSplitter.addWidget(rxSplitter)
+        
+        self.txDictionary = QListWidget(parent);
+        self.txDictionary.itemDoubleClicked.connect(self.onTxMessageSelected)
+
+        self.rxDictionary = QListWidget(parent);
+
+        self.txMsgs = QTreeWidget(parent);
+        self.txMsgs.setColumnCount(4);
+        
+        txMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Send", "Description"]);
+        
+        self.txMsgs.setHeaderItem(txMsgsHeader);
+
+        self.rxMsgs = QTreeWidget(parent);
+
+        txSplitter.addWidget(self.txDictionary);
+        txSplitter.addWidget(self.txMsgs);
+        rxSplitter.addWidget(self.rxDictionary);
+        rxSplitter.addWidget(self.rxMsgs);
+
+        # tab widget to show multiple messages, one per tab
+        self.tabWidget = QTabWidget(self)
+        self.setCentralWidget(hSplitter)
 
     def ReadTxDictionary(self):
         print("Tx Dictionary:")
@@ -52,6 +67,13 @@ class MessageScopeGui(MsgGui.MsgGui):
             newItem = QListWidgetItem()
             newItem.setText(self.msgLib.MsgNameFromID[id])
             self.txDictionary.addItem(newItem)
+
+    def onTxMessageSelected(self, txListWidgetItem):
+        messageName = txListWidgetItem.text();
+
+        # Always add to TX panel even if the same message class may already exist
+        # since we may want to send the same message with different contents/header/rates.
+        messageTreeWidgetItem = TxMessageTreeWidgetItem(messageName, self.txMsgs, self.msgLib)
 
     def ProcessMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
@@ -65,13 +87,13 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         if(not(id in self.msgWidgets)):
             # create a new tree widget
-            msgWidget = QtGui.QTreeWidget()
+            msgWidget = QTreeWidget()
             
             # add it to the tab widget, so the user can see it
             self.tabWidget.addTab(msgWidget, msgClass.__name__)
             
             # add headers, one for each message field
-            header = QtCore.QStringList()
+            header = QStringList()
             for method in methods:
                 # skip over the first three letters (which are always "Get")
                 name = method.__name__.replace("Get", "", 1)
@@ -91,7 +113,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         #    print "hdr.", self.msgLib.headerClass.__name__, ".", method.__name__, "=", method(msg), " #", method.__doc__
         #print ""
         
-        msgStringList = QtCore.QStringList()
+        msgStringList = []
 
         for method in methods:
             if(method.count == 1):
@@ -102,6 +124,7 @@ class MessageScopeGui(MsgGui.MsgGui):
                 for i in range(0,method.count):
                     #print("body.",msgClass.__name__, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
                     columnText += ", " + str(method(msg,i))
+            
             msgStringList.append(columnText)
 
         msgItem = QTreeWidgetItem(None,msgStringList)
@@ -110,7 +133,7 @@ class MessageScopeGui(MsgGui.MsgGui):
 
 # main starts here
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     msgScopeGui = MessageScopeGui(sys.argv)
     msgScopeGui.show()
     sys.exit(app.exec_())

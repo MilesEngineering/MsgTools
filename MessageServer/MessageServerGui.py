@@ -26,7 +26,7 @@ class MessageServerGUI(QMainWindow):
     def initializeGui(self):
 
         # Components
-        self.connectionsModel = ConnectionsTableModel(self.server.connections)
+        self.connectionsModel = ConnectionsTableModel(self.server.clients)
         self.connectionsTable = QTableView()
         self.connectionsTable.setModel(self.connectionsModel)
 

@@ -13,6 +13,8 @@ import Messaging as msg
 class <MSGNAME> :
     ID = <MSGID>
     SIZE = <MSGSIZE>
+    FIELDINFOS = <FIELDINFOS>
+    
     @staticmethod
     def Create() :
         bytes = ctypes.create_string_buffer(<MSGNAME>.SIZE)
