@@ -14,6 +14,18 @@ def msgSize(msg):
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     return offset
 
+def fieldInfos(msg):
+    fieldInfos = []
+    for field in msg["Fields"]:
+        fieldInfo = { "Name": field["Name"],
+                      "Units": MsgParser.fieldUnits(field),
+                      "Description": MsgParser.fieldDescription(field), 
+                      "Get": "Get" + field["Name"],
+                      "Set": "Set" + field["Name"] }
+
+        fieldInfos.append(fieldInfo)
+    return fieldInfos
+
 def fnHdr(field, count, name):
     param = "bytes"
     if str.find(name, "Set") == 0:
