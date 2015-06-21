@@ -14,13 +14,19 @@ QSPEC :=  linux-g++
 
 endif
 
-Makefile.qt: *.pro
+Makefile.qt: *.pro | ../obj/$(TARGET)/debug ../obj/$(TARGET)/release
 	@echo Building $@
 	$(QMAKE) -spec $(QSPEC) *.pro
 
 $(TARGET) : $(TARGET).pro Makefile.qt
 	@echo Building $@
 	$(MAKE_FOR_QT) -f Makefile.qt
+
+../obj/$(TARGET)/debug:
+	mkdir -p $@
+
+../obj/$(TARGET)/release:
+	mkdir -p $@
 
 clean ::
 	rm -f Makefile.qt
