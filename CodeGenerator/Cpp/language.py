@@ -16,6 +16,9 @@ def msgSize(msg):
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     return offset
 
+def fieldInfos(msg):
+    pass
+
 def fnHdr(field):
     ret = "// %s %s" % (MsgParser.fieldDescription(field), MsgParser.fieldUnits(field))
     return ret
