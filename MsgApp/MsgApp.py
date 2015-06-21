@@ -1,17 +1,17 @@
-# for socket recv
 import socket
-# for qt socket stuff
-from PySide import QtCore, QtGui, QtNetwork
 
-class MsgApp(QtGui.QMainWindow):
-    RxMsg = QtCore.Signal(QtCore.QByteArray, QtCore.QObject)
+from PySide.QtCore import *
+from PySide.QtGui import *
+from PySide.QtNetwork import *
+
+class MsgApp(QMainWindow):
+    RxMsg = Signal(QByteArray, QObject)
     
     def __init__(self, msgdir, name, argv):
-        # call base class init
         self.name = name
         
         # rx buffer, to receive a message with multiple signals
-        self.rxBuf = ''
+        self.rxBuf = ""
         
         # connection modes
         self.connectionType = "qtsocket"
@@ -52,7 +52,7 @@ class MsgApp(QtGui.QMainWindow):
                 # die "Could not create socket: $!\n" unless $connection
                 self.readFn = self.connection.recv
             elif(self.connectionType.lower() == "qtsocket"):
-                self.connection = QtNetwork.QTcpSocket(self)
+                self.connection = QTcpSocket(self)
                 self.connection.error.connect(self.displayError)
                 ret = self.connection.readyRead.connect(self.readRxBuffer)
                 #print("making connection returned", ret, "for socket", self.connection)
@@ -78,10 +78,10 @@ class MsgApp(QtGui.QMainWindow):
         print("Socket Error: " + str(socketError))
 
     # Qt signal/slot based reading of TCP socket
-    @QtCore.Slot(str)
+    @Slot(str)
     def readRxBuffer(self):
         #print("readRxBuffer")
-        input_stream = QtCore.QDataStream(self.connection)
+        input_stream = QDataStream(self.connection)
         while(self.connection.bytesAvailable() > 0):
             # read the header, unless we have the header
             if(len(self.rxBuf) < Messaging.hdrSize):
@@ -108,7 +108,7 @@ class MsgApp(QtGui.QMainWindow):
                 return
             
             # if we got this far, we have a whole message! So, emit the signal
-            self.RxMsg.emit(QtCore.QByteArray(self.rxBuf), self)
+            self.RxMsg.emit(QByteArray(self.rxBuf), self)
             # then clear the buffer, so we start over on the next message
             self.rxBuf = ''
 
