@@ -9,7 +9,7 @@
 #include "Client.h"
 #include "ServerInterface.h"
 
-MessageServer::MessageServer(int argc, char *argv[])
+MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
 : QMainWindow(),
   _logFile(0),
   _settings("SPA", "MessageServer")

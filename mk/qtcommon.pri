@@ -15,4 +15,4 @@ QMAKE_MAKEFILE = Makefile.qt
 
 CONFIG -= debug_and_release
 
-QMAKE_CXXFLAGS += -fno-strict-aliasing
+QMAKE_CXXFLAGS += -fno-strict-aliasing -std=c++11

@@ -13,14 +13,14 @@ class MsgApp(QMainWindow):
         # rx buffer, to receive a message with multiple signals
         self.rxBuf = ""
         
+        # connection modes
+        self.connectionType = "qtsocket"
+        self.connectionName = "127.0.0.1:5678"
+
         if(len(argv) > 1):
-            connectionType = argv[1]
-        else:
-            connectionType = "qtsocket"
+            self.connectionType = argv[1]
         if(len(argv) > 2):
-            connectionName = argv[2]
-        else:
-            connectionName = "127.0.0.1:5678"
+            self.connectionName = argv[2]
         
         # initialize the read function to None, so it's not accidentally called
         self.readFn = None
@@ -28,35 +28,30 @@ class MsgApp(QMainWindow):
         import Messaging
         self.msgLib = Messaging.Messaging(msgdir, 0)
 
-        self.OpenConnection(connectionType, connectionName)
+        self.OpenConnection()
         print("end of MsgApp.__init__")
 
     # this function opens a connection, and returns the connection object.
-    def OpenConnection(self, connectionType=None, connectionName=None):
-        print("\n\ndone reading message definitions, opening the connection ", connectionType, " ", connectionName)
-        if(connectionType is None):
-            connectionType = "socket"
+    def OpenConnection(self):
+        print("\n\ndone reading message definitions, opening the connection ", self.connectionType, " ", self.connectionName)
 
-        if(connectionType.lower() == "socket" or connectionType.lower() == "qtsocket"):
-            if(connectionName != None):
-                (ip, port) = connectionName.split(":")
-                if(ip == None):
-                    ip = "127.0.0.1"
+        if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
+            (ip, port) = self.connectionName.split(":")
+            if(ip == None):
+                ip = "127.0.0.1"
 
-                if(port == None):
-                    port = "5678"
-            else:
-                (ip, port) = ("127.0.0.1", "5678")
+            if(port == None):
+                port = "5678"
             
             port = int(port)
 
             print("ip is ", ip, ", port is ", port)
-            if(connectionType.lower() == "socket"):
+            if(self.connectionType.lower() == "socket"):
                 self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.connection.connect((ip, int(port)))
                 # die "Could not create socket: $!\n" unless $connection
                 self.readFn = self.connection.recv
-            elif(connectionType.lower() == "qtsocket"):
+            elif(self.connectionType.lower() == "qtsocket"):
                 self.connection = QTcpSocket(self)
                 self.connection.error.connect(self.displayError)
                 ret = self.connection.readyRead.connect(self.readRxBuffer)
@@ -66,11 +61,11 @@ class MsgApp(QMainWindow):
             else:
                 print("\nERROR!\nneed to specify sockets of type 'socket' or 'qtsocket'")
                 sys.exit()
-        elif(connectionType.lower() == "file"):
+        elif(self.connectionType.lower() == "file"):
             try:
-                self.connection = open(connectionName, 'rb')
+                self.connection = open(self.connectionName, 'rb')
             except IOError:
-                print("\nERROR!\ncan't open file ", connectionName)
+                print("\nERROR!\ncan't open file ", self.connectionName)
             self.readFn = self.connection.read
         else:
             print("\nERROR!\nneed to specify socket or file")
