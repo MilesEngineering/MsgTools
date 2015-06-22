@@ -1,4 +1,4 @@
-#!/cygdrive/c/Python27/python.exe
+#!/usr/bin/env python3
 import sys
 from PySide import QtCore, QtGui
 from PySide.QtGui import *

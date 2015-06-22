@@ -1,4 +1,3 @@
-#!/cygdrive/c/Python34/python.exe
 import sys
 from PySide import QtCore, QtGui
 from PySide.QtGui import *
