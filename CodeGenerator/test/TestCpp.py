@@ -19,7 +19,7 @@ class TestCpp(unittest.TestCase):
 //  m/s
 uint32_t GetFieldA()
 {
-    return *(uint32_t*)&m_data[0];
+    return Get_uint32_t(&m_data[0]);
 }""")
         expected.append("""\
 //  
@@ -31,19 +31,19 @@ uint32_t GetFieldABitsA()
 //  
 uint16_t GetFieldB()
 {
-    return *(uint16_t*)&m_data[4];
+    return Get_uint16_t(&m_data[4]);
 }""")
         expected.append("""\
 //  
 uint8_t GetFieldC(int idx)
 {
-    return *(uint8_t*)&m_data[6+idx*1];
+    return Get_uint8_t(&m_data[6+idx*1]);
 }""")
         expected.append("""\
 //  
 uint8_t GetFieldD()
 {
-    return *(uint8_t*)&m_data[11];
+    return Get_uint8_t(&m_data[11]);
 }""")
         expected.append("""\
 //  
@@ -67,19 +67,19 @@ uint8_t GetFieldDBitsC()
 //  
 float GetFieldE()
 {
-    return *(float*)&m_data[12];
+    return Get_float(&m_data[12]);
 }""")
         expected.append("""\
 //  
 uint16_t GetFieldF()
 {
-    return ((float(*(uint16_t*)&m_data[16]) / 2.7) + 1.828);
+    return ((float(Get_uint16_t(&m_data[16])) / 2.7) + 1.828);
 }""")
         expected.append("""\
 //  m/s
 void SetFieldA(uint32_t value)
 {
-    *(uint32_t*)&m_data[0] = value;
+    Set_uint32_t(&m_data[0], value);
 }""")
         expected.append("""\
 //  
@@ -91,19 +91,19 @@ void SetFieldABitsA(uint32_t value)
 //  
 void SetFieldB(uint16_t value)
 {
-    *(uint16_t*)&m_data[4] = value;
+    Set_uint16_t(&m_data[4], value);
 }""")
         expected.append("""\
 //  
 void SetFieldC(uint8_t value, int idx)
 {
-    *(uint8_t*)&m_data[6+idx*1] = value;
+    Set_uint8_t(&m_data[6+idx*1], value);
 }""")
         expected.append("""\
 //  
 void SetFieldD(uint8_t value)
 {
-    *(uint8_t*)&m_data[11] = value;
+    Set_uint8_t(&m_data[11], value);
 }""")
         expected.append("""\
 //  
@@ -127,13 +127,13 @@ void SetFieldDBitsC(uint8_t value)
 //  
 void SetFieldE(float value)
 {
-    *(float*)&m_data[12] = value;
+    Set_float(&m_data[12], value);
 }""")
         expected.append("""\
 //  
 void SetFieldF(uint16_t value)
 {
-    *(uint16_t*)&m_data[16] = uint16_t((value - 1.828) * 2.7);
+    Set_uint16_t(&m_data[16], uint16_t((value - 1.828) * 2.7));
 }""")
         expected.append("""\
 //  
