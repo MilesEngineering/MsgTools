@@ -122,14 +122,17 @@ def accessors(msg):
 
     return gets+sets
 
-def initField(field):
+def initField(field, messageName):
     if "Default" in field:
-        return  "Set" + field["Name"] + "(" + str(field["Default"]) + ")"
+        if "Enum" in field:
+            return messageName + ".Set" + field["Name"] + "(bytes, " + messageName + "." + str(field["Enum"]) + "['" +str(field["Default"]) + "'])"
+        else:
+            return  messageName + ".Set" + field["Name"] + "(bytes, " + str(field["Default"]) + ")"
     return ""
 
 def initBitfield(field, bits):
     if "Default" in bits:
-        return  "Set" + field["Name"] + bits["Name"] + "(" +str(bits["Default"]) + ")"
+        return  "NetworkHeader.Set" + field["Name"] + bits["Name"] + "(bytes, " + str(bits["Default"]) + ")"
     return ""
 
 def initCode(msg):
@@ -137,7 +140,7 @@ def initCode(msg):
     
     offset = 0
     for field in msg["Fields"]:
-        fieldInit = initField(field)
+        fieldInit = initField(field, msg["Name"])
         if fieldInit:
             ret.append(fieldInit)
         if "Bitfields" in field:
