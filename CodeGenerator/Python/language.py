@@ -130,9 +130,9 @@ def initField(field, messageName):
             return  messageName + ".Set" + field["Name"] + "(bytes, " + str(field["Default"]) + ")"
     return ""
 
-def initBitfield(field, bits):
+def initBitfield(field, bits, messageName):
     if "Default" in bits:
-        return  "NetworkHeader.Set" + field["Name"] + bits["Name"] + "(bytes, " + str(bits["Default"]) + ")"
+        return  messageName + ".Set" + field["Name"] + bits["Name"] + "(bytes, " + str(bits["Default"]) + ")"
     return ""
 
 def initCode(msg):
@@ -145,7 +145,7 @@ def initCode(msg):
             ret.append(fieldInit)
         if "Bitfields" in field:
             for bits in field["Bitfields"]:
-                bits = initBitfield(field, bits)
+                bits = initBitfield(field, bits, msg["Name"])
                 if bits:
                     ret.append(bits)
 

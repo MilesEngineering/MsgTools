@@ -231,20 +231,28 @@ def SetFieldF(bytes, value):
         self.assertMultiLineEqual(expected, observed)
     
     def test_initCode(self):
+        messageName = MsgParser.Messages(self.msgDict)[0]["Name"]
+
         expected = []
-        expected.append("SetFieldA(1)")
-        expected.append("SetFieldB(2)")
-        expected.append("SetFieldC(3)")
-        expected.append("SetFieldDBitsA(7.1)")
-        expected.append("SetFieldDBitsC(1)")
-        expected.append("SetFieldE(3.14159)")
-        expected.append("SetFieldF(3.14)")
+        expected.append(messageName + ".SetFieldA(bytes, 1)")
+        expected.append(messageName + ".SetFieldB(bytes, 2)")
+        expected.append(messageName + ".SetFieldC(bytes, 3)")
+        expected.append(messageName + ".SetFieldDBitsA(bytes, 7.1)")
+        expected.append(messageName + ".SetFieldDBitsC(bytes, 1)")
+        expected.append(messageName + ".SetFieldE(bytes, 3.14159)")
+        expected.append(messageName + ".SetFieldF(bytes, 3.14)")
+
         expCount = len(expected)
+
         observed = language.initCode(MsgParser.Messages(self.msgDict)[0])
+        
         obsCount = len(observed)
+        
         self.assertEqual(expCount, obsCount)
+
         for i in range(expCount):
             self.assertMultiLineEqual(expected[i], observed[i])
+
         with self.assertRaises(IndexError):
             language.initCode(MsgParser.Messages(self.msgDict)[1])
 
