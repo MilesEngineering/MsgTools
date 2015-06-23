@@ -3,13 +3,7 @@
 
 #include <QObject>
 #include <stdint.h>
-#include <qendian.h>
 #include <assert.h>
-
-#define NEED_TO_SWAP_ENDIAN_OF_FIELDS
-inline void Swap(uint16_t* x) {*x = qFromBigEndian<quint16>(*x); }
-inline void Swap(uint32_t* x) {*x = qFromBigEndian<quint32>(*x); }
-inline void Swap(uint64_t* x) {*x = qFromBigEndian<quint64>(*x); }
 
 #include <Cpp/Network.h>
 
@@ -31,11 +25,6 @@ class Message
         void CopyHdr(Message& rhs)
         {
             memcpy(&hdr, &rhs.hdr, sizeof(hdr));
-        }
-        void SwapHeader()
-        {
-/** \todo do we need to support non-native endian?  if so, we have to add it to the code generator
-            hdr.EndianSwapBody();*/
         }
 
         ~Message()

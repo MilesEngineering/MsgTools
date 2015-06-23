@@ -86,13 +86,8 @@ void MessageServer::MessageSlot(QSharedPointer<Message> msg)
 {
     if(_logFile)
     {
-        // make a native-endian version of the header, so we can read the size of the body
-        Message* hdr = Message::New(0);
-        hdr->CopyHdr(*msg);
-        hdr->SwapHeader();
-
         _logFile->write((const char*)msg->RawBuffer(), Message::HeaderSize());
-        _logFile->write((const char*)msg->GetDataPtr(), hdr->GetTotalLength());
+        _logFile->write((const char*)msg->GetDataPtr(), msg->GetTotalLength());
     }
 }
 

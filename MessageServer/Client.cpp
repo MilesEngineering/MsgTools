@@ -34,7 +34,6 @@ void Client::HandleIncomingPacket()
                 return;
             _tcpSocket->read((char*)_rxHeader->RawBuffer(), Message::HeaderSize());
 
-            _rxHeader->SwapHeader();
             _receivedHeader = true;
         }
         if(_receivedHeader)
@@ -55,7 +54,6 @@ void Client::HandleIncomingPacket()
             //#qDebug() << "  Client " <<  tcpSocket->peerAddress().toString()+QString(":%1").arg(tcpSocket->peerPort()) << " Sending " << tempRxHeader.Length << " byte message ("
             //#         << tempRxHeader.InterfaceID << "/" << tempRxHeader.MessageID << ")." << endl;
 
-            msg->SwapHeader();
             emit MsgSignal(msg);
         }
     }
@@ -63,13 +61,9 @@ void Client::HandleIncomingPacket()
 
 void Client::MessageSlot(QSharedPointer<Message> msg)
 {
-    Message* swappedHdr = Message::New(0);
-    swappedHdr->CopyHdr(*msg);
-    swappedHdr->SwapHeader();
     _tcpSocket->write((const char*)msg->RawBuffer(), Message::HeaderSize());
-    int len = swappedHdr->GetTotalLength();
+    int len = msg->GetTotalLength();
     _tcpSocket->write((const char*)msg->GetDataPtr(), len);
-    delete swappedHdr;
 }
 
 #if 1 //def REFLECTION_OF_ENUMS_WORKS

@@ -33,6 +33,9 @@ def arrayAccessor(field, offset):
 {
     return %s;
 }''' % (fnHdr(field), fieldType(field), field["Name"], access)
+
+        if(MsgParser.fieldSize(field) != 1):
+            ret = "#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ && %s == %s\n" % (MsgParser.fieldSize(field), offset) + ret + "\n#endif\n"
         return ret
     return ""
 
@@ -42,7 +45,7 @@ def getFn(field, offset):
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "int idx"
-    access = "*(%s*)&m_data[%s]" % (fieldType(field), loc)
+    access = "Get_%s(&m_data[%s])" % (fieldType(field), loc)
     access = MsgParser.getMath(access, field, "float")
     ret = '''\
 %s
@@ -62,7 +65,7 @@ def setFn(field, offset):
 %s
 void Set%s(%s)
 {
-    *(%s*)&m_data[%s] = %s;
+    Set_%s(&m_data[%s], %s);
 }''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, MsgParser.setMath("value", field, fieldType(field)))
     return ret
 

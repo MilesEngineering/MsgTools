@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include <stdint.h>
-#include <qendian.h>
 #include <assert.h>
 
 #include "../CodeGenerator/obj/Cpp/Network.h"

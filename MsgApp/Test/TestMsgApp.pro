@@ -20,7 +20,7 @@ HEADERS  += ../MessageClient.h \
     ../MsgInfo.h \
     ../Reflection.h
 
-INCLUDEPATH += ../../CodeGenerator ../../ThirdParty/gmock-1.6.0/gtest/include
+INCLUDEPATH += ../../CodeGenerator ../../ThirdParty/gmock-1.6.0/gtest/include ..
 
 
 LIBS += -L../../ThirdParty/gmock-1.6.0/obj/ -lgtest

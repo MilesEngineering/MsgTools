@@ -11,6 +11,7 @@ Messages:
         Type: float32
         Units: m/s
         Description: Test Field 1
+        Count: 3
       - Name: F3
         Type: uint16
         Units: m/s

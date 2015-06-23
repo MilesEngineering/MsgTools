@@ -14,6 +14,6 @@ HEADERS += MessageServer.h \
 
 QT += network xml widgets core gui
 
-INCLUDEPATH = ../CodeGenerator/obj/
+INCLUDEPATH = ../CodeGenerator/obj/ ../MsgApp
 
 include(../mk/qtcommon.pri)
