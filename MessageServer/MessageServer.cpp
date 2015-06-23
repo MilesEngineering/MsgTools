@@ -2,6 +2,7 @@
 #include <QtWidgets/QFileDialog>
 #include <QList>
 #include <QtNetwork>
+#include <qapplication.h>
 
 #include <stdlib.h>
 
@@ -30,6 +31,8 @@ MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
     _statusBox = new QPlainTextEdit();
     _statusBox->setMaximumBlockCount(10000);
     _layout->addWidget(_statusBox);
+    
+    qInstallMessageHandler(MessageServer::redirectDebugOutput);
 
     QGroupBox* box = new QGroupBox;
     box->setLayout(_layout);
@@ -165,4 +168,30 @@ void MessageServer::LoadPlugin(QString fileName)
     {
         qDebug() << fileName << " cannot be loaded by QPluginLoader (" << loader.errorString() << endl;
     }
+}
+
+void MessageServer::redirectDebugOutput(QtMsgType type, const QMessageLogContext& context, const QString &msg)
+{
+    QString output = msg + "("+context.file + ":" + context.line + ", " + context.function + ")";
+    switch (type)
+    {
+    case QtDebugMsg:
+        Instance()->_statusBox->appendPlainText("Debug: " + output);
+        break;
+    case QtWarningMsg:
+        Instance()->_statusBox->appendPlainText("Warning: " + output);
+        break;
+    case QtCriticalMsg:
+        Instance()->_statusBox->appendPlainText("Critical: " + output);
+        break;
+    case QtFatalMsg:
+        fprintf(stderr, "Fatal: %s", output.toUtf8().constData());
+        abort();
+    }
+}
+
+MessageServer* MessageServer::Instance(int argc, char** argv)
+{
+    static MessageServer* instance = new MessageServer(argc, argv);
+    return instance;
 }

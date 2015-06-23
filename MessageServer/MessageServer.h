@@ -22,6 +22,9 @@ class MessageServer : public QMainWindow
     Q_OBJECT
 
     public:
+        static MessageServer* Instance(int argc =0, char** argv = 0);
+
+    private:
         MessageServer(int argc, char *argv[]);
 
     private slots:
@@ -44,6 +47,8 @@ class MessageServer : public QMainWindow
         QTcpServer* _tcpServer;
         QList<ServerPort*> _clients;
         QSettings _settings;
+    private:
+        static void redirectDebugOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 };
 
 #endif
