@@ -47,16 +47,22 @@ def getFn(field, offset):
         param += "int idx"
     access = "Get_%s(&m_data[%s])" % (fieldType(field), loc)
     access = MsgParser.getMath(access, field, "float")
+    retType = fieldType(field)
+    if "Offset" in field or "Scale" in field:
+        retType = "float"
     ret = '''\
 %s
 %s Get%s(%s)
 {
     return %s;
-}''' % (fnHdr(field), fieldType(field), field["Name"], param, access)
+}''' % (fnHdr(field), retType, field["Name"], param, access)
     return ret
 
 def setFn(field, offset):
-    param = fieldType(field) + " value"
+    paramType = fieldType(field)
+    if "Offset" in field or "Scale" in field:
+        paramType = "float"
+    param = paramType + " value"
     loc = str(offset)
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))

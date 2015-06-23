@@ -71,7 +71,7 @@ float GetFieldE()
 }""")
         expected.append("""\
 //  
-uint16_t GetFieldF()
+float GetFieldF()
 {
     return ((float(Get_uint16_t(&m_data[16])) / 2.7) + 1.828);
 }""")
@@ -131,7 +131,7 @@ void SetFieldE(float value)
 }""")
         expected.append("""\
 //  
-void SetFieldF(uint16_t value)
+void SetFieldF(float value)
 {
     Set_uint16_t(&m_data[16], uint16_t((value - 1.828) * 2.7));
 }""")
