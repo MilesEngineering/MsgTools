@@ -47,7 +47,7 @@ uint8_t GetFieldD()
 }""")
         expected.append("""\
 //  
-uint8_t GetFieldDBitsA()
+float GetFieldDBitsA()
 {
     return (float((GetFieldD() >> 0) & 0xf) / 14.357);
 }""")
@@ -107,7 +107,7 @@ void SetFieldD(uint8_t value)
 }""")
         expected.append("""\
 //  
-void SetFieldDBitsA(uint8_t value)
+void SetFieldDBitsA(float value)
 {
     SetFieldD((GetFieldD() & ~(0xf << 0)) | ((uint8_t(value * 14.357) & 0xf) << 0));
 }""")

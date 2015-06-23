@@ -78,22 +78,28 @@ void Set%s(%s)
 def getBitsFn(field, bits, offset, bitOffset, numBits):
     access = "(Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
     access = MsgParser.getMath(access, bits, "float")
+    retType = fieldType(field)
+    if "Offset" in bits or "Scale" in bits:
+        retType = "float"
     ret = '''\
 %s
 %s Get%s%s()
 {
     return %s;
-}''' % (fnHdr(bits), fieldType(field), field["Name"], bits["Name"], access)
+}''' % (fnHdr(bits), retType, field["Name"], bits["Name"], access)
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
+    paramType = fieldType(field)
+    if "Offset" in bits or "Scale" in bits:
+        paramType = "float"
     value = MsgParser.setMath("value", bits, fieldType(field))
     ret = '''\
 %s
 void Set%s%s(%s value)
 {
     Set%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
-}''' % (fnHdr(bits), field["Name"], bits["Name"], fieldType(field), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), value, MsgParser.Mask(numBits), str(bitOffset))
+}''' % (fnHdr(bits), field["Name"], bits["Name"], paramType, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), value, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
