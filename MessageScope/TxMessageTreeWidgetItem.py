@@ -4,54 +4,70 @@ import sys
 from PySide.QtGui import *
 from PySide.QtCore import *
 
-class TxMessageFieldTreeWidgetItem(QTreeWidgetItem):
-    def __init__(self, messageClass, messageObject, fieldInfo):
+from Messaging import Messaging
+    
+class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
+    def __init__(self, messageClass, buffer, fieldInfo):
         columnStrings = [None, fieldInfo["Name"], "", fieldInfo["Units"], fieldInfo["Description"] ]
-        super(TxMessageFieldTreeWidgetItem, self).__init__(None, columnStrings)
+
+        QObject.__init__(self)
+        QTreeWidgetItem.__init__(self, None, columnStrings)
+        
         self.setFlags(self.flags() | Qt.ItemIsEditable)
         self.fieldInfo = fieldInfo
         self.messageClass = messageClass
-        self.messageObject = messageObject
+        self.buffer = buffer
+
+    def data(self, column, role):
+        if not column == 2:
+            return super(TxMessageFieldTreeWidgetItem, self).data(column, role)
+
+        value  = getattr(self.messageClass, self.fieldInfo["Get"])(self.buffer)
+        return str(value)
 
     def setData(self, column, role, value):
         if not column == 2:
             return
 
-        getattr(self.messageClass, self.fieldInfo["Set"])(self.messageObject, value)
+        # set the value in the message/header buffer
+        getattr(self.messageClass, self.fieldInfo["Set"])(self.buffer, value)
 
-        super(TxMessageFieldTreeWidgetItem, self).setData(column, role, getattr(self.messageClass, self.fieldInfo["Get"])(self.messageObject))
+        # get the value back from the message/header buffer and pass on to super-class' setData
+        super(TxMessageFieldTreeWidgetItem, self).setData(column, role, getattr(self.messageClass, self.fieldInfo["Get"])(self.buffer))
 
-class TxMessageTreeWidgetItem(QTreeWidgetItem):
+class TxMessageTreeWidgetItem(QObject, QTreeWidgetItem):
+    send_message = Signal(object, object, object, object)
+
     def __init__(self, messageName, treeWidget, msgLib):
-        super(TxMessageTreeWidgetItem, self).__init__(None, [messageName])
-        self.messageClass = msgLib.MsgClassFromName[messageName]
-        self.messageObject = self.messageClass.Create()
+        QObject.__init__(self)
+        QTreeWidgetItem.__init__(self, None, [messageName])
 
-        self.setupFields(treeWidget)
+        self.messageClass = msgLib.MsgClassFromName[messageName]
+        self.headerBuffer = Messaging.hdr.Create()
+        self.messageBuffer = self.messageClass.Create()
+
+        Messaging.hdr.SetLength(self.headerBuffer, self.messageClass.SIZE)
+
+        self.setup_fields(treeWidget)
 
         treeWidget.addTopLevelItem(self)
 
         sendButton = QPushButton("Send", treeWidget)
         sendButton.autoFillBackground()
-        sendButton.clicked.connect(self.onSendMessageClicked)
+        sendButton.clicked.connect(self.on_send_message_clicked)
         treeWidget.setItemWidget(self, 4, sendButton)
 
-    def setupFields(self, treeWidget):
+    def setup_fields(self, treeWidget):
+        headerTreeItemParent = QTreeWidgetItem(None, [ "Header" ])
+        self.addChild(headerTreeItemParent)
+
+        for headerFieldInfo in Messaging.hdr.FIELDINFOS:
+            headerFieldTreeItem = TxMessageFieldTreeWidgetItem(Messaging.hdr, self.headerBuffer, headerFieldInfo)
+            headerTreeItemParent.addChild(headerFieldTreeItem)
+
         for fieldInfo in self.messageClass.FIELDINFOS:
-            messageFieldTreeItem = TxMessageFieldTreeWidgetItem(self.messageClass, self.messageObject, fieldInfo);
-            
-            self.addChild(messageFieldTreeItem);
-            treeWidget.itemChanged.connect(self.onTxMsgChildItemChanged)
+            messageFieldTreeItem = TxMessageFieldTreeWidgetItem(self.messageClass, self.messageBuffer, fieldInfo)
+            self.addChild(messageFieldTreeItem)
 
-    def onTxMsgChildItemChanged(self, item, column):
-        if(column != 2):
-            return
-
-        if(not item is self):
-            return
-
-        newValue = item.text(column)
-        print(newValue)
-
-    def onSendMessageClicked(self):
-        print("Send message")
+    def on_send_message_clicked(self):
+        self.send_message.emit(self.headerBuffer, self.messageBuffer, Messaging.hdr.SIZE, self.messageClass.SIZE)

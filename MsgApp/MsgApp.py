@@ -4,6 +4,8 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 from PySide.QtNetwork import *
 
+from Messaging import Messaging
+
 class MsgApp(QMainWindow):
     RxMsg = Signal(QByteArray, QObject)
     
@@ -25,8 +27,7 @@ class MsgApp(QMainWindow):
         # initialize the read function to None, so it's not accidentally called
         self.readFn = None
 
-        import Messaging
-        self.msgLib = Messaging.Messaging(msgdir, 0)
+        self.msgLib = Messaging(msgdir, 0)
 
         self.OpenConnection()
         print("end of MsgApp.__init__")
@@ -51,6 +52,7 @@ class MsgApp(QMainWindow):
                 self.connection.connect((ip, int(port)))
                 # die "Could not create socket: $!\n" unless $connection
                 self.readFn = self.connection.recv
+                self.sendFn = self.connection.write
             elif(self.connectionType.lower() == "qtsocket"):
                 self.connection = QTcpSocket(self)
                 self.connection.error.connect(self.displayError)
@@ -58,6 +60,7 @@ class MsgApp(QMainWindow):
                 #print("making connection returned", ret, "for socket", self.connection)
                 self.connection.connectToHost(ip, port)
                 self.readFn = self.connection.read
+                self.sendFn = self.connection.write
             else:
                 print("\nERROR!\nneed to specify sockets of type 'socket' or 'qtsocket'")
                 sys.exit()
@@ -67,6 +70,7 @@ class MsgApp(QMainWindow):
             except IOError:
                 print("\nERROR!\ncan't open file ", self.connectionName)
             self.readFn = self.connection.read
+            self.sendFn = self.connection.write
         else:
             print("\nERROR!\nneed to specify socket or file")
             sys.exit()
@@ -80,7 +84,6 @@ class MsgApp(QMainWindow):
     # Qt signal/slot based reading of TCP socket
     @Slot(str)
     def readRxBuffer(self):
-        #print("readRxBuffer")
         input_stream = QDataStream(self.connection)
         while(self.connection.bytesAvailable() > 0):
             # read the header, unless we have the header

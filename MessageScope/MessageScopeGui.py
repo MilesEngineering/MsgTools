@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import struct
 
 from PySide.QtGui import *
 from PySide.QtCore import *
@@ -74,12 +75,22 @@ class MessageScopeGui(MsgGui.MsgGui):
         # Always add to TX panel even if the same message class may already exist
         # since we may want to send the same message with different contents/header/rates.
         messageTreeWidgetItem = TxMessageTreeWidgetItem(messageName, self.txMsgs, self.msgLib)
+        messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
+
+    def on_tx_message_send(self, headerBuffer, messageBuffer, headerSize, messageSize):
+        length = self.sendFn(QByteArray(headerSize, struct.unpack_from('s', headerBuffer)[0].decode("utf-8")))
+        length += self.sendFn(QByteArray(messageSize, struct.unpack_from('s', messageBuffer)[0].decode("utf-8")))
+
+        if not length  == (headerSize + messageSize):
+            print("Transmit Error..." + str(length) + "bytes vs " + str(headerSize + messageSize) + "bytes")
 
     def ProcessMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
         id       = self.msgLib.GetID(msg)
         msgClass = self.msgLib.MsgNameFromID[id]
         methods  = self.msgLib.ListMsgGetters(msgClass)
+
+        print("Processing Message")
 
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
