@@ -1,3 +1,0 @@
-This is an old stmlib imported from Miles' mercurial server.  It's got to be two years
-out of date by now.  It isn't needed when using ChibiOS, because ChibiOS has it's own
-hardware  abstraction layer and drivers (which looks to include another copy of stmlib).
