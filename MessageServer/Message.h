@@ -9,13 +9,11 @@
 
 class Message
 {
-    private:
-        // private constructor
+    public:
         Message(uint16_t len)
         {
             hdr.SetLength(len);
         }
-    public:
         static Message* New(uint16_t datalen)
         {
             uint8_t* buffer = new uint8_t[sizeof(Message)+datalen];
@@ -43,8 +41,12 @@ class Message
         {
             return hdr.GetLength();
         }
+        void SetPayloadLength(int len) { hdr.SetLength(len); }
+        void SetMessageID(uint32_t id) { hdr.SetID(id); }
+        bool Exists() {return true;}
     public:
         NetworkHeader hdr;
+        uint8_t       m_data[0];
 };
 
 #endif

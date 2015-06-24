@@ -23,14 +23,29 @@ MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
         return;
     }
 
-    qDebug() << "The server is running on port " << _tcpServer->serverPort() << endl;
+    /** \todo Show port number and IP address in window title, or in status bar? */
+    QString name = "MessageServer: ";
+    foreach (const QHostAddress &address, QNetworkInterface::allAddresses())
+    {
+        if (address.protocol() == QAbstractSocket::IPv4Protocol &&
+            address != QHostAddress(QHostAddress::LocalHost))
+        {
+            QString addrStr = address.toString();
+            // ignore VM/VPN stuff (special ubuntu address, and anything that ends in 1)
+            if(addrStr.section( ".",-1,-1 ) != "1" && addrStr != "192.168.122.1")
+               name += address.toString() + "/";
+        }
+    }
+    name.remove(-1, 1);
+    name += QString(" : %1").arg(_tcpServer->serverPort());
+    setWindowTitle(name);
 
     connect(_tcpServer, &QTcpServer::newConnection, this, &MessageServer::GotANewClient);
 
-    _layout = new QVBoxLayout();
+    _layout = new QGridLayout();
     _statusBox = new QPlainTextEdit();
     _statusBox->setMaximumBlockCount(10000);
-    _layout->addWidget(_statusBox);
+    _layout->addWidget(_statusBox, 0, 0, 1, -1);
     
     qInstallMessageHandler(MessageServer::redirectDebugOutput);
 
@@ -40,11 +55,11 @@ MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
 
     _logButton = new QPushButton("Start Logging");
     connect(_logButton, &QPushButton::clicked, this, &MessageServer::LogButtonClicked);
-    _layout->addWidget(_logButton);
+    _layout->addWidget(_logButton, 1, 0, 1, -1);
 
     _loadPluginButton = new QPushButton("Load Plugin");
     connect(_loadPluginButton, &QPushButton::clicked, this, &MessageServer::LoadPluginButton);
-    _layout->addWidget(_loadPluginButton);
+    _layout->addWidget(_loadPluginButton, 2, 0, 1, -1);
 }
 void MessageServer::LogButtonClicked()
 {
@@ -100,21 +115,24 @@ void MessageServer::MessageSlot(QSharedPointer<Message> msg)
 
 void MessageServer::AddNewClient(ServerPort* serverPort)
 {
-    qDebug() << "New connection " << serverPort->Name() << endl;
-    qDebug() << ">>> connecting new client to clients ";
     // connect the new client to all the existing clients
     for(int i=0; i<_clients.count(); i++)
     {
         connect(serverPort,     &ServerPort::MsgSignal, _clients.at(i), &ServerPort::MessageSlot);
         connect(_clients.at(i), &ServerPort::MsgSignal, serverPort,     &ServerPort::MessageSlot);
-        qDebug() << i << ", ";
     }
-    qDebug() << " <<<" << endl;
 
     // add the new client to the list
     _clients.append(serverPort);
     connect(serverPort, &ServerPort::MsgSignal, this, &MessageServer::MessageSlot);
-    _layout->addWidget(serverPort->widget());
+    int clientRow = _layout->rowCount();
+    for(int i=0; ; i++)
+    {
+        QWidget* widget = serverPort->widget(i);
+        if(!widget)
+            break;
+        _layout->addWidget(widget, clientRow, i);
+    }
 
     connect(serverPort, &ServerPort::disconnected, this, &MessageServer::ClientDied);
 }
@@ -132,10 +150,20 @@ void MessageServer::ClientDied()
 {
     ServerPort* dbConn = qobject_cast<ServerPort*>(sender());
     if(_clients.removeOne(dbConn))
-        qDebug() << ">>>> Removed client." << endl;
+    {
+        //qDebug() << ">>>> Removed client." << endl;
+    }
     else
+    {
         qDebug() << ">>>> ERROR: Failed to remove client." << endl;
-    _layout->removeWidget(dbConn->widget());
+    }
+    for(int i=0; ; i++)
+    {
+        QWidget* widget = dbConn->widget(i);
+        if(!widget)
+            break;
+        _layout->removeWidget(widget);
+    }
     delete dbConn;
 }
 

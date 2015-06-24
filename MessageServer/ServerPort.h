@@ -5,6 +5,7 @@
 #include "Message.h"
 #include <QSharedPointer>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QLabel>
 
 class ServerPort : public QObject
 {
@@ -12,24 +13,39 @@ class ServerPort : public QObject
     public:
         ServerPort(QString n)
         : removeClient(),
-          name(n)
+          name(n),
+          statusLabel()
         {
-            removeClient.setText(QString("Remove ") + Name());
+            removeClient.setText(QString("Remove"));
+            statusLabel.setText(name);
             connect(&removeClient, &QPushButton::clicked, this, &ServerPort::ConnectionDied);
         }
         QString Name() { return name; }
+        void SetName(const QString& n) { name = n; }
         virtual void MessageSlot(QSharedPointer<Message> msg)=0;
         void ConnectionDied()
         {
             emit disconnected();
         }
-        QWidget* widget() { return &removeClient; }
+        QWidget* widget(int index)
+        {
+            switch(index)
+            {
+                case 0:
+                    return &removeClient;
+                case 1:
+                    return &statusLabel;
+                default:
+                    return 0;
+            }
+        }
     signals:
         void MsgSignal(QSharedPointer<Message> msg);
         void disconnected();
-    private:
+    protected:
         QPushButton removeClient;
         QString name;
+        QLabel statusLabel;
 };
 
 #endif

@@ -1,4 +1,7 @@
 #include "Client.h"
+#include "../MsgApp/FieldInfo.h"
+#include "../MsgApp/MsgInfo.h"
+#include "Cpp/Network/Connect.h"
 
 Client::Client(QTcpSocket* sock)
 : ServerPort(sock->peerAddress().toString()),
@@ -54,6 +57,17 @@ void Client::HandleIncomingPacket()
             //#qDebug() << "  Client " <<  tcpSocket->peerAddress().toString()+QString(":%1").arg(tcpSocket->peerPort()) << " Sending " << tempRxHeader.Length << " byte message ("
             //#         << tempRxHeader.InterfaceID << "/" << tempRxHeader.MessageID << ")." << endl;
 
+            if(msg->hdr.GetID() == ConnectMessage::MSG_ID)
+            {
+                ConnectMessage* connectMsg = (ConnectMessage*)msg.data();
+                char name[ConnectMessage::MSG_SIZE];
+                for(unsigned i=0; i<sizeof(name); i++)
+                {
+                    name[i] = connectMsg->GetName(i);
+                }
+                name[sizeof(name)-1] = '\0';
+                SetName(name);
+            }
             emit MsgSignal(msg);
         }
     }
@@ -73,8 +87,9 @@ extern QString SocketStateString(QAbstractSocket::SocketState socketState);
 #define ENUM_NAME(o,e,v) (SocketStateString(v))
 #endif
 
-void Client::SocketStateChanged(QAbstractSocket::SocketState /*socketState*/)
+void Client::SocketStateChanged(QAbstractSocket::SocketState socketState)
 {
-    /*qDebug() << "<<<< " << _tcpSocket->peerAddress().toString() << QString(":%1").arg(_tcpSocket->peerPort())
-             << ", state changed to " << ENUM_NAME(QAbstractSocket, SocketState, socketState) << endl;*/
+    qDebug() << "<<<< " << _tcpSocket->peerAddress().toString() << QString(":%1").arg(_tcpSocket->peerPort())
+             << ", state changed to " << ENUM_NAME(QAbstractSocket, SocketState, socketState) << endl;
+    statusLabel.setText(ENUM_NAME(QAbstractSocket, SocketState, socketState));
 }

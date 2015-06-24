@@ -9,7 +9,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QPlainTextEdit>
 
 class QTcpServer;
@@ -39,7 +39,7 @@ class MessageServer : public QMainWindow
         void ClientDied();
     private:
         QPlainTextEdit*  _statusBox;
-        QVBoxLayout* _layout;
+        QGridLayout* _layout;
         QPushButton* _logButton;
         QPushButton* _loadPluginButton;
         QSharedPointer<QFile> _logFile;
