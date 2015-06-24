@@ -1,6 +1,6 @@
-.PHONY: test all
+.PHONY: test all clean clobber install
 
-all ::
+all clean clobber install ::
 
 test :
 	./Test.py
