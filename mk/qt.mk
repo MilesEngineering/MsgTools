@@ -14,28 +14,25 @@ QSPEC :=  linux-g++
 
 endif
 
-Makefile.qt: *.pro | ../obj/$(TARGET)/debug ../obj/$(TARGET)/release
+../obj/$(TARGET)/Makefile: *.pro | ../obj/$(TARGET)
 	@echo Building $@
-	$(QMAKE) -spec $(QSPEC) *.pro
+	cd ../obj/$(TARGET) ; $(QMAKE) -spec $(QSPEC) ../../$(TARGET)/$(TARGET).pro
 
-$(TARGET) : $(TARGET).pro Makefile.qt
+$(TARGET) : $(TARGET).pro ../obj/$(TARGET)/Makefile
 	@echo Building $@
-	$(MAKE_FOR_QT) -f Makefile.qt
+	cd ../obj/$(TARGET) ; $(MAKE_FOR_QT)
 
-../obj/$(TARGET)/debug:
-	mkdir -p $@
-
-../obj/$(TARGET)/release:
+../obj/$(TARGET):
 	mkdir -p $@
 
 clean ::
-	rm -f Makefile.qt
 	rm -rf ../obj/$(TARGET)
 
 clobber ::
-	rm -f Makefile.qt
 	rm -rf ../obj/$(TARGET)
+	rm -rf ../build-$(TARGET)*-Qt_*
+	rm -f *.pro.user
 
-.PRECIOUS: Makefile.qt
+.PRECIOUS: ../obj/$(TARGET)/Makefile
 
 all :: $(TARGET)
