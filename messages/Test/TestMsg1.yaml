@@ -10,16 +10,16 @@ Messages:
       - Name: F2
         Type: float32
         Units: m/s
-        Description: Test Field 1
+        Description: Test Field 2
         Count: 3
       - Name: F3
         Type: uint16
         Units: m/s
-        Description: Test Field 1
+        Description: Test Field 3
       - Name: F4
         Type: uint8
         Units: m/s
-        Description: Test Field 1
+        Description: Test Field 4
       - Name: Field5
         Type: uint8
         Units: m/s

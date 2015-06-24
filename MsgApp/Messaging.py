@@ -51,16 +51,26 @@ class Messaging:
         # Set the global header name
         Messaging.hdr = headerModule.NetworkHeader
 
-        # add 32 for routing information
+        # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE
-        
-        for filename in glob.glob( os.path.join(loadDir, '*.py') ):
-            if filename != (loadDir+"/"+headerName+".py"):
+
+        self.LoadDir(loadDir)
+
+    def LoadDir(self, loadDir):
+        for filename in os.listdir(loadDir):
+            filepath = loadDir + '/' + filename
+            if os.path.isdir(filepath):
+                if filename != 'headers':
+                    if Messaging.debug:
+                        print("descending into directory ", filepath)
+                    self.LoadDir(filepath)
+            elif filename.endswith('.py'):
                 moduleName = os.path.splitext(os.path.basename(filename))[0]
-                if debug:
-                    print("loading module ", filename, "as",moduleName)
-                vars(self)[moduleName] = imp.load_source(moduleName,filename)
+                if Messaging.debug:
+                    print("loading module ", filepath, "as",moduleName)
+                vars(self)[moduleName] = imp.load_source(moduleName,filepath)
                 #print("vars(self)[%s] is "% moduleName, vars(self))
+                
 
     # add message to the global hash table of names by ID, and IDs by name
     def Register(name, id, classDef):

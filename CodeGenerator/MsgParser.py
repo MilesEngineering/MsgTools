@@ -44,7 +44,7 @@ def replace(line, pattern, replacement):
         ret = line
     return ret
 
-def DoReplacements(line, msg, enums):
+def DoReplacements(line, msg, enums, subdirComponent):
     ret = line + '\n'
     ret = replace(ret, "<MSGNAME>", msgName(msg))
     if "ID" in msg:
@@ -60,13 +60,44 @@ def DoReplacements(line, msg, enums):
     ret = replace(ret, "<INPUTFILENAME>", inputFilename)
     ret = replace(ret, "<TEMPLATEFILENAME>", templateFilename)
     ret = replace(ret, "<LANGUAGEFILENAME>", languageFilename)
+    ret = replace(ret, "<MESSAGE_SUBDIR>", subdirComponent)
     ret = replace(ret, "<DATE>", currentDateTime)
     return ret
 
-def ProcessFile(template, inFile, outFile):
+def ProcessDir(template, msgDir, subdirComponent):
+    for filename in os.listdir(msgDir):
+        global inputFilename
+        inputFilename = msgDir + '/' + filename
+        global outputFilename
+        outputFilename = outDir
+        if subdirComponent != "":
+            outputFilename += "/" + subdirComponent
+        outputFilename += "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
+        if os.path.isdir(inputFilename):
+            if filename != 'headers':
+                ProcessDir(template, msgDir + '/' + inputFilename, filename)
+        else:
+            inputFileTime = os.path.getmtime(inputFilename)
+            try:
+                outputFileTime = os.path.getmtime(outputFilename)
+            except:
+                outputFileTime = 0
+            if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
+                inFile = readFile(inputFilename)
+                if inFile != 0:
+                    print("Creating", outputFilename)
+                    try:
+                        os.makedirs(os.path.dirname(outputFilename))
+                    except:
+                        pass
+                    with open(outputFilename,'w') as outFile:
+                        ProcessFile(template, inFile, outFile, subdirComponent)
+    
+
+def ProcessFile(template, inFile, outFile, subdirComponent):
     for msg in Messages(inFile):
         for line in template:
-            line = DoReplacements(line, msg, Enums(inFile))
+            line = DoReplacements(line, msg, Enums(inFile), subdirComponent)
             outFile.write(line)
 
 def Mask(numBits):
@@ -96,24 +127,4 @@ if __name__ == '__main__':
         template = templateFile.read().splitlines() 
     
     # loop over input message files
-    for filename in os.listdir(msgDir):
-        inputFilename = msgDir + '/' + filename
-        outputFilename = outDir + "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
-        if os.path.isdir(inputFilename):
-            continue
-        
-        inputFileTime = os.path.getmtime(inputFilename)
-        try:
-            outputFileTime = os.path.getmtime(outputFilename)
-        except:
-            outputFileTime = 0
-        if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
-            inFile = readFile(inputFilename)
-            if inFile != 0:
-                print("Creating", outputFilename)
-                try:
-                    os.makedirs(os.path.dirname(outputFilename))
-                except:
-                    pass
-                with open(outputFilename,'w') as outFile:
-                    ProcessFile(template, inFile, outFile)
+    ProcessDir(template, msgDir, "")

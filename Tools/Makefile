@@ -46,4 +46,6 @@ stlink:
 	git clone https://github.com/texane/stlink/
 	cd stlink; ./autogen.sh; ./configure; make #; sudo make install
 
-test:
+# don't do anything for clean/clobber/test
+clean clobber test ::
+	echo "NOT performing $@ for Tools"

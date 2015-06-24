@@ -9,7 +9,7 @@ import MsgGui
 
 class MsgInspector(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
-        MsgGui.MsgGui.__init__(self, "../../../CodeGenerator/obj/Python/", "Message Inspector 0.1", argv, parent)
+        MsgGui.MsgGui.__init__(self, "../CodeGenerator/obj/Python/", "Message Inspector 0.1", argv, parent)
         
         self.outputType = "gui"
         self.outputName = "log.csv"

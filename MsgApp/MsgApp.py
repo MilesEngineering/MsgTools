@@ -27,7 +27,7 @@ class MsgApp(QMainWindow):
         # initialize the read function to None, so it's not accidentally called
         self.readFn = None
 
-        self.msgLib = Messaging(msgdir, 0)
+        self.msgLib = Messaging(msgdir, 1)
 
         self.OpenConnection()
         print("end of MsgApp.__init__")

@@ -1,0 +1,22 @@
+Messages:
+  - Name: TestMessage2
+    ID: 0xFFFFFF98
+    Description: Used to test more stuff.
+    Fields:
+      - Name: Field1
+        Type: float32
+        Units: m/s
+        Description: Test Field 1
+        Count: 3
+      - Name: Field2
+        Type: uint16
+        Units: m/s
+        Description: Test Field 2
+      - Name: Field3
+        Type: uint8
+        Units: m/s
+        Description: Test Field 3
+      - Name: Field4
+        Type: uint8
+        Units: m/s
+        Description: With a reaaaally long description with spaces and stuff

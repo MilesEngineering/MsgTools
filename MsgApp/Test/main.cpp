@@ -2,7 +2,7 @@
 #include "../FieldInfo.h"
 #include "../MsgInfo.h"
 #include "../Reflection.h"
-#include "../../CodeGenerator/obj/Cpp/Connect.h"
+#include "obj/Cpp/Network/Connect.h"
 #include "obj/Cpp/TestCase1.h"
 
 #include <iostream>
