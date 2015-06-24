@@ -13,6 +13,9 @@ TRACE?=0
 TRACEON=$(TRACE:0=@)
 TRACE_FLAG=$(TRACEON:1=)
 
+ORIGINAL_MAKEFILE := $(firstword $(MAKEFILE_LIST))
+SRCDIR := $(realpath $(dir $(ORIGINAL_MAKEFILE)))
+
 # Simplify uname variable for cygwin
 UNAME:=$(shell uname)
 ifneq (,$(findstring CYGWIN,$(UNAME)))
@@ -31,8 +34,8 @@ WINCURDIR:=$(CURDIR)
 endif
 
 # may need to get more sophisticated in the future, if we build for multiple platforms
-OBJ_DIR := obj
-make_obj :
-	@if [ ! -d "$(OBJ_DIR)" ]; then\
-		mkdir -p $(OBJ_DIR);\
-	fi
+SRC_SUBDIR := $(SRCDIR:$(BUILDROOT)%=%)
+OBJ_DIR := $(BUILDROOT)/obj/$(SRC_SUBDIR)
+
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)

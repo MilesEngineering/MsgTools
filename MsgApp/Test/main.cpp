@@ -1,9 +1,9 @@
-#include "../MessageClient.h"
-#include "../FieldInfo.h"
-#include "../MsgInfo.h"
-#include "../Reflection.h"
-#include "obj/Cpp/Network/Connect.h"
-#include "obj/Cpp/TestCase1.h"
+#include "MsgApp/MessageClient.h"
+#include "MsgApp/FieldInfo.h"
+#include "MsgApp/MsgInfo.h"
+#include "MsgApp/Reflection.h"
+#include "Cpp/Network/Connect.h"
+#include "Cpp/TestCase1.h"
 
 #include <iostream>
 #include <string>

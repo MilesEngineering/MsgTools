@@ -3,6 +3,7 @@
 # Project created by QtCreator 2014-06-13T15:11:59
 #
 #-------------------------------------------------
+include(../../mk/qtcommon.pri)
 
 INCLUDEPATH += .
 
@@ -14,15 +15,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
 
 HEADERS  += ../MessageClient.h \
-    ../../CodeGenerator/obj/Cpp/Network.h \
+    $$MSGDIR/Cpp/Network.h \
     ../Message.h \
     ../FieldInfo.h \
     ../MsgInfo.h \
     ../Reflection.h
 
-INCLUDEPATH += ../../CodeGenerator ../../ThirdParty/gmock-1.6.0/gtest/include .. 
+INCLUDEPATH += $$BUILDROOT/ThirdParty/gmock-1.6.0/gtest/include $$OBJDIR
 
+LIBS += -L$$BUILDROOT/ThirdParty/gmock-1.6.0/obj/ -lgtest
 
-LIBS += -L../../ThirdParty/gmock-1.6.0/obj/ -lgtest
-
-include(../../mk/qtcommon.pri)

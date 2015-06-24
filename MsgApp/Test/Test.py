@@ -9,7 +9,7 @@ class TestClass(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print ("----------- Running setup")
-        cls.msgLib = Messaging.Messaging("../CodeGenerator/obj/Python", 0)
+        cls.msgLib = Messaging.Messaging("../obj/CodeGenerator/Python", 0)
         #cls.PrintDictionary()
 
     def test_dict(self):

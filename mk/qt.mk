@@ -1,4 +1,3 @@
-
 ifeq ($(UNAME),Cygwin)
 
 QT_ROOT := c:/qt/qt5.3.0/5.3/msvc2013_64/
@@ -14,25 +13,22 @@ QSPEC :=  linux-g++
 
 endif
 
-../obj/$(TARGET)/Makefile: *.pro | ../obj/$(TARGET)
+$(OBJ_DIR)/Makefile: *.pro | $(OBJ_DIR)
 	@echo Building $@
-	cd ../obj/$(TARGET) ; $(QMAKE) -spec $(QSPEC) ../../$(TARGET)/$(TARGET).pro
+	cd $(OBJ_DIR) ; $(QMAKE) -spec $(QSPEC) $(SRCDIR)/$(TARGET).pro
 
-$(TARGET) : $(TARGET).pro ../obj/$(TARGET)/Makefile
+$(TARGET) : $(TARGET).pro $(OBJ_DIR)/Makefile
 	@echo Building $@
-	cd ../obj/$(TARGET) ; $(MAKE_FOR_QT)
-
-../obj/$(TARGET):
-	mkdir -p $@
+	cd $(OBJ_DIR) ; $(MAKE_FOR_QT)
 
 clean ::
-	rm -rf ../obj/$(TARGET)
+	rm -rf $(OBJ_DIR)
 
 clobber ::
-	rm -rf ../obj/$(TARGET)
+	rm -rf $(OBJ_DIR)
 	rm -rf ../build-$(TARGET)*-Qt_*
 	rm -f *.pro.user
 
-.PRECIOUS: ../obj/$(TARGET)/Makefile
+.PRECIOUS: $(OBJ_DIR)/Makefile
 
 all :: $(TARGET)

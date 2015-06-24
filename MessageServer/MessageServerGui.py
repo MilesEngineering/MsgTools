@@ -54,7 +54,7 @@ class MessageServerGUI(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    server = MessageServerGUI("../../../CodeGenerator/obj/Python/", sys.argv)
+    server = MessageServerGUI("../../../obj/CodeGenerator/Python/", sys.argv)
     server.show()
 
     sys.exit(app.exec_())

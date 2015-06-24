@@ -1,3 +1,5 @@
+include(../mk/qtcommon.pri)
+
 TARGET = MessageServer
 
 TEMPLATE = app
@@ -13,7 +15,3 @@ HEADERS += MessageServer.h \
     ServerInterface.h
 
 QT += network xml widgets core gui
-
-INCLUDEPATH = ../CodeGenerator/obj/ ../MsgApp
-
-include(../mk/qtcommon.pri)

@@ -12,7 +12,7 @@ from TxMessageTreeWidgetItem import *
 
 class MessageScopeGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
-        MsgGui.MsgGui.__init__(self, "../CodeGenerator/obj/Python/", "Message Scope 0.1", argv, parent)
+        MsgGui.MsgGui.__init__(self, "../obj/CodeGenerator/Python/", "Message Scope 0.1", argv, parent)
 
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)

@@ -1,4 +1,4 @@
-#include "../CodeGenerator/obj/Cpp/Network.h"
+#include "Cpp/Network.h"
 #include <QObject>
 #include <QIODevice>
 #include "Message.h"

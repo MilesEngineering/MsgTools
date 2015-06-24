@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include "../CodeGenerator/obj/Cpp/Network.h"
+#include "Cpp/Network.h"
 
 #define MsgHeader NetworkHeader
 
