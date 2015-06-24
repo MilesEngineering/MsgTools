@@ -13,12 +13,10 @@ class Client : public ServerPort
         Client(QTcpSocket* sock);
         ~Client();
         virtual QString Name();
-    public slots:
         void MessageSlot(QSharedPointer<Message> msg) override;
-    private slots:
+    private:
         void HandleIncomingPacket();
         void SocketStateChanged(QAbstractSocket::SocketState socketState);
-private:
         Message*    _rxHeader;
         bool        _receivedHeader;
         QTcpSocket* _tcpSocket;

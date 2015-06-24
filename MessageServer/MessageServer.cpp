@@ -25,7 +25,7 @@ MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
 
     qDebug() << "The server is running on port " << _tcpServer->serverPort() << endl;
 
-    connect(_tcpServer, SIGNAL(newConnection()), this, SLOT(GotANewClient()));
+    connect(_tcpServer, &QTcpServer::newConnection, this, &MessageServer::GotANewClient);
 
     _layout = new QVBoxLayout();
     _statusBox = new QPlainTextEdit();
@@ -39,14 +39,14 @@ MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
     setCentralWidget(box);
 
     _logButton = new QPushButton("Start Logging");
-    connect(_logButton, SIGNAL(clicked()), this, SLOT(LogButton()));
+    connect(_logButton, &QPushButton::clicked, this, &MessageServer::LogButtonClicked);
     _layout->addWidget(_logButton);
 
     _loadPluginButton = new QPushButton("Load Plugin");
-    connect(_loadPluginButton, SIGNAL(clicked()), this, SLOT(LoadPluginButton()));
+    connect(_loadPluginButton, &QPushButton::clicked, this, &MessageServer::LoadPluginButton);
     _layout->addWidget(_loadPluginButton);
 }
-void MessageServer::LogButton()
+void MessageServer::LogButtonClicked()
 {
     if(_logFile)
     {
@@ -56,18 +56,22 @@ void MessageServer::LogButton()
     }
     else
     {
+        QDate d = QDate::currentDate();
+        QTime t = QTime::currentTime();
+        QString defaultFilename = d.toString("yyyyMMdd") + "-" + t.toString("hhmmss") + ".log";
         QString logFileName =
             QFileDialog::getSaveFileName
             (this, tr("Save File"),
-             _settings.value("logging/filename", "").toString(),
+             _settings.value("logging/filename", ".").toString()+"/"+defaultFilename,
              tr("Log Files (*.log)"));
         // if they hit cancel, don't do anything
         if(logFileName.isNull())
             return;
-        _settings.setValue("logging/filename", logFileName);
         _logFile = QSharedPointer<QFile>(new QFile(logFileName));
         _logFile->open(QIODevice::Append);
-        _logButton->setText(QString("Stop %1").arg(logFileName));
+        QFileInfo fileInfo(logFileName);
+        _settings.setValue("logging/filename", fileInfo.dir().absolutePath());
+        _logButton->setText(QString("Stop %1").arg(fileInfo.fileName()));
     }
 }
 
@@ -101,18 +105,18 @@ void MessageServer::AddNewClient(ServerPort* serverPort)
     // connect the new client to all the existing clients
     for(int i=0; i<_clients.count(); i++)
     {
-        connect(serverPort,        SIGNAL(MsgSignal(QSharedPointer<Message>)), _clients.at(i), SLOT(MessageSlot(QSharedPointer<Message>)));
-        connect(_clients.at(i), SIGNAL(MsgSignal(QSharedPointer<Message>)), serverPort,        SLOT(MessageSlot(QSharedPointer<Message>)));
+        connect(serverPort,     &ServerPort::MsgSignal, _clients.at(i), &ServerPort::MessageSlot);
+        connect(_clients.at(i), &ServerPort::MsgSignal, serverPort,     &ServerPort::MessageSlot);
         qDebug() << i << ", ";
     }
     qDebug() << " <<<" << endl;
 
     // add the new client to the list
     _clients.append(serverPort);
-    connect(serverPort, SIGNAL(MsgSignal(QSharedPointer<Message>)), this, SLOT(MessageSlot(QSharedPointer<Message>)));
-    _layout->addWidget(&serverPort->removeClient);
+    connect(serverPort, &ServerPort::MsgSignal, this, &MessageServer::MessageSlot);
+    _layout->addWidget(serverPort->widget());
 
-    connect(serverPort, SIGNAL(disconnected()), this, SLOT(ClientDied()));
+    connect(serverPort, &ServerPort::disconnected, this, &MessageServer::ClientDied);
 }
 
 void MessageServer::GotANewClient()
@@ -131,7 +135,7 @@ void MessageServer::ClientDied()
         qDebug() << ">>>> Removed client." << endl;
     else
         qDebug() << ">>>> ERROR: Failed to remove client." << endl;
-    _layout->removeWidget(&dbConn->removeClient);
+    _layout->removeWidget(dbConn->widget());
     delete dbConn;
 }
 
@@ -170,13 +174,13 @@ void MessageServer::LoadPlugin(QString fileName)
     }
 }
 
-void MessageServer::redirectDebugOutput(QtMsgType type, const QMessageLogContext& context, const QString &msg)
+void MessageServer::redirectDebugOutput(QtMsgType type, const QMessageLogContext& /*context*/, const QString &msg)
 {
-    QString output = msg + "("+context.file + ":" + context.line + ", " + context.function + ")";
+    QString output = msg;// + "("+context.file + ":" + context.line + ", " + context.function + ")";
     switch (type)
     {
     case QtDebugMsg:
-        Instance()->_statusBox->appendPlainText("Debug: " + output);
+        Instance()->_statusBox->appendPlainText(output);
         break;
     case QtWarningMsg:
         Instance()->_statusBox->appendPlainText("Warning: " + output);

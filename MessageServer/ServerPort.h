@@ -15,20 +15,21 @@ class ServerPort : public QObject
           name(n)
         {
             removeClient.setText(QString("Remove ") + Name());
-            connect(&removeClient, SIGNAL(clicked()), this, SLOT(ConnectionDied()));
+            connect(&removeClient, &QPushButton::clicked, this, &ServerPort::ConnectionDied);
         }
         QString Name() { return name; }
-        QPushButton removeClient;
-        QString name;
-    public slots:
         virtual void MessageSlot(QSharedPointer<Message> msg)=0;
         void ConnectionDied()
         {
             emit disconnected();
         }
+        QWidget* widget() { return &removeClient; }
     signals:
         void MsgSignal(QSharedPointer<Message> msg);
         void disconnected();
+    private:
+        QPushButton removeClient;
+        QString name;
 };
 
 #endif

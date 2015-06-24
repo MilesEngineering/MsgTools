@@ -27,14 +27,13 @@ class MessageServer : public QMainWindow
     private:
         MessageServer(int argc, char *argv[]);
 
-    private slots:
         void GotANewClient();
         void AddNewClient(ServerPort* serverPort);
 
         void LoadPlugin(QString fileName);
         void LoadPluginButton();
 
-        void LogButton();
+        void LogButtonClicked();
         void MessageSlot(QSharedPointer<Message> msg);
 
         void ClientDied();

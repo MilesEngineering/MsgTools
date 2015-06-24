@@ -6,9 +6,9 @@ Client::Client(QTcpSocket* sock)
   _receivedHeader(false),
   _tcpSocket(sock)
 {
-    connect(sock, SIGNAL(readyRead()), this, SLOT(HandleIncomingPacket()));
-    connect(_tcpSocket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(SocketStateChanged(QAbstractSocket::SocketState)));
-    connect(_tcpSocket, SIGNAL(disconnected()), this, SLOT(ConnectionDied()));
+    connect(_tcpSocket, &QTcpSocket::readyRead, this, &Client::HandleIncomingPacket);
+    connect(_tcpSocket, &QTcpSocket::stateChanged, this, &Client::SocketStateChanged);
+    connect(_tcpSocket, &QTcpSocket::disconnected, this, &Client::ConnectionDied);
 }
 
 Client::~Client()
@@ -73,8 +73,8 @@ extern QString SocketStateString(QAbstractSocket::SocketState socketState);
 #define ENUM_NAME(o,e,v) (SocketStateString(v))
 #endif
 
-void Client::SocketStateChanged(QAbstractSocket::SocketState socketState)
+void Client::SocketStateChanged(QAbstractSocket::SocketState /*socketState*/)
 {
-    qDebug() << "<<<< " << _tcpSocket->peerAddress().toString() << QString(":%1").arg(_tcpSocket->peerPort())
-             << ", state changed to " << ENUM_NAME(QAbstractSocket, SocketState, socketState) << endl;
+    /*qDebug() << "<<<< " << _tcpSocket->peerAddress().toString() << QString(":%1").arg(_tcpSocket->peerPort())
+             << ", state changed to " << ENUM_NAME(QAbstractSocket, SocketState, socketState) << endl;*/
 }
