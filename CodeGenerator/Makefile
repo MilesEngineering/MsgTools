@@ -1,7 +1,7 @@
 PARSER:=python3 MsgParser.py
 
 install all:: Makefile Cpp Python
-#C Matlab Simulink VHDL
+# Simulink
 
 .PHONY: all C Cpp Matlab Python Simulink VHDL test
 
@@ -9,42 +9,28 @@ hdir = ../messages/headers
 
 colorecho  = @printf "\033[0;32m====> Generating $(1)\033[0m\n"
 
-OUTDIR = $(BUILDROOT)/obj/CodeGenerator
-
-C:
-	$(call colorecho,C structures)
-	$(TRACE_FLAG)$(PARSER) $(hdir) $(OUTDIR)j/C Cpp/language.py  Cpp/CTemplate.h
-
 Cpp:
 	$(call colorecho,C++ Code)
-	$(TRACE_FLAG)$(PARSER) $(hdir) $(OUTDIR)/Cpp Cpp/language.py  Cpp/CppHeaderTemplate.h
-	$(TRACE_FLAG)$(PARSER) ../messages $(OUTDIR)/Cpp Cpp/language.py  Cpp/CppTemplate.h
+	$(TRACE_FLAG)$(PARSER) $(hdir) $(OBJ_DIR)/Cpp Cpp/language.py  Cpp/CppHeaderTemplate.h
+	$(TRACE_FLAG)$(PARSER) ../messages $(OBJ_DIR)/Cpp Cpp/language.py  Cpp/CppTemplate.h
 
 Python:
 	$(call colorecho,Python)
-	$(TRACE_FLAG)$(PARSER) $(hdir) $(OUTDIR)/Python Python/language.py  Python/HeaderTemplate.py
-	$(TRACE_FLAG)$(PARSER) ../messages $(OUTDIR)/Python Python/language.py  Python/Template.py
+	$(TRACE_FLAG)$(PARSER) $(hdir) $(OBJ_DIR)/Python Python/language.py  Python/HeaderTemplate.py
+	$(TRACE_FLAG)$(PARSER) ../messages $(OBJ_DIR)/Python Python/language.py  Python/Template.py
 
-Matlab:
-	$(call colorecho,Matlab)
-	$(TRACE_FLAG)$(PARSER) $(hdir) $(OUTDIR)/Matlab Matlab/language.py  Matlab/Template.m
-	
 Simulink:
 	$(call colorecho,Simulink)
-	$(TRACE_FLAG)$(PARSER) $(hdir) $(OUTDIR)/Matlab Matlab/language.py  Simulink/Template.s
-	
-VHDL:
-	$(call colorecho,VHDL)
-	$(TRACE_FLAG)$(PARSER) $(hdir) $(OUTDIR)/VHDL VHDL/language.py  VHDL/Template.vhdl
+	$(TRACE_FLAG)$(PARSER) $(hdir) $(OBJ_DIR)/Matlab Matlab/language.py  Simulink/Template.s
 	
 clean clobber::
-	rm -rf $(OUTDIR) __pycache__ *.pyc
+	rm -rf $(OBJ_DIR) __pycache__ *.pyc
 
 testCpp:
-	python3 test/TestCpp.py
+	./test/TestCpp.py
 
 testPython:
-	python3 test/TestPython.py
+	./test/TestPython.py
 
 test: testCpp testPython
 

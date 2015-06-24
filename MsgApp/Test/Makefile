@@ -13,7 +13,12 @@ TARGET = TestMsgApp
 include ../makefile.inc
 include $(MK_DIR)/qt.mk
 
-test ::
+test :: testCpp testPython
+
+testPython :
+	./Test.py
+
+testCpp :
 	$(OBJ_DIR)/TestMsgApp
 
 clean clobber::
