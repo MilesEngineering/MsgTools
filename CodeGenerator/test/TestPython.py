@@ -23,7 +23,7 @@ class TestCpp(unittest.TestCase):
 @msg.count(1)
 def GetFieldA(bytes):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>L', bytes, 0)[0]
+    value = struct.unpack_from('>L', bytes, MsgA.MSG_OFFSET + 0)[0]
     return value
 """)
         expected.append("""\
@@ -42,7 +42,7 @@ def GetFieldABitsA(bytes):
 @msg.count(1)
 def GetFieldB(bytes):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>H', bytes, 4)[0]
+    value = struct.unpack_from('>H', bytes, MsgA.MSG_OFFSET + 4)[0]
     return value
 """)
         expected.append("""\
@@ -52,7 +52,7 @@ def GetFieldB(bytes):
 @msg.count(5)
 def GetFieldC(bytes, idx):
     \"\"\"\"\"\"
-    value = struct.unpack_from('B', bytes, 6+idx*1)[0]
+    value = struct.unpack_from('B', bytes, MsgA.MSG_OFFSET + 6+idx*1)[0]
     return value
 """)
         expected.append("""\
@@ -62,7 +62,7 @@ def GetFieldC(bytes, idx):
 @msg.count(1)
 def GetFieldD(bytes):
     \"\"\"\"\"\"
-    value = struct.unpack_from('B', bytes, 11)[0]
+    value = struct.unpack_from('B', bytes, MsgA.MSG_OFFSET + 11)[0]
     return value
 """)
         expected.append("""\
@@ -99,7 +99,7 @@ def GetFieldDBitsC(bytes):
 @msg.count(1)
 def GetFieldE(bytes):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>f', bytes, 12)[0]
+    value = struct.unpack_from('>f', bytes, MsgA.MSG_OFFSET + 12)[0]
     return value
 """)
         expected.append("""\
@@ -109,7 +109,7 @@ def GetFieldE(bytes):
 @msg.count(1)
 def GetFieldF(bytes):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>H', bytes, 16)[0]
+    value = struct.unpack_from('>H', bytes, MsgA.MSG_OFFSET + 16)[0]
     value = ((value / 2.7) + 1.828)
     return value
 """)
@@ -121,7 +121,7 @@ def GetFieldF(bytes):
 def SetFieldA(bytes, value):
     \"\"\"\"\"\"
     tmp = value
-    struct.pack_into('>L', bytes, 0, tmp)
+    struct.pack_into('>L', bytes, MsgA.MSG_OFFSET + 0, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -140,7 +140,7 @@ def SetFieldABitsA(bytes, value):
 def SetFieldB(bytes, value):
     \"\"\"\"\"\"
     tmp = value
-    struct.pack_into('>H', bytes, 4, tmp)
+    struct.pack_into('>H', bytes, MsgA.MSG_OFFSET + 4, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -150,7 +150,7 @@ def SetFieldB(bytes, value):
 def SetFieldC(bytes, value, idx):
     \"\"\"\"\"\"
     tmp = value
-    struct.pack_into('B', bytes, 6+idx*1, tmp)
+    struct.pack_into('B', bytes, MsgA.MSG_OFFSET + 6+idx*1, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -160,7 +160,7 @@ def SetFieldC(bytes, value, idx):
 def SetFieldD(bytes, value):
     \"\"\"\"\"\"
     tmp = value
-    struct.pack_into('B', bytes, 11, tmp)
+    struct.pack_into('B', bytes, MsgA.MSG_OFFSET + 11, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -197,7 +197,7 @@ def SetFieldDBitsC(bytes, value):
 def SetFieldE(bytes, value):
     \"\"\"\"\"\"
     tmp = value
-    struct.pack_into('>f', bytes, 12, tmp)
+    struct.pack_into('>f', bytes, MsgA.MSG_OFFSET + 12, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -207,7 +207,7 @@ def SetFieldE(bytes, value):
 def SetFieldF(bytes, value):
     \"\"\"\"\"\"
     tmp = int((value - 1.828) * 2.7)
-    struct.pack_into('>H', bytes, 16, tmp)
+    struct.pack_into('>H', bytes, MsgA.MSG_OFFSET + 16, tmp)
 """)
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
