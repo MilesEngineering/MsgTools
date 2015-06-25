@@ -58,11 +58,11 @@ class TxMessageTreeWidgetItem(QObject, QTreeWidgetItem):
         headerTreeItemParent = QTreeWidgetItem(None, [ "Header" ])
         self.addChild(headerTreeItemParent)
 
-        for headerFieldInfo in Messaging.hdr.FIELDINFOS:
+        for headerFieldInfo in Messaging.hdr.fields:
             headerFieldTreeItem = TxMessageFieldTreeWidgetItem(Messaging.hdr, self.messageBuffer, headerFieldInfo)
             headerTreeItemParent.addChild(headerFieldTreeItem)
 
-        for fieldInfo in self.messageClass.FIELDINFOS:
+        for fieldInfo in self.messageClass.fields:
             messageFieldTreeItem = TxMessageFieldTreeWidgetItem(self.messageClass, self.messageBuffer, fieldInfo)
             self.addChild(messageFieldTreeItem)
 

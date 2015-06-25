@@ -13,7 +13,7 @@ import Messaging as msg
 class <MSGNAME> :
     SIZE = <MSGSIZE>
     MSG_OFFSET = 0
-    FIELDINFOS = <FIELDINFOS>
+    fields = <FIELDINFOS>
 
     @staticmethod
     def set(bytearray, fieldInfo, value, index=1):

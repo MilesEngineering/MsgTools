@@ -59,12 +59,12 @@ class MsgInspector(MsgGui.MsgGui):
             
             # add table header, one column for each message field
             tableHeader = []
-            for fieldInfo in msgClass.FIELDINFOS:
+            for fieldInfo in msgClass.fields:
                 tableHeader.append(fieldInfo["Name"])
             
             msgWidget.setHeaderLabels(tableHeader)
             count = 0
-            for fieldInfo in msgClass.FIELDINFOS:
+            for fieldInfo in msgClass.fields:
                 msgWidget.resizeColumnToContents(count)
                 count += 1
             
@@ -72,7 +72,7 @@ class MsgInspector(MsgGui.MsgGui):
             self.msgWidgets[id] = msgWidget
         
         msgStringList = []
-        for fieldInfo in msgClass.FIELDINFOS:
+        for fieldInfo in msgClass.fields:
             if(fieldInfo["Count"] == 1):
                 columnText = str(msgClass.get(msg, fieldInfo))
             else:
@@ -104,7 +104,7 @@ class MsgInspector(MsgGui.MsgGui):
                 
                 # add table header, one column for each message field
                 tableHeader = ""
-                for fieldInfo in msgClass.FIELDINFOS:
+                for fieldInfo in msgClass.fields:
                     tableHeader += fieldInfo["Name"] + ", "
                 
                 print(tableHeader)
@@ -112,7 +112,7 @@ class MsgInspector(MsgGui.MsgGui):
                 self.outputFiles[id] = outputFile
         
         text = ""
-        for fieldInfo in msgClass.FIELDINFOS:
+        for fieldInfo in msgClass.fields:
             if(fieldInfo["Count"] == 1):
                 columnText = str(msgClass.get(msg, fieldInfo))
             else:

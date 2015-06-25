@@ -93,33 +93,6 @@ class Messaging:
         Messaging.MsgClassFromName[name] = classDef
 
     @staticmethod
-    def linenumber_of_member(m):
-        try:
-            return m.func_code.co_firstlineno
-        except AttributeError:
-            return -1
-
-    def MsgFns(self, msg, name):
-        # getmembers() gives a list of (name, value) tuples, and we want a list of values (function objects)
-        methods = inspect.getmembers(msg, predicate=lambda x: inspect.ismethoddescriptor(x) or inspect.isfunction(x))
-        methods = list(filter(lambda method: method[0].startswith(name), methods))
-
-        fns = [x[1] for x in methods]
-        fns.sort(key=Messaging.linenumber_of_member)
-        for idx in range(0, len(fns)):
-            try:
-                fns[idx] = fns[idx].__func__
-            except:
-                pass
-        return fns
-
-    def MsgAccessors(self, msg):
-        return self.MsgFns(msg, "Get")
-
-    def MsgMutators(self, msg):
-        return self.MsgFns(msg, "Set")
-
-    @staticmethod
     def set(msgClass, bytearray, fieldInfo, value, index=1):
         if(fieldInfo["Units"] != "ASCII"):
             value = int(value)

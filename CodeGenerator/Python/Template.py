@@ -14,7 +14,7 @@ class <MSGNAME> :
     ID = <MSGID>
     SIZE = <MSGSIZE>
     MSG_OFFSET = Messaging.hdrSize
-    FIELDINFOS = <FIELDINFOS>
+    fields = <FIELDINFOS>
     
     @staticmethod
     def set(bytearray, fieldInfo, value, index=1):

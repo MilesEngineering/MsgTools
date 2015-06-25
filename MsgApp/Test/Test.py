@@ -11,7 +11,6 @@ class TestClass(unittest.TestCase):
     def setUpClass(cls):
         print ("----------- Running setup")
         cls.msgLib = Messaging.Messaging("../../obj/CodeGenerator/Python", 0)
-        #cls.PrintDictionary()
 
     def test_dict(self):
         msgname = "Connect"
@@ -22,18 +21,20 @@ class TestClass(unittest.TestCase):
         self.assertMultiLineEqual(msgname, msgname2)
         self.assertEqual(msgid, msgid2)
     
+        self.PrintDictionary()
+
     def test_accessors(self):
         msgclass = self.msgLib.MsgClassFromName["Connect"]
 
         expected = "Testing"
         testbuf = msgclass.Create()
-        self.msgLib.MsgMutators(msgclass)[0](testbuf, expected)
+        msgclass.set(testbuf, msgclass.fields[0], expected)
         observed = self.msgLib.Connect.Connect.GetName(testbuf)
         self.assertMultiLineEqual(expected, observed)
         
         expected="MoreTesting"
         msgclass.SetName(testbuf, expected)
-        observed=self.msgLib.MsgAccessors(msgclass)[0](testbuf)
+        observed=msgclass.get(testbuf, msgclass.fields[0])
         self.assertMultiLineEqual(expected, observed)
 
     def PrintDictionary(self):
@@ -44,21 +45,24 @@ class TestClass(unittest.TestCase):
         print("%-10s: ID" %"Name")
         for msgId, name in self.msgLib.MsgNameFromID.items():
              print("%-10s: %s" % (name, msgId))
+             msgClass = self.msgLib.MsgClassFromName[name]
+             self.PrintAccessors(msgClass)
         print("")
 
     # example of how to call a method given by reflection
-    def PrintAccessors(self, msgName, msg):
-        msgClass = self.msgLib.MsgClassFromName[msgName]
-        methods = self.msgLib.MsgAccessors(msgClass)
-        for method in methods:
-            txt = "body.%s.%s: " % (msgClass.__name__, method.__name__)
-            if(method.count == 1):
-                txt += str(method(msg))
+    def PrintAccessors(self, msgClass):
+        msg = msgClass.Create()
+        for fieldInfo in msgClass.fields:
+            txt = "body.%s.%s: " % (msgClass.__name__, fieldInfo["Name"])
+            if(fieldInfo["Count"] == 1):
+                txt += str(msgClass.get(msg, fieldInfo))
             else:
-                for i in range(0,method.count):
+                for i in range(0,fieldInfo["Count"]):
                     #print("body.",msgClass.__name__, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
-                    txt += ", " + str(method(msg,i))
-            txt += " # "+method.__doc__+" in " + method.units
+                    txt += str(msgClass.get(msg, fieldInfo, i))
+                    if(i < fieldInfo["Count"] - 1):
+                        txt += ", "
+            txt += " # "+fieldInfo["Description"]+" in " + fieldInfo["Units"]
             print(txt)
 
 if __name__ == '__main__':
