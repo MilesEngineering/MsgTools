@@ -15,6 +15,12 @@ def msgSize(msg):
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     return offset
 
+def pythonFieldCount(field):
+    count = MsgParser.fieldCount(field)
+    if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+        count = 1
+    return count
+
 def fieldInfos(msg):
     fieldInfos = []
     for field in msg["Fields"]:
@@ -22,7 +28,8 @@ def fieldInfos(msg):
                       "Units": MsgParser.fieldUnits(field),
                       "Description": MsgParser.fieldDescription(field), 
                       "Get": "Get" + field["Name"],
-                      "Set": "Set" + field["Name"] }
+                      "Set": "Set" + field["Name"] ,
+                      "Count":pythonFieldCount(field)}
 
         fieldInfos.append(fieldInfo)
     return fieldInfos

@@ -12,8 +12,25 @@ import Messaging as msg
 
 class <MSGNAME> :
     SIZE = <MSGSIZE>
-    FIELDINFOS = <FIELDINFOS>
     MSG_OFFSET = 0
+    FIELDINFOS = <FIELDINFOS>
+
+    @staticmethod
+    def set(bytearray, fieldInfo, value, index=1):
+        if(fieldInfo["Units"] != "ASCII"):
+            value = int(value)
+        if(fieldInfo["Count"] == 1):
+            getattr(<MSGNAME>, fieldInfo["Set"])(bytearray, value)
+        else:
+            getattr(<MSGNAME>, fieldInfo["Set"])(bytearray, value, index)
+
+    @staticmethod
+    def get(bytearray, fieldInfo, index=1):
+        if(fieldInfo["Count"] == 1):
+            value = getattr(<MSGNAME>, fieldInfo["Get"])(bytearray)
+        else:
+            value = getattr(<MSGNAME>, fieldInfo["Get"])(bytearray, index)
+        return value
 
     @staticmethod
     def Create() :

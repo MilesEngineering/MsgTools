@@ -22,7 +22,7 @@ class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
         if not column == 2:
             return super(TxMessageFieldTreeWidgetItem, self).data(column, role)
 
-        value  = getattr(self.messageClass, self.fieldInfo["Get"])(self.buffer)
+        value  = self.messageClass.get(self.buffer, self.fieldInfo)
         return str(value)
 
     def setData(self, column, role, value):
@@ -30,10 +30,10 @@ class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
             return
 
         # set the value in the message/header buffer
-        getattr(self.messageClass, self.fieldInfo["Set"])(self.buffer, value)
+        self.messageClass.set(self.buffer, self.fieldInfo, value)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(TxMessageFieldTreeWidgetItem, self).setData(column, role, getattr(self.messageClass, self.fieldInfo["Get"])(self.buffer))
+        super(TxMessageFieldTreeWidgetItem, self).setData(column, role, self.messageClass.get(self.buffer, self.fieldInfo))
 
 class TxMessageTreeWidgetItem(QObject, QTreeWidgetItem):
     send_message = Signal(object)
