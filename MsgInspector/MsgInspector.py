@@ -45,7 +45,6 @@ class MsgInspector(MsgGui.MsgGui):
         id       = hex(self.msgLib.hdr.GetID(msg))
         msgName = self.msgLib.MsgNameFromID[id]
         msgClass = self.msgLib.MsgClassFromName[msgName]
-        methods  = self.msgLib.MsgAccessors(msgClass)
 
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
@@ -58,37 +57,30 @@ class MsgInspector(MsgGui.MsgGui):
             # add it to the tab widget, so the user can see it
             self.tabWidget.addTab(msgWidget, msgName)
             
-            # add headers, one for each message field
+            # add table header, one column for each message field
             tableHeader = []
-            for method in methods:
-                # skip over the first three letters (which are always "Get")
-                name = method.__name__.replace("Get", "", 1)
-                tableHeader.append(name)
+            for fieldInfo in msgClass.FIELDINFOS:
+                tableHeader.append(fieldInfo["Name"])
             
             msgWidget.setHeaderLabels(tableHeader)
             count = 0
-            for method in methods:
+            for fieldInfo in msgClass.FIELDINFOS:
                 msgWidget.resizeColumnToContents(count)
                 count += 1
             
             # store a pointer to it, so we can find it next time (instead of creating it again)
             self.msgWidgets[id] = msgWidget
         
-        #methods = self.msgLib.MsgAccessors(self.msgLib.headerClass)
-        #for method in methods:
-        #    print "hdr.", self.msgLib.headerClass.MsgName(), ".", method.__name__, "=", method(msg), " #", method.__doc__
-        #print ""
-        
         msgStringList = []
-        for method in methods:
-            if(method.count == 1):
-                columnText = str(method(msg))
-                #print("body.",msgName, ".", , " = ", method(msg), " #", method.__doc__, "in", method.units)
+        for fieldInfo in msgClass.FIELDINFOS:
+            if(fieldInfo["Count"] == 1):
+                columnText = str(msgClass.get(msg, fieldInfo))
             else:
                 columnText = ""
-                for i in range(0,method.count):
-                    #print("body.",msgName, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
-                    columnText += ", " + str(method(msg,i))
+                for i in range(0,fieldInfo["Count"]):
+                    columnText += str(msgClass.get(msg, fieldInfo, i))
+                    if(i<fieldInfo["Count"]-1):
+                        columnText += ", "
             msgStringList.append(columnText)
         msgItem = QTreeWidgetItem(None,msgStringList)
         self.msgWidgets[id].addTopLevelItem(msgItem)
@@ -98,7 +90,6 @@ class MsgInspector(MsgGui.MsgGui):
         id       = hex(self.msgLib.GetID(msg))
         msgName = self.msgLib.MsgNameFromID[id]
         msgClass = self.msgLib.MsgClassFromName[msgName]
-        methods  = self.msgLib.MsgAccessors(msgClass)
 
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
@@ -111,32 +102,25 @@ class MsgInspector(MsgGui.MsgGui):
                 # create a new file
                 outputFile = "open a file for writing, with filename based on self.outputName and messagename"
                 
-                # add headers, one for each message field
-                header = ""
-                for method in methods:
-                    # skip over the first three letters (which are always "Get")
-                    name = method.__name__.replace("Get", "", 1)
-                    header += name + ", "
+                # add table header, one column for each message field
+                tableHeader = ""
+                for fieldInfo in msgClass.FIELDINFOS:
+                    tableHeader += fieldInfo["Name"] + ", "
                 
-                print(header)
+                print(tableHeader)
                 # store a pointer to it, so we can find it next time (instead of creating it again)
                 self.outputFiles[id] = outputFile
         
-        #methods = self.msgLib.MsgAccessors(self.msgLib.headerClass)
-        #for method in methods:
-        #    print "hdr.", self.msgLib.headerClass.__name__, ".", method.__name__, "=", method(msg), " #", method.__doc__
-        #print ""
-        
         text = ""
-        for method in methods:
-            if(method.count == 1):
-                columnText = str(method(msg))
-                #print("body.",msgName, ".", , " = ", method(msg), " #", method.__doc__, "in", method.units)
+        for fieldInfo in msgClass.FIELDINFOS:
+            if(fieldInfo["Count"] == 1):
+                columnText = str(msgClass.get(msg, fieldInfo))
             else:
                 columnText = ""
-                for i in range(0,method.count):
-                    #print("body.",msgName, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
-                    columnText += ", " + str(method(msg,i))
+                for i in range(0,fieldInfo["Count"]):
+                    columnText += str(msgClass.get(msg, fieldInfo, i))
+                    if(i<fieldInfo["Count"]-1):
+                        columnText += ", "
             text += columnText + ", "
         print(text)
 
