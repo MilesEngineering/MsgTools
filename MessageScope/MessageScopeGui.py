@@ -77,12 +77,8 @@ class MessageScopeGui(MsgGui.MsgGui):
         messageTreeWidgetItem = TxMessageTreeWidgetItem(messageName, self.txMsgs, self.msgLib)
         messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
 
-    def on_tx_message_send(self, headerBuffer, messageBuffer, headerSize, messageSize):
-        length = self.sendFn(QByteArray(headerSize, struct.unpack_from('s', headerBuffer)[0].decode("utf-8")))
-        length += self.sendFn(QByteArray(messageSize, struct.unpack_from('s', messageBuffer)[0].decode("utf-8")))
-
-        if not length  == (headerSize + messageSize):
-            print("Transmit Error..." + str(length) + "bytes vs " + str(headerSize + messageSize) + "bytes")
+    def on_tx_message_send(self, messageBuffer):
+        self.sendFn(messageBuffer.raw);
 
     def ProcessMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body

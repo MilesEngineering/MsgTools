@@ -36,17 +36,14 @@ class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
         super(TxMessageFieldTreeWidgetItem, self).setData(column, role, getattr(self.messageClass, self.fieldInfo["Get"])(self.buffer))
 
 class TxMessageTreeWidgetItem(QObject, QTreeWidgetItem):
-    send_message = Signal(object, object, object, object)
+    send_message = Signal(object)
 
     def __init__(self, messageName, treeWidget, msgLib):
         QObject.__init__(self)
         QTreeWidgetItem.__init__(self, None, [messageName])
 
         self.messageClass = msgLib.MsgClassFromName[messageName]
-        self.headerBuffer = Messaging.hdr.Create()
         self.messageBuffer = self.messageClass.Create()
-
-        Messaging.hdr.SetLength(self.headerBuffer, self.messageClass.SIZE)
 
         self.setup_fields(treeWidget)
 
@@ -62,7 +59,7 @@ class TxMessageTreeWidgetItem(QObject, QTreeWidgetItem):
         self.addChild(headerTreeItemParent)
 
         for headerFieldInfo in Messaging.hdr.FIELDINFOS:
-            headerFieldTreeItem = TxMessageFieldTreeWidgetItem(Messaging.hdr, self.headerBuffer, headerFieldInfo)
+            headerFieldTreeItem = TxMessageFieldTreeWidgetItem(Messaging.hdr, self.messageBuffer, headerFieldInfo)
             headerTreeItemParent.addChild(headerFieldTreeItem)
 
         for fieldInfo in self.messageClass.FIELDINFOS:
@@ -70,4 +67,4 @@ class TxMessageTreeWidgetItem(QObject, QTreeWidgetItem):
             self.addChild(messageFieldTreeItem)
 
     def on_send_message_clicked(self):
-        self.send_message.emit(self.headerBuffer, self.messageBuffer, Messaging.hdr.SIZE, self.messageClass.SIZE)
+        self.send_message.emit(self.messageBuffer)
