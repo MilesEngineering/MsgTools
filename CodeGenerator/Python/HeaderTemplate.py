@@ -13,6 +13,7 @@ import Messaging as msg
 class <MSGNAME> :
     SIZE = <MSGSIZE>
     FIELDINFOS = <FIELDINFOS>
+    MSG_OFFSET = 0
 
     @staticmethod
     def Create() :

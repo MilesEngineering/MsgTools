@@ -51,7 +51,7 @@ void Client::HandleIncomingPacket()
             msg->CopyHdr(*_rxHeader);
             int bytesReadFromSocket = _tcpSocket->read((char*)msg->GetDataPtr(), len);
             if(len != bytesReadFromSocket)
-                qDebug() << "len (" << len << " != bytesReadFromSocket(" << bytesReadFromSocket << endl;
+                qDebug() << "len(" << len << ") != bytesReadFromSocket(" << bytesReadFromSocket << ")" << endl;
             _receivedHeader = false;
 
             //#qDebug() << "  Client " <<  tcpSocket->peerAddress().toString()+QString(":%1").arg(tcpSocket->peerPort()) << " Sending " << tempRxHeader.Length << " byte message ("
@@ -89,7 +89,7 @@ extern QString SocketStateString(QAbstractSocket::SocketState socketState);
 
 void Client::SocketStateChanged(QAbstractSocket::SocketState socketState)
 {
-    qDebug() << "<<<< " << _tcpSocket->peerAddress().toString() << QString(":%1").arg(_tcpSocket->peerPort())
-             << ", state changed to " << ENUM_NAME(QAbstractSocket, SocketState, socketState) << endl;
+    //qDebug() << "<<<< " << _tcpSocket->peerAddress().toString() << QString(":%1").arg(_tcpSocket->peerPort())
+    //         << ", state changed to " << ENUM_NAME(QAbstractSocket, SocketState, socketState) << endl;
     statusLabel.setText(ENUM_NAME(QAbstractSocket, SocketState, socketState));
 }

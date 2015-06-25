@@ -64,6 +64,12 @@ class MsgApp(QMainWindow):
             else:
                 print("\nERROR!\nneed to specify sockets of type 'socket' or 'qtsocket'")
                 sys.exit()
+            # send a connect message
+            connectBuffer = self.msgLib.Connect.Connect.Create();
+            self.msgLib.Connect.Connect.SetName(connectBuffer, self.name);
+            output_stream = QDataStream(self.connection)
+            self.sendFn(connectBuffer.raw);
+            
         elif(self.connectionType.lower() == "file"):
             try:
                 self.connection = open(self.connectionName, 'rb')

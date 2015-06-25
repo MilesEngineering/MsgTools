@@ -42,8 +42,8 @@ def %s(%s):
     """%s"""''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(count), name, param, MsgParser.fieldDescription(field))
     return ret
 
-def getFn(field, offset):
-    loc = str(offset)
+def getFn(msg, field, offset):
+    loc = msg["Name"] + ".MSG_OFFSET + " + str(offset)
     param = "bytes"
     type = fieldType(field)
     count = MsgParser.fieldCount(field)
@@ -67,9 +67,9 @@ def getFn(field, offset):
 ''' % (fnHdr(field,count, "Get"+field["Name"]), type, loc, cleanup)
     return ret
 
-def setFn(field, offset):
+def setFn(msg, field, offset):
     param = "bytes, value"
-    loc = str(offset)
+    loc = msg["Name"] + ".MSG_OFFSET + " + str(offset)
     count = MsgParser.fieldCount(field)
     type = fieldType(field)
     math = "tmp = " + MsgParser.setMath("value", field, "int")
@@ -110,8 +110,8 @@ def accessors(msg):
     
     offset = 0
     for field in msg["Fields"]:
-        gets.append(getFn(field, offset))
-        sets.append(setFn(field, offset))
+        gets.append(getFn(msg, field, offset))
+        sets.append(setFn(msg, field, offset))
         bitOffset = 0
         if "Bitfields" in field:
             for bits in field["Bitfields"]:

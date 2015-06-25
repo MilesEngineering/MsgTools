@@ -1,5 +1,7 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QStatusBar>
+#include <QtWidgets/QVBoxLayout>
 #include <QList>
 #include <QtNetwork>
 #include <qapplication.h>
@@ -15,16 +17,20 @@ MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
   _logFile(0),
   _settings("SPA", "MessageServer")
 {
+    _statusBox = new QPlainTextEdit();
+    _statusBox->setMaximumBlockCount(10000);
+    qInstallMessageHandler(MessageServer::redirectDebugOutput);
+
     _tcpServer = new QTcpServer(this);
     if (!_tcpServer->listen(QHostAddress::Any, 5678))
     {
-        qDebug() << "Unable to start the server: " << _tcpServer->errorString() << endl;
+        qWarning() << "Unable to start the server: " << _tcpServer->errorString() << endl;
         exit(1);
         return;
     }
 
-    /** \todo Show port number and IP address in window title, or in status bar? */
-    QString name = "MessageServer: ";
+    /** Show IP address and port number in status bar */
+    QString name = "";
     foreach (const QHostAddress &address, QNetworkInterface::allAddresses())
     {
         if (address.protocol() == QAbstractSocket::IPv4Protocol &&
@@ -38,28 +44,27 @@ MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
     }
     name.remove(-1, 1);
     name += QString(" : %1").arg(_tcpServer->serverPort());
-    setWindowTitle(name);
+    statusBar()->addPermanentWidget(new QLabel(name));
 
     connect(_tcpServer, &QTcpServer::newConnection, this, &MessageServer::GotANewClient);
 
+    QVBoxLayout* vbox = new QVBoxLayout();
     _layout = new QGridLayout();
-    _statusBox = new QPlainTextEdit();
-    _statusBox->setMaximumBlockCount(10000);
-    _layout->addWidget(_statusBox, 0, 0, 1, -1);
     
-    qInstallMessageHandler(MessageServer::redirectDebugOutput);
-
     QGroupBox* box = new QGroupBox;
-    box->setLayout(_layout);
+    box->setLayout(vbox);
     setCentralWidget(box);
 
     _logButton = new QPushButton("Start Logging");
     connect(_logButton, &QPushButton::clicked, this, &MessageServer::LogButtonClicked);
-    _layout->addWidget(_logButton, 1, 0, 1, -1);
+    vbox->addWidget(_logButton);
 
     _loadPluginButton = new QPushButton("Load Plugin");
     connect(_loadPluginButton, &QPushButton::clicked, this, &MessageServer::LoadPluginButton);
-    _layout->addWidget(_loadPluginButton, 2, 0, 1, -1);
+    vbox->addWidget(_loadPluginButton);
+
+    vbox->addLayout(_layout);
+    vbox->addWidget(_statusBox);
 }
 void MessageServer::LogButtonClicked()
 {
@@ -149,22 +154,30 @@ void MessageServer::GotANewClient()
 void MessageServer::ClientDied()
 {
     ServerPort* dbConn = qobject_cast<ServerPort*>(sender());
-    if(_clients.removeOne(dbConn))
+    if(dbConn)
     {
-        //qDebug() << ">>>> Removed client." << endl;
+        if(_clients.removeOne(dbConn))
+        {
+            //qDebug() << "Removed client." << endl;
+            statusBar()->showMessage(QString("Removed %1").arg(dbConn->Name()), 1000);
+        }
+        else
+        {
+            qCritical() << "Failed to remove client " << dbConn->Name() << endl;
+        }
+        for(int i=0; ; i++)
+        {
+            QWidget* widget = dbConn->widget(i);
+            if(!widget)
+                break;
+            _layout->removeWidget(widget);
+        }
+        delete dbConn;
     }
     else
     {
-        qDebug() << ">>>> ERROR: Failed to remove client." << endl;
+        qCritical() << "got ClientDied from sender not a ServerPort " << endl;
     }
-    for(int i=0; ; i++)
-    {
-        QWidget* widget = dbConn->widget(i);
-        if(!widget)
-            break;
-        _layout->removeWidget(widget);
-    }
-    delete dbConn;
 }
 
 void MessageServer::LoadPlugin(QString fileName)
@@ -173,9 +186,7 @@ void MessageServer::LoadPlugin(QString fileName)
     QLibrary lib(fileName);
     if(!lib.load())
     {
-        //qDebug() << "Can't load plugin file: " << lib.fileName()
-        //     << endl << "loader reported ";
-        qDebug() << lib.errorString() << endl;
+        qWarning() << fileName << " cannot be loaded by QLibrary (" << lib.errorString() << ")" << endl;
         return;
     }
     fileName = lib.fileName();
@@ -193,12 +204,12 @@ void MessageServer::LoadPlugin(QString fileName)
             }
             else
             {
-                qDebug() << fileName << " is not a ServerInterface" << endl;
+                qWarning() << fileName << " is not a ServerInterface" << endl;
             }
     }
     else
     {
-        qDebug() << fileName << " cannot be loaded by QPluginLoader (" << loader.errorString() << endl;
+        qWarning() << fileName << " cannot be loaded by QPluginLoader (" << loader.errorString() << ")" << endl;
     }
 }
 

@@ -14,14 +14,15 @@ class ServerPort : public QObject
         ServerPort(QString n)
         : removeClient(),
           name(n),
-          statusLabel()
+          statusLabel(),
+          initName(n)
         {
             removeClient.setText(QString("Remove"));
             statusLabel.setText(name);
             connect(&removeClient, &QPushButton::clicked, this, &ServerPort::ConnectionDied);
         }
         QString Name() { return name; }
-        void SetName(const QString& n) { name = n; }
+        void SetName(const QString& n) { name = n; statusLabel.setText(name + "(" + initName + ")");}
         virtual void MessageSlot(QSharedPointer<Message> msg)=0;
         void ConnectionDied()
         {
@@ -46,6 +47,7 @@ class ServerPort : public QObject
         QPushButton removeClient;
         QString name;
         QLabel statusLabel;
+        QString initName;
 };
 
 #endif
