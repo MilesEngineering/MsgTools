@@ -118,3 +118,20 @@ class Messaging:
 
     def MsgMutators(self, msg):
         return self.MsgFns(msg, "Set")
+
+    @staticmethod
+    def set(msgClass, bytearray, fieldInfo, value, index=1):
+        if(fieldInfo["Units"] != "ASCII"):
+            value = int(value)
+        if(fieldInfo["Count"] == 1):
+            getattr(msgClass, fieldInfo["Set"])(bytearray, value)
+        else:
+            getattr(msgClass, fieldInfo["Set"])(bytearray, value, index)
+
+    @staticmethod
+    def get(msgClass, bytearray, fieldInfo, index=1):
+        if(fieldInfo["Count"] == 1):
+            value = getattr(msgClass, fieldInfo["Get"])(bytearray)
+        else:
+            value = getattr(msgClass, fieldInfo["Get"])(bytearray, index)
+        return value
