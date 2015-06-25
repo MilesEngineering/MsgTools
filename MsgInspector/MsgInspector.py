@@ -42,9 +42,10 @@ class MsgInspector(MsgGui.MsgGui):
 
     def ShowMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = self.msgLib.GetID(msg)
-        msgClass = self.msgLib.MsgNameFromID[id]
-        methods  = self.msgLib.ListMsgGetters(msgClass)
+        id       = hex(self.msgLib.hdr.GetID(msg))
+        msgName = self.msgLib.MsgNameFromID[id]
+        msgClass = self.msgLib.MsgClassFromName[msgName]
+        methods  = self.msgLib.MsgAccessors(msgClass)
 
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
@@ -55,16 +56,16 @@ class MsgInspector(MsgGui.MsgGui):
             msgWidget = QtGui.QTreeWidget()
             
             # add it to the tab widget, so the user can see it
-            self.tabWidget.addTab(msgWidget, msgClass.__name__)
+            self.tabWidget.addTab(msgWidget, msgName)
             
             # add headers, one for each message field
-            header = QtCore.QStringList()
+            tableHeader = []
             for method in methods:
                 # skip over the first three letters (which are always "Get")
                 name = method.__name__.replace("Get", "", 1)
-                header.append(name)
+                tableHeader.append(name)
             
-            msgWidget.setHeaderLabels(header)
+            msgWidget.setHeaderLabels(tableHeader)
             count = 0
             for method in methods:
                 msgWidget.resizeColumnToContents(count)
@@ -73,20 +74,20 @@ class MsgInspector(MsgGui.MsgGui):
             # store a pointer to it, so we can find it next time (instead of creating it again)
             self.msgWidgets[id] = msgWidget
         
-        #methods = self.msgLib.ListMsgGetters(self.msgLib.headerClass)
+        #methods = self.msgLib.MsgAccessors(self.msgLib.headerClass)
         #for method in methods:
-        #    print "hdr.", self.msgLib.headerClass.__name__, ".", method.__name__, "=", method(msg), " #", method.__doc__
+        #    print "hdr.", self.msgLib.headerClass.MsgName(), ".", method.__name__, "=", method(msg), " #", method.__doc__
         #print ""
         
-        msgStringList = QtCore.QStringList()
+        msgStringList = []
         for method in methods:
             if(method.count == 1):
                 columnText = str(method(msg))
-                #print("body.",msgClass.__name__, ".", , " = ", method(msg), " #", method.__doc__, "in", method.units)
+                #print("body.",msgName, ".", , " = ", method(msg), " #", method.__doc__, "in", method.units)
             else:
                 columnText = ""
                 for i in range(0,method.count):
-                    #print("body.",msgClass.__name__, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
+                    #print("body.",msgName, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
                     columnText += ", " + str(method(msg,i))
             msgStringList.append(columnText)
         msgItem = QTreeWidgetItem(None,msgStringList)
@@ -94,9 +95,10 @@ class MsgInspector(MsgGui.MsgGui):
 
     def PrintMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = self.msgLib.GetID(msg)
-        msgClass = self.msgLib.MsgNameFromID[id]
-        methods  = self.msgLib.ListMsgGetters(msgClass)
+        id       = hex(self.msgLib.GetID(msg))
+        msgName = self.msgLib.MsgNameFromID[id]
+        msgClass = self.msgLib.MsgClassFromName[msgName]
+        methods  = self.msgLib.MsgAccessors(msgClass)
 
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
@@ -120,7 +122,7 @@ class MsgInspector(MsgGui.MsgGui):
                 # store a pointer to it, so we can find it next time (instead of creating it again)
                 self.outputFiles[id] = outputFile
         
-        #methods = self.msgLib.ListMsgGetters(self.msgLib.headerClass)
+        #methods = self.msgLib.MsgAccessors(self.msgLib.headerClass)
         #for method in methods:
         #    print "hdr.", self.msgLib.headerClass.__name__, ".", method.__name__, "=", method(msg), " #", method.__doc__
         #print ""
@@ -129,11 +131,11 @@ class MsgInspector(MsgGui.MsgGui):
         for method in methods:
             if(method.count == 1):
                 columnText = str(method(msg))
-                #print("body.",msgClass.__name__, ".", , " = ", method(msg), " #", method.__doc__, "in", method.units)
+                #print("body.",msgName, ".", , " = ", method(msg), " #", method.__doc__, "in", method.units)
             else:
                 columnText = ""
                 for i in range(0,method.count):
-                    #print("body.",msgClass.__name__, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
+                    #print("body.",msgName, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
                     columnText += ", " + str(method(msg,i))
             text += columnText + ", "
         print(text)

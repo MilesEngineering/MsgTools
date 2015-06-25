@@ -7,13 +7,13 @@ from PySide.QtNetwork import *
 from Messaging import Messaging
 
 class MsgApp(QMainWindow):
-    RxMsg = Signal(QByteArray, QObject)
+    RxMsg = Signal(bytearray)
     
     def __init__(self, msgdir, name, argv):
         self.name = name
         
         # rx buffer, to receive a message with multiple signals
-        self.rxBuf = ""
+        self.rxBuf = bytearray()
         
         # connection modes
         self.connectionType = "qtsocket"
@@ -104,7 +104,7 @@ class MsgApp(QMainWindow):
                 return
             
             # need to decode body len to read the body
-            bodyLen = Messaging.hdr.GetLength(rxBuf)
+            bodyLen = Messaging.hdr.GetLength(self.rxBuf)
             
             # read the body, unless we have the body
             if(len(self.rxBuf) < Messaging.hdrSize + bodyLen):
@@ -117,23 +117,23 @@ class MsgApp(QMainWindow):
                 return
             
             # if we got this far, we have a whole message! So, emit the signal
-            self.RxMsg.emit(QByteArray(self.rxBuf), self)
+            self.RxMsg.emit(self.rxBuf)
             # then clear the buffer, so we start over on the next message
-            self.rxBuf = ''
+            self.rxBuf = bytearray()
 
     # this function reads messages, and calls the message handler.
-    def MessageLoop(self, ProcessMessage):
-        while (1):
-            self.rxBuf = self.readFn(Messaging.hdrSize)
+    #~ def MessageLoop(self, ProcessMessage):
+        #~ while (1):
+            #~ self.rxBuf = self.readFn(Messaging.hdrSize)
             
-            if(len(self.rxBuf) != Messaging.hdrSize): break
+            #~ if(len(self.rxBuf) != Messaging.hdrSize): break
 
-            # need to decode body len to read the body
-            bodyLen = Messaging.hdr.GetLength(rxBuf)
+            #~ # need to decode body len to read the body
+            #~ bodyLen = Messaging.hdr.GetLength(rxBuf)
             
-            # read the body
-            self.rxBuf += self.readFn(bodyLen)
-            if(len(self.rxBuf) != Messaging.hdrSize + bodyLen): break
+            #~ # read the body
+            #~ self.rxBuf += self.readFn(bodyLen)
+            #~ if(len(self.rxBuf) != Messaging.hdrSize + bodyLen): break
 
-            # got a complete message, call the callback to process it
-            ProcessMessage(self.rxBuf, self)
+            #~ # got a complete message, call the callback to process it
+            #~ ProcessMessage(self.rxBuf, self)
