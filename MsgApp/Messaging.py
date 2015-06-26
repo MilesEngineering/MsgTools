@@ -93,18 +93,22 @@ class Messaging:
         Messaging.MsgClassFromName[name] = classDef
 
     @staticmethod
-    def set(msgClass, bytearray, fieldInfo, value, index=1):
+    def set(msgClass, messageBytearray, fieldInfo, value, index=1):
         if(fieldInfo["Units"] != "ASCII"):
             value = int(value)
         if(fieldInfo["Count"] == 1):
-            getattr(msgClass, fieldInfo["Set"])(bytearray, value)
+            getattr(msgClass, fieldInfo["Set"])(messageBytearray, value)
         else:
-            getattr(msgClass, fieldInfo["Set"])(bytearray, value, index)
+            getattr(msgClass, fieldInfo["Set"])(messageBytearray, value, index)
 
     @staticmethod
-    def get(msgClass, bytearray, fieldInfo, index=1):
+    def get(msgClass, messageBytearray, fieldInfo, index=1):
         if(fieldInfo["Count"] == 1):
-            value = getattr(msgClass, fieldInfo["Get"])(bytearray)
+            value = getattr(msgClass, fieldInfo["Get"])(messageBytearray)
         else:
-            value = getattr(msgClass, fieldInfo["Get"])(bytearray, index)
+            value = getattr(msgClass, fieldInfo["Get"])(messageBytearray, index)
         return value
+
+    @staticmethod
+    def get_id(messageBytearray):
+        pass

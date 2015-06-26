@@ -7,6 +7,7 @@ from PySide.QtCore import *
 
 sys.path.append("../MsgApp")
 import MsgGui
+from Messaging import Messaging
 
 from TxMessageTreeWidgetItem import *
 
@@ -50,15 +51,13 @@ class MessageScopeGui(MsgGui.MsgGui):
         
         self.txMsgs.setHeaderItem(txMsgsHeader);
 
-        self.rxMsgs = QTreeWidget(parent);
+        self.rxMessagesTabWidget = QTabWidget(self)
 
         txSplitter.addWidget(self.txDictionary);
         txSplitter.addWidget(self.txMsgs);
         rxSplitter.addWidget(self.rxDictionary);
-        rxSplitter.addWidget(self.rxMsgs);
-
-        # tab widget to show multiple messages, one per tab
-        self.tabWidget = QTabWidget(self)
+        rxSplitter.addWidget(self.rxMessagesTabWidget);
+        
         self.setCentralWidget(hSplitter)
 
     def ReadTxDictionary(self):
@@ -70,7 +69,7 @@ class MessageScopeGui(MsgGui.MsgGui):
             self.txDictionary.addItem(newItem)
 
     def onTxMessageSelected(self, txListWidgetItem):
-        messageName = txListWidgetItem.text();
+        messageName = txListWidgetItem.text()
 
         # Always add to TX panel even if the same message class may already exist
         # since we may want to send the same message with different contents/header/rates.
@@ -78,64 +77,49 @@ class MessageScopeGui(MsgGui.MsgGui):
         messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, messageBuffer):
-        self.sendFn(messageBuffer.raw);
+        self.sendFn(messageBuffer.raw)
 
     def ProcessMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = self.msgLib.GetID(msg)
-        msgClass = self.msgLib.MsgNameFromID[id]
-        methods  = self.msgLib.ListMsgGetters(msgClass)
+        msgId = hex(Messaging.hdr.GetID(msg))
 
-        print("Processing Message")
-
-        if(msgClass == None):
-            print("WARNING!  No definition for ", id, "!\n")
+        if not msgId in self.msgLib.MsgNameFromID:
+            print("WARNING! No definition for ", msgId, "!\n")
             return
 
-        if(not(id in self.msgWidgets)):
+        msgName = self.msgLib.MsgNameFromID[msgId]
+        msgClass = self.msgLib.MsgClassFromName[msgName]
+        msgFields = msgClass.fields
+
+        if(not(msgId in self.msgWidgets)):
             # create a new tree widget
             msgWidget = QTreeWidget()
             
             # add it to the tab widget, so the user can see it
-            self.tabWidget.addTab(msgWidget, msgClass.__name__)
+            self.rxMessagesTabWidget.addTab(msgWidget, msgClass.__name__)
             
             # add headers, one for each message field
-            header = QStringList()
-            for method in methods:
-                # skip over the first three letters (which are always "Get")
-                name = method.__name__.replace("Get", "", 1)
-                header.append(name)
+            header = []
+            for field in msgFields:
+                header.append(field["Name"])
             
             msgWidget.setHeaderLabels(header)
+
             count = 0
-            for method in methods:
+            for field in msgFields:
                 msgWidget.resizeColumnToContents(count)
                 count += 1
             
             # store a pointer to it, so we can find it next time (instead of creating it again)
-            self.msgWidgets[id] = msgWidget
-        
-        #methods = self.msgLib.ListMsgGetters(self.msgLib.headerClass)
-        #for method in methods:
-        #    print "hdr.", self.msgLib.headerClass.__name__, ".", method.__name__, "=", method(msg), " #", method.__doc__
-        #print ""
+            self.msgWidgets[msgId] = msgWidget
         
         msgStringList = []
 
-        for method in methods:
-            if(method.count == 1):
-                columnText = str(method(msg))
-                #print("body.",msgClass.__name__, ".", , " = ", method(msg), " #", method.__doc__, "in", method.units)
-            else:
-                columnText = ""
-                for i in range(0,method.count):
-                    #print("body.",msgClass.__name__, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
-                    columnText += ", " + str(method(msg,i))
-            
-            msgStringList.append(columnText)
+        for field in msgFields:                
+            msgStringList.append(str(Messaging.get(msgClass, msg, field)))
 
-        msgItem = QTreeWidgetItem(None,msgStringList)
-        self.msgWidgets[id].addTopLevelItem(msgItem)
+        msgItem = QTreeWidgetItem(None, msgStringList)
+        self.msgWidgets[msgId].addTopLevelItem(msgItem)
 
 
 # main starts here
