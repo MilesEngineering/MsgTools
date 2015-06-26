@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import struct
+import datetime
 
 from PySide.QtGui import *
 from PySide.QtCore import *
@@ -20,7 +21,8 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         self.ConfigureGui(parent)
         
-        # hash table to lookup the widget for a message, by message ID
+        # hash table to lookup the list item & widget for a message, by message ID
+        self.msgList = {}
         self.msgWidgets = {}
         
         self.resize(800, 600)
@@ -28,10 +30,10 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.ReadTxDictionary()
 
     def ConfigureGui(self, parent):   
-        hSplitter = QSplitter(parent);
+        hSplitter = QSplitter(parent)
         
-        txSplitter = QSplitter(parent);
-        rxSplitter = QSplitter(parent);
+        txSplitter = QSplitter(parent)
+        rxSplitter = QSplitter(parent)
 
         txSplitter.setOrientation(Qt.Vertical)
         rxSplitter.setOrientation(Qt.Vertical)
@@ -39,24 +41,24 @@ class MessageScopeGui(MsgGui.MsgGui):
         hSplitter.addWidget(txSplitter)
         hSplitter.addWidget(rxSplitter)
         
-        self.txDictionary = QListWidget(parent);
+        self.txDictionary = QListWidget(parent)
         self.txDictionary.itemDoubleClicked.connect(self.onTxMessageSelected)
 
-        self.rxDictionary = QListWidget(parent);
+        self.rxMessageList = QListWidget(parent)
 
-        self.txMsgs = QTreeWidget(parent);
-        self.txMsgs.setColumnCount(4);
+        self.txMsgs = QTreeWidget(parent)
+        self.txMsgs.setColumnCount(4)
         
-        txMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Send", "Description"]);
+        txMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
         
-        self.txMsgs.setHeaderItem(txMsgsHeader);
+        self.txMsgs.setHeaderItem(txMsgsHeader)
 
         self.rxMessagesTabWidget = QTabWidget(self)
 
-        txSplitter.addWidget(self.txDictionary);
-        txSplitter.addWidget(self.txMsgs);
-        rxSplitter.addWidget(self.rxDictionary);
-        rxSplitter.addWidget(self.rxMessagesTabWidget);
+        txSplitter.addWidget(self.txDictionary)
+        txSplitter.addWidget(self.txMsgs)
+        rxSplitter.addWidget(self.rxMessageList)
+        rxSplitter.addWidget(self.rxMessagesTabWidget)
         
         self.setCentralWidget(hSplitter)
 
@@ -92,11 +94,13 @@ class MessageScopeGui(MsgGui.MsgGui):
         msgFields = msgClass.fields
 
         if(not(msgId in self.msgWidgets)):
-            # create a new tree widget
+            msgListItem = QListWidgetItem(msgName)
             msgWidget = QTreeWidget()
             
             # add it to the tab widget, so the user can see it
-            self.rxMessagesTabWidget.addTab(msgWidget, msgClass.__name__)
+            self.rxMessagesTabWidget.addTab(msgWidget, msgName)
+
+            self.rxMessageList.addItem(msgListItem)
             
             # add headers, one for each message field
             header = []
@@ -111,6 +115,7 @@ class MessageScopeGui(MsgGui.MsgGui):
                 count += 1
             
             # store a pointer to it, so we can find it next time (instead of creating it again)
+            self.msgList[msgId] = msgListItem
             self.msgWidgets[msgId] = msgWidget
         
         msgStringList = []
@@ -119,6 +124,7 @@ class MessageScopeGui(MsgGui.MsgGui):
             msgStringList.append(str(Messaging.get(msgClass, msg, field)))
 
         msgItem = QTreeWidgetItem(None, msgStringList)
+        self.msgList[msgId].setText(msgName + " Last Received: " + str(datetime.datetime.now()))
         self.msgWidgets[msgId].addTopLevelItem(msgItem)
 
 

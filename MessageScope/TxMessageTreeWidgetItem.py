@@ -29,6 +29,9 @@ class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
         if not column == 2:
             return
 
+        if self.fieldInfo["Name"] == "ID":
+            return
+
         # set the value in the message/header buffer
         self.messageClass.set(self.buffer, self.fieldInfo, value)
 
