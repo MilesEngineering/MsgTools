@@ -93,7 +93,7 @@ class Messaging:
         Messaging.MsgClassFromName[name] = classDef
 
     @staticmethod
-    def set(msgClass, messageBytearray, fieldInfo, value, index=1):
+    def set(msgClass, messageBytearray, fieldInfo, value, index=0):
         if(fieldInfo["Units"] != "ASCII"):
             value = int(value)
         if(fieldInfo["Count"] == 1):
@@ -102,7 +102,7 @@ class Messaging:
             getattr(msgClass, fieldInfo["Set"])(messageBytearray, value, index)
 
     @staticmethod
-    def get(msgClass, messageBytearray, fieldInfo, index=1):
+    def get(msgClass, messageBytearray, fieldInfo, index=0):
         if(fieldInfo["Count"] == 1):
             value = getattr(msgClass, fieldInfo["Get"])(messageBytearray)
         else:

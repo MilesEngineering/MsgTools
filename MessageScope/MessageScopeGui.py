@@ -104,15 +104,21 @@ class MessageScopeGui(MsgGui.MsgGui):
             
             # add headers, one for each message field
             header = []
-            for field in msgFields:
-                header.append(field["Name"])
+            for fieldInfo in msgFields:
+                name = fieldInfo["Name"]
+                if(fieldInfo["Count"] == 1):
+                    header.append(name)
+                else:
+                    for i in range(0,fieldInfo["Count"]):
+                        header.append(name + "[" + str(i) + "]")
             
             msgWidget.setHeaderLabels(header)
 
             count = 0
-            for field in msgFields:
-                msgWidget.resizeColumnToContents(count)
-                count += 1
+            for fieldInfo in msgFields:
+                for i in range(0,fieldInfo["Count"]):
+                    msgWidget.resizeColumnToContents(count)
+                    count += 1
             
             # store a pointer to it, so we can find it next time (instead of creating it again)
             self.msgList[msgId] = msgListItem
@@ -120,8 +126,9 @@ class MessageScopeGui(MsgGui.MsgGui):
         
         msgStringList = []
 
-        for field in msgFields:                
-            msgStringList.append(str(Messaging.get(msgClass, msg, field)))
+        for fieldInfo in msgFields:
+            for i in range(0,fieldInfo["Count"]):
+                msgStringList.append(str(Messaging.get(msgClass, msg, fieldInfo, i)))
 
         msgItem = QTreeWidgetItem(None, msgStringList)
         self.msgList[msgId].setText(msgName + " Last Received: " + str(datetime.datetime.now()))
