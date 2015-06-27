@@ -10,8 +10,8 @@ class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
     def __init__(self, messageClass, buffer, fieldInfo, index=0):
         QObject.__init__(self)
 
-        columnStrings = [None, fieldInfo["Name"], "", fieldInfo["Units"], fieldInfo["Description"] ]
-        if(fieldInfo["Count"] != 1):
+        columnStrings = [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
+        if(fieldInfo.count != 1):
             columnStrings[1] += "[" + str(index) + "]"
         QTreeWidgetItem.__init__(self, None, columnStrings)
         
@@ -32,7 +32,7 @@ class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
         if not column == 2:
             return
 
-        if self.fieldInfo["Name"] == "ID":
+        if self.fieldInfo.name == "ID":
             return
 
         # set the value in the message/header buffer
@@ -69,11 +69,11 @@ class TxMessageTreeWidgetItem(QObject, QTreeWidgetItem):
             headerTreeItemParent.addChild(headerFieldTreeItem)
 
         for fieldInfo in self.messageClass.fields:
-            if(fieldInfo["Count"] == 1):
+            if(fieldInfo.count == 1):
                 messageFieldTreeItem = TxMessageFieldTreeWidgetItem(self.messageClass, self.messageBuffer, fieldInfo)
                 self.addChild(messageFieldTreeItem)
             else:
-                for i in range(0,fieldInfo["Count"]):
+                for i in range(0,fieldInfo.count):
                     messageFieldTreeItem = TxMessageFieldTreeWidgetItem(self.messageClass, self.messageBuffer, fieldInfo, i)
                     self.addChild(messageFieldTreeItem)
     def on_send_message_clicked(self):

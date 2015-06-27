@@ -34,16 +34,17 @@ def reflectionInterfaceType(field):
 def fieldInfos(msg):
     fieldInfos = []
     for field in msg["Fields"]:
-        fieldInfo = { "Name": field["Name"],
-                      "Type": reflectionInterfaceType(field),
-                      "Units": MsgParser.fieldUnits(field),
-                      "Description": MsgParser.fieldDescription(field), 
-                      "Get": "Get" + field["Name"],
-                      "Set": "Set" + field["Name"] ,
-                      "Count":pythonFieldCount(field)}
+        fieldInfo = "FieldInfo("+\
+                      'name="'+field["Name"] + '",'+\
+                      'type="'+reflectionInterfaceType(field) + '",'+\
+                      'units="'+MsgParser.fieldUnits(field) + '",'+\
+                      'description="'+MsgParser.fieldDescription(field) + '",'+\
+                      'get="'+"Get" + field["Name"] + '",'+\
+                      'set="'+"Set" + field["Name"]  + '",'+\
+                      'count='+str(pythonFieldCount(field)) + ')'
 
         fieldInfos.append(fieldInfo)
-    return fieldInfos
+    return "\n".join(fieldInfos)
 
 def fnHdr(field, count, name):
     param = "bytes"

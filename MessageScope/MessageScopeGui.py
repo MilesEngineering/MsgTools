@@ -105,18 +105,18 @@ class MessageScopeGui(MsgGui.MsgGui):
             # add headers, one for each message field
             header = []
             for fieldInfo in msgFields:
-                name = fieldInfo["Name"]
-                if(fieldInfo["Count"] == 1):
+                name = fieldInfo.name
+                if(fieldInfo.count == 1):
                     header.append(name)
                 else:
-                    for i in range(0,fieldInfo["Count"]):
+                    for i in range(0,fieldInfo.count):
                         header.append(name + "[" + str(i) + "]")
             
             msgWidget.setHeaderLabels(header)
 
             count = 0
             for fieldInfo in msgFields:
-                for i in range(0,fieldInfo["Count"]):
+                for i in range(0,fieldInfo.count):
                     msgWidget.resizeColumnToContents(count)
                     count += 1
             
@@ -127,7 +127,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         msgStringList = []
 
         for fieldInfo in msgFields:
-            for i in range(0,fieldInfo["Count"]):
+            for i in range(0,fieldInfo.count):
                 msgStringList.append(str(Messaging.get(msgClass, msg, fieldInfo, i)))
 
         msgItem = QTreeWidgetItem(None, msgStringList)

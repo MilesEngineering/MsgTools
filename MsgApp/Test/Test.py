@@ -53,16 +53,16 @@ class TestClass(unittest.TestCase):
     def PrintAccessors(self, msgClass):
         msg = msgClass.Create()
         for fieldInfo in msgClass.fields:
-            txt = "body.%s.%s: " % (msgClass.__name__, fieldInfo["Name"])
-            if(fieldInfo["Count"] == 1):
+            txt = "body.%s.%s: " % (msgClass.__name__, fieldInfo.name)
+            if(fieldInfo.count == 1):
                 txt += str(msgClass.get(msg, fieldInfo))
             else:
-                for i in range(0,fieldInfo["Count"]):
+                for i in range(0,fieldInfo.count):
                     #print("body.",msgClass.__name__, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
                     txt += str(msgClass.get(msg, fieldInfo, i))
-                    if(i < fieldInfo["Count"] - 1):
+                    if(i < fieldInfo.count - 1):
                         txt += ", "
-            txt += " # "+fieldInfo["Description"]+" in " + fieldInfo["Units"]
+            txt += " # "+fieldInfo.description+" in " + fieldInfo.units
             print(txt)
 
 if __name__ == '__main__':

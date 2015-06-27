@@ -60,7 +60,7 @@ class MsgInspector(MsgGui.MsgGui):
             # add table header, one column for each message field
             tableHeader = []
             for fieldInfo in msgClass.fields:
-                tableHeader.append(fieldInfo["Name"])
+                tableHeader.append(fieldInfo.name)
             
             msgWidget.setHeaderLabels(tableHeader)
             count = 0
@@ -73,13 +73,13 @@ class MsgInspector(MsgGui.MsgGui):
         
         msgStringList = []
         for fieldInfo in msgClass.fields:
-            if(fieldInfo["Count"] == 1):
+            if(fieldInfo.count == 1):
                 columnText = str(msgClass.get(msg, fieldInfo))
             else:
                 columnText = ""
-                for i in range(0,fieldInfo["Count"]):
+                for i in range(0,fieldInfo.count):
                     columnText += str(msgClass.get(msg, fieldInfo, i))
-                    if(i<fieldInfo["Count"]-1):
+                    if(i<fieldInfo.count-1):
                         columnText += ", "
             msgStringList.append(columnText)
         msgItem = QTreeWidgetItem(None,msgStringList)
@@ -105,7 +105,7 @@ class MsgInspector(MsgGui.MsgGui):
                 # add table header, one column for each message field
                 tableHeader = ""
                 for fieldInfo in msgClass.fields:
-                    tableHeader += fieldInfo["Name"] + ", "
+                    tableHeader += fieldInfo.name + ", "
                 
                 print(tableHeader)
                 # store a pointer to it, so we can find it next time (instead of creating it again)
@@ -113,13 +113,13 @@ class MsgInspector(MsgGui.MsgGui):
         
         text = ""
         for fieldInfo in msgClass.fields:
-            if(fieldInfo["Count"] == 1):
+            if(fieldInfo.count == 1):
                 columnText = str(msgClass.get(msg, fieldInfo))
             else:
                 columnText = ""
-                for i in range(0,fieldInfo["Count"]):
+                for i in range(0,fieldInfo.count):
                     columnText += str(msgClass.get(msg, fieldInfo, i))
-                    if(i<fieldInfo["Count"]-1):
+                    if(i<fieldInfo.count-1):
                         columnText += ", "
             text += columnText + ", "
         print(text)
