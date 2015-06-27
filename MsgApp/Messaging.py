@@ -94,8 +94,10 @@ class Messaging:
 
     @staticmethod
     def set(msgClass, messageBytearray, fieldInfo, value, index=0):
-        if(fieldInfo["Units"] != "ASCII"):
-            value = int(value)
+        if("int" in fieldInfo["Type"]):
+            value = int(float(value))
+        elif("float" in fieldInfo["Type"]):
+            value = float(value)
         if(fieldInfo["Count"] == 1):
             getattr(msgClass, fieldInfo["Set"])(messageBytearray, value)
         else:
@@ -107,7 +109,7 @@ class Messaging:
             value = getattr(msgClass, fieldInfo["Get"])(messageBytearray)
         else:
             value = getattr(msgClass, fieldInfo["Get"])(messageBytearray, index)
-        return value
+        return str(value)
 
     @staticmethod
     def get_id(messageBytearray):

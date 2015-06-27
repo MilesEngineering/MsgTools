@@ -21,10 +21,21 @@ def pythonFieldCount(field):
         count = 1
     return count
 
+def reflectionInterfaceType(field):
+    type = field["Type"]
+    if "float" in type or "Offset" in field or "Scale" in field:
+        type = "float"
+    elif MsgParser.fieldUnits(field) == "ASCII" or "Enum" in field:
+        type = "string"
+    else:
+        type = "int"
+    return type
+
 def fieldInfos(msg):
     fieldInfos = []
     for field in msg["Fields"]:
         fieldInfo = { "Name": field["Name"],
+                      "Type": reflectionInterfaceType(field),
                       "Units": MsgParser.fieldUnits(field),
                       "Description": MsgParser.fieldDescription(field), 
                       "Get": "Get" + field["Name"],
