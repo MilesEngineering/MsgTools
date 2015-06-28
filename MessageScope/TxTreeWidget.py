@@ -122,10 +122,10 @@ class MessageItem(QObject, QTreeWidgetItem):
         self.setup_fields(tree_widget, child_constructor, child_array_constructor)
 
         tree_widget.addTopLevelItem(self)
+        self.setExpanded(True)
 
     def set_msg_buffer(self, msg_buffer):
         self.msg_buffer = msg_buffer
-        self.emitDataChanged()
 
     def setup_fields(self, tree_widget, child_constructor, child_array_constructor):
         headerTreeItemParent = QTreeWidgetItem(None, [ "Header" ])
@@ -151,8 +151,6 @@ class EditableMessageItem(MessageItem):
 
         sendButton = QPushButton("Send", tree_widget)
         sendButton.autoFillBackground()
-        sendButton.clicked.connect(self.on_send_message_clicked)
+        sendButton.clicked.connect(lambda: self.send_message.emit(self.msg_buffer))
         tree_widget.setItemWidget(self, 4, sendButton)
 
-    def on_send_message_clicked(self):
-        self.send_message.emit(self.msg_buffer)
