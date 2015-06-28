@@ -23,17 +23,13 @@ class MessageScopeGui(MsgGui.MsgGui):
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
 
-        self.ConfigureGui(parent)
-        
-        # hash table to lookup the list item & widget for a message, by message ID
-        self.msgList = {}
-        self.msgWidgets = {}
+        self.configure_gui(parent)
         
         self.resize(800, 600)
         
         self.ReadTxDictionary()
 
-    def ConfigureGui(self, parent):   
+    def configure_gui(self, parent):   
         hSplitter = QSplitter(parent)
         
         txSplitter = QSplitter(parent)
@@ -44,27 +40,45 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         hSplitter.addWidget(txSplitter)
         hSplitter.addWidget(rxSplitter)
-        
-        self.txDictionary = QListWidget(parent)
-        self.txDictionary.itemDoubleClicked.connect(self.onTxMessageSelected)
 
-        self.rxMessageList = QListWidget(parent)
-
-        self.txMsgs = QTreeWidget(parent)
-        self.txMsgs.setColumnCount(4)
-        
-        txMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
-        
-        self.txMsgs.setHeaderItem(txMsgsHeader)
-
-        self.rxMessagesTabWidget = QTabWidget(self)
+        self.txDictionary = self.configure_tx_dictionary(parent)
+        self.txMsgs = self.configure_tx_messages(parent)
+        self.rx_message_list = self.configure_rx_message_list(parent)
+        self.rx_messages_widget = self.configure_rx_messages_widget(parent)
 
         txSplitter.addWidget(self.txDictionary)
         txSplitter.addWidget(self.txMsgs)
-        rxSplitter.addWidget(self.rxMessageList)
-        rxSplitter.addWidget(self.rxMessagesTabWidget)
+        rxSplitter.addWidget(self.rx_message_list)
+        rxSplitter.addWidget(self.rx_messages_widget)
         
         self.setCentralWidget(hSplitter)
+
+    def configure_tx_dictionary(self, parent):
+        txDictionary = QListWidget(parent)
+        txDictionary.itemDoubleClicked.connect(self.onTxMessageSelected)
+        return txDictionary
+
+    def configure_tx_messages(self, parent):
+        txMsgs = QTreeWidget(parent)
+        txMsgs.setColumnCount(4)
+        
+        txMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
+        
+        txMsgs.setHeaderItem(txMsgsHeader)
+        return txMsgs
+
+    def configure_rx_message_list(self, parent):
+        self.rx_msg_list = {}
+        rxMessageList = QListWidget(parent)
+        return rxMessageList
+
+    def configure_rx_messages_widget(self, parent):
+        self.rx_msg_widgets = {}
+        rxMessagesTreeWidget = QTreeWidget(parent)
+        rxMessagesTreeWidget.setColumnCount(4)
+        txMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
+        rxMessagesTreeWidget.setHeaderItem(txMsgsHeader)
+        return rxMessagesTreeWidget
 
     def ReadTxDictionary(self):
         print("Tx Dictionary:")
@@ -79,65 +93,45 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         # Always add to TX panel even if the same message class may already exist
         # since we may want to send the same message with different contents/header/rates.
-        messageTreeWidgetItem = TxTreeWidget.MessageItem(messageName, self.txMsgs, self.msgLib)
+        message_class = self.msgLib.MsgClassFromName[messageName]
+        messageBuffer = message_class.Create()
+
+        messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageBuffer)
         messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, messageBuffer):
         self.sendFn(messageBuffer.raw)
 
-    def ProcessMessage(self, msg):
-        # read the ID, and get the message name, so we can print stuff about the body
-        msgId = hex(Messaging.hdr.GetID(msg))
+    def ProcessMessage(self, msg_buffer):
+        msg_id = hex(Messaging.hdr.GetID(msg_buffer))
 
-        if not msgId in self.msgLib.MsgNameFromID:
-            print("WARNING! No definition for ", msgId, "!\n")
+        if not msg_id in self.msgLib.MsgNameFromID:
+            print("WARNING! No definition for ", msg_id, "!\n")
             return
 
-        msgName = self.msgLib.MsgNameFromID[msgId]
-        msgClass = self.msgLib.MsgClassFromName[msgName]
-        msgFields = msgClass.fields
+        msg_name = self.msgLib.MsgNameFromID[msg_id]
+        msg_class = self.msgLib.MsgClassFromName[msg_name]
+        msg_fields = msg_class.fields
 
-        if(not(msgId in self.msgWidgets)):
-            msgListItem = QListWidgetItem(msgName)
-            msgWidget = QTreeWidget()
-            
-            # add it to the tab widget, so the user can see it
-            self.rxMessagesTabWidget.addTab(msgWidget, msgName)
+        self.dsiplay_message_in_rx_list(msg_id, msg_name)
+        self.display_message_in_rx_tree(msg_id, msg_name, msg_class, msg_buffer)
 
-            self.rxMessageList.addItem(msgListItem)
-            
-            # add headers, one for each message field
-            header = []
-            for fieldInfo in msgFields:
-                name = fieldInfo.name
-                if(fieldInfo.count == 1):
-                    header.append(name)
-                else:
-                    for i in range(0,fieldInfo.count):
-                        header.append(name + "[" + str(i) + "]")
-            
-            msgWidget.setHeaderLabels(header)
+    def dsiplay_message_in_rx_list(self, msg_id, msg_name):
+        if not msg_id in self.rx_msg_list:
+            msg_list_item = QListWidgetItem(msg_name)
 
-            count = 0
-            for fieldInfo in msgFields:
-                for i in range(0,fieldInfo.count):
-                    msgWidget.resizeColumnToContents(count)
-                    count += 1
-            
-            # store a pointer to it, so we can find it next time (instead of creating it again)
-            self.msgList[msgId] = msgListItem
-            self.msgWidgets[msgId] = msgWidget
-        
-        msgStringList = []
+            self.rx_message_list.addItem(msg_list_item)
+            self.rx_msg_list[msg_id] = msg_list_item
 
-        for fieldInfo in msgFields:
-            for i in range(0,fieldInfo.count):
-                msgStringList.append(str(Messaging.get(msgClass, msg, fieldInfo, i)))
+        self.rx_msg_list[msg_id].setText(msg_name + " (Last Received: " + str(datetime.datetime.now()) + ")")
 
-        msgItem = QTreeWidgetItem(None, msgStringList)
-        self.msgList[msgId].setText(msgName + " Last Received: " + str(datetime.datetime.now()))
-        self.msgWidgets[msgId].addTopLevelItem(msgItem)
+    def display_message_in_rx_tree(self, msg_id, msg_name, msg_class, msg_buffer):
+        if not msg_id in self.rx_msg_widgets:
+            msg_widget = TxTreeWidget.MessageItem(msg_name, self.rx_messages_widget, msg_class, msg_buffer)
+            self.rx_msg_widgets[msg_id] = msg_widget
+            self.rx_messages_widget.addTopLevelItem(msg_widget)
 
+        self.rx_msg_widgets[msg_id].set_msg_buffer(msg_buffer)
 
 # main starts here
 if __name__ == '__main__':
