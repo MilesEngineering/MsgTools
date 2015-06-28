@@ -25,7 +25,10 @@ class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
         if not column == 2:
             return super(TxMessageFieldTreeWidgetItem, self).data(column, role)
 
-        value  = self.messageClass.get(self.buffer, self.fieldInfo, self.index)
+        if not role == Qt.DisplayRole:
+            return None
+
+        value  = self.messageClass.get(self.buffer, self.fieldInfo)
         return str(value)
 
     def setData(self, column, role, value):
