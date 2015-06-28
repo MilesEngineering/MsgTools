@@ -17,18 +17,18 @@ class <MSGNAME> :
     fields.append(<FIELDINFOS>)
 
     @staticmethod
-    def set(bytearray, fieldInfo, value, index=1):
-        Messaging.set(<MSGNAME>, bytearray, fieldInfo, value, index)
+    def set(message_buffer, fieldInfo, value, index=1):
+        Messaging.set(<MSGNAME>, message_buffer, fieldInfo, value, index)
 
     @staticmethod
-    def get(bytearray, fieldInfo, index=1):
-        return Messaging.get(<MSGNAME>, bytearray, fieldInfo, index)
+    def get(message_buffer, fieldInfo, index=1):
+        return Messaging.get(<MSGNAME>, message_buffer, fieldInfo, index)
 
     @staticmethod
     def Create() :
-        bytes = ctypes.create_string_buffer(<MSGNAME>.SIZE)
+        message_buffer = ctypes.create_string_buffer(<MSGNAME>.SIZE)
         <INIT_CODE>
-        return bytes
+        return message_buffer
 
     @staticmethod
     def MsgName():

@@ -18,26 +18,26 @@ class <MSGNAME> :
     fields.append(<FIELDINFOS>)
     
     @staticmethod
-    def set(bytearray, fieldInfo, value, index=1):
-        Messaging.set(<MSGNAME>, bytearray, fieldInfo, value, index)
+    def set(message_buffer, fieldInfo, value, index=1):
+        Messaging.set(<MSGNAME>, message_buffer, fieldInfo, value, index)
 
     @staticmethod
-    def get(bytearray, fieldInfo, index=1):
-        return Messaging.get(<MSGNAME>, bytearray, fieldInfo, index)
+    def get(message_buffer, fieldInfo, index=1):
+        return Messaging.get(<MSGNAME>, message_buffer, fieldInfo, index)
 
     @staticmethod
     def Create() :
-        bytes = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + <MSGNAME>.SIZE)
+        message_buffer = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + <MSGNAME>.SIZE)
 
-        Messaging.hdr.SetSource(bytes, 0)
-        Messaging.hdr.SetDestination(bytes, 0)
-        Messaging.hdr.SetID(bytes, <MSGNAME>.ID)
-        Messaging.hdr.SetLength(bytes, <MSGNAME>.SIZE)
-        Messaging.hdr.SetPriority(bytes, 0)
-        Messaging.hdr.SetType(bytes, 0)
+        Messaging.hdr.SetSource(message_buffer, 0)
+        Messaging.hdr.SetDestination(message_buffer, 0)
+        Messaging.hdr.SetID(message_buffer, <MSGNAME>.ID)
+        Messaging.hdr.SetLength(message_buffer, <MSGNAME>.SIZE)
+        Messaging.hdr.SetPriority(message_buffer, 0)
+        Messaging.hdr.SetType(message_buffer, 0)
 
         <INIT_CODE>
-        return bytes
+        return message_buffer
 
     @staticmethod
     def MsgName():

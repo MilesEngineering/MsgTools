@@ -91,7 +91,7 @@ class FieldItem(QObject, QTreeWidgetItem):
         self.messageClass.set(self.buffer, self.fieldInfo, value)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(FieldItem, self).setData(column, role, self.messageClass.get(self.buffer, self.fieldInfo, self.index))
+        super(FieldItem, self).setData(column, role, self.messageClass.get(self.buffer, self.fieldInfo))
 
 class MessageItem(QObject, QTreeWidgetItem):
     send_message = Signal(object)
