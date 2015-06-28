@@ -126,6 +126,7 @@ class MessageItem(QObject, QTreeWidgetItem):
 
     def set_msg_buffer(self, msg_buffer):
         self.msg_buffer = msg_buffer
+        self.style()
 
     def setup_fields(self, tree_widget, child_constructor, child_array_constructor):
         headerTreeItemParent = QTreeWidgetItem(None, [ "Header" ])
