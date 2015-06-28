@@ -1,4 +1,5 @@
 import socket
+import os
 
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -9,7 +10,7 @@ from Messaging import Messaging
 class MsgApp(QMainWindow):
     RxMsg = Signal(bytearray)
     
-    def __init__(self, msgdir, name, argv):
+    def __init__(self, name, argv):
         self.name = name
         
         # rx buffer, to receive a message with multiple signals
@@ -27,6 +28,8 @@ class MsgApp(QMainWindow):
         # initialize the read function to None, so it's not accidentally called
         self.readFn = None
 
+        srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
+        msgdir = srcroot+"/obj/CodeGenerator/Python/"
         self.msgLib = Messaging(msgdir, 0)
 
         self.OpenConnection()
