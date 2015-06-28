@@ -7,9 +7,9 @@ from PySide.QtNetwork import *
 from MsgApp import *
 
 class MsgGui(MsgApp, QMainWindow):
-    def __init__(self, msgdir, name, argv, parent=None):
+    def __init__(self, name, argv, parent=None):
         QMainWindow.__init__(self,parent)
-        MsgApp.__init__(self, msgdir, name, argv)
+        MsgApp.__init__(self, name, argv)
 
         label = QLabel("<font size=40></font>")
         self.setCentralWidget(label)

@@ -3,13 +3,16 @@ import sys
 from PySide import QtCore, QtGui
 from PySide.QtGui import *
 
+import os
+srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
+
 # import the MsgApp baseclass, for messages, and network I/O
-sys.path.append("../MsgApp")
+sys.path.append(srcroot+"/MsgApp")
 import MsgGui
 
 class MsgInspector(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
-        MsgGui.MsgGui.__init__(self, "../obj/CodeGenerator/Python/", "Message Inspector 0.1", argv, parent)
+        MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", argv, parent)
         
         self.outputType = "gui"
         self.outputName = "log.csv"

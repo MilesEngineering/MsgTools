@@ -1,4 +1,5 @@
 import socket
+import os
 
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -9,7 +10,7 @@ from Messaging import Messaging
 class MsgApp(QMainWindow):
     RxMsg = Signal(bytearray)
     
-    def __init__(self, msgdir, name, argv):
+    def __init__(self, name, argv):
         self.name = name
         
         # rx buffer, to receive a message with multiple signals
@@ -27,6 +28,8 @@ class MsgApp(QMainWindow):
         # initialize the read function to None, so it's not accidentally called
         self.readFn = None
 
+        srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
+        msgdir = srcroot+"/obj/CodeGenerator/Python/"
         self.msgLib = Messaging(msgdir, 0)
 
         self.OpenConnection()
@@ -49,26 +52,23 @@ class MsgApp(QMainWindow):
             print("ip is ", ip, ", port is ", port)
             if(self.connectionType.lower() == "socket"):
                 self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.connection.connect((ip, int(port)))
-                # die "Could not create socket: $!\n" unless $connection
+                self.connection.connected.connect(self.onConnected)
                 self.readFn = self.connection.recv
                 self.sendFn = self.connection.write
+                self.connection.connect((ip, int(port)))
+                # die "Could not create socket: $!\n" unless $connection
             elif(self.connectionType.lower() == "qtsocket"):
                 self.connection = QTcpSocket(self)
                 self.connection.error.connect(self.displayError)
                 ret = self.connection.readyRead.connect(self.readRxBuffer)
-                #print("making connection returned", ret, "for socket", self.connection)
                 self.connection.connectToHost(ip, port)
                 self.readFn = self.connection.read
                 self.sendFn = self.connection.write
+                #print("making connection returned", ret, "for socket", self.connection)
+                self.connection.connected.connect(self.onConnected)
             else:
                 print("\nERROR!\nneed to specify sockets of type 'socket' or 'qtsocket'")
                 sys.exit()
-            # send a connect message
-            connectBuffer = self.msgLib.Connect.Connect.Create();
-            self.msgLib.Connect.Connect.SetName(connectBuffer, self.name);
-            output_stream = QDataStream(self.connection)
-            self.sendFn(connectBuffer.raw);
             
         elif(self.connectionType.lower() == "file"):
             try:
@@ -82,6 +82,13 @@ class MsgApp(QMainWindow):
             sys.exit()
 
         self.connection;
+    
+    def onConnected(self):
+        # send a connect message
+        connectBuffer = self.msgLib.Connect.Connect.Create();
+        self.msgLib.Connect.Connect.SetName(connectBuffer, self.name);
+        output_stream = QDataStream(self.connection)
+        self.sendFn(connectBuffer.raw);
     
     #
     def displayError(self, socketError):

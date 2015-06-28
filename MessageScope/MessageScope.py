@@ -6,15 +6,19 @@ import datetime
 from PySide.QtGui import *
 from PySide.QtCore import *
 
-sys.path.append("../MsgApp")
+import os
+srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
+
+# import the MsgApp baseclass, for messages, and network I/O
+sys.path.append(srcroot+"/MsgApp")
 import MsgGui
 from Messaging import Messaging
 
 import TxTreeWidget
 
 class MessageScopeGui(MsgGui.MsgGui):
-    def __init__(self, argv, parent = None):
-        MsgGui.MsgGui.__init__(self, "../obj/CodeGenerator/Python/", "Message Scope 0.1", argv, parent)
+    def __init__(self, argv, parent=None):
+        MsgGui.MsgGui.__init__(self, "Message Scope 0.1", argv, parent)
 
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
