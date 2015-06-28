@@ -31,6 +31,9 @@ class MsgApp(QMainWindow):
         srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
         msgdir = srcroot+"/obj/CodeGenerator/Python/"
         self.msgLib = Messaging(msgdir, 0)
+        
+        self.status = QLabel("Initializing")
+        self.statusBar().addPermanentWidget(self.status)
 
         self.OpenConnection()
         print("end of MsgApp.__init__")
@@ -40,6 +43,14 @@ class MsgApp(QMainWindow):
         print("\n\ndone reading message definitions, opening the connection ", self.connectionType, " ", self.connectionName)
 
         if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
+            connectAction = QAction('&Connect', self)
+            disconnectAction = QAction('&Disconnect', self)
+
+            menubar = self.menuBar()
+            connectMenu = menubar.addMenu('&Connect')
+            connectMenu.addAction(connectAction)
+            connectMenu.addAction(disconnectAction)
+
             (ip, port) = self.connectionName.split(":")
             if(ip == None):
                 ip = "127.0.0.1"
@@ -53,19 +64,25 @@ class MsgApp(QMainWindow):
             if(self.connectionType.lower() == "socket"):
                 self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.connection.connected.connect(self.onConnected)
+                self.connection.disconnected.connect(self.onDisconnect)
                 self.readFn = self.connection.recv
                 self.sendFn = self.connection.write
                 self.connection.connect((ip, int(port)))
+                connectAction.triggered.connect(lambda: self.connection.connect(ip, int(port)))
+                disconnectAction.triggered.connect(self.connection.disconnect)
                 # die "Could not create socket: $!\n" unless $connection
             elif(self.connectionType.lower() == "qtsocket"):
                 self.connection = QTcpSocket(self)
                 self.connection.error.connect(self.displayError)
                 ret = self.connection.readyRead.connect(self.readRxBuffer)
                 self.connection.connectToHost(ip, port)
+                connectAction.triggered.connect(lambda: self.connection.connectToHost(ip, port))
+                disconnectAction.triggered.connect(self.connection. disconnectFromHost)
                 self.readFn = self.connection.read
                 self.sendFn = self.connection.write
                 #print("making connection returned", ret, "for socket", self.connection)
                 self.connection.connected.connect(self.onConnected)
+                self.connection.disconnected.connect(self.onDisconnect)
             else:
                 print("\nERROR!\nneed to specify sockets of type 'socket' or 'qtsocket'")
                 sys.exit()
@@ -89,9 +106,14 @@ class MsgApp(QMainWindow):
         self.msgLib.Connect.Connect.SetName(connectBuffer, self.name);
         output_stream = QDataStream(self.connection)
         self.sendFn(connectBuffer.raw);
+        self.status.setText('Connected')
+    
+    def onDisconnect(self):
+        self.status.setText('*NOT* Connected')
     
     #
     def displayError(self, socketError):
+        self.status.setText('Not Connected('+str(socketError)+')')
         print("Socket Error: " + str(socketError))
 
     # Qt signal/slot based reading of TCP socket
