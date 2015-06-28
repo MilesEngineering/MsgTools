@@ -6,7 +6,7 @@ from PySide.QtCore import *
 
 from Messaging import Messaging
 
-class TxMessageArrayElementTreeWidgetItem(QObject, QTreeWidgetItem):
+class FieldArrayItem(QObject, QTreeWidgetItem):
     def __init__(self, messageClass, buffer, fieldInfo, index = None):
         QObject.__init__(self)
 
@@ -25,12 +25,12 @@ class TxMessageArrayElementTreeWidgetItem(QObject, QTreeWidgetItem):
 
         if index == None:
             for i in range(0, self.fieldInfo.count):
-                messageFieldTreeItem = TxMessageArrayElementTreeWidgetItem(self.messageClass, self.buffer, self.fieldInfo, i)
+                messageFieldTreeItem = FieldArrayItem(self.messageClass, self.buffer, self.fieldInfo, i)
                 self.addChild(messageFieldTreeItem)
 
     def data(self, column, role):
         if column != 2:
-            return super(TxMessageArrayElementTreeWidgetItem, self).data(column, role)
+            return super(FieldArrayItem, self).data(column, role)
 
         if role != Qt.DisplayRole:
             return None
@@ -55,9 +55,9 @@ class TxMessageArrayElementTreeWidgetItem(QObject, QTreeWidgetItem):
         self.messageClass.set(self.buffer, self.fieldInfo, value, self.index)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(TxMessageArrayElementTreeWidgetItem, self).setData(column, role, self.messageClass.get(self.buffer, self.fieldInfo, self.index))
+        super(FieldArrayItem, self).setData(column, role, self.messageClass.get(self.buffer, self.fieldInfo, self.index))
 
-class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
+class FieldItem(QObject, QTreeWidgetItem):
     def __init__(self, messageClass, buffer, fieldInfo):
         QObject.__init__(self)
 
@@ -72,7 +72,7 @@ class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
 
     def data(self, column, role):
         if not column == 2:
-            return super(TxMessageFieldTreeWidgetItem, self).data(column, role)
+            return super(FieldItem, self).data(column, role)
 
         if not role == Qt.DisplayRole:
             return None
@@ -91,9 +91,9 @@ class TxMessageFieldTreeWidgetItem(QObject, QTreeWidgetItem):
         self.messageClass.set(self.buffer, self.fieldInfo, value)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(TxMessageFieldTreeWidgetItem, self).setData(column, role, self.messageClass.get(self.buffer, self.fieldInfo, self.index))
+        super(FieldItem, self).setData(column, role, self.messageClass.get(self.buffer, self.fieldInfo, self.index))
 
-class TxMessageTreeWidgetItem(QObject, QTreeWidgetItem):
+class MessageItem(QObject, QTreeWidgetItem):
     send_message = Signal(object)
 
     def __init__(self, messageName, treeWidget, msgLib):
@@ -117,15 +117,15 @@ class TxMessageTreeWidgetItem(QObject, QTreeWidgetItem):
         self.addChild(headerTreeItemParent)
 
         for headerFieldInfo in Messaging.hdr.fields:
-            headerFieldTreeItem = TxMessageFieldTreeWidgetItem(Messaging.hdr, self.messageBuffer, headerFieldInfo)
+            headerFieldTreeItem = FieldItem(Messaging.hdr, self.messageBuffer, headerFieldInfo)
             headerTreeItemParent.addChild(headerFieldTreeItem)
 
         for fieldInfo in self.messageClass.fields:
             if(fieldInfo.count == 1):
-                messageFieldTreeItem = TxMessageFieldTreeWidgetItem(self.messageClass, self.messageBuffer, fieldInfo)
+                messageFieldTreeItem = FieldItem(self.messageClass, self.messageBuffer, fieldInfo)
                 self.addChild(messageFieldTreeItem)
             else:
-                messageArrayFieldTreeItem = TxMessageArrayElementTreeWidgetItem(self.messageClass, self.messageBuffer, fieldInfo)
+                messageArrayFieldTreeItem = FieldArrayItem(self.messageClass, self.messageBuffer, fieldInfo)
                 self.addChild(messageArrayFieldTreeItem)
     
     def on_send_message_clicked(self):

@@ -10,7 +10,7 @@ sys.path.append("../MsgApp")
 import MsgGui
 from Messaging import Messaging
 
-from TxMessageTreeWidgetItem import *
+import TxTreeWidget
 
 class MessageScopeGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
@@ -75,7 +75,7 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         # Always add to TX panel even if the same message class may already exist
         # since we may want to send the same message with different contents/header/rates.
-        messageTreeWidgetItem = TxMessageTreeWidgetItem(messageName, self.txMsgs, self.msgLib)
+        messageTreeWidgetItem = TxTreeWidget.MessageItem(messageName, self.txMsgs, self.msgLib)
         messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, messageBuffer):
