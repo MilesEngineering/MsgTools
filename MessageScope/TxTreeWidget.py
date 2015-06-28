@@ -7,7 +7,7 @@ from PySide.QtCore import *
 from Messaging import Messaging
 
 class FieldArrayItem(QObject, QTreeWidgetItem):
-    def __init__(self, messageClass, buffer, fieldInfo, index = None):
+    def __init__(self, msg_class, msg_buffer, fieldInfo, index = None):
         QObject.__init__(self)
 
         columnStrings = [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
@@ -17,15 +17,14 @@ class FieldArrayItem(QObject, QTreeWidgetItem):
         
         QTreeWidgetItem.__init__(self, None, columnStrings)
         
-        self.setFlags(self.flags() | Qt.ItemIsEditable)
         self.fieldInfo = fieldInfo
-        self.messageClass = messageClass
-        self.buffer = buffer
+        self.msg_class = msg_class
+        self.msg_buffer = msg_buffer
         self.index = index
 
         if index == None:
             for i in range(0, self.fieldInfo.count):
-                messageFieldTreeItem = FieldArrayItem(self.messageClass, self.buffer, self.fieldInfo, i)
+                messageFieldTreeItem = FieldArrayItem(self.msg_class, self.msg_buffer, self.fieldInfo, i)
                 self.addChild(messageFieldTreeItem)
 
     def data(self, column, role):
@@ -38,8 +37,19 @@ class FieldArrayItem(QObject, QTreeWidgetItem):
         if self.index == None:
             return ""
 
-        value  = self.messageClass.get(self.buffer, self.fieldInfo, self.index)
+        value  = self.msg_class.get(self.msg_buffer, self.fieldInfo, self.index)
         return str(value)
+
+class EditableFieldArrayItem(FieldArrayItem):
+    def __init__(self, messageClass, buffer, fieldInfo, index = None):
+        super(EditableFieldArrayItem, self).__init__(messageClass, buffer, fieldInfo, index)
+
+        self.setFlags(self.flags() | Qt.ItemIsEditable)
+
+        if index == None:
+            for i in range(0, self.fieldInfo.count):
+                messageFieldTreeItem = EditableFieldArrayItem(self.msg_class, self.msg_buffer, self.fieldInfo, i)
+                self.addChild(messageFieldTreeItem)
 
     def setData(self, column, role, value):
         if self.index == None:
@@ -52,23 +62,23 @@ class FieldArrayItem(QObject, QTreeWidgetItem):
             return
 
         # set the value in the message/header buffer
-        self.messageClass.set(self.buffer, self.fieldInfo, value, self.index)
+        self.msg_class.set(self.msg_buffer, self.fieldInfo, value, self.index)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(FieldArrayItem, self).setData(column, role, self.messageClass.get(self.buffer, self.fieldInfo, self.index))
+        super(FieldArrayItem, self).setData(column, role, self.msg_class.get(self.msg_buffer, self.fieldInfo, self.index))
+
 
 class FieldItem(QObject, QTreeWidgetItem):
-    def __init__(self, messageClass, buffer, fieldInfo):
+    def __init__(self, msg_class, msg_buffer, fieldInfo):
         QObject.__init__(self)
 
-        columnStrings = [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
+        column_strings = [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
         
-        QTreeWidgetItem.__init__(self, None, columnStrings)
+        QTreeWidgetItem.__init__(self, None, column_strings)
         
-        self.setFlags(self.flags() | Qt.ItemIsEditable)
         self.fieldInfo = fieldInfo
-        self.messageClass = messageClass
-        self.buffer = buffer
+        self.msg_class = msg_class
+        self.msg_buffer = msg_buffer
 
     def data(self, column, role):
         if not column == 2:
@@ -77,8 +87,14 @@ class FieldItem(QObject, QTreeWidgetItem):
         if not role == Qt.DisplayRole:
             return None
 
-        value  = self.messageClass.get(self.buffer, self.fieldInfo)
+        value  = self.msg_class.get(self.msg_buffer, self.fieldInfo)
         return str(value)
+
+class EditableFieldItem(FieldItem):
+    def __init__(self, msg_class, msg_buffer, fieldInfo):
+        super(EditableFieldItem, self).__init__(msg_class, msg_buffer, fieldInfo)
+
+        self.setFlags(self.flags() | Qt.ItemIsEditable)
 
     def setData(self, column, role, value):
         if not column == 2:
@@ -88,45 +104,55 @@ class FieldItem(QObject, QTreeWidgetItem):
             return
 
         # set the value in the message/header buffer
-        self.messageClass.set(self.buffer, self.fieldInfo, value)
+        self.msg_class.set(self.msg_buffer, self.fieldInfo, value)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(FieldItem, self).setData(column, role, self.messageClass.get(self.buffer, self.fieldInfo))
+        super(FieldItem, self).setData(column, role, self.msg_class.get(self.msg_buffer, self.fieldInfo))
 
 class MessageItem(QObject, QTreeWidgetItem):
     send_message = Signal(object)
 
-    def __init__(self, messageName, treeWidget, msgLib):
+    def __init__(self, msg_name, tree_widget, msg_class, msg_buffer, child_constructor = FieldItem, child_array_constructor = FieldArrayItem):
         QObject.__init__(self)
-        QTreeWidgetItem.__init__(self, None, [messageName])
+        QTreeWidgetItem.__init__(self, None, [msg_name])
 
-        self.messageClass = msgLib.MsgClassFromName[messageName]
-        self.messageBuffer = self.messageClass.Create()
+        self.msg_class = msg_class
+        self.msg_buffer = msg_buffer
 
-        self.setup_fields(treeWidget)
+        self.setup_fields(tree_widget, child_constructor, child_array_constructor)
 
-        treeWidget.addTopLevelItem(self)
+        tree_widget.addTopLevelItem(self)
 
-        sendButton = QPushButton("Send", treeWidget)
-        sendButton.autoFillBackground()
-        sendButton.clicked.connect(self.on_send_message_clicked)
-        treeWidget.setItemWidget(self, 4, sendButton)
+    def set_msg_buffer(self, msg_buffer):
+        self.msg_buffer = msg_buffer
+        self.emitDataChanged()
 
-    def setup_fields(self, treeWidget):
+    def setup_fields(self, tree_widget, child_constructor, child_array_constructor):
         headerTreeItemParent = QTreeWidgetItem(None, [ "Header" ])
         self.addChild(headerTreeItemParent)
 
         for headerFieldInfo in Messaging.hdr.fields:
-            headerFieldTreeItem = FieldItem(Messaging.hdr, self.messageBuffer, headerFieldInfo)
+            headerFieldTreeItem = child_constructor(Messaging.hdr, self.msg_buffer, headerFieldInfo)
             headerTreeItemParent.addChild(headerFieldTreeItem)
 
-        for fieldInfo in self.messageClass.fields:
+        for fieldInfo in self.msg_class.fields:
             if(fieldInfo.count == 1):
-                messageFieldTreeItem = FieldItem(self.messageClass, self.messageBuffer, fieldInfo)
+                messageFieldTreeItem = child_constructor(self.msg_class, self.msg_buffer, fieldInfo)
                 self.addChild(messageFieldTreeItem)
             else:
-                messageArrayFieldTreeItem = FieldArrayItem(self.messageClass, self.messageBuffer, fieldInfo)
+                messageArrayFieldTreeItem = child_array_constructor(self.msg_class, self.msg_buffer, fieldInfo)
                 self.addChild(messageArrayFieldTreeItem)
-    
+
+class EditableMessageItem(MessageItem):
+    send_message = Signal(object)
+
+    def __init__(self, msg_name, tree_widget, msg_class, msg_buffer):
+        super(EditableMessageItem, self).__init__(msg_name, tree_widget, msg_class, msg_buffer, EditableFieldItem, EditableFieldArrayItem)
+
+        sendButton = QPushButton("Send", tree_widget)
+        sendButton.autoFillBackground()
+        sendButton.clicked.connect(self.on_send_message_clicked)
+        tree_widget.setItemWidget(self, 4, sendButton)
+
     def on_send_message_clicked(self):
-        self.send_message.emit(self.messageBuffer)
+        self.send_message.emit(self.msg_buffer)
