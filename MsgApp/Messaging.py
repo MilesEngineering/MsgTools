@@ -93,22 +93,34 @@ class Messaging:
         Messaging.MsgClassFromName[name] = classDef
 
     @staticmethod
-    def set(msgClass, messageBytearray, fieldInfo, value, index=1):
-        if(fieldInfo["Units"] != "ASCII"):
-            value = int(value)
-        if(fieldInfo["Count"] == 1):
-            getattr(msgClass, fieldInfo["Set"])(messageBytearray, value)
+    def set(msgClass, messageBytearray, fieldInfo, value, index=0):
+        if("int" in fieldInfo.type):
+            value = int(float(value))
+        elif("float" in fieldInfo.type):
+            value = float(value)
+        if(fieldInfo.count == 1):
+            getattr(msgClass, fieldInfo.set)(messageBytearray, value)
         else:
-            getattr(msgClass, fieldInfo["Set"])(messageBytearray, value, index)
+            getattr(msgClass, fieldInfo.set)(messageBytearray, value, index)
 
     @staticmethod
-    def get(msgClass, messageBytearray, fieldInfo, index=1):
-        if(fieldInfo["Count"] == 1):
-            value = getattr(msgClass, fieldInfo["Get"])(messageBytearray)
+    def get(msgClass, messageBytearray, fieldInfo, index=0):
+        if(fieldInfo.count == 1):
+            value = getattr(msgClass, fieldInfo.get)(messageBytearray)
         else:
-            value = getattr(msgClass, fieldInfo["Get"])(messageBytearray, index)
-        return value
+            value = getattr(msgClass, fieldInfo.get)(messageBytearray, index)
+        return str(value)
 
     @staticmethod
     def get_id(messageBytearray):
         pass
+
+class FieldInfo(object):
+    def __init__(self, name, type, units, description, get, set, count):
+        self.name=name
+        self.type=type
+        self.units=units
+        self.description=description
+        self.get=get
+        self.set=set
+        self.count=count
