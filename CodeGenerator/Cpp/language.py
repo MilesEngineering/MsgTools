@@ -24,20 +24,23 @@ def fnHdr(field):
     return ret
 
 def arrayAccessor(field, offset):
-    if MsgParser.fieldCount(field) > 1:
-        loc = str(offset)
-        access = "(%s*)&m_data[%s]" % (fieldType(field), loc)
-        ret = '''\
+    if "Offset" in field or "Scale" in field:
+        return ""
+    if MsgParser.fieldCount(field) == 1:
+        return ""
+    
+    loc = str(offset)
+    access = "(%s*)&m_data[%s]" % (fieldType(field), loc)
+    ret = '''\
 %s
 %s* %s()
 {
     return %s;
 }''' % (fnHdr(field), fieldType(field), field["Name"], access)
 
-        if(MsgParser.fieldSize(field) != 1):
-            ret = "#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ && %s == %s\n" % (MsgParser.fieldSize(field), offset) + ret + "\n#endif\n"
-        return ret
-    return ""
+    if(MsgParser.fieldSize(field) != 1):
+        ret = "#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ && %s == %s\n" % (MsgParser.fieldSize(field), offset) + ret + "\n#endif\n"
+    return ret
 
 def getFn(field, offset):
     loc = str(offset)
