@@ -68,7 +68,7 @@ class MsgApp(QMainWindow):
                 self.readFn = self.connection.recv
                 self.sendFn = self.connection.write
                 self.connection.connect((ip, int(port)))
-                connectAction.triggered.connect(lambda: self.connection.connect(ip, int(port)))
+                connectAction.triggered.connect(self.chooseHost)
                 disconnectAction.triggered.connect(self.connection.disconnect)
                 # die "Could not create socket: $!\n" unless $connection
             elif(self.connectionType.lower() == "qtsocket"):
@@ -76,7 +76,7 @@ class MsgApp(QMainWindow):
                 self.connection.error.connect(self.displayError)
                 ret = self.connection.readyRead.connect(self.readRxBuffer)
                 self.connection.connectToHost(ip, port)
-                connectAction.triggered.connect(lambda: self.connection.connectToHost(ip, port))
+                connectAction.triggered.connect(self.chooseHost)
                 disconnectAction.triggered.connect(self.connection. disconnectFromHost)
                 self.readFn = self.connection.read
                 self.sendFn = self.connection.write
@@ -99,6 +99,22 @@ class MsgApp(QMainWindow):
             sys.exit()
 
         self.connection;
+    
+    def chooseHost(self):
+        (hostIp, port) = self.connectionName.split(":")
+        if(hostIp == None):
+            hostIp = "127.0.0.1"
+
+        if(port == None):
+            port = "5678"
+        
+        port = int(port)
+
+        hostIp, ok = QInputDialog.getText(self, 'Connect',  'Server:', QLineEdit.Normal, hostIp)
+        if(self.connectionType.lower() == "socket"):
+            self.connection.connect(hostIp, int(port))
+        elif(self.connectionType.lower() == "qtsocket"):
+            self.connection.connectToHost(hostIp, port)
     
     def onConnected(self):
         # send a connect message
