@@ -14,8 +14,9 @@ class <MSGNAME> :
     ID = <MSGID>
     SIZE = <MSGSIZE>
     MSG_OFFSET = Messaging.hdrSize
-    fields = []
-    fields.append(<FIELDINFOS>)
+    fields = [ \
+        <REFLECTION>\
+    ]
     
     @staticmethod
     def set(message_buffer, fieldInfo, value, index=1):

@@ -13,8 +13,9 @@ import Messaging as msg
 class <MSGNAME> :
     SIZE = <MSGSIZE>
     MSG_OFFSET = 0
-    fields = []
-    fields.append(<FIELDINFOS>)
+    fields = [ \
+        <REFLECTION>\
+    ]
 
     @staticmethod
     def set(message_buffer, fieldInfo, value, index=1):

@@ -2,6 +2,9 @@ Messages:
   - Name: SerialHeader
     Description: Header for messages sent over a serial port.
     Fields:
+      - Name: StartByte
+        Type: uint8
+        Default: 0xF7
       - Name: Source
         Type: uint8
         Default: 0

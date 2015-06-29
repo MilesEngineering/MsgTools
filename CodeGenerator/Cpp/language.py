@@ -273,4 +273,5 @@ def reflection(msg):
                 bitOffset += numBits
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
-    return ret
+    return "\n".join(ret)
+    

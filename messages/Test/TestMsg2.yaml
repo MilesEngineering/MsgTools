@@ -11,7 +11,17 @@ Messages:
       - Name: Field2
         Type: uint16
         Units: m/s
-        Description: Test Field 2
+        Description: Test Field 2, with bitfields
+        Bitfields:
+            - Name: BitsA
+              NumBits: 4
+              Default: 7.1
+              Scale: 14.357
+            - Name: BitsB
+              NumBits: 3
+            - Name: BitsC
+              NumBits: 1
+              Default: 1
       - Name: Field3
         Type: uint8
         Units: m/s

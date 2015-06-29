@@ -33,7 +33,7 @@ def GetFieldA(message_buffer):
 @msg.count(1)
 def GetFieldABitsA(message_buffer):
     \"\"\"\"\"\"
-    return (GetFieldA(message_buffer) >> 0) & 0x7fffffff
+    return (MsgA.GetFieldA(message_buffer) >> 0) & 0x7fffffff
 """)
         expected.append("""\
 @staticmethod
@@ -72,7 +72,7 @@ def GetFieldD(message_buffer):
 @msg.count(1)
 def GetFieldDBitsA(message_buffer):
     \"\"\"\"\"\"
-    return (float((GetFieldD(message_buffer) >> 0) & 0xf) / 14.357)
+    return (float((MsgA.GetFieldD(message_buffer) >> 0) & 0xf) / 14.357)
 """)
         expected.append("""\
 @staticmethod
@@ -81,7 +81,7 @@ def GetFieldDBitsA(message_buffer):
 @msg.count(1)
 def GetFieldDBitsB(message_buffer):
     \"\"\"\"\"\"
-    return (GetFieldD(message_buffer) >> 4) & 0x7
+    return (MsgA.GetFieldD(message_buffer) >> 4) & 0x7
 """)
         expected.append("""\
 @staticmethod
@@ -90,7 +90,7 @@ def GetFieldDBitsB(message_buffer):
 @msg.count(1)
 def GetFieldDBitsC(message_buffer):
     \"\"\"\"\"\"
-    return (GetFieldD(message_buffer) >> 7) & 0x1
+    return (MsgA.GetFieldD(message_buffer) >> 7) & 0x1
 """)
         expected.append("""\
 @staticmethod
@@ -130,7 +130,7 @@ def SetFieldA(message_buffer, value):
 @msg.count(1)
 def SetFieldABitsA(message_buffer, value):
     \"\"\"\"\"\"
-    SetFieldA(message_buffer, (GetFieldA(message_buffer) & ~(0x7fffffff << 0)) | ((value & 0x7fffffff) << 0))
+    MsgA.SetFieldA(message_buffer, (MsgA.GetFieldA(message_buffer) & ~(0x7fffffff << 0)) | ((value & 0x7fffffff) << 0))
 """)
         expected.append("""\
 @staticmethod
@@ -169,7 +169,7 @@ def SetFieldD(message_buffer, value):
 @msg.count(1)
 def SetFieldDBitsA(message_buffer, value):
     \"\"\"\"\"\"
-    SetFieldD(message_buffer, (GetFieldD(message_buffer) & ~(0xf << 0)) | ((int(value * 14.357) & 0xf) << 0))
+    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0xf << 0)) | ((int(value * 14.357) & 0xf) << 0))
 """)
         expected.append("""\
 @staticmethod
@@ -178,7 +178,7 @@ def SetFieldDBitsA(message_buffer, value):
 @msg.count(1)
 def SetFieldDBitsB(message_buffer, value):
     \"\"\"\"\"\"
-    SetFieldD(message_buffer, (GetFieldD(message_buffer) & ~(0x7 << 4)) | ((value & 0x7) << 4))
+    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x7 << 4)) | ((value & 0x7) << 4))
 """)
         expected.append("""\
 @staticmethod
@@ -187,7 +187,7 @@ def SetFieldDBitsB(message_buffer, value):
 @msg.count(1)
 def SetFieldDBitsC(message_buffer, value):
     \"\"\"\"\"\"
-    SetFieldD(message_buffer, (GetFieldD(message_buffer) & ~(0x1 << 7)) | ((value & 0x1) << 7))
+    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x1 << 7)) | ((value & 0x1) << 7))
 """)
         expected.append("""\
 @staticmethod

@@ -111,8 +111,17 @@ class Messaging:
             value = getattr(msgClass, fieldInfo.get)(message_buffer, index)
         return str(value)
 
+class BitFieldInfo(object):
+    def __init__(self, name, type, units, description, get, set):
+        self.name=name
+        self.type=type
+        self.units=units
+        self.description=description
+        self.get=get
+        self.set=set
+
 class FieldInfo(object):
-    def __init__(self, name, type, units, description, get, set, count):
+    def __init__(self, name, type, units, description, get, set, count, bitfieldInfo):
         self.name=name
         self.type=type
         self.units=units
@@ -120,3 +129,4 @@ class FieldInfo(object):
         self.get=get
         self.set=set
         self.count=count
+        self.bitfieldInfo=bitfieldInfo

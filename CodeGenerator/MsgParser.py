@@ -50,11 +50,10 @@ def DoReplacements(line, msg, enums, subdirComponent):
     if "ID" in msg:
         ret = replace(ret, "<MSGID>", str(msg["ID"]))
     ret = replace(ret, "<MSGSIZE>", str(language.msgSize(msg)))
-    ret = replace(ret, "<FIELDINFOS>", str(language.fieldInfos(msg)))
     ret = replace(ret, "<MSGDESCRIPTION>", str(msg["Description"]))
     ret = replace(ret, "<ENUMERATIONS>", language.enums(enums))
     ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))
-    ret = replace(ret, "<REFLECTION>", "\n".join(language.reflection(msg)))
+    ret = replace(ret, "<REFLECTION>", language.reflection(msg))
     ret = replace(ret, "<INIT_CODE>", "\n".join(language.initCode(msg)))
     ret = replace(ret, "<OUTPUTFILENAME>", outputFilename)
     ret = replace(ret, "<INPUTFILENAME>", inputFilename)

@@ -25,26 +25,60 @@ def reflectionInterfaceType(field):
     type = field["Type"]
     if "float" in type or "Offset" in field or "Scale" in field:
         type = "float"
-    elif MsgParser.fieldUnits(field) == "ASCII" or "Enum" in field:
+    elif MsgParser.fieldUnits(field) == "ASCII":
         type = "string"
+    elif "Enum" in field:
+        type = "enumeration"
     else:
         type = "int"
     return type
 
-def fieldInfos(msg):
+def bitsReflectionInterfaceType(field):
+    type = "int"
+    if "Offset" in field or "Scale" in field:
+        type = "float"
+    elif MsgParser.fieldUnits(field) == "ASCII":
+        type = "string"
+    elif "Enum" in field:
+        type = "enumeration"
+    else:
+        type = "int"
+    return type
+
+def bitfieldReflection(field, bits):
+    name = field["Name"] + bits["Name"]
+    ret = "BitFieldInfo("+\
+              'name="'+name + '",'+\
+              'type="'+bitsReflectionInterfaceType(bits) + '",'+\
+              'units="'+MsgParser.fieldUnits(bits) + '",'+\
+              'description="'+MsgParser.fieldDescription(bits) + '",'+\
+              'get="'+"Get" + name + '",'+\
+              'set="'+"Set" + name  + '")'
+    return ret
+
+def fieldReflection(field):
+    fieldInfo = "FieldInfo("+\
+                  'name="'+field["Name"] + '",'+\
+                  'type="'+reflectionInterfaceType(field) + '",'+\
+                  'units="'+MsgParser.fieldUnits(field) + '",'+\
+                  'description="'+MsgParser.fieldDescription(field) + '",'+\
+                  'get="'+"Get" + field["Name"] + '",'+\
+                  'set="'+"Set" + field["Name"]  + '",'+\
+                  'count='+str(pythonFieldCount(field)) + ', '
+    if "Bitfields" in field:
+        bitfieldInfo = []
+        for bits in field["Bitfields"]:
+            bitfieldInfo.append("    " + bitfieldReflection(field, bits))
+        fieldInfo += "bitfieldInfo = [\n" + ",\n".join(bitfieldInfo) + "])"
+    else:
+        fieldInfo += "bitfieldInfo = [])"
+    return fieldInfo
+
+def reflection(msg):
     fieldInfos = []
     for field in msg["Fields"]:
-        fieldInfo = "FieldInfo("+\
-                      'name="'+field["Name"] + '",'+\
-                      'type="'+reflectionInterfaceType(field) + '",'+\
-                      'units="'+MsgParser.fieldUnits(field) + '",'+\
-                      'description="'+MsgParser.fieldDescription(field) + '",'+\
-                      'get="'+"Get" + field["Name"] + '",'+\
-                      'set="'+"Set" + field["Name"]  + '",'+\
-                      'count='+str(pythonFieldCount(field)) + ')'
-
-        fieldInfos.append(fieldInfo)
-    return "\n".join(fieldInfos)
+        fieldInfos.append(fieldReflection(field))
+    return ",\n".join(fieldInfos)
 
 def fnHdr(field, count, name):
     param = "message_buffer"
@@ -107,8 +141,8 @@ def setFn(msg, field, offset):
 ''' % (fnHdr(field,count, "Set"+field["Name"]), math, type, loc)
     return ret
 
-def getBitsFn(field, bits, offset, bitOffset, numBits):
-    access = "(Get%s(message_buffer) >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
+    access = "("+msg["Name"]+".Get%s(message_buffer) >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
     access = MsgParser.getMath(access, bits, "float")
     ret  = '''\
 %s
@@ -116,11 +150,11 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
 ''' % (fnHdr(bits,1,"Get"+field["Name"]+bits["Name"]), access)
     return ret
 
-def setBitsFn(field, bits, offset, bitOffset, numBits):
+def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
     ret = '''\
 %s
-    Set%s(message_buffer, (Get%s(message_buffer) & ~(%s << %s)) | ((%s & %s) << %s))
-''' % (fnHdr(bits,1,"Set"+field["Name"]+bits["Name"]), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), MsgParser.setMath("value", bits, "int"), MsgParser.Mask(numBits), str(bitOffset))
+    %s.Set%s(message_buffer, (%s.Get%s(message_buffer) & ~(%s << %s)) | ((%s & %s) << %s))
+''' % (fnHdr(bits,1,"Set"+field["Name"]+bits["Name"]), msg["Name"], field["Name"], msg["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), MsgParser.setMath("value", bits, "int"), MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -135,8 +169,8 @@ def accessors(msg):
         if "Bitfields" in field:
             for bits in field["Bitfields"]:
                 numBits = bits["NumBits"]
-                gets.append(getBitsFn(field, bits, offset, bitOffset, numBits))
-                sets.append(setBitsFn(field, bits, offset, bitOffset, numBits))
+                gets.append(getBitsFn(msg, field, bits, offset, bitOffset, numBits))
+                sets.append(setBitsFn(msg, field, bits, offset, bitOffset, numBits))
                 bitOffset += numBits
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
@@ -180,6 +214,3 @@ def enums(e):
         ret = ret[:-2]
         ret += "}\n"
     return ret
-
-def reflection(msg):
-    return ""
