@@ -57,7 +57,7 @@ def bitsReflectionInterfaceType(field):
         type = "int"
     return type
 
-def bitfieldReflection(field, bits):
+def bitfieldReflection(msg, field, bits):
     name = field["Name"] + bits["Name"]
     ret = "BitFieldInfo("+\
               'name="'+name + '",'+\
@@ -65,10 +65,14 @@ def bitfieldReflection(field, bits):
               'units="'+MsgParser.fieldUnits(bits) + '",'+\
               'description="'+MsgParser.fieldDescription(bits) + '",'+\
               'get="'+"Get" + name + '",'+\
-              'set="'+"Set" + name  + '")'
+              'set="'+"Set" + name  + '", '
+    if "Enum" in field:
+        ret += "enum = ["+  field["Enum"]+", " + "Reverse" + field["Enum"]+"])"
+    else:
+        ret += "enum = [])"
     return ret
 
-def fieldReflection(field):
+def fieldReflection(msg, field):
     fieldInfo = "FieldInfo("+\
                   'name="'+field["Name"] + '",'+\
                   'type="'+reflectionInterfaceType(field) + '",'+\
@@ -80,16 +84,20 @@ def fieldReflection(field):
     if "Bitfields" in field:
         bitfieldInfo = []
         for bits in field["Bitfields"]:
-            bitfieldInfo.append("    " + bitfieldReflection(field, bits))
-        fieldInfo += "bitfieldInfo = [\n" + ",\n".join(bitfieldInfo) + "])"
+            bitfieldInfo.append("    " + bitfieldReflection(msg, field, bits))
+        fieldInfo += "bitfieldInfo = [\n" + ",\n".join(bitfieldInfo) + "], "
     else:
-        fieldInfo += "bitfieldInfo = [])"
+        fieldInfo += "bitfieldInfo = [], "
+    if "Enum" in field:
+        fieldInfo += "enum = [" + field["Enum"]+", " + "Reverse" + field["Enum"]+"])"
+    else:
+        fieldInfo += "enum = [])"
     return fieldInfo
 
 def reflection(msg):
     fieldInfos = []
     for field in msg["Fields"]:
-        fieldInfos.append(fieldReflection(field))
+        fieldInfos.append(fieldReflection(msg, field))
     return ",\n".join(fieldInfos)
 
 def fnHdr(field, count, name):

@@ -14,6 +14,9 @@ class <MSGNAME> :
     ID = <MSGID>
     SIZE = <MSGSIZE>
     MSG_OFFSET = Messaging.hdrSize
+    # Enumerations
+    <ENUMERATIONS>
+    # Reflection information
     fields = [ \
         <REFLECTION>\
     ]
@@ -43,8 +46,6 @@ class <MSGNAME> :
     @staticmethod
     def MsgName():
         return "<MSGNAME>"
-    # Enumerations
-    <ENUMERATIONS>
     # Accessors
     <ACCESSORS>
 

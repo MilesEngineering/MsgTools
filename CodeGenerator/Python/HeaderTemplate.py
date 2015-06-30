@@ -13,6 +13,9 @@ import Messaging as msg
 class <MSGNAME> :
     SIZE = <MSGSIZE>
     MSG_OFFSET = 0
+    # Enumerations
+    <ENUMERATIONS>
+    # Reflection information
     fields = [ \
         <REFLECTION>\
     ]
@@ -34,7 +37,5 @@ class <MSGNAME> :
     @staticmethod
     def MsgName():
         return "<MSGNAME>"
-    # Enumerations
-    <ENUMERATIONS>
     # Accessors
     <ACCESSORS>

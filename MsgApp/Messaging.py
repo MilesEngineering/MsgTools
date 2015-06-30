@@ -112,16 +112,17 @@ class Messaging:
         return str(value)
 
 class BitFieldInfo(object):
-    def __init__(self, name, type, units, description, get, set):
+    def __init__(self, name, type, units, description, get, set, enum):
         self.name=name
         self.type=type
         self.units=units
         self.description=description
         self.get=get
         self.set=set
+        self.enum=enum
 
 class FieldInfo(object):
-    def __init__(self, name, type, units, description, get, set, count, bitfieldInfo):
+    def __init__(self, name, type, units, description, get, set, count, bitfieldInfo, enum):
         self.name=name
         self.type=type
         self.units=units
@@ -130,3 +131,4 @@ class FieldInfo(object):
         self.set=set
         self.count=count
         self.bitfieldInfo=bitfieldInfo
+        self.enum=enum
