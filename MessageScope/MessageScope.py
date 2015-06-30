@@ -25,7 +25,7 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         self.configure_gui(parent)
         
-        self.resize(800, 600)
+        self.resize(1000, 600)
         
         self.ReadTxDictionary()
 
@@ -54,7 +54,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.setCentralWidget(hSplitter)
 
     def configure_tx_dictionary(self, parent):
-        txDictionary = QListWidget(parent)
+        txDictionary = QTreeWidget(parent)
         txDictionary.itemDoubleClicked.connect(self.onTxMessageSelected)
         return txDictionary
 
@@ -83,13 +83,30 @@ class MessageScopeGui(MsgGui.MsgGui):
     def ReadTxDictionary(self):
         print("Tx Dictionary:")
         for id in self.msgLib.MsgNameFromID:
-            print(self.msgLib.MsgNameFromID[id], "=", id)
-            newItem = QListWidgetItem()
-            newItem.setText(self.msgLib.MsgNameFromID[id])
-            self.txDictionary.addItem(newItem)
+            #print(self.msgLib.MsgNameFromID[id], "=", id)
+            name = self.msgLib.MsgNameFromID[id]
+            (msgDir, msgName) = name.split('.')
+            addFn = None
+            
+            parentWidget = None
+            if msgDir == None:
+                parentWidget = self.txDictionary
+            else:
+                dirItemMatches = self.txDictionary.findItems(msgDir, Qt.MatchExactly, 0)
+                if(len(dirItemMatches) > 0):
+                    parentWidget = dirItemMatches[0]
+                else:
+                    parentWidget = QTreeWidgetItem(self.txDictionary)
+                    parentWidget.setText(0, msgDir)
+            msgItem = QTreeWidgetItem(parentWidget)
+            msgItem.setText(0, msgName)
+        self.txDictionary.sortByColumn(0, Qt.AscendingOrder)
 
     def onTxMessageSelected(self, txListWidgetItem):
-        messageName = txListWidgetItem.text()
+        parentWidget = txListWidgetItem.parent()
+        messageName = "." + txListWidgetItem.text(0)
+        if not parentWidget is None:
+            messageName = parentWidget.text(0) + messageName
 
         # Always add to TX panel even if the same message class may already exist
         # since we may want to send the same message with different contents/header/rates.
@@ -113,10 +130,10 @@ class MessageScopeGui(MsgGui.MsgGui):
         msg_class = self.msgLib.MsgClassFromName[msg_name]
         msg_fields = msg_class.fields
 
-        self.dsiplay_message_in_rx_list(msg_id, msg_name)
+        self.display_message_in_rx_list(msg_id, msg_name)
         self.display_message_in_rx_tree(msg_id, msg_name, msg_class, msg_buffer)
 
-    def dsiplay_message_in_rx_list(self, msg_id, msg_name):
+    def display_message_in_rx_list(self, msg_id, msg_name):
         if not msg_id in self.rx_msg_list:
             msg_list_item = QListWidgetItem(msg_name)
 

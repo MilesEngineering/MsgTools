@@ -13,7 +13,7 @@ class TestClass(unittest.TestCase):
         cls.msgLib = Messaging("../../obj/CodeGenerator/Python", 0)
 
     def test_dict(self):
-        msgname = "Connect"
+        msgname = "Network.Connect"
         msgid = self.msgLib.MsgIDFromName[msgname]
 
         msgid2 = "0xffffff01"
@@ -24,7 +24,7 @@ class TestClass(unittest.TestCase):
         self.PrintDictionary()
 
     def test_accessors(self):
-        msgclass = self.msgLib.MsgClassFromName["Connect"]
+        msgclass = self.msgLib.MsgClassFromName["Network.Connect"]
 
         expected = "Testing"
         testbuf = msgclass.Create()
