@@ -120,7 +120,7 @@ def GetFieldF(message_buffer):
 @msg.count(1)
 def SetFieldA(message_buffer, value):
     \"\"\"\"\"\"
-    tmp = value
+    tmp = min(max(value, 0), 4294967295)
     struct.pack_into('>L', message_buffer, MsgA.MSG_OFFSET + 0, tmp)
 """)
         expected.append("""\
@@ -130,7 +130,8 @@ def SetFieldA(message_buffer, value):
 @msg.count(1)
 def SetFieldABitsA(message_buffer, value):
     \"\"\"\"\"\"
-    MsgA.SetFieldA(message_buffer, (MsgA.GetFieldA(message_buffer) & ~(0x7fffffff << 0)) | ((value & 0x7fffffff) << 0))
+    tmp = min(max(value, 0), 2147483648)
+    MsgA.SetFieldA(message_buffer, (MsgA.GetFieldA(message_buffer) & ~(0x7fffffff << 0)) | ((tmp & 0x7fffffff) << 0))
 """)
         expected.append("""\
 @staticmethod
@@ -139,7 +140,7 @@ def SetFieldABitsA(message_buffer, value):
 @msg.count(1)
 def SetFieldB(message_buffer, value):
     \"\"\"\"\"\"
-    tmp = value
+    tmp = min(max(value, 0), 65535)
     struct.pack_into('>H', message_buffer, MsgA.MSG_OFFSET + 4, tmp)
 """)
         expected.append("""\
@@ -149,7 +150,7 @@ def SetFieldB(message_buffer, value):
 @msg.count(5)
 def SetFieldC(message_buffer, value, idx):
     \"\"\"\"\"\"
-    tmp = value
+    tmp = min(max(value, 0), 255)
     struct.pack_into('B', message_buffer, MsgA.MSG_OFFSET + 6+idx*1, tmp)
 """)
         expected.append("""\
@@ -159,7 +160,7 @@ def SetFieldC(message_buffer, value, idx):
 @msg.count(1)
 def SetFieldD(message_buffer, value):
     \"\"\"\"\"\"
-    tmp = value
+    tmp = min(max(value, 0), 255)
     struct.pack_into('B', message_buffer, MsgA.MSG_OFFSET + 11, tmp)
 """)
         expected.append("""\
@@ -169,7 +170,8 @@ def SetFieldD(message_buffer, value):
 @msg.count(1)
 def SetFieldDBitsA(message_buffer, value):
     \"\"\"\"\"\"
-    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0xf << 0)) | ((int(value * 14.357) & 0xf) << 0))
+    tmp = min(max(int(value * 14.357), 0), 16)
+    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0xf << 0)) | ((tmp & 0xf) << 0))
 """)
         expected.append("""\
 @staticmethod
@@ -178,7 +180,8 @@ def SetFieldDBitsA(message_buffer, value):
 @msg.count(1)
 def SetFieldDBitsB(message_buffer, value):
     \"\"\"\"\"\"
-    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x7 << 4)) | ((value & 0x7) << 4))
+    tmp = min(max(value, 0), 8)
+    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x7 << 4)) | ((tmp & 0x7) << 4))
 """)
         expected.append("""\
 @staticmethod
@@ -187,7 +190,8 @@ def SetFieldDBitsB(message_buffer, value):
 @msg.count(1)
 def SetFieldDBitsC(message_buffer, value):
     \"\"\"\"\"\"
-    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x1 << 7)) | ((value & 0x1) << 7))
+    tmp = min(max(value, 0), 2)
+    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x1 << 7)) | ((tmp & 0x1) << 7))
 """)
         expected.append("""\
 @staticmethod
@@ -206,7 +210,7 @@ def SetFieldE(message_buffer, value):
 @msg.count(1)
 def SetFieldF(message_buffer, value):
     \"\"\"\"\"\"
-    tmp = int((value - 1.828) * 2.7)
+    tmp = min(max(int((value - 1.828) * 2.7), 0), 65535)
     struct.pack_into('>H', message_buffer, MsgA.MSG_OFFSET + 16, tmp)
 """)
         expCount = len(expected)
@@ -227,7 +231,7 @@ def SetFieldF(message_buffer, value):
             MsgParser.msgName(MsgParser.Messages(self.msgDict)[1])
     
     def test_enums(self):
-        expected = 'EnumA = {"OptionA" : 1, "OptionB" : 2, "OptionC" : 4, "OptionD" : 5}\n'
+        expected = 'EnumA = {"OptionA" : 1, "OptionB" : 2, "OptionC" : 4, "OptionD" : 5}\nReverseEnumA = {1 : "OptionA", 2 : "OptionB", 4 : "OptionC", 5 : "OptionD"}\n'
         observed = language.enums(MsgParser.Enums(self.msgDict))
         self.assertMultiLineEqual(expected, observed)
     
