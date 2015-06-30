@@ -2,7 +2,7 @@
 import unittest
 import sys
 sys.path.append("..")
-import Messaging
+from Messaging import Messaging
 import ctypes
 
 class TestClass(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestClass(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print ("----------- Running setup")
-        cls.msgLib = Messaging.Messaging("../../obj/CodeGenerator/Python", 0)
+        cls.msgLib = Messaging("../../obj/CodeGenerator/Python", 0)
 
     def test_dict(self):
         msgname = "Connect"
@@ -28,13 +28,13 @@ class TestClass(unittest.TestCase):
 
         expected = "Testing"
         testbuf = msgclass.Create()
-        msgclass.set(testbuf, msgclass.fields[0], expected)
+        Messaging.set(testbuf, msgclass.fields[0], expected)
         observed = self.msgLib.Connect.Connect.GetName(testbuf)
         self.assertMultiLineEqual(expected, observed)
         
         expected="MoreTesting"
         msgclass.SetName(testbuf, expected)
-        observed=msgclass.get(testbuf, msgclass.fields[0])
+        observed=Messaging.get(testbuf, msgclass.fields[0])
         self.assertMultiLineEqual(expected, observed)
 
     def PrintDictionary(self):
@@ -55,11 +55,11 @@ class TestClass(unittest.TestCase):
         for fieldInfo in msgClass.fields:
             txt = "body.%s.%s: " % (msgClass.__name__, fieldInfo.name)
             if(fieldInfo.count == 1):
-                txt += str(msgClass.get(msg, fieldInfo))
+                txt += str(Messaging.get(msg, fieldInfo))
             else:
                 for i in range(0,fieldInfo.count):
                     #print("body.",msgClass.__name__, ".", method.__name__, "[",i,"] = ", method(msg,i), " #", method.__doc__, "in", method.units)
-                    txt += str(msgClass.get(msg, fieldInfo, i))
+                    txt += str(Messaging.get(msg, fieldInfo, i))
                     if(i < fieldInfo.count - 1):
                         txt += ", "
             txt += " # "+fieldInfo.description+" in " + fieldInfo.units

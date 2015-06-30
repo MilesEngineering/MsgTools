@@ -93,22 +93,22 @@ class Messaging:
         Messaging.MsgClassFromName[name] = classDef
 
     @staticmethod
-    def set(msgClass, message_buffer, fieldInfo, value, index=0):
+    def set(message_buffer, fieldInfo, value, index=0):
         if("int" in fieldInfo.type):
             value = int(float(value))
         elif("float" in fieldInfo.type):
             value = float(value)
         if(fieldInfo.count == 1):
-            getattr(msgClass, fieldInfo.set)(message_buffer, value)
+            fieldInfo.set.__func__(message_buffer, value)
         else:
-            getattr(msgClass, fieldInfo.set)(message_buffer, value, index)
+            fieldInfo.set.__func__(message_buffer, value, index)
 
     @staticmethod
-    def get(msgClass, message_buffer, fieldInfo, index=0):
+    def get(message_buffer, fieldInfo, index=0):
         if(fieldInfo.count == 1):
-            value = getattr(msgClass, fieldInfo.get)(message_buffer)
+            value = fieldInfo.get.__func__(message_buffer)
         else:
-            value = getattr(msgClass, fieldInfo.get)(message_buffer, index)
+            value = fieldInfo.get.__func__(message_buffer, index)
         return str(value)
 
 class BitFieldInfo(object):

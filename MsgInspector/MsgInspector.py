@@ -10,6 +10,8 @@ srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
 sys.path.append(srcroot+"/MsgApp")
 import MsgGui
 
+from Messaging import Messaging
+
 class MsgInspector(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", argv, parent)
@@ -53,7 +55,9 @@ class MsgInspector(MsgGui.MsgGui):
             print("WARNING!  No definition for ", id, "!\n")
             return
 
+        firstTime = 0
         if(not(id in self.msgWidgets)):
+            firstTime = 1
             # create a new tree widget
             msgWidget = QtGui.QTreeWidget()
             
@@ -66,10 +70,6 @@ class MsgInspector(MsgGui.MsgGui):
                 tableHeader.append(fieldInfo.name)
             
             msgWidget.setHeaderLabels(tableHeader)
-            count = 0
-            for fieldInfo in msgClass.fields:
-                msgWidget.resizeColumnToContents(count)
-                count += 1
             
             # store a pointer to it, so we can find it next time (instead of creating it again)
             self.msgWidgets[id] = msgWidget
@@ -77,16 +77,21 @@ class MsgInspector(MsgGui.MsgGui):
         msgStringList = []
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
-                columnText = str(msgClass.get(msg, fieldInfo))
+                columnText = str(Messaging.get(msg, fieldInfo))
             else:
                 columnText = ""
                 for i in range(0,fieldInfo.count):
-                    columnText += str(msgClass.get(msg, fieldInfo, i))
+                    columnText += str(Messaging.get(msg, fieldInfo, i))
                     if(i<fieldInfo.count-1):
                         columnText += ", "
             msgStringList.append(columnText)
         msgItem = QTreeWidgetItem(None,msgStringList)
         self.msgWidgets[id].addTopLevelItem(msgItem)
+        if firstTime:
+            count = 0
+            for fieldInfo in msgClass.fields:
+                msgWidget.resizeColumnToContents(count)
+                count += 1
 
     def PrintMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
@@ -117,11 +122,11 @@ class MsgInspector(MsgGui.MsgGui):
         text = ""
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
-                columnText = str(msgClass.get(msg, fieldInfo))
+                columnText = str(Messaging.get(msg, fieldInfo))
             else:
                 columnText = ""
                 for i in range(0,fieldInfo.count):
-                    columnText += str(msgClass.get(msg, fieldInfo, i))
+                    columnText += str(Messaging.get(msg, fieldInfo, i))
                     if(i<fieldInfo.count-1):
                         columnText += ", "
             text += columnText + ", "

@@ -16,19 +16,7 @@ class <MSGNAME> :
     MSG_OFFSET = Messaging.hdrSize
     # Enumerations
     <ENUMERATIONS>
-    # Reflection information
-    fields = [ \
-        <REFLECTION>\
-    ]
     
-    @staticmethod
-    def set(message_buffer, fieldInfo, value, index=1):
-        Messaging.set(<MSGNAME>, message_buffer, fieldInfo, value, index)
-
-    @staticmethod
-    def get(message_buffer, fieldInfo, index=1):
-        return Messaging.get(<MSGNAME>, message_buffer, fieldInfo, index)
-
     @staticmethod
     def Create() :
         message_buffer = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + <MSGNAME>.SIZE)
@@ -48,5 +36,10 @@ class <MSGNAME> :
         return "<MSGNAME>"
     # Accessors
     <ACCESSORS>
+
+    # Reflection information
+    fields = [ \
+        <REFLECTION>\
+    ]
 
 Messaging.Register("<MSGNAME>", <MSGNAME>.ID, <MSGNAME>)

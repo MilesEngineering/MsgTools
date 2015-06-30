@@ -15,18 +15,6 @@ class <MSGNAME> :
     MSG_OFFSET = 0
     # Enumerations
     <ENUMERATIONS>
-    # Reflection information
-    fields = [ \
-        <REFLECTION>\
-    ]
-
-    @staticmethod
-    def set(message_buffer, fieldInfo, value, index=1):
-        Messaging.set(<MSGNAME>, message_buffer, fieldInfo, value, index)
-
-    @staticmethod
-    def get(message_buffer, fieldInfo, index=1):
-        return Messaging.get(<MSGNAME>, message_buffer, fieldInfo, index)
 
     @staticmethod
     def Create() :
@@ -39,3 +27,8 @@ class <MSGNAME> :
         return "<MSGNAME>"
     # Accessors
     <ACCESSORS>
+
+    # Reflection information
+    fields = [ \
+        <REFLECTION>\
+    ]

@@ -37,7 +37,7 @@ class FieldArrayItem(QObject, QTreeWidgetItem):
         if self.index == None:
             return ""
 
-        value  = self.msg_class.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, self.index)
+        value  = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, self.index)
         return str(value)
 
 class EditableFieldArrayItem(FieldArrayItem):
@@ -57,10 +57,10 @@ class EditableFieldArrayItem(FieldArrayItem):
             return
 
         # set the value in the message/header buffer
-        self.msg_class.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, value, int(self.index))
+        Messaging.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, value, int(self.index))
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(EditableFieldArrayItem, self).setData(column, role, self.msg_class.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, int(self.index)))
+        super(EditableFieldArrayItem, self).setData(column, role, Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, int(self.index)))
 
 
 class FieldItem(QObject, QTreeWidgetItem):
@@ -82,7 +82,7 @@ class FieldItem(QObject, QTreeWidgetItem):
         if not role == Qt.DisplayRole:
             return None
 
-        value  = self.msg_class.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
+        value  = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
         return str(value)
 
 class EditableFieldItem(FieldItem):
@@ -99,10 +99,10 @@ class EditableFieldItem(FieldItem):
             return
 
         # set the value in the message/header buffer
-        self.msg_class.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, value)
+        Messaging.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, value)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(FieldItem, self).setData(column, role, self.msg_class.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo))
+        super(FieldItem, self).setData(column, role, Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo))
 
 class MessageItem(QObject, QTreeWidgetItem):
     send_message = Signal(object)
