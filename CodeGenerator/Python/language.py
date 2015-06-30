@@ -8,7 +8,19 @@ def fieldType(field):
       "float64":">d", "float32":">f"}
     typeStr = str.lower(field["Type"])
     return fieldTypeDict[typeStr]
-    
+
+def minVal(storageType):
+    dict = \
+    {"uint64":0, "uint32":0, "uint16": 0, "uint8": 0,
+      "int64": -2**63,  "int32":-2**31,  "int16": -2**15,  "int8": -2**7}
+    return dict[storageType]
+
+def maxVal(storageType):
+    dict = \
+    {"uint64": 2**64-1, "uint32": 2**32-1, "uint16":  2**16-1, "uint8":  2**8-1,
+      "int64": 2**63-1,  "int32": 2**31-1,  "int16":  2**15-1,  "int8": 2**7-1}
+    return dict[storageType]
+
 def msgSize(msg):
     offset = 0
     for field in msg["Fields"]:
@@ -95,12 +107,27 @@ def %s(%s):
     """%s"""''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(count), name, param, MsgParser.fieldDescription(field))
     return ret
 
+def enumLookup(msg, field):
+    lookup  = "defaultValue = 0\n"
+    lookup += "    if isinstance(value, int) or value.isdigit():\n"
+    lookup += "        defaultValue = int(value)\n"
+    lookup += "    value = " + msg["Name"] + "." + str(field["Enum"]) + ".get(value, defaultValue)\n"
+    lookup += "    "
+    return lookup
+
+def reverseEnumLookup(msg, field):
+    lookup = "value = " + msg["Name"] + ".Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
+    return lookup
+
 def getFn(msg, field, offset):
     loc = msg["Name"] + ".MSG_OFFSET + " + str(offset)
     param = "message_buffer"
     type = fieldType(field)
     count = MsgParser.fieldCount(field)
     cleanup = ""
+    if "Enum" in field:
+        # find index that corresponds to string input param
+        cleanup = reverseEnumLookup(msg, field)
     if  count > 1:
         if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
             type = str(count) + "s"
@@ -125,7 +152,15 @@ def setFn(msg, field, offset):
     loc = msg["Name"] + ".MSG_OFFSET + " + str(offset)
     count = MsgParser.fieldCount(field)
     type = fieldType(field)
-    math = "tmp = " + MsgParser.setMath("value", field, "int")
+    lookup = ""
+    if "Enum" in field:
+        # find index that corresponds to string input param
+        lookup = enumLookup(msg, field)
+    math = MsgParser.setMath("value", field, "int")
+    storageType = field["Type"]
+    if "int" in storageType and not "Enum" in field:
+        math = "min(max(%s, %s), %s)" % (math, minVal(storageType), maxVal(storageType))
+    math = lookup + "tmp = " + math
     if count > 1:
         if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
             type = str(count) + "s"
@@ -144,17 +179,28 @@ def setFn(msg, field, offset):
 def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
     access = "("+msg["Name"]+".Get%s(message_buffer) >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
     access = MsgParser.getMath(access, bits, "float")
+    cleanup = ""
+    if "Enum" in field:
+        # find index that corresponds to string input param
+        cleanup = reverseEnumLookup(msg, field)
     ret  = '''\
 %s
-    return %s
-''' % (fnHdr(bits,1,"Get"+field["Name"]+bits["Name"]), access)
+    %sreturn %s
+''' % (fnHdr(bits,1,"Get"+field["Name"]+bits["Name"]), cleanup, access)
     return ret
 
 def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
+    lookup = ""
+    if "Enum" in field:
+        # find index that corresponds to string input param
+        lookup = enumLookup(msg, field)
+    math = "min(max(%s, %s), %s)" % (MsgParser.setMath("value", bits, "int"), 0, str(2**numBits))
+    math = lookup + "tmp = " + math
     ret = '''\
 %s
+    %s
     %s.Set%s(message_buffer, (%s.Get%s(message_buffer) & ~(%s << %s)) | ((%s & %s) << %s))
-''' % (fnHdr(bits,1,"Set"+field["Name"]+bits["Name"]), msg["Name"], field["Name"], msg["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), MsgParser.setMath("value", bits, "int"), MsgParser.Mask(numBits), str(bitOffset))
+''' % (fnHdr(bits,1,"Set"+field["Name"]+bits["Name"]), math, msg["Name"], field["Name"], msg["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -208,9 +254,19 @@ def initCode(msg):
 def enums(e):
     ret = ""
     for enum in e:
-        ret +=  enum["Name"]+" = {"
+        # forward enum
+        fwd = enum["Name"]+" = {"
         for option in enum["Options"]:
-            ret += '"'+option["Name"]+'"'+" : "+str(option["Value"]) + ', '
-        ret = ret[:-2]
-        ret += "}\n"
+            fwd += '"'+option["Name"]+'"'+" : "+str(option["Value"]) + ', '
+        fwd = fwd[:-2]
+        fwd += "}\n"
+
+        # Reverse enum
+        back = "Reverse" + enum["Name"]+" = {"
+        for option in enum["Options"]:
+            back += str(option["Value"]) +' : "'+str(option["Name"]) + '", '
+        back = back[:-2]
+        back += "}\n"
+
+        ret += fwd + back
     return ret
