@@ -13,6 +13,7 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
+build-MessageServer-Qt*qt5*/
 
 # Windows image file caches
 Thumbs.db
