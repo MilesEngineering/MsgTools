@@ -2,6 +2,9 @@
 import sys
 import struct
 import datetime
+import collections
+import functools
+import threading
 
 from PySide.QtGui import *
 from PySide.QtCore import *
@@ -69,7 +72,11 @@ class MessageScopeGui(MsgGui.MsgGui):
 
     def configure_rx_message_list(self, parent):
         self.rx_msg_list = {}
-        rxMessageList = QListWidget(parent)
+        self.rx_msg_list_timestamps = {}
+        rxMessageList = QTreeWidget(parent)
+        rxMessageList.setColumnCount(3)
+        rxMsgHeader = QTreeWidgetItem(None, [ "Name", "Last Received", "Rx Rate" ])
+        rxMessageList.setHeaderItem(rxMsgHeader)
         return rxMessageList
 
     def configure_rx_messages_widget(self, parent):
@@ -134,13 +141,18 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.display_message_in_rx_tree(msg_id, msg_name, msg_class, msg_buffer)
 
     def display_message_in_rx_list(self, msg_id, msg_name):
-        if not msg_id in self.rx_msg_list:
-            msg_list_item = QListWidgetItem(msg_name)
+        rx_time = datetime.datetime.now()
 
-            self.rx_message_list.addItem(msg_list_item)
+        if not msg_id in self.rx_msg_list:
+            msg_list_item = QTreeWidgetItem([ msg_name, str(rx_time), "- Hz" ])
+
+            self.rx_message_list.addTopLevelItem(msg_list_item)
             self.rx_msg_list[msg_id] = msg_list_item
 
-        self.rx_msg_list[msg_id].setText(msg_name + " (Last Received: " + str(datetime.datetime.now()) + ")")
+            # Initialize a Deque with an empty iterable with a maxlen of 10
+            self.rx_msg_list_timestamps[msg_id] = collections.deque([], 10)
+
+        self.rx_msg_list[msg_id].setText(1, str(rx_time))
 
     def display_message_in_rx_tree(self, msg_id, msg_name, msg_class, msg_buffer):
         if not msg_id in self.rx_msg_widgets:
