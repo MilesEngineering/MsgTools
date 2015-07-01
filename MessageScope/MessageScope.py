@@ -18,6 +18,7 @@ import MsgGui
 from Messaging import Messaging
 
 import TxTreeWidget
+from MsgPlot import MsgPlot
 
 class MessageScopeGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
@@ -48,6 +49,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.txMsgs = self.configure_tx_messages(parent)
         self.rx_message_list = self.configure_rx_message_list(parent)
         self.rx_messages_widget = self.configure_rx_messages_widget(parent)
+        self.configure_msg_plots(parent)
 
         txSplitter.addWidget(self.txDictionary)
         txSplitter.addWidget(self.txMsgs)
@@ -55,6 +57,9 @@ class MessageScopeGui(MsgGui.MsgGui):
         rxSplitter.addWidget(self.rx_messages_widget)
         
         self.setCentralWidget(hSplitter)
+    
+    def configure_msg_plots(self, parent):
+        self.msgPlots = {}
 
     def configure_tx_dictionary(self, parent):
         txDictionary = QTreeWidget(parent)
@@ -83,8 +88,9 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.rx_msg_widgets = {}
         rxMessagesTreeWidget = QTreeWidget(parent)
         rxMessagesTreeWidget.setColumnCount(4)
-        txMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
-        rxMessagesTreeWidget.setHeaderItem(txMsgsHeader)
+        rxMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
+        rxMessagesTreeWidget.setHeaderItem(rxMsgsHeader)
+        rxMessagesTreeWidget.itemDoubleClicked.connect(self.onRxMessageFieldSelected)
         return rxMessagesTreeWidget
 
     def ReadTxDictionary(self):
@@ -115,16 +121,44 @@ class MessageScopeGui(MsgGui.MsgGui):
         if not parentWidget is None:
             messageName = parentWidget.text(0) + messageName
 
-        # Always add to TX panel even if the same message class may already exist
-        # since we may want to send the same message with different contents/header/rates.
-        message_class = self.msgLib.MsgClassFromName[messageName]
-        messageBuffer = message_class.Create()
+        # directories have children but messages don't, so only add messages by verifying the childCount is zero
+        if txListWidgetItem.childCount() == 0:
+            # Always add to TX panel even if the same message class may already exist
+            # since we may want to send the same message with different contents/header/rates.
+            message_class = self.msgLib.MsgClassFromName[messageName]
+            messageBuffer = message_class.Create()
 
-        messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageBuffer)
-        messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
+            messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageBuffer)
+            messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, messageBuffer):
         self.sendFn(messageBuffer.raw)
+    
+    def onRxMessageFieldSelected(self, rxWidgetItem):
+        try:
+            if isinstance(rxWidgetItem, TxTreeWidget.FieldItem) or isinstance(rxWidgetItem, TxTreeWidget.FieldArrayItem):
+                fieldInfo = rxWidgetItem.fieldInfo
+                fieldIndex = 0
+                if isinstance(rxWidgetItem, TxTreeWidget.FieldArrayItem):
+                    fieldIndex = rxWidgetItem.index
+                msg_class = rxWidgetItem.msg_class
+                plotListForID = []
+                if msg_class.ID in self.msgPlots:
+                    print("found plot list")
+                    plotListForID = self.msgPlots[msg_class.ID]
+                else:
+                    self.msgPlots[msg_class.ID] = plotListForID
+                alreadyThere = False
+                for plot in plotListForID:
+                    if plot.fieldInfo == fieldInfo and plot.fieldSubindex == fieldIndex:
+                        print("found plot in plot list")
+                        alreadyThere = True
+                if not alreadyThere:
+                    print("adding plot of " + msg_class.MsgName() + "." + fieldInfo.name + "[" + str(fieldIndex) + "]")
+                    msgPlot = MsgPlot(msg_class, fieldInfo, fieldIndex)
+                    plotListForID.append(msgPlot)
+        except AttributeError:
+            print("caught exception AttributeError")
 
     def ProcessMessage(self, msg_buffer):
         msg_id = hex(Messaging.hdr.GetID(msg_buffer))
@@ -139,6 +173,7 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         self.display_message_in_rx_list(msg_id, msg_name)
         self.display_message_in_rx_tree(msg_id, msg_name, msg_class, msg_buffer)
+        self.display_message_in_plots(msg_class, msg_buffer)
 
     def display_message_in_rx_list(self, msg_id, msg_name):
         rx_time = datetime.datetime.now()
@@ -161,6 +196,15 @@ class MessageScopeGui(MsgGui.MsgGui):
             self.rx_messages_widget.addTopLevelItem(msg_widget)
 
         self.rx_msg_widgets[msg_id].set_msg_buffer(msg_buffer)
+    
+    def display_message_in_plots(self, msg_class, msg_buffer):
+        #print("checking for plots of " + str(msg_class.ID))
+        if msg_class.ID in self.msgPlots:
+            #print("found list of plots for " + str(msg_class.ID))
+            plotListForID = self.msgPlots[msg_class.ID]
+            for plot in plotListForID:
+                #print("found plot of " + msg_class.MsgName() + "." + plot.fieldInfo.name + "[" + str(plot.fieldSubindex) + "]")
+                plot.addData(msg_buffer)
 
 # main starts here
 if __name__ == '__main__':

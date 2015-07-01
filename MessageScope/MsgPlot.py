@@ -37,7 +37,10 @@ class MsgPlot:
 
         vb = CustomViewBox()
         
-        yAxisLabel = fieldInfo.name + "  (" + fieldInfo.units+")"
+        yAxisLabel = fieldInfo.name
+        if fieldInfo.count != 1:
+            yAxisLabel += "["+str(self.fieldSubindex)+"]"
+        yAxisLabel += "  (" + fieldInfo.units+")"
         xAxisLabel = "time (count)"
         self.myPlot = self.win.addPlot(viewBox=vb, labels={'left':  yAxisLabel, 'bottom': xAxisLabel})
         self.dataArray = []
