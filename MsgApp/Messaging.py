@@ -98,14 +98,15 @@ class Messaging:
             value = int(float(value))
         elif("float" in fieldInfo.type):
             value = float(value)
-        if(fieldInfo.count == 1):
+        
+        if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
             fieldInfo.set.__func__(message_buffer, value)
         else:
             fieldInfo.set.__func__(message_buffer, value, index)
 
     @staticmethod
     def get(message_buffer, fieldInfo, index=0):
-        if(fieldInfo.count == 1):
+        if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
             value = fieldInfo.get.__func__(message_buffer)
         else:
             value = fieldInfo.get.__func__(message_buffer, index)
