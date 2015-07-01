@@ -29,5 +29,4 @@ $RECYCLE.BIN/
 
 # Other custom ignores:
 *.pyc
-CodeGenerator/obj/
-Makefile.qt
+Thea
