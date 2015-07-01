@@ -175,6 +175,24 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.display_message_in_rx_tree(msg_id, msg_name, msg_class, msg_buffer)
         self.display_message_in_plots(msg_class, msg_buffer)
 
+    # //TODO: make this work.
+    def update_rx_rate(self, rx_msg_deque, widget):
+        threading.Timer(1, lambda: self.update_rx_rate(rx_msg_deque, widget)).start()
+
+        if len(rx_msg_deque) > 0:
+            rx_msg_deque.pop()
+
+        if len(rx_msg_deque) <= 1:
+            widget.setText(2, "- Hz")
+            return
+
+        rates = []
+        for i in range(len(rx_msg_deque) - 1, 1):
+            rates.append((rx_msg_deque[i] - rx_msg_deque[i - 1]).total_seconds())
+        
+        average_rate = sum(rates) / float(len(rates))
+        widget.setText(2, "{:06f}".format(average_rate) + " Hz")
+
     def display_message_in_rx_list(self, msg_id, msg_name):
         rx_time = datetime.datetime.now()
 
@@ -186,6 +204,14 @@ class MessageScopeGui(MsgGui.MsgGui):
 
             # Initialize a Deque with an empty iterable with a maxlen of 10
             self.rx_msg_list_timestamps[msg_id] = collections.deque([], 10)
+
+            # Kick off the first update_rx_rate within its closure, it will take care of
+            # setting a repeating timer by itself
+            #//TODO
+            # self.update_rx_rate(self.rx_msg_list_timestamps[msg_id], self.rx_msg_list[msg_id])
+
+        # // TODO: Finish
+        # self.rx_msg_list_timestamps[msg_id].appendleft(rx_time)
 
         self.rx_msg_list[msg_id].setText(1, str(rx_time))
 
