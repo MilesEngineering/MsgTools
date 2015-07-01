@@ -2,11 +2,18 @@
 """
 Plot message data in scrolling window
 """
-#import initExample ## Add path to library (just for examples; you do not need this)
 
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
+
+import os
+srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
+
+import sys
+# import the MsgApp baseclass, for messages, and network I/O
+sys.path.append(srcroot+"/MsgApp")
+from Messaging import Messaging
 
 pause = 0
 
@@ -21,18 +28,24 @@ class CustomViewBox(pg.ViewBox):
 
 class MsgPlot:
     MAX_LENGTH = 100
-    def __init__(self):
+    def __init__(self, msgClass, fieldInfo, subindex):
         self.win = pg.GraphicsWindow()
-        self.win.setWindowTitle('pyqtgraph example: Scrolling Plots')
+        self.win.setWindowTitle(msgClass.MsgName())
+        self.msgClass = msgClass
+        self.fieldInfo = fieldInfo
+        self.fieldSubindex = subindex
 
         vb = CustomViewBox()
         
-        self.myPlot = self.win.addPlot(viewBox=vb)
+        yAxisLabel = fieldInfo.name + "  (" + fieldInfo.units+")"
+        xAxisLabel = "time (count)"
+        self.myPlot = self.win.addPlot(viewBox=vb, labels={'left':  yAxisLabel, 'bottom': xAxisLabel})
         self.dataArray = []
         self.curve = self.myPlot.plot(self.dataArray)
         self.ptr1 = 0
 
-    def addData(self, newDataPoint):
+    def addData(self, message_buffer):
+        newDataPoint = float(Messaging.get(message_buffer, self.fieldInfo, self.fieldSubindex))
         # add data in the array until MAX_LENGTH is reached, then drop data off start of array
         # such that plot appears to scroll.  The array size is limited to MAX_LENGTH.
         if len(self.dataArray) >= MsgPlot.MAX_LENGTH:
@@ -47,13 +60,22 @@ class MsgPlot:
             self.curve.setData(self.dataArray)
             self.curve.setPos(self.ptr1, 0)
 
+sys.path.append(srcroot+"/obj/CodeGenerator/Python/Test")
+from TestMsg1 import TestMessage1
+
 def onTimeout():
-    msgPlot.addData(np.random.normal())
+    messageBuffer = TestMessage1.Create()
+    newDataPoint =  np.random.normal()
+    Messaging.set(messageBuffer, TestMessage1.fields[1], newDataPoint, 0)
+    msgPlot.addData(messageBuffer)
 
 ## Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':
-    import sys
-    msgPlot = MsgPlot()
+    
+    msgdir = srcroot+"/obj/CodeGenerator/Python/"
+    msgLib = Messaging(msgdir, 0)
+    
+    msgPlot = MsgPlot(TestMessage1, TestMessage1.fields[1], 0)
     
     timer = pg.QtCore.QTimer()
     timer.timeout.connect(onTimeout)
