@@ -40,6 +40,9 @@ class EditableFieldItem(FieldItem):
 
         if self.fieldInfo.name == "ID":
             return
+        
+        if self.fieldInfo.type == "int" and value.startswith("0x"):
+            value = str(int(value, 0))
 
         # set the value in the message/header buffer
         Messaging.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, value)
