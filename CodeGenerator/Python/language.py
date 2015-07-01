@@ -202,7 +202,7 @@ def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
     if "Enum" in field:
         # find index that corresponds to string input param
         lookup = enumLookup(msg, field)
-    math = "min(max(%s, %s), %s)" % (MsgParser.setMath("value", bits, "int"), 0, str(2**numBits))
+    math = "min(max(%s, %s), %s)" % (MsgParser.setMath("value", bits, "int"), 0, str(2**numBits-1))
     math = lookup + "tmp = " + math
     ret = '''\
 %s
