@@ -114,13 +114,15 @@ class MessageScopeGui(MsgGui.MsgGui):
         if not parentWidget is None:
             messageName = parentWidget.text(0) + messageName
 
-        # Always add to TX panel even if the same message class may already exist
-        # since we may want to send the same message with different contents/header/rates.
-        message_class = self.msgLib.MsgClassFromName[messageName]
-        messageBuffer = message_class.Create()
+        # directories have children but messages don't, so only add messages by verifying the childCount is zero
+        if txListWidgetItem.childCount() == 0:
+            # Always add to TX panel even if the same message class may already exist
+            # since we may want to send the same message with different contents/header/rates.
+            message_class = self.msgLib.MsgClassFromName[messageName]
+            messageBuffer = message_class.Create()
 
-        messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageBuffer)
-        messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
+            messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageBuffer)
+            messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, messageBuffer):
         self.sendFn(messageBuffer.raw)
