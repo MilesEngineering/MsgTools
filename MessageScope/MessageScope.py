@@ -144,14 +144,12 @@ class MessageScopeGui(MsgGui.MsgGui):
                 msg_class = rxWidgetItem.msg_class
                 plotListForID = []
                 if msg_class.ID in self.msgPlots:
-                    print("found plot list")
                     plotListForID = self.msgPlots[msg_class.ID]
                 else:
                     self.msgPlots[msg_class.ID] = plotListForID
                 alreadyThere = False
                 for plot in plotListForID:
                     if plot.fieldInfo == fieldInfo and plot.fieldSubindex == fieldIndex:
-                        print("found plot in plot list")
                         alreadyThere = True
                 if not alreadyThere:
                     print("adding plot of " + msg_class.MsgName() + "." + fieldInfo.name + "[" + str(fieldIndex) + "]")
