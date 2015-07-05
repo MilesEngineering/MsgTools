@@ -32,29 +32,29 @@ class RxRateCalculatorThread(QObject):
 
     @Slot()
     def run(self):
-        updates = {}
+        rates = {}
 
         if self.thread_lock.acquire():
             for msg_id, rx_msg_deque in self.rx_msg_deque.items():
-                if len(rx_msg_deque) <= 1:
-                    updates[msg_id] = None
-                    continue
-
-                deltas = []
-                for i in range(0, len(rx_msg_deque) - 2):
-                    deltas.append((rx_msg_deque[i] - rx_msg_deque[i + 1]).total_seconds())
-
-                if len(deltas) == 0:
-                    print(deltas)
-                    print(rx_msg_deque)
-                
-                average_time_delta = sum(deltas) / float(len(deltas))
-                average_rate = 1 / average_time_delta
-                updates[msg_id] = average_rate
-                rx_msg_deque.pop()
+                rates[msg_id] = self.calculate_rate_for_msg(msg_id, rx_msg_deque)
 
             self.thread_lock.release()
-            self.rates_updated.emit(updates)
+            self.rates_updated.emit(rates)
+
+    def calculate_rate_for_msg(self, msg_id, rx_msg_deque):
+        if len(rx_msg_deque) <= 1:
+            return None
+
+        deltas = []
+        for i in range(0, len(rx_msg_deque) - 1):
+            deltas.append((rx_msg_deque[i] - rx_msg_deque[i + 1]).total_seconds())
+        
+        average_time_delta = sum(deltas) / float(len(deltas))
+        average_rate = 1 / average_time_delta
+
+        rx_msg_deque.pop()
+
+        return average_rate
 
 
 class MessageScopeGui(MsgGui.MsgGui):
@@ -248,7 +248,7 @@ class MessageScopeGui(MsgGui.MsgGui):
             if rate is None:
                 output = "-- Hz"
             else:
-                output = str(rate) + " Hz"
+                output = "{0:0.1f} Hz".format(rate)
 
             self.rx_msg_list[msg_id].setText(2, output)
 
