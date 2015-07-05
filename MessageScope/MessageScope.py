@@ -20,6 +20,43 @@ from Messaging import Messaging
 import TxTreeWidget
 from MsgPlot import MsgPlot
 
+
+class RxRateCalculatorThread(QObject):
+    rates_updated = Signal(object)
+
+    def __init__(self, rx_msg_deque, thread_lock):
+        super(RxRateCalculatorThread, self).__init__()
+
+        self.rx_msg_deque = rx_msg_deque
+        self.thread_lock = thread_lock
+
+    @Slot()
+    def run(self):
+        rates = {}
+
+        if self.thread_lock.acquire():
+            for msg_id, rx_msg_deque in self.rx_msg_deque.items():
+                rates[msg_id] = self.calculate_rate_for_msg(msg_id, rx_msg_deque)
+
+            self.thread_lock.release()
+            self.rates_updated.emit(rates)
+
+    def calculate_rate_for_msg(self, msg_id, rx_msg_deque):
+        if len(rx_msg_deque) <= 1:
+            return None
+
+        deltas = []
+        for i in range(0, len(rx_msg_deque) - 1):
+            deltas.append((rx_msg_deque[i] - rx_msg_deque[i + 1]).total_seconds())
+        
+        average_time_delta = sum(deltas) / float(len(deltas))
+        average_rate = 1 / average_time_delta
+
+        rx_msg_deque.pop()
+
+        return average_rate
+
+
 class MessageScopeGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Scope 0.1", argv, parent)
@@ -78,6 +115,16 @@ class MessageScopeGui(MsgGui.MsgGui):
     def configure_rx_message_list(self, parent):
         self.rx_msg_list = {}
         self.rx_msg_list_timestamps = {}
+        
+        self.thread_lock = threading.Lock()
+        rx_rate_calculator = RxRateCalculatorThread(self.rx_msg_list_timestamps, self.thread_lock)
+        rx_rate_calculator.rates_updated.connect(self.show_rx_msg_rates)
+        timer = QTimer(self)
+
+        # TODO: Why do I have to use a lambda? connecting directly to the run slot does not seem to work
+        timer.timeout.connect(lambda: rx_rate_calculator.run())
+        timer.start(1000)
+
         rxMessageList = QTreeWidget(parent)
         rxMessageList.setColumnCount(3)
         rxMsgHeader = QTreeWidgetItem(None, [ "Name", "Last Received", "Rx Rate" ])
@@ -173,24 +220,6 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.display_message_in_rx_tree(msg_id, msg_name, msg_class, msg_buffer)
         self.display_message_in_plots(msg_class, msg_buffer)
 
-    # //TODO: make this work.
-    def update_rx_rate(self, rx_msg_deque, widget):
-        threading.Timer(1, lambda: self.update_rx_rate(rx_msg_deque, widget)).start()
-
-        if len(rx_msg_deque) > 0:
-            rx_msg_deque.pop()
-
-        if len(rx_msg_deque) <= 1:
-            widget.setText(2, "- Hz")
-            return
-
-        rates = []
-        for i in range(len(rx_msg_deque) - 1, 1):
-            rates.append((rx_msg_deque[i] - rx_msg_deque[i - 1]).total_seconds())
-        
-        average_rate = sum(rates) / float(len(rates))
-        widget.setText(2, "{:06f}".format(average_rate) + " Hz")
-
     def display_message_in_rx_list(self, msg_id, msg_name):
         rx_time = datetime.datetime.now()
 
@@ -201,17 +230,27 @@ class MessageScopeGui(MsgGui.MsgGui):
             self.rx_msg_list[msg_id] = msg_list_item
 
             # Initialize a Deque with an empty iterable with a maxlen of 10
-            self.rx_msg_list_timestamps[msg_id] = collections.deque([], 10)
+            if self.thread_lock.acquire():
+                self.rx_msg_list_timestamps[msg_id] = collections.deque([], 10)
+                self.thread_lock.release()
 
-            # Kick off the first update_rx_rate within its closure, it will take care of
-            # setting a repeating timer by itself
-            #//TODO
-            # self.update_rx_rate(self.rx_msg_list_timestamps[msg_id], self.rx_msg_list[msg_id])
-
-        # // TODO: Finish
-        # self.rx_msg_list_timestamps[msg_id].appendleft(rx_time)
+        if self.thread_lock.acquire():
+            self.rx_msg_list_timestamps[msg_id].appendleft(rx_time)
+            self.thread_lock.release()
 
         self.rx_msg_list[msg_id].setText(1, str(rx_time))
+
+    def show_rx_msg_rates(self, rx_rates):
+        for msg_id, rate in rx_rates.items():
+            rate = rx_rates[msg_id]
+            output = ""
+
+            if rate is None:
+                output = "-- Hz"
+            else:
+                output = "{0:0.1f} Hz".format(rate)
+
+            self.rx_msg_list[msg_id].setText(2, output)
 
     def display_message_in_rx_tree(self, msg_id, msg_name, msg_class, msg_buffer):
         if not msg_id in self.rx_msg_widgets:
