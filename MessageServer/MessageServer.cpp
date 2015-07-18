@@ -15,7 +15,7 @@
 MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
 : QMainWindow(),
   _logFile(0),
-  _settings("SPA", "MessageServer")
+  _settings("MsgTools", "MessageServer")
 {
     _statusBox = new QPlainTextEdit();
     _statusBox->setMaximumBlockCount(10000);
@@ -100,7 +100,7 @@ void MessageServer::LoadPluginButton()
     QString pluginFileName =
         QFileDialog::getOpenFileName
         (this, tr("Open Plugin"),
-         _settings.value("plugin/filename", "").toString(),
+         _settings.value("plugin/filename", QCoreApplication::applicationDirPath()).toString(),
          tr("Plugin Files (*.plugin)"));
     // if they hit cancel, don't do anything
     if(pluginFileName.isNull())
