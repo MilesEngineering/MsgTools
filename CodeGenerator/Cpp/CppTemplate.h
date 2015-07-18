@@ -35,6 +35,7 @@ class <MSGNAME>Message : public Message
         }
         <ENUMERATIONS>
         <ACCESSORS>
+#ifndef DISABLE_REFLECTION
         static MsgInfo* ReflectionInfo()
         {
             static bool firstTime = true;
@@ -45,6 +46,7 @@ class <MSGNAME>Message : public Message
             }
             return &msgInfo;
         }
+#endif
 };
 
 #endif
