@@ -34,7 +34,7 @@ WINCURDIR:=$(CURDIR)
 endif
 
 # may need to get more sophisticated in the future, if we build for multiple platforms
-SRC_SUBDIR := $(SRCDIR:$(BUILDROOT)%=%)
+SRC_SUBDIR := $(SRCDIR:$(BUILDROOT)/%=%)
 OBJ_DIR := $(BUILDROOT)/obj/$(SRC_SUBDIR)
 
 $(OBJ_DIR):

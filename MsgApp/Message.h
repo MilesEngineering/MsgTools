@@ -32,6 +32,7 @@ class Message
         uint8_t* GetDataPtr() { return m_data; }
         void SetPayloadLength(int len) { hdr->SetLength(len); }
         void SetMessageID(uint32_t id) { hdr->SetID(id); }
+        uint32_t GetMessageID() { return hdr->GetID(); }
         bool Exists() { return hdr != 0 && m_data != 0; }
     public:
         MsgHeader* hdr;

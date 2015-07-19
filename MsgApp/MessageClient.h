@@ -15,7 +15,7 @@ class MessageClient : public QObject
             connect(&_ioDevice, SIGNAL(readyRead()), this, SLOT(onDataReady()));
         }
 
-    signals:
+    Q_SIGNALS:
         void newMessageComplete(Message* msg);
 
     private slots:
