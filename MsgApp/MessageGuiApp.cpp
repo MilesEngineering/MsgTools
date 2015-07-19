@@ -29,3 +29,7 @@ void MessageGuiApp::connectedToNetwork()
     strncpy((char*)c.Name(), _name, ConnectMessage::MSG_SIZE);
     _msgClient->sendMessage(&c);
 }
+
+MessageGuiApp::~MessageGuiApp()
+{
+}
