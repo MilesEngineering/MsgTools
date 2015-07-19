@@ -4,15 +4,16 @@
 
 #include "./MessageClient.h"
 
-class MessageTranslator;
-
 class MessageGuiApp : public QMainWindow
 {
     Q_OBJECT
 
+public:
+    MessageGuiApp();
+    virtual ~MessageGuiApp();
+
 private:
     MessageClient* _msgClient;
-    MessageTranslator* _msgTranslator;
 
     // GUI ELEMENTS:
     // connection menu item
@@ -21,10 +22,6 @@ private:
 
 signals:
     void newMessageReceived(Message* msg);
-
-public:
-    MessageGuiApp(MessageTranslator* msgTranslator);
-
 };
 
 

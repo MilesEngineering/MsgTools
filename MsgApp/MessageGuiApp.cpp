@@ -2,10 +2,13 @@
 
 #include "./MessageGuiApp.h"
 
-MessageGuiApp::MessageGuiApp(MessageTranslator* msgTranslator)
+MessageGuiApp::MessageGuiApp()
  : QMainWindow(),
-   _msgClient(new MessageClient(new QTcpSocket())),
-   _msgTranslator(msgTranslator)
+   _msgClient(new MessageClient(new QTcpSocket()))
 {
     connect(_msgClient, SIGNAL(newMessageComplete(Message*)), this, SIGNAL(newMessageReceived(Message*)));
+}
+
+MessageGuiApp::~MessageGuiApp()
+{
 }
