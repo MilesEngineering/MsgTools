@@ -12,7 +12,7 @@ srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
 
 import sys
 # import the MsgApp baseclass, for messages, and network I/O
-sys.path.append(srcroot+"/MsgApp")
+sys.path.append(srcroot+"/../MsgApp")
 from Messaging import Messaging
 
 pause = 0
@@ -63,7 +63,7 @@ class MsgPlot:
             self.curve.setData(self.dataArray)
             self.curve.setPos(self.ptr1, 0)
 
-sys.path.append(srcroot+"/obj/CodeGenerator/Python/Test")
+sys.path.append(srcroot+"/../obj/CodeGenerator/Python/Test")
 from TestMsg1 import TestMessage1
 
 def onTimeout():
@@ -75,7 +75,7 @@ def onTimeout():
 ## Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':
     
-    msgdir = srcroot+"/obj/CodeGenerator/Python/"
+    msgdir = srcroot+"/../obj/CodeGenerator/Python/"
     msgLib = Messaging(msgdir, 0)
     
     msgPlot = MsgPlot(TestMessage1, TestMessage1.fields[1], 0)

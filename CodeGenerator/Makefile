@@ -11,20 +11,20 @@ colorecho  = @printf "\033[0;32m====> Generating $(1)\033[0m\n"
 
 Cpp:
 	$(call colorecho,C++ Code)
-	$(TRACE_FLAG)$(PARSER) $(hdir) $(OBJ_DIR)/Cpp Cpp/language.py  Cpp/CppHeaderTemplate.h
-	$(TRACE_FLAG)$(PARSER) ../messages $(OBJ_DIR)/Cpp Cpp/language.py  Cpp/CppTemplate.h
+	$(TRACE_FLAG)$(PARSER) $(hdir) $(MSGDIR)/Cpp Cpp/language.py  Cpp/CppHeaderTemplate.h
+	$(TRACE_FLAG)$(PARSER) ../messages $(MSGDIR)/Cpp Cpp/language.py  Cpp/CppTemplate.h
 
 Python:
 	$(call colorecho,Python)
-	$(TRACE_FLAG)$(PARSER) $(hdir) $(OBJ_DIR)/Python Python/language.py  Python/HeaderTemplate.py
-	$(TRACE_FLAG)$(PARSER) ../messages $(OBJ_DIR)/Python Python/language.py  Python/Template.py
+	$(TRACE_FLAG)$(PARSER) $(hdir) $(MSGDIR)/Python Python/language.py  Python/HeaderTemplate.py
+	$(TRACE_FLAG)$(PARSER) ../messages $(MSGDIR)/Python Python/language.py  Python/Template.py
 
 Simulink:
 	$(call colorecho,Simulink)
-	$(TRACE_FLAG)$(PARSER) $(hdir) $(OBJ_DIR)/Matlab Matlab/language.py  Simulink/Template.s
+	$(TRACE_FLAG)$(PARSER) $(hdir) $(MSGDIR)/Matlab Matlab/language.py  Simulink/Template.s
 	
 clean clobber::
-	rm -rf $(OBJ_DIR) __pycache__ *.pyc
+	rm -rf $(MSGDIR) __pycache__ *.pyc
 
 testCpp:
 	./test/TestCpp.py

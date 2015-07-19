@@ -42,7 +42,7 @@ class Messaging:
     def __init__(self, loadDir, debug):
         Messaging.debug = debug
         sys.path.append(loadDir)
-        mainObjDir = os.path.dirname(os.path.abspath(__file__)) + "/../obj/CodeGenerator/Python"
+        mainObjDir = os.path.dirname(os.path.abspath(__file__)) + "/../../obj/CodeGenerator/Python"
         sys.path.append(mainObjDir)
         
         headerName = "Network"

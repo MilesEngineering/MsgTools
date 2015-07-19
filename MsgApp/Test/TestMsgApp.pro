@@ -21,7 +21,7 @@ HEADERS  += ../MessageClient.h \
     ../MsgInfo.h \
     ../Reflection.h
 
-INCLUDEPATH += $$BUILDROOT/ThirdParty/gmock-1.6.0/gtest/include $$OBJDIR
+INCLUDEPATH += $$MSGTOOLSROOT/ThirdParty/gmock-1.6.0/gtest/include $$OBJDIR
 
-LIBS += -L$$BUILDROOT/ThirdParty/gmock-1.6.0/obj/ -lgtest
+LIBS += -L$$MSGTOOLSROOT/ThirdParty/gmock-1.6.0/obj/ -lgtest
 
