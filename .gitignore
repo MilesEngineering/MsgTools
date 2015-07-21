@@ -14,6 +14,7 @@ build/
 [Bb]in/
 [Oo]bj/
 build-MessageServer-Qt*qt5*/
+*.plugin
 
 # Windows image file caches
 Thumbs.db
