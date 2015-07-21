@@ -26,7 +26,6 @@ class <MSGNAME> :
         Messaging.hdr.SetID(message_buffer, <MSGNAME>.ID)
         Messaging.hdr.SetLength(message_buffer, <MSGNAME>.SIZE)
         Messaging.hdr.SetPriority(message_buffer, 0)
-        Messaging.hdr.SetType(message_buffer, 0)
 
         <INIT_CODE>
         return message_buffer

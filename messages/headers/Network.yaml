@@ -1,23 +1,12 @@
-Enums:
-  - Name: MsgType
-    Options:
-      - Name: Command
-        Value: 0
-      - Name: Data
-        Value: 1
-      - Name: Request
-        Value: 2
-      - Name: Response
-        Value: 3
 Messages:
   - Name: NetworkHeader
     Description: Header for messages sent over the network between tools.  Won't generally go onto a physical link, will instead be translated by gateways into another format (like for CANbus or Serial).
     Fields:
       - Name: Source
-        Type: uint32
+        Type: uint16
         Default: 0
       - Name: Destination
-        Type: uint32
+        Type: uint16
         Default: 0
       - Name: ID
         Type: uint32
@@ -28,7 +17,3 @@ Messages:
       - Name: Priority
         Type: uint32
         Default: 0
-      - Name: Type
-        Type: uint8
-        Enum: MsgType
-        Default: Command

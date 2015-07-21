@@ -1,6 +1,6 @@
 Messages:
   - Name: Printf
-    ID: 0x01
+    ID: 0xFF
     Description: Used to display debug information as strings.
     Fields:
       - Name: ThreadID

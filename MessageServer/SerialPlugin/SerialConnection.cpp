@@ -24,12 +24,15 @@ SerialConnection::SerialConnection()
 
 void SerialConnection::SerialDataReady()
 {
-    // allocate temporary header, read from serial port
+    // allocate temporary header
     SerialHeader hdr;
+
+    /** \todo Synchronize on start character */
     serialPort.read((char*)&hdr, sizeof(hdr));
 
     // allocate the serial message body, read from the serial port
     QSharedPointer<SerialMessage> msg(SerialMessage::New(msg->hdr.GetLength()));
+    msg->hdr = hdr;
     serialPort.read((char*)msg->GetDataPtr(), msg->hdr.GetLength());
 
     SerialMsgSlot(msg);

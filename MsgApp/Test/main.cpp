@@ -31,7 +31,6 @@ TEST(MessageClientTest, Reflection)
     cmTx->hdr->SetSource(0x12345678);
     cmTx->hdr->SetDestination(0x3456789A);
     cmTx->hdr->SetPriority(1234);
-    cmTx->hdr->SetType(2);
     strcpy((char*)cmTx->Name(), "test1");
     /* Connect the signal so we can receive a message, and test that send/receive works. */
     QSignalSpy* ss = new QSignalSpy(&mc, SIGNAL(newMessageComplete(Message*)));
@@ -56,7 +55,6 @@ TEST(MessageClientTest, Reflection)
         EXPECT_EQ(cm->hdr->GetDestination(), cmTx->hdr->GetDestination());
         EXPECT_EQ(cm->hdr->GetID(), cmTx->hdr->GetID());
         EXPECT_EQ(cm->hdr->GetPriority(), cmTx->hdr->GetPriority());
-        EXPECT_EQ(cm->hdr->GetType(), cmTx->hdr->GetType());
         /* Verify body */
         EXPECT_STREQ((char*)cm->Name(), (char*)cmTx->Name());
     }
