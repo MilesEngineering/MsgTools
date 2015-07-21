@@ -9,7 +9,8 @@ SerialConnection::SerialConnection()
 {
     foreach (QextPortInfo info, QextSerialEnumerator::getPorts())
     {
-        qDebug() << "Found port " << info.portName << " at " << info.physName;
+        if(info.portName.contains("USB"))
+            qDebug() << "Found port " << info.portName << " at " << info.physName;
     }
     const QString portName("/dev/ttyUSB0");
     serialPort.setPortName(portName);

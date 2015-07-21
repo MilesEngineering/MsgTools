@@ -1,6 +1,6 @@
 include(../../mk/qtcommon.pri)
 
-include($$BUILDROOT/ThirdParty/qextserialport/src/qextserialport.pri)
+include($$MSGTOOLSROOT/ThirdParty/qextserialport/src/qextserialport.pri)
 
 TARGET = SerialPlugin
 TEMPLATE = lib
