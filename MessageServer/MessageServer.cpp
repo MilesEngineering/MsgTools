@@ -196,16 +196,16 @@ void MessageServer::LoadPlugin(QString fileName)
 
     if (plugin)
     {
-            ServerInterface* dbPlugin = qobject_cast<ServerInterface*>(plugin);
-            if (dbPlugin)
-            {
-                ServerPort& dbConn = dbPlugin->DBConnection();
-                AddNewClient(&dbConn);
-            }
-            else
-            {
-                qWarning() << fileName << " is not a ServerInterface" << endl;
-            }
+        ServerInterface* dbPlugin = qobject_cast<ServerInterface*>(plugin);
+        if (dbPlugin)
+        {
+            ServerPort& dbConn = dbPlugin->DBConnection();
+            AddNewClient(&dbConn);
+        }
+        else
+        {
+            qWarning() << fileName << " is not a ServerInterface" << endl;
+        }
     }
     else
     {
