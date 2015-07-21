@@ -68,6 +68,8 @@ class MsgInspector(MsgGui.MsgGui):
             tableHeader = []
             for fieldInfo in msgClass.fields:
                 tableHeader.append(fieldInfo.name)
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    tableHeader.append(bitInfo.name)
             
             msgWidget.setHeaderLabels(tableHeader)
             
@@ -77,14 +79,16 @@ class MsgInspector(MsgGui.MsgGui):
         msgStringList = []
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
-                columnText = str(Messaging.get(msg, fieldInfo))
+                msgStringList.append(str(Messaging.get(msg, fieldInfo)))
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    msgStringList.append(str(Messaging.get(msg, bitInfo)))
             else:
                 columnText = ""
                 for i in range(0,fieldInfo.count):
                     columnText += str(Messaging.get(msg, fieldInfo, i))
                     if(i<fieldInfo.count-1):
                         columnText += ", "
-            msgStringList.append(columnText)
+                msgStringList.append(columnText)
         msgItem = QTreeWidgetItem(None,msgStringList)
         self.msgWidgets[id].addTopLevelItem(msgItem)
         if firstTime:
@@ -114,6 +118,8 @@ class MsgInspector(MsgGui.MsgGui):
                 tableHeader = ""
                 for fieldInfo in msgClass.fields:
                     tableHeader += fieldInfo.name + ", "
+                    for bitInfo in fieldInfo.bitfieldInfo:
+                        tableHeader += bitInfo.name + ", "
                 
                 print(tableHeader)
                 # store a pointer to it, so we can find it next time (instead of creating it again)
@@ -123,6 +129,8 @@ class MsgInspector(MsgGui.MsgGui):
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
                 columnText = str(Messaging.get(msg, fieldInfo))
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    columnText += str(Messaging.get(msg, bitInfo)) + ", "
             else:
                 columnText = ""
                 for i in range(0,fieldInfo.count):
