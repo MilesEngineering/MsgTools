@@ -28,7 +28,7 @@ class ServerPort : public QObject
         {
             emit disconnected();
         }
-        QWidget* widget(int index)
+        virtual QWidget* widget(int index)
         {
             switch(index)
             {
