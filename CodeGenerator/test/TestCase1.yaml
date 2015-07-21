@@ -24,7 +24,7 @@ Messages:
         Units: m/s
         Default: 1
         Bitfields:
-            - Name: BitsA
+            - Name: FABitsA
               NumBits: 31
       - Name: FieldB
         Type: uint16

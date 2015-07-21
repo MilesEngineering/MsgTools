@@ -24,7 +24,7 @@ uint32_t GetFieldA()
 }""")
         expected.append("""\
 //  
-uint32_t GetFieldABitsA()
+uint32_t GetFABitsA()
 {
     return (GetFieldA() >> 0) & 0x7fffffff;
 }""")
@@ -48,19 +48,19 @@ uint8_t GetFieldD()
 }""")
         expected.append("""\
 //  
-float GetFieldDBitsA()
+float GetBitsA()
 {
     return (float((GetFieldD() >> 0) & 0xf) / 14.357);
 }""")
         expected.append("""\
 //  
-uint8_t GetFieldDBitsB()
+uint8_t GetBitsB()
 {
     return (GetFieldD() >> 4) & 0x7;
 }""")
         expected.append("""\
 //  
-uint8_t GetFieldDBitsC()
+uint8_t GetBitsC()
 {
     return (GetFieldD() >> 7) & 0x1;
 }""")
@@ -84,7 +84,7 @@ void SetFieldA(uint32_t value)
 }""")
         expected.append("""\
 //  
-void SetFieldABitsA(uint32_t value)
+void SetFABitsA(uint32_t value)
 {
     SetFieldA((GetFieldA() & ~(0x7fffffff << 0)) | ((value & 0x7fffffff) << 0));
 }""")
@@ -108,19 +108,19 @@ void SetFieldD(uint8_t value)
 }""")
         expected.append("""\
 //  
-void SetFieldDBitsA(float value)
+void SetBitsA(float value)
 {
     SetFieldD((GetFieldD() & ~(0xf << 0)) | ((uint8_t(value * 14.357) & 0xf) << 0));
 }""")
         expected.append("""\
 //  
-void SetFieldDBitsB(uint8_t value)
+void SetBitsB(uint8_t value)
 {
     SetFieldD((GetFieldD() & ~(0x7 << 4)) | ((value & 0x7) << 4));
 }""")
         expected.append("""\
 //  
-void SetFieldDBitsC(uint8_t value)
+void SetBitsC(uint8_t value)
 {
     SetFieldD((GetFieldD() & ~(0x1 << 7)) | ((value & 0x1) << 7));
 }""")
@@ -169,8 +169,8 @@ uint8_t* FieldC()
         expected.append("SetFieldA(1);")
         expected.append("SetFieldB(2);")
         expected.append("for (int i=0; i<5; i++)\n    SetFieldC(3, i);")
-        expected.append("SetFieldDBitsA(7.1);")
-        expected.append("SetFieldDBitsC(1);")
+        expected.append("SetBitsA(7.1);")
+        expected.append("SetBitsC(1);")
         expected.append("SetFieldE(3.14159);")
         expected.append("SetFieldF(3.14);")
         expCount = len(expected)

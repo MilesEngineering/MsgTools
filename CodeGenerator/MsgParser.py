@@ -101,6 +101,10 @@ def ProcessFile(template, inFile, outFile, subdirComponent):
 
 def Mask(numBits):
     return str(hex(2 ** numBits - 1))
+
+def BitfieldName(field, bits):
+    #return str(field["Name"]) +str(bits["Name"])
+    return str(bits["Name"])
         
 # main starts here
 if __name__ == '__main__':

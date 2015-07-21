@@ -58,7 +58,7 @@ def bitsReflectionInterfaceType(field):
     return type
 
 def bitfieldReflection(msg, field, bits):
-    name = field["Name"] + bits["Name"]
+    name = bits["Name"]
     ret = "BitFieldInfo("+\
               'name="'+name + '",'+\
               'type="'+bitsReflectionInterfaceType(bits) + '",'+\
@@ -194,7 +194,7 @@ def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
     ret  = '''\
 %s
     %sreturn %s
-''' % (fnHdr(bits,1,"Get"+field["Name"]+bits["Name"]), cleanup, access)
+''' % (fnHdr(bits,1,"Get"+MsgParser.BitfieldName(field, bits)), cleanup, access)
     return ret
 
 def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
@@ -208,7 +208,7 @@ def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
 %s
     %s
     %s.Set%s(message_buffer, (%s.Get%s(message_buffer) & ~(%s << %s)) | ((%s & %s) << %s))
-''' % (fnHdr(bits,1,"Set"+field["Name"]+bits["Name"]), math, msg["Name"], field["Name"], msg["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
+''' % (fnHdr(bits,1,"Set"+MsgParser.BitfieldName(field, bits)), math, msg["Name"], field["Name"], msg["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -240,7 +240,7 @@ def initField(field, messageName):
 
 def initBitfield(field, bits, messageName):
     if "Default" in bits:
-        return  messageName + ".Set" + field["Name"] + bits["Name"] + "(message_buffer, " + str(bits["Default"]) + ")"
+        return  messageName + ".Set" + MsgParser.BitfieldName(field, bits) + "(message_buffer, " + str(bits["Default"]) + ")"
     return ""
 
 def initCode(msg):

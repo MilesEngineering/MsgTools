@@ -31,7 +31,7 @@ def GetFieldA(message_buffer):
 @msg.units('')
 @msg.default('')
 @msg.count(1)
-def GetFieldABitsA(message_buffer):
+def GetFABitsA(message_buffer):
     \"\"\"\"\"\"
     return (MsgA.GetFieldA(message_buffer) >> 0) & 0x7fffffff
 """)
@@ -70,7 +70,7 @@ def GetFieldD(message_buffer):
 @msg.units('')
 @msg.default('7.1')
 @msg.count(1)
-def GetFieldDBitsA(message_buffer):
+def GetBitsA(message_buffer):
     \"\"\"\"\"\"
     return (float((MsgA.GetFieldD(message_buffer) >> 0) & 0xf) / 14.357)
 """)
@@ -79,7 +79,7 @@ def GetFieldDBitsA(message_buffer):
 @msg.units('')
 @msg.default('')
 @msg.count(1)
-def GetFieldDBitsB(message_buffer):
+def GetBitsB(message_buffer):
     \"\"\"\"\"\"
     return (MsgA.GetFieldD(message_buffer) >> 4) & 0x7
 """)
@@ -88,7 +88,7 @@ def GetFieldDBitsB(message_buffer):
 @msg.units('')
 @msg.default('1')
 @msg.count(1)
-def GetFieldDBitsC(message_buffer):
+def GetBitsC(message_buffer):
     \"\"\"\"\"\"
     return (MsgA.GetFieldD(message_buffer) >> 7) & 0x1
 """)
@@ -128,7 +128,7 @@ def SetFieldA(message_buffer, value):
 @msg.units('')
 @msg.default('')
 @msg.count(1)
-def SetFieldABitsA(message_buffer, value):
+def SetFABitsA(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(value, 0), 2147483647)
     MsgA.SetFieldA(message_buffer, (MsgA.GetFieldA(message_buffer) & ~(0x7fffffff << 0)) | ((tmp & 0x7fffffff) << 0))
@@ -168,7 +168,7 @@ def SetFieldD(message_buffer, value):
 @msg.units('')
 @msg.default('7.1')
 @msg.count(1)
-def SetFieldDBitsA(message_buffer, value):
+def SetBitsA(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(int(value * 14.357), 0), 15)
     MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0xf << 0)) | ((tmp & 0xf) << 0))
@@ -178,7 +178,7 @@ def SetFieldDBitsA(message_buffer, value):
 @msg.units('')
 @msg.default('')
 @msg.count(1)
-def SetFieldDBitsB(message_buffer, value):
+def SetBitsB(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(value, 0), 7)
     MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x7 << 4)) | ((tmp & 0x7) << 4))
@@ -188,7 +188,7 @@ def SetFieldDBitsB(message_buffer, value):
 @msg.units('')
 @msg.default('1')
 @msg.count(1)
-def SetFieldDBitsC(message_buffer, value):
+def SetBitsC(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(value, 0), 1)
     MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x1 << 7)) | ((tmp & 0x1) << 7))
@@ -242,8 +242,8 @@ def SetFieldF(message_buffer, value):
         expected.append(messageName + ".SetFieldA(message_buffer, 1)")
         expected.append(messageName + ".SetFieldB(message_buffer, 2)")
         expected.append(messageName + ".SetFieldC(message_buffer, 3)")
-        expected.append(messageName + ".SetFieldDBitsA(message_buffer, 7.1)")
-        expected.append(messageName + ".SetFieldDBitsC(message_buffer, 1)")
+        expected.append(messageName + ".SetBitsA(message_buffer, 7.1)")
+        expected.append(messageName + ".SetBitsC(message_buffer, 1)")
         expected.append(messageName + ".SetFieldE(message_buffer, 3.14159)")
         expected.append(messageName + ".SetFieldF(message_buffer, 3.14)")
 

@@ -86,10 +86,10 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
         retType = "float"
     ret = '''\
 %s
-%s Get%s%s()
+%s Get%s()
 {
     return %s;
-}''' % (fnHdr(bits), retType, field["Name"], bits["Name"], access)
+}''' % (fnHdr(bits), retType, MsgParser.BitfieldName(field, bits), access)
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
@@ -99,10 +99,10 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
     value = MsgParser.setMath("value", bits, fieldType(field))
     ret = '''\
 %s
-void Set%s%s(%s value)
+void Set%s(%s value)
 {
     Set%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
-}''' % (fnHdr(bits), field["Name"], bits["Name"], paramType, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), value, MsgParser.Mask(numBits), str(bitOffset))
+}''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), paramType, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), value, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -140,7 +140,7 @@ def initField(field):
 
 def initBitfield(field, bits):
     if "Default" in bits:
-        return  "Set" + field["Name"] + bits["Name"] + "(" +str(bits["Default"]) + ");"
+        return  "Set" + MsgParser.BitfieldName(field, bits) + "(" +str(bits["Default"]) + ");"
     return ""
 
 def initCode(msg):
