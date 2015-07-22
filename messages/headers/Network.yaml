@@ -11,9 +11,19 @@ Messages:
       - Name: ID
         Type: uint32
         Default: 0
-      - Name: Length
+      - Name: PackedField
         Type: uint32
-        Default: 0
-      - Name: Priority
+        Units: ""
+        Description: To hold bitfields
+        Bitfields:
+            - Name: Priority
+              NumBits: 8
+              Default: 0
+              Units: ""
+            - Name: Length
+              Default: 0
+              NumBits: 24
+              Units: ""
+      - Name: Time
         Type: uint32
         Default: 0
