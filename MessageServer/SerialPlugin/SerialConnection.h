@@ -20,6 +20,9 @@ class SerialConnection : public ServerPort
         void TransmitSerialMsg(QSharedPointer<SerialMessage> msg);
         QWidget* widget(int index) override;
     private:
+        SerialHeader tmpRxHdr;
+        bool gotHeader;
+        uint32_t startSequence;
         QextSerialPort serialPort;
         QGroupBox* _buttonGroup;
         QSettings _settings;

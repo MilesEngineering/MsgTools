@@ -9,9 +9,19 @@
 
 SerialConnection::SerialConnection()
 : ServerPort("Serial"),
+  tmpRxHdr(),
+  gotHeader(false),
   serialPort(),
   _settings("MsgTools", "MessageServer_SerialPlugin")
 {
+    serialPort.setBaudRate(BAUD115200);
+    serialPort.setFlowControl(FLOW_OFF);
+    serialPort.setParity(PAR_NONE);
+    serialPort.setDataBits(DATA_8);
+    serialPort.setStopBits(STOP_1);
+
+    startSequence = tmpRxHdr.GetStartSequence();
+
     _buttonGroup = new QGroupBox();
     QHBoxLayout* layout = new QHBoxLayout();
     layout->addWidget(new QLabel("/dev/"));
@@ -38,18 +48,70 @@ SerialConnection::SerialConnection()
 
 void SerialConnection::SerialDataReady()
 {
-    // allocate temporary header
-    SerialHeader hdr;
+    if(!gotHeader)
+    {
+        bool foundStart = false;
+        /** \todo Synchronize on start character */
+        while(serialPort.bytesAvailable() >= sizeof(startSequence))
+        {
+            /** peek at first byte.
+             * if it's start byte, break.
+             * else, throw it away and try again. */
+            serialPort.peek((char*)&tmpRxHdr, sizeof(startSequence));
+            if(tmpRxHdr.GetStartSequence() == startSequence)
+            {
+                foundStart = true;
+                break;
+            }
+            uint8_t throwAway;
+            serialPort.read((char*)&throwAway, sizeof(throwAway));
+        }
 
-    /** \todo Synchronize on start character */
-    serialPort.read((char*)&hdr, sizeof(hdr));
+        if(foundStart)
+        {
+            if(serialPort.bytesAvailable() >= sizeof(tmpRxHdr))
+            {
+                serialPort.read((char*)&tmpRxHdr, sizeof(tmpRxHdr));
+                if(tmpRxHdr.GetStartSequence() == startSequence)
+                {
+                    uint16_t headerChecksum = 0;
+                    for(int i=0; i<SerialHeader::SIZE; i++)
+                        headerChecksum += ((uint8_t*)&tmpRxHdr)[i];
+                    uint16_t headerChecksumInMessage = tmpRxHdr.GetHeaderChecksum();
+                    int headerChecksumDoubleBookingEffect =
+                            (0xFF & headerChecksumInMessage) +
+                            (headerChecksumInMessage >> 8);
+                    headerChecksum -= headerChecksumDoubleBookingEffect;
+                    if(headerChecksum == tmpRxHdr.GetHeaderChecksum())
+                    {
+                        gotHeader = true;
+                    }
+                    else
+                    {
+                        qDebug() << "Error in serial parser.  HeaderChecksum " << headerChecksum << " != " << tmpRxHdr.GetHeaderChecksum();
+                    }
+                }
+                else
+                {
+                    qDebug() << "Error in serial parser.  Thought I had start byte, now it's gone!";
+                }
+            }
+        }
+    }
 
-    // allocate the serial message body, read from the serial port
-    QSharedPointer<SerialMessage> msg(SerialMessage::New(msg->hdr.GetLength()));
-    msg->hdr = hdr;
-    serialPort.read((char*)msg->GetDataPtr(), msg->hdr.GetLength());
+    if(gotHeader)
+    {
+        if(serialPort.bytesAvailable() >= tmpRxHdr.GetLength())
+        {
+            // allocate the serial message body, read from the serial port
+            QSharedPointer<SerialMessage> msg(SerialMessage::New(tmpRxHdr.GetLength()));
+            msg->hdr = tmpRxHdr;
+            serialPort.read((char*)msg->GetDataPtr(), msg->hdr.GetLength());
 
-    SerialMsgSlot(msg);
+            gotHeader = false;
+            SerialMsgSlot(msg);
+        }
+    }
 }
 
 void SerialConnection::MessageSlot(QSharedPointer<Message> msg)
