@@ -10,46 +10,34 @@
     <!-- Bootstrap -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
     <style type="text/css">
-        .message_id, .message_name, .message_description
-        {
-            border: 1px solid #000000;
-        }
     </style>
   </head>
   <body>
     <h1><MSGNAME></h1>
+    <h2><MSGDESCRIPTION></h2>
+    <h3>ID: <MSGID></h3>
+    <h3>Size: <MSGSIZE></h3>
 
     <div class="container">
         <div class="row">
-                <div class="col-lg-3"><div class="message_id">
-                    <MSGID>
-                </div>
-            </div>
-            <div class="col-lg-9">
-                <div class="message_name">
-                    <MSGNAME>
-                </div>
+            <div class="col-lg-12">
+                <table class="table table-bordered table-hover table-striped">
+                    <caption>Message Fields</caption>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Count</th>
+                            <th>Units</th>
+                            <th>Scale</th>
+                            <th>Offset</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <INIT_CODE>
+                </table>
             </div>
         </div>
-        <div class="row">
-            <div class="message_description col-lg-12">
-                <div class="">
-                    <MSGDESCRIPTION>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="fields_header col-lg-2"></div>
-            <div class="type_header col-lg-2"></div>
-            <div class="units_header col-lg-2"></div>
-            <div class="scale_header col-lg-2"></div>
-            <div class="offset_header col-lg-2"></div>
-            <div class="description_header col-lg-2"></div>
-        </div>
-        <INIT_CODE>
-    </div>
-
-    <div>
     </div>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->

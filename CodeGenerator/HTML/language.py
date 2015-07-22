@@ -15,6 +15,7 @@ def accessors(msg):
 def createFieldInfoRow(field, messageName):
     name = str(field["Name"]) if "Name" in field else "n/a"
     fieldtype = str(field["Type"]) if "Type" in field else "n/a"
+    count = str(field["Count"]) if "Count" in field else "1"
     units = str(field["Units"]) if "Units" in field else "n/a"
 
     if "Enum" in field:
@@ -25,14 +26,15 @@ def createFieldInfoRow(field, messageName):
     description = str(field["Description"]) if "Description" in field else "n/a"
 
     html = "\
-        <div class='row'>\
-            <div class='fields_cell col-lg-2'>" + name + "</div>\
-            <div class='type_cell col-lg-2'>" + fieldtype + "</div>\
-            <div class='units_cell col-lg-2'>" + units + "</div>\
-            <div class='scale_cell col-lg-2'>" + scale + "</div>\
-            <div class='offset_cell col-lg-2'>" + offset + "</div>\
-            <div class='description_cell col-lg-2'>" + description + "</div>\
-        </div>\
+        <tr>\
+            <td>" + name + "</td>\
+            <td>" + fieldtype + "</td>\
+            <td>" + count + "</td>\
+            <td>" + units + "</td>\
+            <td>" + scale + "</td>\
+            <td>" + offset + "</td>\
+            <td>" + description + "</td>\
+        </tr>\
     "
     return html
 
