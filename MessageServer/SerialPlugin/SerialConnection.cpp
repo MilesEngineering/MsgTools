@@ -52,7 +52,7 @@ void SerialConnection::SerialDataReady()
     {
         bool foundStart = false;
         /** \todo Synchronize on start character */
-        while(serialPort.bytesAvailable() >= sizeof(startSequence))
+        while(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(startSequence))
         {
             /** peek at first byte.
              * if it's start byte, break.
@@ -69,19 +69,28 @@ void SerialConnection::SerialDataReady()
 
         if(foundStart)
         {
-            if(serialPort.bytesAvailable() >= sizeof(tmpRxHdr))
+            if(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(tmpRxHdr))
             {
                 serialPort.read((char*)&tmpRxHdr, sizeof(tmpRxHdr));
                 if(tmpRxHdr.GetStartSequence() == startSequence)
                 {
+                    /** \todo Review how checksums work.  Can we get location of header checksum, and stop counting before we reach it? */
                     uint16_t headerChecksum = 0;
                     for(int i=0; i<SerialHeader::SIZE; i++)
                         headerChecksum += ((uint8_t*)&tmpRxHdr)[i];
+
                     uint16_t headerChecksumInMessage = tmpRxHdr.GetHeaderChecksum();
                     int headerChecksumDoubleBookingEffect =
                             (0xFF & headerChecksumInMessage) +
                             (headerChecksumInMessage >> 8);
                     headerChecksum -= headerChecksumDoubleBookingEffect;
+
+                    uint16_t bodyChecksumInMessage = tmpRxHdr.GetBodyChecksum();
+                    int bodyChecksumDoubleBookingEffect =
+                            (0xFF & bodyChecksumInMessage) +
+                            (bodyChecksumInMessage >> 8);
+                    headerChecksum -= bodyChecksumDoubleBookingEffect;
+
                     if(headerChecksum == tmpRxHdr.GetHeaderChecksum())
                     {
                         gotHeader = true;
@@ -108,8 +117,21 @@ void SerialConnection::SerialDataReady()
             msg->hdr = tmpRxHdr;
             serialPort.read((char*)msg->GetDataPtr(), msg->hdr.GetLength());
 
-            gotHeader = false;
-            SerialMsgSlot(msg);
+#ifdef ENABLE_BODY_CHECKSUM_CHECK
+            uint16_t bodyChecksum = 0;
+            for(unsigned i=0; i<msg->hdr.GetLength(); i++)
+                bodyChecksum += msg->GetDataPtr()[i];
+
+            if(tmpRxHdr.GetBodyChecksum() != bodyChecksum)
+            {
+                qDebug() << "Error in serial parser.  BodyChecksum " << bodyChecksum << " != " << tmpRxHdr.GetBodyChecksum();
+            }
+            else
+#endif
+            {
+                gotHeader = false;
+                SerialMsgSlot(msg);
+            }
         }
     }
 }
@@ -121,6 +143,16 @@ void SerialConnection::MessageSlot(QSharedPointer<Message> msg)
     serialMsg->hdr.SetLength(msg->hdr.GetLength());
     serialMsg->hdr.SetDestination(msg->hdr.GetDestination());
     serialMsg->hdr.SetSource(msg->hdr.GetSource());
+
+    uint16_t headerChecksum = 0;
+    for(int i=0; i<SerialHeader::SIZE; i++)
+        headerChecksum += ((uint8_t*)&serialMsg->hdr)[i];
+    serialMsg->hdr.SetHeaderChecksum(headerChecksum);
+
+    uint16_t bodyChecksum = 0;
+    for(unsigned i=0; i<msg->hdr.GetLength(); i++)
+        bodyChecksum += serialMsg->GetDataPtr()[i];
+    serialMsg->hdr.SetBodyChecksum(headerChecksum);
 
     memcpy(serialMsg->GetDataPtr(), msg->GetDataPtr(), msg->hdr.GetLength());
 
