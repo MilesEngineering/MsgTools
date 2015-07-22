@@ -117,7 +117,6 @@ void SerialConnection::SerialDataReady()
             msg->hdr = tmpRxHdr;
             serialPort.read((char*)msg->GetDataPtr(), msg->hdr.GetLength());
 
-#ifdef ENABLE_BODY_CHECKSUM_CHECK
             uint16_t bodyChecksum = 0;
             for(unsigned i=0; i<msg->hdr.GetLength(); i++)
                 bodyChecksum += msg->GetDataPtr()[i];
@@ -127,7 +126,6 @@ void SerialConnection::SerialDataReady()
                 qDebug() << "Error in serial parser.  BodyChecksum " << bodyChecksum << " != " << tmpRxHdr.GetBodyChecksum();
             }
             else
-#endif
             {
                 gotHeader = false;
                 SerialMsgSlot(msg);
