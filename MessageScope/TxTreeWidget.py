@@ -152,9 +152,15 @@ class MessageItem(QObject, QTreeWidgetItem):
         tree_widget.addTopLevelItem(self)
         self.setExpanded(True)
 
+    def repaintAll(self):
+        # Refresh the paint on the entire tree
+        # TODO This is not a good solution!  We should refresh *only* the item that changed, not whole tree!
+        region = self.tree_widget.childrenRegion()
+        self.tree_widget.setDirtyRegion(region)
+
     def set_msg_buffer(self, msg_buffer):
         self.msg_buffer_wrapper["msg_buffer"] = msg_buffer
-        self.tree_widget.update()
+        self.repaintAll()
 
     def setup_fields(self, tree_widget, child_constructor, child_array_constructor, child_bitfield_constructor):
         headerTreeItemParent = QTreeWidgetItem(None, [ "Header" ])
