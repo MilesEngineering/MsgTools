@@ -28,8 +28,8 @@ TEST(MessageClientTest, Reflection)
     MessageClient mc(&buffer);
 
     ConnectMessage* cmTx = new ConnectMessage();
-    cmTx->hdr->SetSource(0x12345678);
-    cmTx->hdr->SetDestination(0x3456789A);
+    cmTx->hdr->SetSource(0x1234);
+    cmTx->hdr->SetDestination(0x5678);
     cmTx->hdr->SetPriority(1234);
     strcpy((char*)cmTx->Name(), "test1");
     /* Connect the signal so we can receive a message, and test that send/receive works. */

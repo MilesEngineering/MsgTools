@@ -1,6 +1,6 @@
 PARSER:=python3 MsgParser.py
 
-install all:: Makefile Cpp Python
+install all:: Makefile Cpp Python Html
 # Simulink
 
 .PHONY: all C Cpp Matlab Python Simulink VHDL test
@@ -18,6 +18,11 @@ Python:
 	$(call colorecho,Python)
 	$(TRACE_FLAG)$(PARSER) $(hdir) $(MSGDIR)/Python Python/language.py  Python/HeaderTemplate.py
 	$(TRACE_FLAG)$(PARSER) ../messages $(MSGDIR)/Python Python/language.py  Python/Template.py
+
+Html:
+	$(call colorecho,HTML)
+	$(TRACE_FLAG)$(PARSER) $(hdir) $(MSGDIR)/HTML HTML/language.py  HTML/HeaderTemplate.html
+	$(TRACE_FLAG)$(PARSER) ../messages $(MSGDIR)/HTML HTML/language.py  HTML/Template.html
 
 Simulink:
 	$(call colorecho,Simulink)
