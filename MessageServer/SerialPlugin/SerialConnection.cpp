@@ -14,7 +14,8 @@ SerialConnection::SerialConnection()
   serialPort(),
   _settings("MsgTools", "MessageServer_SerialPlugin")
 {
-    serialPort.setBaudRate(BAUD115200);
+    /** \note Needs to be 57600, 8N1 for 3dr radio. */
+    serialPort.setBaudRate(BAUD57600);
     serialPort.setFlowControl(FLOW_OFF);
     serialPort.setParity(PAR_NONE);
     serialPort.setDataBits(DATA_8);
