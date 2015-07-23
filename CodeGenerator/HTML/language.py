@@ -26,17 +26,19 @@ def createFieldInfoRow(field):
 
     scale = str(field["Scale"]) if "Scale" in field else "n/a"
     offset = str(field["Offset"]) if "Offset" in field else "n/a"
+    default = str(field["Default"]) if "Default" in field else "n/a"
     description = str(field["Description"]) if "Description" in field else "n/a"
 
     html = "\
         <tr>\
-            <td>" + name + "</td>\
-            <td>" + fieldtype + "</td>\
-            <td>" + count + "</td>\
-            <td>" + units + "</td>\
-            <td>" + scale + "</td>\
-            <td>" + offset + "</td>\
-            <td>" + description + "</td>\
+            <td class='fieldname'>" + name + "</td>\
+            <td class='fieldtype'>" + fieldtype + "</td>\
+            <td class='fieldcount'>" + count + "</td>\
+            <td class='fieldunits'>" + units + "</td>\
+            <td class='fieldscale'>" + scale + "</td>\
+            <td class='fieldoffset'>" + offset + "</td>\
+            <td class='fielddefault'>" + default + "</td>\
+            <td class='fielddescription'>" + description + "</td>\
         </tr>\
     "
     return html
@@ -52,16 +54,18 @@ def createBitfieldInfoRow(bitfield):
 
     scale = str(bitfield["Scale"]) if "Scale" in bitfield else "n/a"
     offset = str(bitfield["Offset"]) if "Offset" in bitfield else "n/a"
+    default = str(bitfield["Default"]) if "Default" in bitfield else "n/a"
     description = str(bitfield["Description"]) if "Description" in bitfield else "n/a"
 
     html = "\
         <tr>\
-            <td>" + name + "</td>\
+            <td><span class='glyphicon glyphicon-arrow-right' aria-hidden='true'>" + name + "</span>    </td>\
             <td>" + bitfieldtype + "</td>\
             <td>" + count + "</td>\
             <td>" + units + "</td>\
             <td>" + scale + "</td>\
             <td>" + offset + "</td>\
+            <td>" + default + "</td>\
             <td>" + description + "</td>\
         </tr>\
     "
