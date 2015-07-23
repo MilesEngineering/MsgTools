@@ -10,13 +10,21 @@
     <!-- Bootstrap -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
     <style type="text/css">
+        td.fieldname {
+            font-weight: bold;
+        }
+
+        td.fieldtype {
+            font-style: italic;
+        }
     </style>
   </head>
   <body>
-    <h1><MSGNAME></h1>
-    <h2><MSGDESCRIPTION></h2>
-    <h3>ID: <MSGID></h3>
-    <h3>Size: <MSGSIZE></h3>
+    <div class="page-header">
+        <h1><MSGNAME> <small><MSGDESCRIPTION></small></h1>
+        <h2>ID: <span class="label label-primary"><MSGID></span></h2>
+        <h2><span>Size: </span><span class="label label-info"><MSGSIZE> bytes</span></h2>
+    </div>
 
     <div class="container">
         <div class="row">
@@ -31,6 +39,7 @@
                             <th>Units</th>
                             <th>Scale</th>
                             <th>Offset</th>
+                            <th>Default?</th>
                             <th>Description</th>
                         </tr>
                     </thead>
@@ -38,6 +47,9 @@
                 </table>
             </div>
         </div>
+        <div class="row">
+        </div>
+        <ENUMERATIONS>
     </div>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
