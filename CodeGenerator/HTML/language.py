@@ -48,7 +48,7 @@ def createBitfieldInfoRow(bitfield):
     units = str(bitfield["Units"]) if "Units" in bitfield else "n/a"
 
     if "Enum" in bitfield:
-        units = str(bitfield["Enum"])
+        units = "<ENUM>" + str(bitfield["Enum"]) + "</ENUM>"
 
     scale = str(bitfield["Scale"]) if "Scale" in bitfield else "n/a"
     offset = str(bitfield["Offset"]) if "Offset" in bitfield else "n/a"
@@ -66,7 +66,6 @@ def createBitfieldInfoRow(bitfield):
         </tr>\
     "
     return html
-
 
 def initCode(msg):
     ret = []
@@ -86,21 +85,29 @@ def initCode(msg):
     return ret
 
 def enums(e):
-    ret = ""
+    html = []
+
     for enum in e:
-        # forward enum
-        fwd = enum["Name"]+" = {"
-        for option in enum["Options"]:
-            fwd += '"'+option["Name"]+'"'+" : "+str(option["Value"]) + ', '
-        fwd = fwd[:-2]
-        fwd += "}\n"
+        enum["Name"]
 
-        # Reverse enum
-        back = "Reverse" + enum["Name"]+" = {"
-        for option in enum["Options"]:
-            back += str(option["Value"]) +' : "'+str(option["Name"]) + '", '
-        back = back[:-2]
-        back += "}\n"
+        options = []
 
-        ret += fwd + back
-    return ret
+        for option in enum["Options"]:
+            options.append("<tr><td>" + str(option["Name"]) + "</td><td>" + str(option["Value"]) + "</td></tr>")
+
+        html.append("<div class='row'>\
+            <div class='col-lg-4'>\
+                <table class='table table-bordered table-hover table-striped'>\
+                    <caption>Enumeration: " + enum["Name"] + "</caption>\
+                    <thead>\
+                        <tr>\
+                            <th>Option</th>\
+                            <th>Value</th>\
+                        </tr>\
+                    </thead>\
+                    " + "\n".join(options) + "\
+                </table>\
+            </div>\
+        </div>")
+
+    return "\n".join(html)

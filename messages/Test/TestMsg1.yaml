@@ -9,6 +9,12 @@ Enums:
         Value: 2
       - Name: Val3
         Value: 3
+  - Name: TestEnumTwo
+    Options:
+      - Name: Start
+        Value: 0
+      - Name: Stop
+        Value: 1
 Messages:
   - Name: TestMessage1
     ID: 0xFFFFFF99
@@ -39,3 +45,8 @@ Messages:
         Type: uint8
         Units: Hz
         Description: With a reaaaally long description with spaces and stuff
+      - Name: Field6
+        Type: uint32
+        Units: enumeration
+        Description: Test Field 6
+        Enum: TestEnumTwo
