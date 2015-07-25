@@ -99,13 +99,6 @@ def ProcessFile(template, inFile, outFile, subdirComponent):
             line = DoReplacements(line, msg, Enums(inFile), subdirComponent)
             outFile.write(line)
 
-def Mask(numBits):
-    return str(hex(2 ** numBits - 1))
-
-def BitfieldName(field, bits):
-    #return str(field["Name"]) +str(bits["Name"])
-    return str(bits["Name"])
-        
 # main starts here
 if __name__ == '__main__':
     if len(sys.argv) < 5:
