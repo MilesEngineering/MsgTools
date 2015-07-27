@@ -42,6 +42,7 @@ class MessageClient : public QObject
                     int length = _ioDevice.read((char*)_inProgressMessage->GetDataPtr(), bytesWanted);
                     if(length == bytesWanted)
                     {
+                        _gotHeader = false;
                         emit(newMessageComplete(_inProgressMessage));
                     }
                 }
