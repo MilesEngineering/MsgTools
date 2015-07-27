@@ -72,7 +72,7 @@ def GetFieldD(message_buffer):
 @msg.count(1)
 def GetBitsA(message_buffer):
     \"\"\"\"\"\"
-    return (float((MsgA.GetFieldD(message_buffer) >> 0) & 0xf) / 14.357)
+    return (float((MsgA.GetFieldD(message_buffer) >> 0) & 0xf) * 14.357)
 """)
         expected.append("""\
 @staticmethod
@@ -110,7 +110,7 @@ def GetFieldE(message_buffer):
 def GetFieldF(message_buffer):
     \"\"\"\"\"\"
     value = struct.unpack_from('>H', message_buffer, MsgA.MSG_OFFSET + 16)[0]
-    value = ((value / 2.7) + 1.828)
+    value = ((value * 2.7) + 1.828)
     return value
 """)
         expected.append("""\
@@ -170,7 +170,7 @@ def SetFieldD(message_buffer, value):
 @msg.count(1)
 def SetBitsA(message_buffer, value):
     \"\"\"\"\"\"
-    tmp = min(max(int(value * 14.357), 0), 15)
+    tmp = min(max(int(value / 14.357), 0), 15)
     MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0xf << 0)) | ((tmp & 0xf) << 0))
 """)
         expected.append("""\
@@ -210,7 +210,7 @@ def SetFieldE(message_buffer, value):
 @msg.count(1)
 def SetFieldF(message_buffer, value):
     \"\"\"\"\"\"
-    tmp = min(max(int((value - 1.828) * 2.7), 0), 65535)
+    tmp = min(max(int((value - 1.828) / 2.7), 0), 65535)
     struct.pack_into('>H', message_buffer, MsgA.MSG_OFFSET + 16, tmp)
 """)
         expCount = len(expected)

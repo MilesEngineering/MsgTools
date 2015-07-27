@@ -20,7 +20,7 @@ def fieldInfos(msg):
     pass
 
 def fnHdr(field):
-    ret = "// %s %s" % (MsgParser.fieldDescription(field), MsgParser.fieldUnits(field))
+    ret = "// %s %s, (%s to %s)" % (MsgParser.fieldDescription(field), MsgParser.fieldUnits(field), MsgParser.fieldMin(field), MsgParser.fieldMax(field))
     return ret
 
 def arrayAccessor(field, offset):
@@ -53,6 +53,9 @@ def getFn(field, offset):
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         retType = "float"
+    elif "Enum" in field:
+        retType = field["Enum"]
+        access = retType + "(" + access + ")"
     ret = '''\
 %s
 %s Get%s(%s)
@@ -63,8 +66,12 @@ def getFn(field, offset):
 
 def setFn(field, offset):
     paramType = fieldType(field)
+    valueString = MsgParser.setMath("value", field, fieldType(field))
     if "Offset" in field or "Scale" in field:
         paramType = "float"
+    elif "Enum" in field:
+        valueString = paramType + "(" + valueString + ")"
+        paramType = field["Enum"]
     param = paramType + " value"
     loc = str(offset)
     if MsgParser.fieldCount(field) > 1:
@@ -75,7 +82,7 @@ def setFn(field, offset):
 void Set%s(%s)
 {
     Set_%s(&m_data[%s], %s);
-}''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, MsgParser.setMath("value", field, fieldType(field)))
+}''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
@@ -84,6 +91,9 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = "float"
+    elif "Enum" in bits:
+        retType = bits["Enum"]
+        access = retType + "(" + access + ")"
     ret = '''\
 %s
 %s Get%s()
@@ -94,15 +104,18 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
     paramType = fieldType(field)
+    valueString = MsgParser.setMath("value", bits, fieldType(field))
     if "Offset" in bits or "Scale" in bits:
         paramType = "float"
-    value = MsgParser.setMath("value", bits, fieldType(field))
+    elif "Enum" in bits:
+        valueString = paramType + "(" + valueString + ")"
+        paramType = bits["Enum"]
     ret = '''\
 %s
 void Set%s(%s value)
 {
     Set%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
-}''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), paramType, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), value, MsgParser.Mask(numBits), str(bitOffset))
+}''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), paramType, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -186,7 +199,7 @@ def fieldReflectionType(field):
     else:
         if "Offset" in field or "Scale" in field:
             ret = "ScaledFieldInfo"
-    if "Enums" in field:
+    if "Enum" in field:
         ret = "EnumFieldInfo"
     return ret
 
@@ -207,7 +220,7 @@ def fieldReflectionBitsType(field, bits):
     else:
         if "Offset" in field or "Scale" in field:
             ret = "ScaledFieldInfo"
-    if "Enums" in field:
+    if "Enum" in field:
         ret = "EnumFieldInfo"
     return ret
 

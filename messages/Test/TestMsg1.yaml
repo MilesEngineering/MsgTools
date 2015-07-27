@@ -25,16 +25,22 @@ Messages:
         Units: enumeration
         Description: Test Field 1
         Enum: TestEnum
+        Min: 1
+        Max: 158212
       - Name: F2
         Type: float32
         Units: m/s
         Description: Test Field 2
         Count: 3
+        Min: 0.0
+        Max: 1.0
       - Name: F3
         Type: uint16
         Units: cm
         Description: Test Field 3
         Scale: 10.0
+        Min: 0.0
+        Max: 1.0
       - Name: F4
         Type: uint8
         Units: meters
