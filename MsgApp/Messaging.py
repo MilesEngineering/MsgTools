@@ -68,7 +68,7 @@ class Messaging:
                 moduleName = os.path.splitext(os.path.basename(filename))[0]
                 if Messaging.debug:
                     print("loading module ", filepath, "as",moduleName)
-                vars(self)[moduleName] = imp.load_source(moduleName,filepath)
+                vars(self)[moduleName] = imp.load_source(filepath.replace("/", "_"), filepath)
                 #print("vars(self)[%s] is "% moduleName, vars(self))
                 
 
