@@ -66,8 +66,8 @@ def bitfieldReflection(msg, field, bits):
               'description="'+MsgParser.fieldDescription(bits) + '",'+\
               'get='+"Get" + name + ','+\
               'set='+"Set" + name  + ', '
-    if "Enum" in field:
-        ret += "enum = ["+  field["Enum"]+", " + "Reverse" + field["Enum"]+"])"
+    if "Enum" in bits:
+        ret += "enum = ["+  bits["Enum"]+", " + "Reverse" + bits["Enum"]+"])"
     else:
         ret += "enum = [])"
     return ret
@@ -188,20 +188,21 @@ def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
     access = "("+msg["Name"]+".Get%s(message_buffer) >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
     access = MsgParser.getMath(access, bits, "float")
     cleanup = ""
-    if "Enum" in field:
+    if "Enum" in bits:
         # find index that corresponds to string input param
-        cleanup = reverseEnumLookup(msg, field)
+        cleanup = reverseEnumLookup(msg, bits)
     ret  = '''\
 %s
-    %sreturn %s
-''' % (fnHdr(bits,1,"Get"+MsgParser.BitfieldName(field, bits)), cleanup, access)
+    value = %s
+    %sreturn value
+''' % (fnHdr(bits,1,"Get"+MsgParser.BitfieldName(field, bits)), access, cleanup)
     return ret
 
 def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
     lookup = ""
-    if "Enum" in field:
+    if "Enum" in bits:
         # find index that corresponds to string input param
-        lookup = enumLookup(msg, field)
+        lookup = enumLookup(msg, bits)
     math = "min(max(%s, %s), %s)" % (MsgParser.setMath("value", bits, "int"), 0, str(2**numBits-1))
     math = lookup + "tmp = " + math
     ret = '''\
