@@ -50,7 +50,7 @@ uint8_t GetFieldD()
 //  , (0.0 to 215.355)
 float GetBitsA()
 {
-    return (float((GetFieldD() >> 0) & 0xf) * 14.357);
+    return (float((GetFieldD() >> 0) & 0xf) * 14.357f);
 }""")
         expected.append("""\
 //  , (0 to 7)
@@ -74,7 +74,7 @@ float GetFieldE()
 //  , (1.828 to 176946.328)
 float GetFieldF()
 {
-    return ((float(Get_uint16_t(&m_data[16])) * 2.7) + 1.828);
+    return ((float(Get_uint16_t(&m_data[16])) * 2.7f) + 1.828f);
 }""")
         expected.append("""\
 //  m/s, (0 to 4294967295)
@@ -110,7 +110,7 @@ void SetFieldD(uint8_t value)
 //  , (0.0 to 215.355)
 void SetBitsA(float value)
 {
-    SetFieldD((GetFieldD() & ~(0xf << 0)) | ((uint8_t(value / 14.357) & 0xf) << 0));
+    SetFieldD((GetFieldD() & ~(0xf << 0)) | ((uint8_t(value / 14.357f) & 0xf) << 0));
 }""")
         expected.append("""\
 //  , (0 to 7)
@@ -134,7 +134,7 @@ void SetFieldE(float value)
 //  , (1.828 to 176946.328)
 void SetFieldF(float value)
 {
-    Set_uint16_t(&m_data[16], uint16_t((value - 1.828) / 2.7));
+    Set_uint16_t(&m_data[16], uint16_t((value - 1.828f) / 2.7f));
 }""")
         expected.append("""\
 //  , (0 to 255)

@@ -3,6 +3,11 @@ Messages:
     ID: 0xFFFFFF98
     Description: Used to test more stuff.
     Fields:
+      - Name: Latitude
+        Type: int32
+        Units: radians
+        Description: Demonstrate that a 32-bit scaled integer is accessed as a double in C++
+        Scale: 1.4629180792671596e-09
       - Name: Field1
         Type: float32
         Units: m/s
