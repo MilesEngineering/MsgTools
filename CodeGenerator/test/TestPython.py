@@ -33,7 +33,8 @@ def GetFieldA(message_buffer):
 @msg.count(1)
 def GetFABitsA(message_buffer):
     \"\"\"\"\"\"
-    return (MsgA.GetFieldA(message_buffer) >> 0) & 0x7fffffff
+    value = (MsgA.GetFieldA(message_buffer) >> 0) & 0x7fffffff
+    return value
 """)
         expected.append("""\
 @staticmethod
@@ -72,7 +73,8 @@ def GetFieldD(message_buffer):
 @msg.count(1)
 def GetBitsA(message_buffer):
     \"\"\"\"\"\"
-    return (float((MsgA.GetFieldD(message_buffer) >> 0) & 0xf) * 14.357)
+    value = (float((MsgA.GetFieldD(message_buffer) >> 0) & 0xf) * 14.357)
+    return value
 """)
         expected.append("""\
 @staticmethod
@@ -81,7 +83,8 @@ def GetBitsA(message_buffer):
 @msg.count(1)
 def GetBitsB(message_buffer):
     \"\"\"\"\"\"
-    return (MsgA.GetFieldD(message_buffer) >> 4) & 0x7
+    value = (MsgA.GetFieldD(message_buffer) >> 4) & 0x7
+    return value
 """)
         expected.append("""\
 @staticmethod
@@ -90,7 +93,8 @@ def GetBitsB(message_buffer):
 @msg.count(1)
 def GetBitsC(message_buffer):
     \"\"\"\"\"\"
-    return (MsgA.GetFieldD(message_buffer) >> 7) & 0x1
+    value = (MsgA.GetFieldD(message_buffer) >> 7) & 0x1
+    return value
 """)
         expected.append("""\
 @staticmethod
