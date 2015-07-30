@@ -101,6 +101,7 @@ class MessageScopeGui(MsgGui.MsgGui):
     def configure_tx_dictionary(self, parent):
         txDictionary = QTreeWidget(parent)
         txDictionary.itemDoubleClicked.connect(self.onTxMessageSelected)
+        txDictionary.setHeaderLabels(["Transmit Dictionary"])
         return txDictionary
 
     def configure_tx_messages(self, parent):
