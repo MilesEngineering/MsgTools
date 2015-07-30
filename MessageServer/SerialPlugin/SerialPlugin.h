@@ -14,9 +14,7 @@ class SerialPlugin : public QObject, public ServerInterface
     Q_INTERFACES(ServerInterface)
     public:
         SerialPlugin();
-        ServerPort& DBConnection();
-    private:
-        SerialConnection* serialConn;
+        ServerPort* CreateConnection();
 };
 
 #endif

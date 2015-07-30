@@ -202,8 +202,8 @@ void MessageServer::LoadPlugin(QString fileName)
         ServerInterface* dbPlugin = qobject_cast<ServerInterface*>(plugin);
         if (dbPlugin)
         {
-            ServerPort& dbConn = dbPlugin->DBConnection();
-            AddNewClient(&dbConn);
+            ServerPort* conn = dbPlugin->CreateConnection();
+            AddNewClient(conn);
         }
         else
         {

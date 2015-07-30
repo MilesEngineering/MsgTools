@@ -3,10 +3,10 @@
 SerialPlugin::SerialPlugin()
 : ServerInterface()
 {
-    serialConn = new SerialConnection();
 }
 
-ServerPort& SerialPlugin::DBConnection()
+ServerPort* SerialPlugin::CreateConnection()
 {
-    return *serialConn;
+    SerialConnection* serialConn = new SerialConnection();
+    return serialConn;
 }

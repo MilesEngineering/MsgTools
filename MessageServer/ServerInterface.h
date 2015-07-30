@@ -6,7 +6,7 @@
 class ServerInterface
 {
     public:
-        virtual ServerPort& DBConnection()=0;
+        virtual ServerPort* CreateConnection()=0;
 };
 
 Q_DECLARE_INTERFACE(ServerInterface, "com.milesengineering.msgtools.MessageServerInterface/1.0");

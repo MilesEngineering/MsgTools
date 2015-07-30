@@ -26,6 +26,7 @@ SerialConnection::SerialConnection()
 
     startSequence = tmpRxHdr.GetStartSequence();
 
+    _buttonGroup.setStyleSheet("border:0;");
     QHBoxLayout* layout = new QHBoxLayout();
     layout->addWidget(&_statusLabel);
     layout->addWidget(new QLabel("/dev/"));
