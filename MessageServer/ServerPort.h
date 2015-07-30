@@ -21,6 +21,7 @@ class ServerPort : public QObject
             statusLabel.setText(name);
             connect(&removeClient, &QPushButton::clicked, this, &ServerPort::ConnectionDied);
         }
+        virtual ~ServerPort() {}
         QString Name() { return name; }
         void SetName(const QString& n) { name = n; statusLabel.setText(name + "(" + initName + ")");}
         virtual void MessageSlot(QSharedPointer<Message> msg)=0;
@@ -28,18 +29,7 @@ class ServerPort : public QObject
         {
             emit disconnected();
         }
-        virtual QWidget* widget(int index)
-        {
-            switch(index)
-            {
-                case 0:
-                    return &removeClient;
-                case 1:
-                    return &statusLabel;
-                default:
-                    return 0;
-            }
-        }
+        virtual QWidget* widget(int index)=0;
     signals:
         void MsgSignal(QSharedPointer<Message> msg);
         void disconnected();

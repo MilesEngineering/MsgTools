@@ -3,7 +3,6 @@
 #include "qextserialport/src/qextserialenumerator.h"
 #include <QDebug>
 #include <QRadioButton>
-#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
 
@@ -12,7 +11,11 @@ SerialConnection::SerialConnection()
   tmpRxHdr(),
   gotHeader(false),
   serialPort(),
-  _settings("MsgTools", "MessageServer_SerialPlugin")
+  _buttonGroup(),
+  _settings("MsgTools", "MessageServer_SerialPlugin"),
+  _statusLabel(""),
+  _rxMsgCount(0),
+  _rxErrorCount(0)
 {
     /** \note Needs to be 57600, 8N1 for 3dr radio. */
     serialPort.setBaudRate(BAUD57600);
@@ -23,8 +26,8 @@ SerialConnection::SerialConnection()
 
     startSequence = tmpRxHdr.GetStartSequence();
 
-    _buttonGroup = new QGroupBox();
     QHBoxLayout* layout = new QHBoxLayout();
+    layout->addWidget(&_statusLabel);
     layout->addWidget(new QLabel("/dev/"));
     qDebug() << "Looking for /dev/ttyUSB* and /dev/ttyACM0 *ONLY*!";
     QString lastconnection = _settings.value("LastSerialPortUsed", "").toString();
@@ -42,9 +45,13 @@ SerialConnection::SerialConnection()
                 rb->click();
         }
     }
-    _buttonGroup->setLayout(layout);
+    _buttonGroup.setLayout(layout);
 
     connect(&serialPort, SIGNAL(readyRead()), this, SLOT(SerialDataReady()));
+}
+
+SerialConnection::~SerialConnection()
+{
 }
 
 void SerialConnection::SerialDataReady()
@@ -66,6 +73,7 @@ void SerialConnection::SerialDataReady()
             }
             uint8_t throwAway;
             serialPort.read((char*)&throwAway, sizeof(throwAway));
+            gotRxError();
         }
 
         if(foundStart)
@@ -98,11 +106,13 @@ void SerialConnection::SerialDataReady()
                     }
                     else
                     {
+                        gotRxError();
                         qDebug() << "Error in serial parser.  HeaderChecksum " << headerChecksum << " != " << tmpRxHdr.GetHeaderChecksum();
                     }
                 }
                 else
                 {
+                    gotRxError();
                     qDebug() << "Error in serial parser.  Thought I had start byte, now it's gone!";
                 }
             }
@@ -125,10 +135,12 @@ void SerialConnection::SerialDataReady()
             if(0)//tmpRxHdr.GetBodyChecksum() != bodyChecksum)
             {
                 qDebug() << "Error in serial parser.  BodyChecksum " << bodyChecksum << " != " << tmpRxHdr.GetBodyChecksum();
+                gotRxError();
             }
             else
             {
                 gotHeader = false;
+                _rxMsgCount++;
                 SerialMsgSlot(msg);
             }
         }
@@ -178,11 +190,17 @@ void SerialConnection::SerialMsgSlot(QSharedPointer<SerialMessage> msg)
 
 QWidget* SerialConnection::widget(int index)
 {
-    if(index == 2)
+    switch(index)
     {
-        return _buttonGroup;
+        case 0:
+            return &removeClient;
+        case 1:
+            return &statusLabel;
+        case 2:
+            return &_buttonGroup;
+        default:
+            return 0;
     }
-    return ServerPort::widget(index);
 }
 
 void SerialConnection::radioButtonToggled(bool pressed)
@@ -200,4 +218,10 @@ void SerialConnection::radioButtonToggled(bool pressed)
         else
             qWarning() << "Couldn't open " << portName << endl;
     }
+}
+
+void SerialConnection::gotRxError()
+{
+    _rxErrorCount++;
+    _statusLabel.setText(QString("Error: %1, Msg: %2").arg(_rxErrorCount).arg(_rxMsgCount));
 }

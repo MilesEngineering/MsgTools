@@ -153,26 +153,29 @@ void MessageServer::GotANewClient()
 // remove dead clients from the list of clients
 void MessageServer::ClientDied()
 {
-    ServerPort* dbConn = qobject_cast<ServerPort*>(sender());
-    if(dbConn)
+    QObject* s = QObject::sender();
+    /** \note this used to be qobject_cast<>, which failed for an object that was a subclass of
+     * ServerPort defined in the SerialPlugin.  Changing to dynamic_cast<> made it work again. */
+    ServerPort* serverPort = dynamic_cast<ServerPort*>(s);
+    if(serverPort)
     {
-        if(_clients.removeOne(dbConn))
+        if(_clients.removeOne(serverPort))
         {
-            //qDebug() << "Removed client." << endl;
-            statusBar()->showMessage(QString("Removed %1").arg(dbConn->Name()), 1000);
+            qDebug() << "Removed client " << serverPort->Name() << endl;
+            statusBar()->showMessage(QString("Removed %1").arg(serverPort->Name()), 1000);
+            for(int i=0; ; i++)
+            {
+                QWidget* widget = serverPort->widget(i);
+                if(!widget)
+                    break;
+                _layout->removeWidget(widget);
+            }
+            delete serverPort;
         }
         else
         {
-            qCritical() << "Failed to remove client " << dbConn->Name() << endl;
+            qCritical() << "Failed to remove client " << endl; // << dbConn->Name() << endl;
         }
-        for(int i=0; ; i++)
-        {
-            QWidget* widget = dbConn->widget(i);
-            if(!widget)
-                break;
-            _layout->removeWidget(widget);
-        }
-        delete dbConn;
     }
     else
     {

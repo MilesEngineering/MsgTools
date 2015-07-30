@@ -5,14 +5,14 @@
 #include "MessageServer/ServerPort.h"
 #include "SerialMessage.h"
 #include "qextserialport/src/qextserialport.h"
-
-class QGroupBox;
+#include <QGroupBox>
 
 class SerialConnection : public ServerPort
 {
     Q_OBJECT
     public:
         SerialConnection();
+        virtual ~SerialConnection();
     public slots:
         virtual void MessageSlot(QSharedPointer<Message> msg);
         virtual void SerialMsgSlot(QSharedPointer<SerialMessage> msg);
@@ -24,9 +24,13 @@ class SerialConnection : public ServerPort
         bool gotHeader;
         uint32_t startSequence;
         QextSerialPort serialPort;
-        QGroupBox* _buttonGroup;
+        QGroupBox _buttonGroup;
         QSettings _settings;
+        QLabel _statusLabel;
+        int _rxMsgCount;
+        int _rxErrorCount;
         void radioButtonToggled(bool pressed);
+        void gotRxError();
 };
 
 #endif
