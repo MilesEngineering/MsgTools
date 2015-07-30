@@ -15,10 +15,10 @@ def Usage():
 
 def readFile(filename):
     #print("Processing ", filename)
-    if filename.find(".yaml") != -1:
+    if filename.endswith(".yaml"):
         inFile = io.open(filename)
         return yaml.load(inFile)
-    elif filename.find(".json") != -1:
+    elif filename.endswith(".json"):
         inFile = io.open(filename)
         return json.load(inFile)
     else:
