@@ -165,3 +165,21 @@ class MsgApp(QMainWindow):
             self.RxMsg.emit(self.rxBuf)
             # then clear the buffer, so we start over on the next message
             self.rxBuf = bytearray()
+
+# this function reads messages, and calls the message handler.
+    def MessageLoop(self):
+        while (1):
+            self.rxBuf = self.readFn(Messaging.hdrSize)
+            
+            if(len(self.rxBuf) != Messaging.hdrSize): break
+
+            # need to decode body len to read the body
+            bodyLen = Messaging.hdr.GetLength(self.rxBuf)
+            
+            # read the body
+            self.rxBuf += self.readFn(bodyLen)
+            if(len(self.rxBuf) != Messaging.hdrSize + bodyLen): break
+
+            # got a complete message, call the callback to process it
+            self.PrintMessage(self.rxBuf)
+        print("found end of file, exited")

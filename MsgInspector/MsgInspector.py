@@ -24,14 +24,15 @@ class MsgInspector(MsgGui.MsgGui):
             self.outputName = argv[4]
         else:
             if(self.connectionType.lower() == "file"):
-                self.outputName = self.connectionName + ".csv"
+                self.outputName = self.connectionName.replace('.log', '')
+                os.makedirs(self.outputName)
+                print("outputName is " + self.outputName + "\n")
 
         if(self.outputType.lower() == "file"):
             # event-based way of getting messages
             self.RxMsg.connect(self.PrintMessage)
             
-            # hash table to lookup the widget for a message, by message ID
-            self.msgWidgets = {}
+            self.outputFiles = {}
         else:
             # event-based way of getting messages
             self.RxMsg.connect(self.ShowMessage)
@@ -41,8 +42,8 @@ class MsgInspector(MsgGui.MsgGui):
             self.setCentralWidget(self.tabWidget)
             self.resize(640, 480)
         
-            # hash table to lookup the widget for a message, by message ID
-            self.msgWidgets = {}
+        # hash table to lookup the widget for a message, by message ID
+        self.msgWidgets = {}
 
 
     def ShowMessage(self, msg):
@@ -99,7 +100,7 @@ class MsgInspector(MsgGui.MsgGui):
 
     def PrintMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = hex(self.msgLib.GetID(msg))
+        id       = hex(self.msgLib.hdr.GetID(msg))
         msgName = self.msgLib.MsgNameFromID[id]
         msgClass = self.msgLib.MsgClassFromName[msgName]
 
@@ -109,41 +110,45 @@ class MsgInspector(MsgGui.MsgGui):
 
         # if we write CSV to multiple files, we'd probably look up a hash table for this message id,
         # and open it and write a header
-        if(0):
-            if(not(id in self.outputFiles)):
-                # create a new file
-                outputFile = "open a file for writing, with filename based on self.outputName and messagename"
-                
-                # add table header, one column for each message field
-                tableHeader = ""
-                for fieldInfo in msgClass.fields:
-                    tableHeader += fieldInfo.name + ", "
-                    for bitInfo in fieldInfo.bitfieldInfo:
-                        tableHeader += bitInfo.name + ", "
-                
-                print(tableHeader)
-                # store a pointer to it, so we can find it next time (instead of creating it again)
-                self.outputFiles[id] = outputFile
+        if(id in self.outputFiles):
+            outputFile = self.outputFiles[id]
+        else:
+            # create a new file
+            outputFile = open(self.outputName + "/" + msgName + ".csv", 'w')
+
+            # store a pointer to it, so we can find it next time (instead of creating it again)
+            self.outputFiles[id] = outputFile
+            
+            # add table header, one column for each message field
+            tableHeader = ""
+            for fieldInfo in msgClass.fields:
+                tableHeader += fieldInfo.name + ", "
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    tableHeader += bitInfo.name + ", "
+            tableHeader += '\n'
+            outputFile.write(tableHeader)
         
         text = ""
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
-                columnText = str(Messaging.get(msg, fieldInfo))
+                columnText = str(Messaging.get(msg, fieldInfo)) + ", "
                 for bitInfo in fieldInfo.bitfieldInfo:
                     columnText += str(Messaging.get(msg, bitInfo)) + ", "
             else:
                 columnText = ""
                 for i in range(0,fieldInfo.count):
-                    columnText += str(Messaging.get(msg, fieldInfo, i))
-                    if(i<fieldInfo.count-1):
-                        columnText += ", "
-            text += columnText + ", "
-        print(text)
+                    columnText += str(Messaging.get(msg, fieldInfo, i)) + ", "
+            text += columnText
+        text += '\n'
+        outputFile.write(text)
 
 # main starts here
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     msgApp = MsgInspector(sys.argv)
     #msgApp.msgLib.PrintDictionary()
-    msgApp.show()
-    sys.exit(app.exec_())
+    if msgApp.connectionType == "file":
+        msgApp.MessageLoop()
+    else:
+        msgApp.show()
+        sys.exit(app.exec_())
