@@ -33,6 +33,8 @@ class MsgInspector(MsgGui.MsgGui):
             self.RxMsg.connect(self.PrintMessage)
             
             self.outputFiles = {}
+            
+            self.msgCounter = 0
         else:
             # event-based way of getting messages
             self.RxMsg.connect(self.ShowMessage)
@@ -120,7 +122,7 @@ class MsgInspector(MsgGui.MsgGui):
             self.outputFiles[id] = outputFile
             
             # add table header, one column for each message field
-            tableHeader = ""
+            tableHeader = "Time (ms), "
             for fieldInfo in msgClass.fields:
                 tableHeader += fieldInfo.name + ", "
                 for bitInfo in fieldInfo.bitfieldInfo:
@@ -128,7 +130,9 @@ class MsgInspector(MsgGui.MsgGui):
             tableHeader += '\n'
             outputFile.write(tableHeader)
         
-        text = ""
+        # TODO: Use timestamp in ms, NOT a counter!
+        self.msgCounter+=1
+        text = str(self.msgCounter) + ", "
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
                 columnText = str(Messaging.get(msg, fieldInfo)) + ", "
