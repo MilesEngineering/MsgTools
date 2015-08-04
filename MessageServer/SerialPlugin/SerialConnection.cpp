@@ -133,9 +133,10 @@ void SerialConnection::SerialDataReady()
             for(unsigned i=0; i<msg->hdr.GetLength(); i++)
                 bodyChecksum += msg->GetDataPtr()[i];
 
-            if(0)//tmpRxHdr.GetBodyChecksum() != bodyChecksum)
+            if(tmpRxHdr.GetBodyChecksum() != bodyChecksum)
             {
                 qDebug() << "Error in serial parser.  BodyChecksum " << bodyChecksum << " != " << tmpRxHdr.GetBodyChecksum();
+                gotHeader = false;
                 gotRxError();
             }
             else
