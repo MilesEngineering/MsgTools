@@ -13,12 +13,12 @@ class Message
         Message(uint16_t len)
         {
             hdr.SetLength(len);
+            m_data.reserve(len);
+            m_data.insert(m_data.begin(), len, '\0');
         }
         static Message* New(uint16_t datalen)
         {
-            uint8_t* buffer = new uint8_t[sizeof(Message)+datalen];
-            Message* dbmsg = new(buffer) Message(datalen);
-            return dbmsg;
+            return new Message(datalen);
         }
         void CopyHdr(Message& rhs)
         {
@@ -36,7 +36,7 @@ class Message
         {
             return (uint8_t*)&hdr;
         }
-        uint8_t* GetDataPtr() { return (uint8_t*)(&hdr+1); }
+        uint8_t* GetDataPtr() { return &m_data[0]; }
         uint16_t GetTotalLength()
         {
             return hdr.GetLength();
@@ -46,7 +46,7 @@ class Message
         bool Exists() {return true;}
     public:
         NetworkHeader hdr;
-        uint8_t       m_data[0];
+        std::vector<uint8_t>  m_data;
 };
 
 #endif
