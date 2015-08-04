@@ -21,29 +21,43 @@ class MessageClient : public QObject
     private slots:
         void onDataReady()
         {
-            int bytesAvailable = _ioDevice.bytesAvailable();
-            if(!_gotHeader && bytesAvailable >= (int)sizeof(_inProgressHeader))
+            while(1)
             {
-                int length = _ioDevice.read((char*)&_inProgressHeader, sizeof(_inProgressHeader));
-                if(length == sizeof(_inProgressHeader))
+                int bytesAvailable = _ioDevice.bytesAvailable();
+                if(!_gotHeader)
                 {
-                    _inProgressMessage = new Message(_inProgressHeader.GetLength());
-                    *_inProgressMessage->hdr = _inProgressHeader;
-                    _gotHeader = true;
-                }
-            }
-
-            if(_gotHeader)
-            {
-                int bytesWanted = _inProgressHeader.GetLength();
-                bytesAvailable = _ioDevice.bytesAvailable();
-                if(bytesAvailable >= bytesWanted)
-                {
-                    int length = _ioDevice.read((char*)_inProgressMessage->GetDataPtr(), bytesWanted);
-                    if(length == bytesWanted)
+                    if(bytesAvailable >= (int)sizeof(_inProgressHeader))
                     {
-                        _gotHeader = false;
-                        emit(newMessageComplete(_inProgressMessage));
+                        int length = _ioDevice.read((char*)&_inProgressHeader, sizeof(_inProgressHeader));
+                        if(length == sizeof(_inProgressHeader))
+                        {
+                            _inProgressMessage = new Message(_inProgressHeader.GetLength());
+                            *_inProgressMessage->hdr = _inProgressHeader;
+                            _gotHeader = true;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if(_gotHeader)
+                {
+                    int bytesWanted = _inProgressHeader.GetLength();
+                    bytesAvailable = _ioDevice.bytesAvailable();
+                    if(bytesAvailable >= bytesWanted)
+                    {
+                        int length = _ioDevice.read((char*)_inProgressMessage->GetDataPtr(), bytesWanted);
+                        if(length == bytesWanted)
+                        {
+                            _gotHeader = false;
+                            emit(newMessageComplete(_inProgressMessage));
+                        }
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
             }
