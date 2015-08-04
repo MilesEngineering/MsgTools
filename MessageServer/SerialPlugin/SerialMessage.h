@@ -9,32 +9,32 @@ class SerialMessage
         SerialMessage(uint16_t len)
         {
             hdr.SetLength(len);
+            data.reserve(len);
+            data.insert(data.begin(), len, '\0');
         }
     public:
         static SerialMessage* New(uint16_t datalen)
         {
-            uint8_t* buffer = new uint8_t[sizeof(SerialMessage)+datalen];
-            SerialMessage* serialMsg = new(buffer) SerialMessage(datalen);
-            return serialMsg;
+            return new SerialMessage(datalen);
         }
 
         ~SerialMessage()
         {
-#if 0
-            printf("destructing a serial message\n");
-#endif
         }
+
         uint8_t* RawBuffer()
         {
             return (uint8_t*)&hdr;
         }
-        uint8_t* GetDataPtr() { return (uint8_t*)(&hdr+1); }
+        uint8_t* GetDataPtr() { return &data[0]; }
         uint16_t GetTotalLength()
         {
             return hdr.GetLength();
         }
     public:
         SerialHeader hdr;
+private:
+        std::vector<uint8_t> data;
 };
 
 #endif // SERIAL_MESSAGE_H
