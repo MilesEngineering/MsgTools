@@ -38,8 +38,11 @@ class MsgPlot:
         vb = CustomViewBox()
         
         yAxisLabel = fieldInfo.name
-        if fieldInfo.count != 1:
-            yAxisLabel += "["+str(self.fieldSubindex)+"]"
+        try:
+            if fieldInfo.count != 1:
+                yAxisLabel += "["+str(self.fieldSubindex)+"]"
+        except AttributeError:
+            pass
         yAxisLabel += "  (" + fieldInfo.units+")"
         xAxisLabel = "time (count)"
         self.myPlot = self.win.addPlot(viewBox=vb, labels={'left':  yAxisLabel, 'bottom': xAxisLabel})
@@ -49,6 +52,8 @@ class MsgPlot:
 
     def addData(self, message_buffer):
         newDataPoint = float(Messaging.get(message_buffer, self.fieldInfo, self.fieldSubindex))
+        # TODO do something to get time on the X axis!
+        newTime = float(Messaging.hdr.GetTime(message_buffer)/1000.0)
         # add data in the array until MAX_LENGTH is reached, then drop data off start of array
         # such that plot appears to scroll.  The array size is limited to MAX_LENGTH.
         if len(self.dataArray) >= MsgPlot.MAX_LENGTH:
