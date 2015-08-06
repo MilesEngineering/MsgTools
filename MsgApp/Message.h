@@ -34,6 +34,11 @@ class Message
         void SetMessageID(uint32_t id) { hdr->SetID(id); }
         uint32_t GetMessageID() { return hdr->GetID(); }
         bool Exists() { return hdr != 0 && m_data != 0; }
+        void InitializeTime()
+        {
+            /** \todo How to set 32-bit rolling ms counter? */
+            hdr->SetTime(0);
+        }
     public:
         MsgHeader* hdr;
         uint8_t* m_data;

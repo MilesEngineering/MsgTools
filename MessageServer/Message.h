@@ -44,6 +44,11 @@ class Message
         void SetPayloadLength(int len) { hdr.SetLength(len); }
         void SetMessageID(uint32_t id) { hdr.SetID(id); }
         bool Exists() {return true;}
+        void InitializeTime()
+        {
+            /** \todo How to set 32-bit rolling ms counter? */
+            hdr.SetTime(0);
+        }
     public:
         NetworkHeader hdr;
         std::vector<uint8_t>  m_data;

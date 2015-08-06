@@ -26,4 +26,5 @@ Messages:
               Units: ""
       - Name: Time
         Type: uint32
+        Description: Rolling millisecond counter.
         Default: 0

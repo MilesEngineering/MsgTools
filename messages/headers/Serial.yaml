@@ -27,6 +27,10 @@ Messages:
               NumBits: 14
               Default: 0
               Units: ""
+      - Name: Time
+        Type: uint16
+        Description: Rolling millisecond counter.
+        Default: 0
       - Name: HeaderChecksum
         Type: uint16
         Default: 0

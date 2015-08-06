@@ -6,6 +6,7 @@
 #include "SerialMessage.h"
 #include "qextserialport/src/qextserialport.h"
 #include <QGroupBox>
+#include <QDateTime>
 
 class SerialConnection : public ServerPort
 {
@@ -29,6 +30,10 @@ class SerialConnection : public ServerPort
         QLabel _statusLabel;
         int _rxMsgCount;
         int _rxErrorCount;
+        uint16_t  _timestampOffset;
+        uint16_t  _lastTimestamp;
+        QDateTime _lastTime;
+        QDateTime _lastWrapTime;
         void radioButtonToggled(bool pressed);
         void gotRxError();
 };

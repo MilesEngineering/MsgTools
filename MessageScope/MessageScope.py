@@ -143,9 +143,9 @@ class MessageScopeGui(MsgGui.MsgGui):
 
     def ReadTxDictionary(self):
         print("Tx Dictionary:")
-        for id in self.msgLib.MsgNameFromID:
-            #print(self.msgLib.MsgNameFromID[id], "=", id)
-            name = self.msgLib.MsgNameFromID[id]
+        for id in Messaging.MsgNameFromID:
+            #print(Messaging.MsgNameFromID[id], "=", id)
+            name = Messaging.MsgNameFromID[id]
             (msgDir, msgName) = name.split('.')
             addFn = None
             
@@ -173,7 +173,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         if txListWidgetItem.childCount() == 0:
             # Always add to TX panel even if the same message class may already exist
             # since we may want to send the same message with different contents/header/rates.
-            message_class = self.msgLib.MsgClassFromName[messageName]
+            message_class = Messaging.MsgClassFromName[messageName]
             messageBuffer = message_class.Create()
 
             messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageBuffer)
@@ -209,12 +209,12 @@ class MessageScopeGui(MsgGui.MsgGui):
     def ProcessMessage(self, msg_buffer):
         msg_id = hex(Messaging.hdr.GetID(msg_buffer))
 
-        if not msg_id in self.msgLib.MsgNameFromID:
+        if not msg_id in Messaging.MsgNameFromID:
             print("WARNING! No definition for ", msg_id, "!\n")
             return
 
-        msg_name = self.msgLib.MsgNameFromID[msg_id]
-        msg_class = self.msgLib.MsgClassFromName[msg_name]
+        msg_name = Messaging.MsgNameFromID[msg_id]
+        msg_class = Messaging.MsgClassFromName[msg_name]
         msg_fields = msg_class.fields
 
         self.display_message_in_rx_list(msg_id, msg_name)

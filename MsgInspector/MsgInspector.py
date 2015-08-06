@@ -50,9 +50,9 @@ class MsgInspector(MsgGui.MsgGui):
 
     def ShowMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = hex(self.msgLib.hdr.GetID(msg))
-        msgName = self.msgLib.MsgNameFromID[id]
-        msgClass = self.msgLib.MsgClassFromName[msgName]
+        id       = hex(Messaging.hdr.GetID(msg))
+        msgName = Messaging.MsgNameFromID[id]
+        msgClass = Messaging.MsgClassFromName[msgName]
 
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
@@ -69,6 +69,7 @@ class MsgInspector(MsgGui.MsgGui):
             
             # add table header, one column for each message field
             tableHeader = []
+            tableHeader.append("Time (ms)")
             for fieldInfo in msgClass.fields:
                 tableHeader.append(fieldInfo.name)
                 for bitInfo in fieldInfo.bitfieldInfo:
@@ -80,6 +81,7 @@ class MsgInspector(MsgGui.MsgGui):
             self.msgWidgets[id] = msgWidget
         
         msgStringList = []
+        msgStringList.append(str(Messaging.hdr.GetTime(msg)))
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
                 msgStringList.append(str(Messaging.get(msg, fieldInfo)))
@@ -102,9 +104,9 @@ class MsgInspector(MsgGui.MsgGui):
 
     def PrintMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = hex(self.msgLib.hdr.GetID(msg))
-        msgName = self.msgLib.MsgNameFromID[id]
-        msgClass = self.msgLib.MsgClassFromName[msgName]
+        id       = hex(Messaging.hdr.GetID(msg))
+        msgName = Messaging.MsgNameFromID[id]
+        msgClass = Messaging.MsgClassFromName[msgName]
 
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
@@ -130,9 +132,7 @@ class MsgInspector(MsgGui.MsgGui):
             tableHeader += '\n'
             outputFile.write(tableHeader)
         
-        # TODO: Use timestamp in ms, NOT a counter!
-        self.msgCounter+=1
-        text = str(self.msgCounter) + ", "
+        text = str(Messaging.hdr.GetTime(msg)) + ", "
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
                 columnText = str(Messaging.get(msg, fieldInfo)) + ", "

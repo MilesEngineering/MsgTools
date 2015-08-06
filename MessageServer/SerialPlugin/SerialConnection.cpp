@@ -15,7 +15,11 @@ SerialConnection::SerialConnection()
   _settings("MsgTools", "MessageServer_SerialPlugin"),
   _statusLabel(""),
   _rxMsgCount(0),
-  _rxErrorCount(0)
+  _rxErrorCount(0),
+  _timestampOffset(0),
+  _lastTimestamp(0),
+  _lastTime(),
+  _lastWrapTime()
 {
     /** \note Needs to be 57600, 8N1 for 3dr radio. */
     serialPort.setBaudRate(BAUD57600);
@@ -185,6 +189,25 @@ void SerialConnection::SerialMsgSlot(QSharedPointer<SerialMessage> msg)
     dbmsg->hdr.SetDestination(msg->hdr.GetDestination());
     dbmsg->hdr.SetSource(msg->hdr.GetSource());
     dbmsg->hdr.SetID(msg->hdr.GetID());
+    
+    /** \todo Detect time rolling */
+    uint16_t thisTimestamp = msg->hdr.GetTime();
+    QDateTime thisTime = QDateTime::currentDateTime();
+    uint16_t timestampOffset = _timestampOffset;
+    if(thisTimestamp < _lastTimestamp)
+    {
+        /** \note If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
+             and do not wrap again. */
+        if(thisTime > _lastWrapTime.addSecs(30))
+        {
+            _lastWrapTime = thisTime;
+            _timestampOffset++;
+            timestampOffset = _timestampOffset;
+        }
+    }
+    _lastTimestamp = thisTimestamp;
+    _lastTime = thisTime;
+    dbmsg->hdr.SetTime((timestampOffset << 16) + thisTimestamp);
 
     memcpy(dbmsg->GetDataPtr(), msg->GetDataPtr(), msg->hdr.GetLength());
     emit MsgSignal(dbmsg);
