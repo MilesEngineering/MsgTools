@@ -1,5 +1,6 @@
 import socket
 import os
+import sys
 
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -10,7 +11,7 @@ from Messaging import Messaging
 class MsgApp(QMainWindow):
     RxMsg = Signal(bytearray)
     
-    def __init__(self, name, argv):
+    def __init__(self, name, headerName, argv):
         self.name = name
         
         # rx buffer, to receive a message with multiple signals
@@ -30,7 +31,7 @@ class MsgApp(QMainWindow):
 
         srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
         msgdir = srcroot+"/../obj/CodeGenerator/Python/"
-        self.msgLib = Messaging(msgdir, 0)
+        self.msgLib = Messaging(msgdir, 0, headerName)
         
         self.status = QLabel("Initializing")
         self.statusBar().addPermanentWidget(self.status)
@@ -168,18 +169,45 @@ class MsgApp(QMainWindow):
 
 # this function reads messages, and calls the message handler.
     def MessageLoop(self):
-        while (1):
-            self.rxBuf = self.readFn(Messaging.hdrSize)
-            
-            if(len(self.rxBuf) != Messaging.hdrSize): break
+        msgCount=0
+        startSequence=0xDEADBEEF
+        try:
+            while (1):
+                msgCount+=1
+                self.rxBuf = self.readFn(Messaging.hdrSize)
+                
+                if(len(self.rxBuf) != Messaging.hdrSize):
+                    raise StopIteration
+                
+                try:
+                    start = Messaging.hdr.GetStartSequence(self.rxBuf)
+                    if(start != startSequence):
+                        print("Error on message " + str(msgCount) + ". Start sequence invalid: 0x" + format(start, '02X'))
+                        # resync on start sequence
+                        bytesThrownAway = 0
+                        while (1):
+                            self.rxBuf += self.readFn(1)
+                            self.rxBuf = self.rxBuf[1:]
+                            if(len(self.rxBuf) != Messaging.hdrSize):
+                                raise StopIteration
+                            bytesThrownAway += 1
+                            start = Messaging.hdr.GetStartSequence(self.rxBuf)
+                            if(start == startSequence):
+                                print("Resynced after " + str(bytesThrownAway) + " bytes")
+                                break
+                    headerChecksum = Messaging.hdr.GetHeaderChecksum(self.rxBuf)
+                    bodyChecksum = Messaging.hdr.GetBodyChecksum(self.rxBuf)
+                except AttributeError:
+                    pass
 
-            # need to decode body len to read the body
-            bodyLen = Messaging.hdr.GetLength(self.rxBuf)
-            
-            # read the body
-            self.rxBuf += self.readFn(bodyLen)
-            if(len(self.rxBuf) != Messaging.hdrSize + bodyLen): break
+                # need to decode body len to read the body
+                bodyLen = Messaging.hdr.GetLength(self.rxBuf)
+                
+                # read the body
+                self.rxBuf += self.readFn(bodyLen)
+                if(len(self.rxBuf) != Messaging.hdrSize + bodyLen): break
 
-            # got a complete message, call the callback to process it
-            self.PrintMessage(self.rxBuf)
-        print("found end of file, exited")
+                # got a complete message, call the callback to process it
+                self.PrintMessage(self.rxBuf)
+        except StopIteration:
+            print("found end of file, exited")

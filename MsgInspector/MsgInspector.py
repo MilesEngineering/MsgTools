@@ -25,6 +25,7 @@ class MsgInspector(MsgGui.MsgGui):
         else:
             if(self.connectionType.lower() == "file"):
                 self.outputName = self.connectionName.replace('.log', '')
+                self.outputName = self.connectionName.replace('.txt', '')
                 os.makedirs(self.outputName)
                 print("outputName is " + self.outputName + "\n")
 
@@ -132,7 +133,11 @@ class MsgInspector(MsgGui.MsgGui):
             tableHeader += '\n'
             outputFile.write(tableHeader)
         
-        text = str(Messaging.hdr.GetTime(msg)) + ", "
+        try:
+            text = str(Messaging.hdr.GetTime(msg)) + ", "
+        except AttributeError:
+            text = "unknown, "
+
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
                 columnText = str(Messaging.get(msg, fieldInfo)) + ", "

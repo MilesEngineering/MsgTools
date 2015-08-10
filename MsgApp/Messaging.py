@@ -39,17 +39,16 @@ class Messaging:
     
     debug=0
 
-    def __init__(self, loadDir, debug):
+    def __init__(self, loadDir, debug, headerName):
         Messaging.debug = debug
         sys.path.append(loadDir)
         mainObjDir = os.path.dirname(os.path.abspath(__file__)) + "/../../obj/CodeGenerator/Python"
         sys.path.append(mainObjDir)
         
-        headerName = "Network"
         headerModule = __import__(headerName)
 
         # Set the global header name
-        Messaging.hdr = headerModule.NetworkHeader
+        Messaging.hdr = getattr(headerModule, headerName + "Header")
 
         # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE
