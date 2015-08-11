@@ -10,7 +10,7 @@ class MsgGui(MsgApp, QMainWindow):
     def __init__(self, name, argv, parent=None):
         # default to Network, unless we have a input filename that contains .txt
         headerName = "Network"
-        if any(".txt" in s for s in argv):
+        if any(".txt" in s for s in argv) or any(".TXT" in s for s in argv):
             headerName = "Serial"
 
         QMainWindow.__init__(self,parent)
