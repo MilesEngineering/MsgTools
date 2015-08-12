@@ -150,6 +150,7 @@ class MessageItem(QObject, QTreeWidgetItem):
         self.setup_fields(tree_widget, child_constructor, child_array_constructor, child_bitfield_constructor)
 
         tree_widget.addTopLevelItem(self)
+        tree_widget.resizeColumnToContents(0)
         self.setExpanded(True)
 
     def repaintAll(self):
