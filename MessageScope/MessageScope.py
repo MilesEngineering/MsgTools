@@ -254,12 +254,15 @@ class MessageScopeGui(MsgGui.MsgGui):
             self.rx_msg_list[msg_id].setText(2, output)
 
     def display_message_in_rx_tree(self, msg_id, msg_name, msg_class, msg_buffer):
-        if not msg_id in self.rx_msg_widgets:
+        msg_key = str(Messaging.hdr.GetSource(msg_buffer)) + "," + \
+                  str(Messaging.hdr.GetDestination(msg_buffer)) + "," + \
+                  msg_id
+        if not msg_key in self.rx_msg_widgets:
             msg_widget = TxTreeWidget.MessageItem(msg_name, self.rx_messages_widget, msg_class, msg_buffer)
-            self.rx_msg_widgets[msg_id] = msg_widget
+            self.rx_msg_widgets[msg_key] = msg_widget
             self.rx_messages_widget.addTopLevelItem(msg_widget)
 
-        self.rx_msg_widgets[msg_id].set_msg_buffer(msg_buffer)
+        self.rx_msg_widgets[msg_key].set_msg_buffer(msg_buffer)
     
     def display_message_in_plots(self, msg_class, msg_buffer):
         #print("checking for plots of " + str(msg_class.ID))
