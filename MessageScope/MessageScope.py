@@ -35,13 +35,13 @@ class RxRateCalculatorThread(QObject):
         rates = {}
 
         if self.thread_lock.acquire():
-            for msg_id, rx_msg_deque in self.rx_msg_deque.items():
-                rates[msg_id] = self.calculate_rate_for_msg(msg_id, rx_msg_deque)
+            for msg_key, rx_msg_deque in self.rx_msg_deque.items():
+                rates[msg_key] = self.calculate_rate_for_msg(msg_key, rx_msg_deque)
 
             self.thread_lock.release()
             self.rates_updated.emit(rates)
 
-    def calculate_rate_for_msg(self, msg_id, rx_msg_deque):
+    def calculate_rate_for_msg(self, msg_key, rx_msg_deque):
         if len(rx_msg_deque) <= 1:
             return None
 
@@ -217,33 +217,42 @@ class MessageScopeGui(MsgGui.MsgGui):
         msg_class = Messaging.MsgClassFromName[msg_name]
         msg_fields = msg_class.fields
 
-        self.display_message_in_rx_list(msg_id, msg_name)
-        self.display_message_in_rx_tree(msg_id, msg_name, msg_class, msg_buffer)
+        msg_key = str(Messaging.hdr.GetSource(msg_buffer)) + "," + \
+                  str(Messaging.hdr.GetDestination(msg_buffer)) + "," + \
+                  msg_id
+        self.display_message_in_rx_list(msg_key, msg_name, msg_buffer)
+        self.display_message_in_rx_tree(msg_key, msg_name, msg_class, msg_buffer)
         self.display_message_in_plots(msg_class, msg_buffer)
 
-    def display_message_in_rx_list(self, msg_id, msg_name):
+    def display_message_in_rx_list(self, msg_key, msg_name, msg_buffer):
         rx_time = datetime.datetime.now()
 
-        if not msg_id in self.rx_msg_list:
-            msg_list_item = QTreeWidgetItem([ msg_name, str(rx_time), "- Hz" ])
+        if not msg_key in self.rx_msg_list:
+            widget_name = msg_name
+            src = Messaging.hdr.GetSource(msg_buffer)
+            dst = Messaging.hdr.GetDestination(msg_buffer)
+            if src != 0 or dst != 0:
+                widget_name += " ("+str(src)+"->"+str(dst)+")"
+            msg_list_item = QTreeWidgetItem([ widget_name, str(rx_time), "- Hz" ])
 
             self.rx_message_list.addTopLevelItem(msg_list_item)
-            self.rx_msg_list[msg_id] = msg_list_item
+            self.rx_message_list.resizeColumnToContents(0)
+            self.rx_msg_list[msg_key] = msg_list_item
 
             # Initialize a Deque with an empty iterable with a maxlen of 10
             if self.thread_lock.acquire():
-                self.rx_msg_list_timestamps[msg_id] = collections.deque([], 10)
+                self.rx_msg_list_timestamps[msg_key] = collections.deque([], 10)
                 self.thread_lock.release()
 
         if self.thread_lock.acquire():
-            self.rx_msg_list_timestamps[msg_id].appendleft(rx_time)
+            self.rx_msg_list_timestamps[msg_key].appendleft(rx_time)
             self.thread_lock.release()
 
-        self.rx_msg_list[msg_id].setText(1, str(rx_time))
+        self.rx_msg_list[msg_key].setText(1, str(rx_time))
 
     def show_rx_msg_rates(self, rx_rates):
-        for msg_id, rate in rx_rates.items():
-            rate = rx_rates[msg_id]
+        for msg_key, rate in rx_rates.items():
+            rate = rx_rates[msg_key]
             output = ""
 
             if rate is None:
@@ -251,16 +260,14 @@ class MessageScopeGui(MsgGui.MsgGui):
             else:
                 output = "{0:0.1f} Hz".format(rate)
 
-            self.rx_msg_list[msg_id].setText(2, output)
+            self.rx_msg_list[msg_key].setText(2, output)
 
-    def display_message_in_rx_tree(self, msg_id, msg_name, msg_class, msg_buffer):
-        msg_key = str(Messaging.hdr.GetSource(msg_buffer)) + "," + \
-                  str(Messaging.hdr.GetDestination(msg_buffer)) + "," + \
-                  msg_id
+    def display_message_in_rx_tree(self, msg_key, msg_name, msg_class, msg_buffer):
         if not msg_key in self.rx_msg_widgets:
             msg_widget = TxTreeWidget.MessageItem(msg_name, self.rx_messages_widget, msg_class, msg_buffer)
             self.rx_msg_widgets[msg_key] = msg_widget
             self.rx_messages_widget.addTopLevelItem(msg_widget)
+            self.rx_messages_widget.resizeColumnToContents(0)
 
         self.rx_msg_widgets[msg_key].set_msg_buffer(msg_buffer)
     
