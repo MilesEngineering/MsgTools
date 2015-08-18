@@ -10,7 +10,7 @@ class TestClass(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print ("----------- Running setup")
-        cls.msgLib = Messaging("../../../obj/CodeGenerator/Python", 0)
+        cls.msgLib = Messaging("../../../obj/CodeGenerator/Python", 0, "Network")
 
     def test_dict(self):
         msgname = "Network.Connect"
