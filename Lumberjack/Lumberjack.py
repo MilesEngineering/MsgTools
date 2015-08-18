@@ -17,8 +17,8 @@ class Lumberjack(MsgGui.MsgGui):
         MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", [argv[0],"file"]+argv[1:], parent)
         
         self.outputName = self.connectionName.replace('.log', '')
-        self.outputName = self.connectionName.replace('.txt', '')
-        self.outputName = self.connectionName.replace('.TXT', '')
+        self.outputName = self.outputName.replace('.txt', '')
+        self.outputName = self.outputName.replace('.TXT', '')
         os.makedirs(self.outputName)
         print("outputName is " + self.outputName + "\n")
 
