@@ -54,6 +54,7 @@ def DoReplacements(line, msg, enums, subdirComponent):
     ret = replace(ret, "<ENUMERATIONS>", language.enums(enums))
     ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))
     ret = replace(ret, "<REFLECTION>", language.reflection(msg))
+    ret = replace(ret, "<DECLARATIONS>", "\n".join(language.declarations(msg)))
     ret = replace(ret, "<INIT_CODE>", "\n".join(language.initCode(msg)))
     ret = replace(ret, "<OUTPUTFILENAME>", outputFilename)
     ret = replace(ret, "<INPUTFILENAME>", inputFilename)
@@ -61,6 +62,10 @@ def DoReplacements(line, msg, enums, subdirComponent):
     ret = replace(ret, "<LANGUAGEFILENAME>", languageFilename)
     ret = replace(ret, "<MESSAGE_SUBDIR>", subdirComponent)
     ret = replace(ret, "<DATE>", currentDateTime)
+    
+    # ugly, but do this twice, before and after other replacements, because the code generator
+    # might insert it while doing other replacements.
+    ret = replace(ret, "<MSGNAME>", msgName(msg))
     return ret
 
 def ProcessDir(template, msgDir, subdirComponent):
@@ -74,7 +79,7 @@ def ProcessDir(template, msgDir, subdirComponent):
         outputFilename += "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
         if os.path.isdir(inputFilename):
             if filename != 'headers':
-                ProcessDir(template, msgDir + '/' + inputFilename, filename)
+                ProcessDir(template, inputFilename, filename)
         else:
             inputFileTime = os.path.getmtime(inputFilename)
             try:

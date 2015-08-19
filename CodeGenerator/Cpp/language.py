@@ -330,3 +330,5 @@ def reflection(msg):
 
     return "\n".join(ret)
     
+def declarations(msg):
+    return [""]

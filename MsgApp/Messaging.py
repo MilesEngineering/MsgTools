@@ -48,7 +48,7 @@ class Messaging:
         headerModule = __import__(headerName)
 
         # Set the global header name
-        Messaging.hdr = getattr(headerModule, headerName + "Header")
+        Messaging.hdr = getattr(headerModule, headerName)
 
         # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE

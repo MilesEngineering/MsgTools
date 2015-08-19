@@ -279,3 +279,6 @@ def enums(e):
 
         ret += fwd + back
     return ret
+
+def declarations(msg):
+    return [""]

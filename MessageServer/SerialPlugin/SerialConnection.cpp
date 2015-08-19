@@ -1,5 +1,5 @@
 #include "SerialConnection.h"
-#include "Cpp/Serial.h"
+#include "Cpp/SerialHeader.h"
 #include "qextserialport/src/qextserialenumerator.h"
 #include <QDebug>
 #include <QRadioButton>

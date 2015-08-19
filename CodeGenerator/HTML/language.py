@@ -115,3 +115,6 @@ def enums(e):
         </div>")
 
     return "\n".join(html)
+
+def declarations(msg):
+    return [""]

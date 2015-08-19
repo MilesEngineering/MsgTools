@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include <Cpp/Network.h>
+#include <Cpp/NetworkHeader.h>
 
 class Message
 {

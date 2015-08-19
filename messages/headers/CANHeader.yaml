@@ -1,5 +1,5 @@
 Messages:
-  - Name: CANheader
+  - Name: CANHeader
     Description: Header for messages sent over the CANbus
     Fields:
       - Name: Source
