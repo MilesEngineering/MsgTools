@@ -1,5 +1,5 @@
 Messages:
-  - Name: TestMessage2
+  - Name: TestMsg2
     ID: 0xFFFFFF98
     Description: Used to test more stuff.
     Fields:
