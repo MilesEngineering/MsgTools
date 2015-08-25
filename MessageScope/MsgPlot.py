@@ -69,7 +69,7 @@ class MsgPlot:
             self.curve.setPos(self.ptr1, 0)
 
 sys.path.append(srcroot+"/../obj/CodeGenerator/Python/Test")
-from TestMsg1 import TestMessage1
+from TestMsg1 import TestMsg1
 
 def onTimeout():
     messageBuffer = TestMessage1.Create()
