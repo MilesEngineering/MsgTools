@@ -130,6 +130,8 @@ class MessageScopeGui(MsgGui.MsgGui):
         rxMessageList.setColumnCount(3)
         rxMsgHeader = QTreeWidgetItem(None, [ "Name", "Last Received", "Rx Rate" ])
         rxMessageList.setHeaderItem(rxMsgHeader)
+
+        rxMessageList.itemDoubleClicked.connect(self.onRxListDoubleClicked)
         return rxMessageList
 
     def configure_rx_messages_widget(self, parent):
@@ -224,6 +226,13 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.display_message_in_rx_tree(msg_key, msg_name, msg_class, msg_buffer)
         self.display_message_in_plots(msg_class, msg_buffer)
 
+    def onRxListDoubleClicked(self, rxListItem):
+        msg_key = rxListItem.msg_key
+        msg_name = rxListItem.msg_name
+        msg_buffer = rxListItem.msg_buffer
+        msg_class = Messaging.MsgClassFromName[msg_name]
+        self.add_message_to_rx_tree(msg_key, msg_name, msg_class, msg_buffer)
+
     def display_message_in_rx_list(self, msg_key, msg_name, msg_buffer):
         rx_time = datetime.datetime.now()
 
@@ -234,6 +243,8 @@ class MessageScopeGui(MsgGui.MsgGui):
             if src != 0 or dst != 0:
                 widget_name += " ("+str(src)+"->"+str(dst)+")"
             msg_list_item = QTreeWidgetItem([ widget_name, str(rx_time), "- Hz" ])
+            msg_list_item.msg_key = msg_key
+            msg_list_item.msg_name = msg_name
 
             self.rx_message_list.addTopLevelItem(msg_list_item)
             self.rx_message_list.resizeColumnToContents(0)
@@ -249,6 +260,7 @@ class MessageScopeGui(MsgGui.MsgGui):
             self.thread_lock.release()
 
         self.rx_msg_list[msg_key].setText(1, str(rx_time))
+        self.rx_msg_list[msg_key].msg_buffer = msg_buffer
 
     def show_rx_msg_rates(self, rx_rates):
         for msg_key, rate in rx_rates.items():
@@ -262,14 +274,16 @@ class MessageScopeGui(MsgGui.MsgGui):
 
             self.rx_msg_list[msg_key].setText(2, output)
 
-    def display_message_in_rx_tree(self, msg_key, msg_name, msg_class, msg_buffer):
+    def add_message_to_rx_tree(self, msg_key, msg_name, msg_class, msg_buffer):
         if not msg_key in self.rx_msg_widgets:
             msg_widget = TxTreeWidget.MessageItem(msg_name, self.rx_messages_widget, msg_class, msg_buffer)
             self.rx_msg_widgets[msg_key] = msg_widget
             self.rx_messages_widget.addTopLevelItem(msg_widget)
             self.rx_messages_widget.resizeColumnToContents(0)
 
-        self.rx_msg_widgets[msg_key].set_msg_buffer(msg_buffer)
+    def display_message_in_rx_tree(self, msg_key, msg_name, msg_class, msg_buffer):
+        if msg_key in self.rx_msg_widgets:
+            self.rx_msg_widgets[msg_key].set_msg_buffer(msg_buffer)
     
     def display_message_in_plots(self, msg_class, msg_buffer):
         #print("checking for plots of " + str(msg_class.ID))
