@@ -18,7 +18,6 @@ class SerialConnection : public ServerPort
         virtual void MessageSlot(QSharedPointer<Message> msg);
         virtual void SerialMsgSlot(QSharedPointer<SerialMessage> msg);
         virtual void SerialDataReady();
-        void TransmitSerialMsg(QSharedPointer<SerialMessage> msg);
         QWidget* widget(int index) override;
     private:
         SerialHeader tmpRxHdr;

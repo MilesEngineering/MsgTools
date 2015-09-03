@@ -155,30 +155,28 @@ void SerialConnection::SerialDataReady()
 
 void SerialConnection::MessageSlot(QSharedPointer<Message> msg)
 {
-    QSharedPointer<SerialMessage> serialMsg(SerialMessage::New(msg->hdr.GetLength()));
-    serialMsg->hdr.SetPriority(msg->hdr.GetPriority());
-    serialMsg->hdr.SetLength(msg->hdr.GetLength());
-    serialMsg->hdr.SetDestination(msg->hdr.GetDestination());
-    serialMsg->hdr.SetSource(msg->hdr.GetSource());
+    if(msg->hdr.GetID() < 0xFFFF)
+    {
+        SerialHeader serialHdr;
+        serialHdr.SetID(msg->hdr.GetID());
+        serialHdr.SetPriority(msg->hdr.GetPriority());
+        serialHdr.SetLength(msg->hdr.GetLength());
+        serialHdr.SetDestination(msg->hdr.GetDestination());
+        serialHdr.SetSource(msg->hdr.GetSource());
 
-    uint16_t headerChecksum = 0;
-    for(int i=0; i<SerialHeader::SIZE; i++)
-        headerChecksum += ((uint8_t*)&serialMsg->hdr)[i];
-    serialMsg->hdr.SetHeaderChecksum(headerChecksum);
+        uint16_t headerChecksum = 0;
+        for(int i=0; i<SerialHeader::SIZE; i++)
+            headerChecksum += ((uint8_t*)&serialHdr)[i];
+        serialHdr.SetHeaderChecksum(headerChecksum);
 
-    uint16_t bodyChecksum = 0;
-    for(unsigned i=0; i<msg->hdr.GetLength(); i++)
-        bodyChecksum += serialMsg->GetDataPtr()[i];
-    serialMsg->hdr.SetBodyChecksum(headerChecksum);
+        uint16_t bodyChecksum = 0;
+        for(unsigned i=0; i<msg->hdr.GetLength(); i++)
+            bodyChecksum += msg->GetDataPtr()[i];
+        serialHdr.SetBodyChecksum(headerChecksum);
 
-    memcpy(serialMsg->GetDataPtr(), msg->GetDataPtr(), msg->hdr.GetLength());
-
-    TransmitSerialMsg(serialMsg);
-}
-
-void SerialConnection::TransmitSerialMsg(QSharedPointer<SerialMessage> msg)
-{
-    serialPort.write((char*)msg->RawBuffer(), msg->GetTotalLength());
+        serialPort.write((char*)&serialHdr, sizeof(serialHdr));
+        serialPort.write((char*)msg->GetDataPtr(), msg->hdr.GetLength());
+    }
 }
 
 void SerialConnection::SerialMsgSlot(QSharedPointer<SerialMessage> msg)
