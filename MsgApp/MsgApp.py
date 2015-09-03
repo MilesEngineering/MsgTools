@@ -2,6 +2,13 @@ import socket
 import os
 import sys
 
+if sys.version_info<(3,4):
+    raise SystemExit('''\n\nSorry, this code need Python 3.4 or higher.\n
+To avoid incorrectly using python2 in your path, you may want to try launching by:
+    ./path/to/script/ScriptName.py
+NOT
+    python path/to/script/ScriptName.py\n''')
+
 from PySide.QtCore import *
 from PySide.QtGui import *
 from PySide.QtNetwork import *
@@ -13,6 +20,9 @@ class MsgApp(QMainWindow):
     
     def __init__(self, name, headerName, argv):
         self.name = name
+        
+        # error out unless python version 3
+        exit
         
         # rx buffer, to receive a message with multiple signals
         self.rxBuf = bytearray()
