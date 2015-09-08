@@ -172,7 +172,7 @@ void SerialConnection::MessageSlot(QSharedPointer<Message> msg)
         uint16_t bodyChecksum = 0;
         for(unsigned i=0; i<msg->hdr.GetLength(); i++)
             bodyChecksum += msg->GetDataPtr()[i];
-        serialHdr.SetBodyChecksum(headerChecksum);
+        serialHdr.SetBodyChecksum(bodyChecksum);
 
         serialPort.write((char*)&serialHdr, sizeof(serialHdr));
         serialPort.write((char*)msg->GetDataPtr(), msg->hdr.GetLength());
