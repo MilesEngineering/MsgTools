@@ -14,6 +14,18 @@ from Messaging import Messaging
 
 class Lumberjack(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
+        if(len(argv) < 2):
+            exit('''
+Invoke like this
+    ./path/to/Lumberjack.py FILENAME
+    
+where FILENAME is the name of the log file you'd like to split into CSV.
+
+If the file extension is .bin it will be assumed to be a og file created by MessageServer,
+if the file extension is .txt it will be assumed to be a log file created by the SparkFun serial SD logger.
+Lumberjack will create a directory named after the input file, and put multiple .csv files (one per message)
+in that directory.''')
+        
         MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", [argv[0],"file"]+argv[1:], parent)
         
         self.outputName = self.connectionName.replace('.log', '')
