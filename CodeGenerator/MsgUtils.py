@@ -1,3 +1,5 @@
+import re
+
 def fieldSize(field):
     fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
     return fieldSizes[str.lower(field["Type"])]
@@ -77,6 +79,37 @@ def fieldDefault(field):
 
 def fieldCount(field):
     return fieldItem(field, "Count", 1)
+
+def numberOfFields(msg):
+    count = 0
+    for field in msg["Fields"]:
+        count+=1
+        if "Bitfields" in field:
+            for bitfield in field["Bitfields"]:
+                count+=1
+    return count    
+
+def fieldReplacements(line,msg):
+    line = re.sub('<FOREACHFIELD\(', '', line)
+    line = re.sub('\)>$', '', line)
+    ret = ""
+    count = 0
+    for field in msg["Fields"]:
+        thisLine = line
+        thisLine = thisLine.replace("<FIELDNAME>", field["Name"])
+        thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
+        thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(field)))
+        ret +=  thisLine
+        count+=1
+        if "Bitfields" in field:
+            for bitfield in field["Bitfields"]:
+                thisLine = line
+                thisLine = thisLine.replace("<FIELDNAME>", bitfield["Name"])
+                thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
+                thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
+                ret +=  thisLine
+                count+=1
+    return ret 
 
 def msgName(msg):
     return msg["Name"]

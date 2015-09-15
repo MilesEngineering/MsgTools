@@ -47,6 +47,7 @@ def replace(line, pattern, replacement):
 def DoReplacements(line, msg, enums, subdirComponent):
     ret = line + '\n'
     ret = replace(ret, "<MSGNAME>", msgName(msg))
+    ret = replace(ret, "<NUMBER_OF_FIELDS>", str(numberOfFields(msg)))
     if "ID" in msg:
         ret = replace(ret, "<MSGID>", str(msg["ID"]))
     ret = replace(ret, "<MSGSIZE>", str(language.msgSize(msg)))
@@ -62,6 +63,8 @@ def DoReplacements(line, msg, enums, subdirComponent):
     ret = replace(ret, "<LANGUAGEFILENAME>", languageFilename)
     ret = replace(ret, "<MESSAGE_SUBDIR>", subdirComponent)
     ret = replace(ret, "<DATE>", currentDateTime)
+    if "<FOREACHFIELD" in ret:
+        ret = fieldReplacements(ret, msg)
     
     # ugly, but do this twice, before and after other replacements, because the code generator
     # might insert it while doing other replacements.
