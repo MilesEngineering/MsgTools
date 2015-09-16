@@ -76,10 +76,14 @@ def ProcessDir(template, msgDir, subdirComponent):
         global inputFilename
         inputFilename = msgDir + '/' + filename
         global outputFilename
-        outputFilename = outDir
-        if subdirComponent != "":
-            outputFilename += "/" + subdirComponent
-        outputFilename += "/" + filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
+        try:
+            outputFilename = language.outputFilename(outDir, subdirComponent, filename, templateFilename)
+        except AttributeError:
+            justFilename = filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
+            outputFilename = outDir
+            if subdirComponent != "":
+                outputFilename += "/" + subdirComponent
+            outputFilename += "/" + justFilename
         if os.path.isdir(inputFilename):
             if filename != 'headers':
                 ProcessDir(template, inputFilename, filename)
