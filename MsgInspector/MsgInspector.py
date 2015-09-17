@@ -74,14 +74,14 @@ class MsgInspector(MsgGui.MsgGui):
             if(fieldInfo.count == 1):
                 fieldValue = str(Messaging.get(msg, fieldInfo))
                 msgStringList.append(fieldValue)
-                if fieldInfo.name == self.keyFields[msgName]:
+                if replaceMode and fieldInfo.name == self.keyFields[msgName]:
                     keyValue = fieldValue
                     keyColumn = columnCounter
                 columnCounter += 1
                 for bitInfo in fieldInfo.bitfieldInfo:
                     fieldValue = str(Messaging.get(msg, bitInfo))
                     msgStringList.append(fieldValue)
-                    if bitInfo.name == self.keyFields[msgName]:
+                    if replaceMode and bitInfo.name == self.keyFields[msgName]:
                         keyValue = fieldValue
                         keyColumn = columnCounter
                     columnCounter += 1
