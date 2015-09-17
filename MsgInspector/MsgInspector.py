@@ -37,6 +37,13 @@ class MsgInspector(MsgGui.MsgGui):
             print("WARNING!  No definition for ", id, "!\n")
             return
 
+        replaceMode = 0
+        if self.allowedMessages:
+            if not msgName in self.allowedMessages:
+                return
+            if msgName in self.keyFields:
+                replaceMode = 1
+
         firstTime = 0
         if(not(id in self.msgWidgets)):
             firstTime = 1
@@ -61,11 +68,23 @@ class MsgInspector(MsgGui.MsgGui):
         
         msgStringList = []
         msgStringList.append(str(Messaging.hdr.GetTime(msg)))
+        keyColumn = -1
+        columnCounter = 1
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
-                msgStringList.append(str(Messaging.get(msg, fieldInfo)))
+                fieldValue = str(Messaging.get(msg, fieldInfo))
+                msgStringList.append(fieldValue)
+                if fieldInfo.name == self.keyFields[msgName]:
+                    keyValue = fieldValue
+                    keyColumn = columnCounter
+                columnCounter += 1
                 for bitInfo in fieldInfo.bitfieldInfo:
-                    msgStringList.append(str(Messaging.get(msg, bitInfo)))
+                    fieldValue = str(Messaging.get(msg, bitInfo))
+                    msgStringList.append(fieldValue)
+                    if bitInfo.name == self.keyFields[msgName]:
+                        keyValue = fieldValue
+                        keyColumn = columnCounter
+                    columnCounter += 1
             else:
                 columnText = ""
                 for i in range(0,fieldInfo.count):
@@ -73,13 +92,29 @@ class MsgInspector(MsgGui.MsgGui):
                     if(i<fieldInfo.count-1):
                         columnText += ", "
                 msgStringList.append(columnText)
+                columnCounter += 1
         msgItem = QTreeWidgetItem(None,msgStringList)
-        self.msgWidgets[id].addTopLevelItem(msgItem)
+        if replaceMode and keyColumn >= 0:
+            # find row that has key field that matches ours
+            foundAndReplaced = 0
+            print("looking for text " + keyValue + " in column " + str(keyColumn))
+            for i in range(0, self.msgWidgets[id].topLevelItemCount()):
+                item = self.msgWidgets[id].topLevelItem(i)
+                if item.text(keyColumn) == keyValue:
+                    foundAndReplaced = 1
+                    self.msgWidgets[id].takeTopLevelItem(i)
+                    self.msgWidgets[id].insertTopLevelItem(i, msgItem)
+            if not foundAndReplaced:
+                self.msgWidgets[id].addTopLevelItem(msgItem)
+                self.msgWidgets[id].sortItems(keyColumn, QtCore.Qt.AscendingOrder)
+        else:
+            self.msgWidgets[id].addTopLevelItem(msgItem)
         if firstTime:
             count = 0
             for fieldInfo in msgClass.fields:
                 msgWidget.resizeColumnToContents(count)
                 count += 1
+
 
 # main starts here
 if __name__ == '__main__':

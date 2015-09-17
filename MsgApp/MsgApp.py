@@ -1,6 +1,7 @@
 import socket
 import os
 import sys
+import getopt
 
 if sys.version_info<(3,4):
     raise SystemExit('''\n\nSorry, this code need Python 3.4 or higher.\n
@@ -27,14 +28,24 @@ class MsgApp(QMainWindow):
         # rx buffer, to receive a message with multiple signals
         self.rxBuf = bytearray()
         
+        self.allowedMessages = []
+        self.keyFields = {}
+        optlist, args = getopt.getopt(sys.argv[1:], '', ['connectionType=', 'connectionName=', 'msg='])
         # connection modes
         self.connectionType = "qtsocket"
         self.connectionName = "127.0.0.1:5678"
 
-        if(len(argv) > 1):
-            self.connectionType = argv[1]
-        if(len(argv) > 2):
-            self.connectionName = argv[2]
+        for opt in optlist:
+            if opt[0] == '--connectionType':
+                self.connectionType = opt[1]
+            if opt[0] == '--connectionName':
+                self.connectionName = opt[1]
+            if opt[0] == '--msg':
+                option = opt[1].split('/')
+                self.allowedMessages.append(option[0])
+                if len(option) > 1:
+                    self.keyFields[option[0]] = option[1]
+                print("only allowing msg " + str(option))
         
         # initialize the read function to None, so it's not accidentally called
         self.readFn = None
