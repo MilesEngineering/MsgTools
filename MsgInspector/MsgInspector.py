@@ -27,6 +27,26 @@ class MsgInspector(MsgGui.MsgGui):
         # hash table to lookup the widget for a message, by message ID
         self.msgWidgets = {}
 
+    def tableItemDoubleClicked(self, item, column):
+        tree = self.sender()
+        fieldName = tree.headerItem().text(column)
+        msgName = tree.msgName
+        if not msgName in self.keyFields or self.keyFields[msgName] != fieldName:
+            print("sorting " + msgName + " on " + fieldName)
+            self.keyFields[msgName] = fieldName
+            tree.sortItems(column, QtCore.Qt.AscendingOrder)
+            valueToRemove = None
+            for i in range(tree.topLevelItemCount()-1, -1 ,-1):
+                item = tree.topLevelItem(i)
+                print("testing row " + str(i))
+                if not valueToRemove == None and item.text(column) == valueToRemove:
+                    tree.takeTopLevelItem(i)
+                else:
+                    valueToRemove = item.text(column)
+        else:
+            print("not sorting " + msgName)
+            del self.keyFields[msgName]
+
     def ShowMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
         id       = hex(Messaging.hdr.GetID(msg))
@@ -41,14 +61,16 @@ class MsgInspector(MsgGui.MsgGui):
         if self.allowedMessages:
             if not msgName in self.allowedMessages:
                 return
-            if msgName in self.keyFields:
-                replaceMode = 1
+        if msgName in self.keyFields:
+            replaceMode = 1
 
         firstTime = 0
         if(not(id in self.msgWidgets)):
             firstTime = 1
             # create a new tree widget
             msgWidget = QtGui.QTreeWidget()
+            msgWidget.msgName = msgName
+            msgWidget.itemDoubleClicked.connect(self.tableItemDoubleClicked)
             
             # add it to the tab widget, so the user can see it
             self.tabWidget.addTab(msgWidget, msgName)
