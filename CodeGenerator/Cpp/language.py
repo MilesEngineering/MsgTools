@@ -100,7 +100,7 @@ def getFn(field, offset):
         access = retType + "(" + access + ")"
     ret = '''\
 %s
-%s Get%s(%s)
+%s Get%s(%s) const
 {
     return %s;
 }''' % (fnHdr(field), retType, field["Name"], param, access)
@@ -138,7 +138,7 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
         access = retType + "(" + access + ")"
     ret = '''\
 %s
-%s Get%s()
+%s Get%s() const
 {
     return %s;
 }''' % (fnHdr(bits), retType, MsgParser.BitfieldName(field, bits), access)
