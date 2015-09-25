@@ -128,7 +128,6 @@ class MsgInspector(MsgGui.MsgGui):
         if replaceMode and keyColumn >= 0:
             # find row that has key field that matches ours
             foundAndReplaced = 0
-            print("looking for text " + keyValue + " in column " + str(keyColumn))
             for i in range(0, self.msgWidgets[id].topLevelItemCount()):
                 item = self.msgWidgets[id].topLevelItem(i)
                 if item.text(keyColumn) == keyValue:
