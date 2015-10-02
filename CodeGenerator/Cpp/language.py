@@ -371,22 +371,22 @@ def fieldReflectionBitsType(field, bits):
 
 def fieldInfo(field, offset):
     loc = str(offset)
-    params  = "#define " + str.upper(field["Name"]) + '_LOC   ' + loc + '\n'
-    params += "#define " + str.upper(field["Name"]) + '_MAX   ' + str(MsgParser.fieldMax(field)) + '\n'
-    params += "#define " + str.upper(field["Name"]) + '_MIN   ' + str(MsgParser.fieldMin(field)) + '\n'
-    params += "#define " + str.upper(field["Name"]) + '_UNITS "' + str(MsgParser.fieldUnits(field)) + '"' + '\n'
-    params += "#define " + str.upper(field["Name"]) + '_COUNT ' + str(MsgParser.fieldCount(field)) + '\n'
+    params  = "#define <MSGNAME>_" + str.upper(field["Name"]) + '_LOC   ' + loc + '\n'
+    params += "#define <MSGNAME>_" + str.upper(field["Name"]) + '_MAX   ' + str(MsgParser.fieldMax(field)) + '\n'
+    params += "#define <MSGNAME>_" + str.upper(field["Name"]) + '_MIN   ' + str(MsgParser.fieldMin(field)) + '\n'
+    params += "#define <MSGNAME>_" + str.upper(field["Name"]) + '_UNITS "' + str(MsgParser.fieldUnits(field)) + '"' + '\n'
+    params += "#define <MSGNAME>_" + str.upper(field["Name"]) + '_COUNT ' + str(MsgParser.fieldCount(field)) + '\n'
     if "Scale" in field:
-        params += "#define " + str.upper(field["Name"]) + '_SCALE ' + str(field["Scale"]) + '\n'
+        params += "#define <MSGNAME>_" + str.upper(field["Name"]) + '_SCALE ' + str(field["Scale"]) + '\n'
     if "Offset" in field:
-        params += "#define " + str.upper(field["Name"]) + '_OFFSET ' + str(field["Offset"]) + '\n'
+        params += "#define <MSGNAME>_" + str.upper(field["Name"]) + '_OFFSET ' + str(field["Offset"]) + '\n'
     return params
 
 def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
     loc = str(offset)
     params = fieldInfo(bits, offset)
-    params += "#define " + str.upper(bits["Name"]) + '_BIT_OFFSET ' + str(bitOffset) + '\n'
-    params += "#define " + str.upper(bits["Name"]) + '_NUM_BITS   ' + str(numBits) + '\n'
+    params += "#define <MSGNAME>_" + str.upper(bits["Name"]) + '_BIT_OFFSET ' + str(bitOffset) + '\n'
+    params += "#define <MSGNAME>_" + str.upper(bits["Name"]) + '_NUM_BITS   ' + str(numBits) + '\n'
     return params
 
 def fieldInfos(msg):
