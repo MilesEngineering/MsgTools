@@ -28,7 +28,7 @@ SerialConnection::SerialConnection()
     serialPort.setDataBits(DATA_8);
     serialPort.setStopBits(STOP_1);
 
-    startSequence = tmpRxHdr.GetStartSequence();
+    startSequence = SerialHeader::StartSequenceFieldInfo::defaultValue;
 
     _buttonGroup.setStyleSheet("border:0;");
     QHBoxLayout* layout = new QHBoxLayout();
@@ -64,7 +64,7 @@ void SerialConnection::SerialDataReady()
     if(!gotHeader)
     {
         bool foundStart = false;
-        /** \todo Synchronize on start character */
+        /** \note Synchronize on start sequence */
         while(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(startSequence))
         {
             /** peek at first byte.

@@ -376,6 +376,8 @@ def genericInfo(field, offset):
     params += '    auto static constexpr min   = ' + str(MsgParser.fieldMin(field)) + ';\n'
     params += '    auto static constexpr units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
     params += '    auto static constexpr count = ' + str(MsgParser.fieldCount(field)) + ';\n'
+    if "Default" in field:
+        params += '    auto static constexpr defaultValue = ' + str(field["Default"]) + ";\n" 
     if "Scale" in field:
         params += '    auto static constexpr scale = ' + str(field["Scale"]) + ';\n'
     if "Offset" in field:
