@@ -18,7 +18,7 @@
 class <MSGNAME>
 {
     public:
-        enum { SIZE = <MSGSIZE> };
+        auto static constexpr SIZE = <MSGSIZE>;
         <MSGNAME>()
         {
             Init();

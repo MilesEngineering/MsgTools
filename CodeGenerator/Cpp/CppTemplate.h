@@ -18,8 +18,8 @@
 class <MSGNAME>Message : public Message
 {
     public:
-        enum { MSG_ID = <MSGID>};
-        enum { MSG_SIZE = <MSGSIZE> };
+        auto static constexpr MSG_ID = <MSGID>;
+        auto static constexpr MSG_SIZE = <MSGSIZE>;
         <MSGNAME>Message(int size=MSG_SIZE)
         : Message(size)
         {
