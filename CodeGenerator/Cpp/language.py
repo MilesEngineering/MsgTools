@@ -369,24 +369,31 @@ def fieldReflectionBitsType(field, bits):
         ret = "EnumFieldInfo"
     return ret
 
-def fieldInfo(field, offset):
+def genericInfo(field, offset):
     loc = str(offset)
-    params  = "auto static constexpr " + field["Name"] + '_loc   = ' + loc + ';\n'
-    params += "auto static constexpr " + field["Name"] + '_MAX   = ' + str(MsgParser.fieldMax(field)) + ';\n'
-    params += "auto static constexpr " + field["Name"] + '_MIN   = ' + str(MsgParser.fieldMin(field)) + ';\n'
-    params += "auto static constexpr " + field["Name"] + '_UNITS = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
-    params += "auto static constexpr " + field["Name"] + '_COUNT = ' + str(MsgParser.fieldCount(field)) + ';\n'
+    params  = '    auto static constexpr loc   = ' + loc + ';\n'
+    params += '    auto static constexpr max   = ' + str(MsgParser.fieldMax(field)) + ';\n'
+    params += '    auto static constexpr min   = ' + str(MsgParser.fieldMin(field)) + ';\n'
+    params += '    auto static constexpr units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
+    params += '    auto static constexpr count = ' + str(MsgParser.fieldCount(field)) + ';\n'
     if "Scale" in field:
-        params += "auto static constexpr " + field["Name"] + '_SCALE = ' + str(field["Scale"]) + ';\n'
+        params += '    auto static constexpr scale = ' + str(field["Scale"]) + ';\n'
     if "Offset" in field:
-        params += "auto static constexpr " + field["Name"] + '_OFFSET = ' + str(field["Offset"]) + ';\n'
+        params += '    auto static constexpr offset = ' + str(field["Offset"]) + ';\n'
+    return params
+    
+def fieldInfo(field, offset):
+    params  = 'struct ' + field["Name"] + 'FieldInfo {\n'
+    params += genericInfo(field, offset)
+    params += '};\n'
     return params
 
 def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
-    loc = str(offset)
-    params = fieldInfo(bits, offset)
-    params += "auto static constexpr " + bits["Name"] + '_BIT_OFFSET = ' + str(bitOffset) + ';\n'
-    params += "auto static constexpr " + bits["Name"] + '_NUM_BITS   = ' + str(numBits) + ';\n'
+    params  = 'struct ' + bits["Name"] + 'FieldInfo {\n'
+    params += genericInfo(bits, offset)
+    params += '    auto static constexpr bitOffset = ' + str(bitOffset) + ';\n'
+    params += '    auto static constexpr numBits   = ' + str(numBits) + ';\n'
+    params += '};\n'
     return params
 
 def fieldInfos(msg):

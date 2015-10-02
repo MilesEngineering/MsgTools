@@ -90,7 +90,7 @@ void SerialConnection::SerialDataReady()
                 {
                     /** \note Stop counting before we reach header checksum location. */
                     uint16_t headerChecksum = 0;
-                    for(int i=0; i<SerialHeader::HeaderChecksum_loc; i++)
+                    for(int i=0; i<SerialHeader::HeaderChecksumFieldInfo::loc; i++)
                         headerChecksum += ((uint8_t*)&tmpRxHdr)[i];
 
                     if(headerChecksum == tmpRxHdr.GetHeaderChecksum())
