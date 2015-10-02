@@ -12,6 +12,7 @@
 #define <MSGNAME>_H__
 
 #include <stdint.h>
+#include <cfloat>
 #include "FieldAccess.h"
 
 class <MSGNAME>
@@ -27,6 +28,7 @@ class <MSGNAME>
             <INIT_CODE>
         }
         <ENUMERATIONS>
+        <FIELDINFOS>
         <ACCESSORS>
     private:
         uint8_t m_data[SIZE];

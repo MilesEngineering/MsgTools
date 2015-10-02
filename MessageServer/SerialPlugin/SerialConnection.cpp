@@ -88,22 +88,10 @@ void SerialConnection::SerialDataReady()
                 serialPort.read((char*)&tmpRxHdr, sizeof(tmpRxHdr));
                 if(tmpRxHdr.GetStartSequence() == startSequence)
                 {
-                    /** \todo Review how checksums work.  Can we get location of header checksum, and stop counting before we reach it? */
+                    /** \note Stop counting before we reach header checksum location. */
                     uint16_t headerChecksum = 0;
-                    for(int i=0; i<SerialHeader::SIZE; i++)
+                    for(int i=0; i<SerialHeader::HeaderChecksum_loc; i++)
                         headerChecksum += ((uint8_t*)&tmpRxHdr)[i];
-
-                    uint16_t headerChecksumInMessage = tmpRxHdr.GetHeaderChecksum();
-                    int headerChecksumDoubleBookingEffect =
-                            (0xFF & headerChecksumInMessage) +
-                            (headerChecksumInMessage >> 8);
-                    headerChecksum -= headerChecksumDoubleBookingEffect;
-
-                    uint16_t bodyChecksumInMessage = tmpRxHdr.GetBodyChecksum();
-                    int bodyChecksumDoubleBookingEffect =
-                            (0xFF & bodyChecksumInMessage) +
-                            (bodyChecksumInMessage >> 8);
-                    headerChecksum -= bodyChecksumDoubleBookingEffect;
 
                     if(headerChecksum == tmpRxHdr.GetHeaderChecksum())
                     {

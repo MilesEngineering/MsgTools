@@ -12,6 +12,7 @@
 #define <MSGNAME>Message_H__
 
 #include <stdint.h>
+#include <cfloat>
 #include "FieldAccess.h"
 
 class <MSGNAME>Message : public Message
