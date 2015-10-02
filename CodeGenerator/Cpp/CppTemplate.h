@@ -35,6 +35,7 @@ class <MSGNAME>Message : public Message
             <INIT_CODE>
         }
         <ENUMERATIONS>
+        <FIELDINFOS>
         <ACCESSORS>
 #ifndef DISABLE_REFLECTION
         static MsgInfo* ReflectionInfo()

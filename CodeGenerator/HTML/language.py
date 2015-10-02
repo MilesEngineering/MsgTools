@@ -118,3 +118,6 @@ def enums(e):
 
 def declarations(msg):
     return [""]
+
+def fieldInfos(msg):
+    return ""
