@@ -26,19 +26,20 @@ class MsgInspector(MsgGui.MsgGui):
         
         # hash table to lookup the widget for a message, by message ID
         self.msgWidgets = {}
-
-    def tableItemDoubleClicked(self, item, column):
-        tree = self.sender()
+    
+    def tableHeaderClicked(self, column):
+        header = self.sender()
+        tree = header.myTreeWidget
         fieldName = tree.headerItem().text(column)
         msgName = tree.msgName
         if not msgName in self.keyFields or self.keyFields[msgName] != fieldName:
             print("sorting " + msgName + " on " + fieldName)
+            header.setSortIndicator(column, QtCore.Qt.AscendingOrder)
             self.keyFields[msgName] = fieldName
             tree.sortItems(column, QtCore.Qt.AscendingOrder)
             valueToRemove = None
             for i in range(tree.topLevelItemCount()-1, -1 ,-1):
                 item = tree.topLevelItem(i)
-                print("testing row " + str(i))
                 if not valueToRemove == None and item.text(column) == valueToRemove:
                     tree.takeTopLevelItem(i)
                 else:
@@ -46,6 +47,7 @@ class MsgInspector(MsgGui.MsgGui):
         else:
             print("not sorting " + msgName)
             del self.keyFields[msgName]
+            header.setSortIndicator(0, QtCore.Qt.AscendingOrder)
 
     def ShowMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
@@ -70,7 +72,14 @@ class MsgInspector(MsgGui.MsgGui):
             # create a new tree widget
             msgWidget = QtGui.QTreeWidget()
             msgWidget.msgName = msgName
-            msgWidget.itemDoubleClicked.connect(self.tableItemDoubleClicked)
+            # configure the header so we can click on it to sort
+            header = msgWidget.header()
+            header.setClickable(1)
+            header.setSortIndicatorShown(1)
+            # show sort indicator ascending on Time, if not sorting, because we append incoming messages
+            header.setSortIndicator(0, QtCore.Qt.AscendingOrder)
+            header.myTreeWidget = msgWidget
+            header.sectionClicked.connect(self.tableHeaderClicked)
             
             # add it to the tab widget, so the user can see it
             self.tabWidget.addTab(msgWidget, msgName)
@@ -119,7 +128,6 @@ class MsgInspector(MsgGui.MsgGui):
         if replaceMode and keyColumn >= 0:
             # find row that has key field that matches ours
             foundAndReplaced = 0
-            print("looking for text " + keyValue + " in column " + str(keyColumn))
             for i in range(0, self.msgWidgets[id].topLevelItemCount()):
                 item = self.msgWidgets[id].topLevelItem(i)
                 if item.text(keyColumn) == keyValue:

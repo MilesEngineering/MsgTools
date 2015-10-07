@@ -33,7 +33,20 @@ class EditableFieldItem(FieldItem):
         super(EditableFieldItem, self).__init__(msg_class, msg_buffer_wrapper, fieldInfo, column_strings)
 
         self.setFlags(self.flags() | Qt.ItemIsEditable)
+        
+        if fieldInfo.type == "enumeration":
+            self.overrideWidget = QComboBox()
+            # if we need keys in order originally specified, it needs to be declared as an OrderedDict
+            self.overrideWidget.addItems(sorted(list(fieldInfo.enum[0].keys())))
+            self.overrideWidget.activated.connect(self.overrideWidgetValueChanged)
 
+    def overrideWidgetValueChanged(self, value):
+        # set the value in the message/header buffer
+        Messaging.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, value)
+
+        # no need to reset UI to value read from message, if user picked value from drop down.
+        # \todo: need to if they type something, though.
+        
     def setData(self, column, role, value):
         if not column == 2:
             return
@@ -183,6 +196,11 @@ class MessageItem(QObject, QTreeWidgetItem):
                 messageFieldTreeItem = child_array_constructor(self.msg_class, self.msg_buffer_wrapper, fieldInfo, child_array_constructor)
             
             self.addChild(messageFieldTreeItem)
+            try:
+                messageFieldTreeItem.overrideWidget
+                tree_widget.setItemWidget(messageFieldTreeItem, 2, messageFieldTreeItem.overrideWidget)
+            except AttributeError:
+                pass
 
 class EditableMessageItem(MessageItem):
     send_message = Signal(object)
