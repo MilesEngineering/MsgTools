@@ -55,7 +55,9 @@ def DoReplacements(line, msg, enums, subdirComponent):
     ret = replace(ret, "<ENUMERATIONS>", language.enums(enums))
     ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))
     ret = replace(ret, "<REFLECTION>", language.reflection(msg))
-    ret = replace(ret, "<FIELDINFOS>", language.fieldInfos(msg))
+    # xiaochang duan: the line below was commented out due to build error.
+    # bug created and assigned to miles
+    #ret = replace(ret, "<FIELDINFOS>", language.fieldInfos(msg))
     ret = replace(ret, "<DECLARATIONS>", "\n".join(language.declarations(msg)))
     ret = replace(ret, "<INIT_CODE>", "\n".join(language.initCode(msg)))
     ret = replace(ret, "<OUTPUTFILENAME>", outputFilename)
