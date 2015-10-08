@@ -6,7 +6,7 @@ def fieldSize(field):
 
 def fieldIsInt(field):
     isInt  = 0
-    if "NumBits" in field:
+    if "Type" in field or "NumBits" in field:
         isInt = 1
     if "Type" in field and "int" in str.lower(field["Type"]):
         isInt = 1
@@ -48,10 +48,6 @@ def fieldMin(field):
         else:
             minVal = 0
         minVal = transformInt(field, minVal)
-    elif "Type" in field and str.lower(field["Type"]) == 'float64':
-        minVal = "DBL_MIN"
-    elif "Type" in field and str.lower(field["Type"]) == 'float32':
-        minVal = "FLT_MIN"
     minVal = fieldItem(field, "Min", minVal)
     return minVal
 
@@ -63,24 +59,8 @@ def fieldMax(field):
         else:
             maxVal = 2**numBits-1
         maxVal = transformInt(field, maxVal)
-    elif "Type" in field and str.lower(field["Type"]) == 'float64':
-        maxVal = "DBL_MAX "
-    elif "Type" in field and str.lower(field["Type"]) == 'float32':
-        maxVal = "FLT_MAX"
     maxVal = fieldItem(field, "Max", maxVal)
     return maxVal
-
-def fieldStorageMin(storageType):
-    dict = \
-    {"uint64":0, "uint32":0, "uint16": 0, "uint8": 0,
-      "int64": -2**63,  "int32":-2**31,  "int16": -2**15,  "int8": -2**7}
-    return dict[storageType]
-
-def fieldStorageMax(storageType):
-    dict = \
-    {"uint64": 2**64-1, "uint32": 2**32-1, "uint16":  2**16-1, "uint8":  2**8-1,
-      "int64": 2**63-1,  "int32": 2**31-1,  "int16":  2**15-1,  "int8": 2**7-1}
-    return dict[storageType]
 
 def fieldItem(field, item, default):
     if item in field:

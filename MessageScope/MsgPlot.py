@@ -29,8 +29,8 @@ class CustomViewBox(pg.ViewBox):
 class MsgPlot:
     MAX_LENGTH = 100
     def __init__(self, msgClass, fieldInfo, subindex):
-        #self.win = pg.GraphicsWindow()
-        #self.win.setWindowTitle(msgClass.MsgName())
+        self.win = pg.GraphicsWindow()
+        self.win.setWindowTitle(msgClass.MsgName())
         self.msgClass = msgClass
         self.fieldInfo = fieldInfo
         self.fieldSubindex = subindex
@@ -45,9 +45,7 @@ class MsgPlot:
             pass
         yAxisLabel += "  (" + fieldInfo.units+")"
         xAxisLabel = "time (count)"
-        self.plotWidget = pg.PlotWidget()
-        #self.myPlot = self.win.addPlot(viewBox=vb, labels={'left':  yAxisLabel, 'bottom': xAxisLabel})
-        self.myPlot = self.plotWidget
+        self.myPlot = self.win.addPlot(viewBox=vb, labels={'left':  yAxisLabel, 'bottom': xAxisLabel})
         self.dataArray = []
         self.curve = self.myPlot.plot(self.dataArray)
         self.ptr1 = 0

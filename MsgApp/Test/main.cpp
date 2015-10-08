@@ -50,8 +50,7 @@ TEST(MessageClientTest, Reflection)
         ConnectMessage* cm = (ConnectMessage*)cmRx;
         EXPECT_TRUE(cmRx != 0);
         /* Verify header */
-        auto const msgSize = ConnectMessage::MSG_SIZE;
-        EXPECT_EQ(cm->hdr->GetLength(), msgSize);
+        EXPECT_EQ(cm->hdr->GetLength(), ConnectMessage::MSG_SIZE);
         EXPECT_EQ(cm->hdr->GetSource(), cmTx->hdr->GetSource());
         EXPECT_EQ(cm->hdr->GetDestination(), cmTx->hdr->GetDestination());
         EXPECT_EQ(cm->hdr->GetID(), cmTx->hdr->GetID());
@@ -61,17 +60,16 @@ TEST(MessageClientTest, Reflection)
     }
 
     ConnectMessage* cm = new ConnectMessage();
-    MsgInfo* connectMsgInfo = Reflection::FindMsgByID(ConnectMessage::MSG_ID);
+    MsgInfo* connectMsgInfo = Reflection::FindMsgByID(cm->MSG_ID);
     EXPECT_TRUE(connectMsgInfo == NULL);
     /** \todo This is bad!  Need to have the message info get added automatically to reflection! */
     Reflection::AddMsg(ConnectMessage::ReflectionInfo());
-    connectMsgInfo = Reflection::FindMsgByID(ConnectMessage::MSG_ID);
+    connectMsgInfo = Reflection::FindMsgByID(cm->MSG_ID);
     EXPECT_TRUE(connectMsgInfo != NULL);
     if(connectMsgInfo)
     {
         EXPECT_STREQ(connectMsgInfo->Name().toUtf8().constData(), "Connect");
-        auto const msgId = ConnectMessage::MSG_ID;
-        EXPECT_EQ(connectMsgInfo->ID(), msgId);
+        EXPECT_EQ(connectMsgInfo->ID(), cm->MSG_ID);
     }
     strcpy((char*)cm->Name(), "test1");
     const FieldInfo* fi = connectMsgInfo->GetField("Name");
@@ -84,13 +82,13 @@ TEST(MessageClientTest, Reflection)
 
     /** \todo This is bad!  Need to have the message info get added automatically to reflection! */
     Reflection::AddMsg(MsgAMessage::ReflectionInfo());
-    MsgInfo* maMsgInfo = Reflection::FindMsgByID(MsgAMessage::MSG_ID);
+    MsgAMessage* mam = new MsgAMessage();
+    MsgInfo* maMsgInfo = Reflection::FindMsgByID(mam->MSG_ID);
     EXPECT_TRUE(maMsgInfo != NULL);
     if(maMsgInfo)
     {
         EXPECT_STREQ(maMsgInfo->Name().toUtf8().constData(), "MsgA");
-        auto const msgId = MsgAMessage::MSG_ID;
-        EXPECT_EQ(maMsgInfo->ID(), msgId);
+        EXPECT_EQ(maMsgInfo->ID(), mam->MSG_ID);
     }
     /** \todo Add tests for setting/getting fields of MsgA, using regular accessors as well as reflection */
 }

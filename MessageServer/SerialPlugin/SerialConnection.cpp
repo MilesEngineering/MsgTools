@@ -28,7 +28,7 @@ SerialConnection::SerialConnection()
     serialPort.setDataBits(DATA_8);
     serialPort.setStopBits(STOP_1);
 
-    startSequence = SerialHeader::StartSequenceFieldInfo::defaultValue;
+    startSequence = tmpRxHdr.GetStartSequence();
 
     _buttonGroup.setStyleSheet("border:0;");
     QHBoxLayout* layout = new QHBoxLayout();
@@ -64,7 +64,7 @@ void SerialConnection::SerialDataReady()
     if(!gotHeader)
     {
         bool foundStart = false;
-        /** \note Synchronize on start sequence */
+        /** \todo Synchronize on start character */
         while(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(startSequence))
         {
             /** peek at first byte.
@@ -88,10 +88,22 @@ void SerialConnection::SerialDataReady()
                 serialPort.read((char*)&tmpRxHdr, sizeof(tmpRxHdr));
                 if(tmpRxHdr.GetStartSequence() == startSequence)
                 {
-                    /** \note Stop counting before we reach header checksum location. */
+                    /** \todo Review how checksums work.  Can we get location of header checksum, and stop counting before we reach it? */
                     uint16_t headerChecksum = 0;
-                    for(int i=0; i<SerialHeader::HeaderChecksumFieldInfo::loc; i++)
+                    for(int i=0; i<SerialHeader::SIZE; i++)
                         headerChecksum += ((uint8_t*)&tmpRxHdr)[i];
+
+                    uint16_t headerChecksumInMessage = tmpRxHdr.GetHeaderChecksum();
+                    int headerChecksumDoubleBookingEffect =
+                            (0xFF & headerChecksumInMessage) +
+                            (headerChecksumInMessage >> 8);
+                    headerChecksum -= headerChecksumDoubleBookingEffect;
+
+                    uint16_t bodyChecksumInMessage = tmpRxHdr.GetBodyChecksum();
+                    int bodyChecksumDoubleBookingEffect =
+                            (0xFF & bodyChecksumInMessage) +
+                            (bodyChecksumInMessage >> 8);
+                    headerChecksum -= bodyChecksumDoubleBookingEffect;
 
                     if(headerChecksum == tmpRxHdr.GetHeaderChecksum())
                     {
