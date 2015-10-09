@@ -6,9 +6,6 @@ def msgSize(msg):
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     return offset
 
-def reflection(msg):
-    return ""
-
 def accessors(msg):
     return ""
 
@@ -118,6 +115,3 @@ def enums(e):
 
 def declarations(msg):
     return [""]
-
-def fieldInfos(msg):
-    return ""

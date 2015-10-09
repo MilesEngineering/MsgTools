@@ -88,11 +88,6 @@ def reflection(msg):
         fieldInfos.append(fieldReflection(msg, field))
     return ",\n".join(fieldInfos)
 
-# don't need separate field infos and reflection for python, just use reflection only, there's
-# no need to worry about runtime overhead in doing so.
-def fieldInfos(msg):
-    pass
-
 def fnHdr(field, count, name):
     param = "message_buffer"
     if str.find(name, "Set") == 0:
