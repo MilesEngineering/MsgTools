@@ -93,7 +93,7 @@ def ProcessDir(template, msgDir, subdirComponent):
             outputFilename += "/" + justFilename
         if os.path.isdir(inputFilename):
             if filename != 'headers':
-                ProcessDir(template, inputFilename, filename)
+                ProcessDir(template, inputFilename, subdirComponent + "/" + filename)
         else:
             inputFileTime = os.path.getmtime(inputFilename)
             try:
