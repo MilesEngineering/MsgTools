@@ -45,10 +45,10 @@ class FieldAccess
 #endif
         }
         template <typename AccessType>
-        static inline AccessType GetField(void* location)
+        static inline AccessType GetField(const void* location)
         {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-            return *(AccessType*)location;
+            return *(const AccessType*)location;
 #else
             // copy bytes at location into aligned union, return value
             union
@@ -56,7 +56,7 @@ class FieldAccess
                 AccessType u;
                 unsigned char u8[sizeof(AccessType)];
             } dest;
-            uint8_t* source = (uint8_t*)location;
+            const uint8_t* source = (const uint8_t*)location;
 
             for (int k = 0; k < sizeof(AccessType); k++)
                 dest.u8[k] = source[sizeof(AccessType) - k - 1];

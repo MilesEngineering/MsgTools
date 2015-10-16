@@ -18,61 +18,61 @@ class TestCpp(unittest.TestCase):
         expected = []
         expected.append("""\
 //  m/s, (0 to 4294967295)
-uint32_t GetFieldA()
+uint32_t GetFieldA() const
 {
     return Get_uint32_t(&m_data[0]);
 }""")
         expected.append("""\
 //  , (0 to 2147483647)
-uint32_t GetFABitsA()
+uint32_t GetFABitsA() const
 {
     return (GetFieldA() >> 0) & 0x7fffffff;
 }""")
         expected.append("""\
 //  , (0 to 65535)
-uint16_t GetFieldB()
+uint16_t GetFieldB() const
 {
     return Get_uint16_t(&m_data[4]);
 }""")
         expected.append("""\
 //  , (0 to 255)
-uint8_t GetFieldC(int idx)
+uint8_t GetFieldC(int idx) const
 {
     return Get_uint8_t(&m_data[6+idx*1]);
 }""")
         expected.append("""\
 //  , (0 to 255)
-uint8_t GetFieldD()
+uint8_t GetFieldD() const
 {
     return Get_uint8_t(&m_data[11]);
 }""")
         expected.append("""\
 //  , (0.0 to 215.355)
-float GetBitsA()
+float GetBitsA() const
 {
     return (float((GetFieldD() >> 0) & 0xf) * 14.357f);
 }""")
         expected.append("""\
 //  , (0 to 7)
-uint8_t GetBitsB()
+uint8_t GetBitsB() const
 {
     return (GetFieldD() >> 4) & 0x7;
 }""")
         expected.append("""\
 //  , (0 to 1)
-uint8_t GetBitsC()
+uint8_t GetBitsC() const
 {
     return (GetFieldD() >> 7) & 0x1;
 }""")
         expected.append("""\
 //  , (0.0 to 10.0)
-float GetFieldE()
+float GetFieldE() const
 {
     return Get_float(&m_data[12]);
 }""")
         expected.append("""\
 //  , (1.828 to 176946.328)
-float GetFieldF()
+float GetFieldF() const
 {
     return ((float(Get_uint16_t(&m_data[16])) * 2.7f) + 1.828f);
 }""")

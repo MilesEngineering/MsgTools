@@ -9,6 +9,18 @@ def fieldType(field):
     typeStr = str.lower(field["Type"])
     return fieldTypeDict[typeStr]
 
+def minVal(storageType):
+    dict = \
+    {"uint64":0, "uint32":0, "uint16": 0, "uint8": 0,
+      "int64": -2**63,  "int32":-2**31,  "int16": -2**15,  "int8": -2**7}
+    return dict[storageType]
+
+def maxVal(storageType):
+    dict = \
+    {"uint64": 2**64-1, "uint32": 2**32-1, "uint16":  2**16-1, "uint8":  2**8-1,
+      "int64": 2**63-1,  "int32": 2**31-1,  "int16":  2**15-1,  "int8": 2**7-1}
+    return dict[storageType]
+
 def msgSize(msg):
     offset = 0
     for field in msg["Fields"]:
@@ -155,7 +167,7 @@ def setFn(msg, field, offset):
     math = MsgParser.setMath("value", field, "int")
     storageType = field["Type"]
     if "int" in storageType and not "Enum" in field:
-        math = "min(max(%s, %s), %s)" % (math, MsgParser.fieldStorageMin(storageType), MsgParser.fieldStorageMax(storageType))
+        math = "min(max(%s, %s), %s)" % (math, minVal(storageType), maxVal(storageType))
     math = lookup + "tmp = " + math
     if count > 1:
         if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
