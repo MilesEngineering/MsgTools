@@ -35,7 +35,8 @@ class MsgPlot:
         self.fieldInfo = fieldInfo
         self.fieldSubindex = subindex
 
-        vb = CustomViewBox()
+        vb = CustomViewBox() # this is no longer used since we don't use self.win.addPlot
+        # anymore, so now left click to pause no longer works :(
         
         yAxisLabel = fieldInfo.name
         try:
