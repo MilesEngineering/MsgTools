@@ -44,6 +44,12 @@ def replace(line, pattern, replacement):
         ret = line
     return ret
 
+def optionalReplace(line, pattern, fn, param):
+    if pattern in line:
+        method = getattr(language, fn)
+        return replace(line, pattern, method(param))
+    return line
+
 def DoReplacements(line, msg, enums, subdirComponent):
     ret = line + '\n'
     ret = replace(ret, "<MSGNAME>", msgName(msg))
@@ -52,9 +58,10 @@ def DoReplacements(line, msg, enums, subdirComponent):
         ret = replace(ret, "<MSGID>", str(msg["ID"]))
     ret = replace(ret, "<MSGSIZE>", str(language.msgSize(msg)))
     ret = replace(ret, "<MSGDESCRIPTION>", str(msg["Description"]))
-    ret = replace(ret, "<ENUMERATIONS>", language.enums(enums))
+    ret = optionalReplace(ret, "<ENUMERATIONS>", 'enums', enums)
     ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))
-    ret = replace(ret, "<REFLECTION>", language.reflection(msg))
+    ret = optionalReplace(ret, "<REFLECTION>", 'reflection', msg)
+    ret = optionalReplace(ret, "<FIELDINFOS>", 'fieldInfos', msg)
     ret = replace(ret, "<DECLARATIONS>", "\n".join(language.declarations(msg)))
     ret = replace(ret, "<INIT_CODE>", "\n".join(language.initCode(msg)))
     ret = replace(ret, "<OUTPUTFILENAME>", outputFilename)
@@ -86,7 +93,10 @@ def ProcessDir(template, msgDir, subdirComponent):
             outputFilename += "/" + justFilename
         if os.path.isdir(inputFilename):
             if filename != 'headers':
-                ProcessDir(template, inputFilename, filename)
+                subdirParam = filename
+                if subdirComponent != "":
+                    subdirParam = subdirComponent + "/" + subdirParam
+                ProcessDir(template, inputFilename, subdirParam)
         else:
             inputFileTime = os.path.getmtime(inputFilename)
             try:

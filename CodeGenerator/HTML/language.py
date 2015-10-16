@@ -6,9 +6,6 @@ def msgSize(msg):
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     return offset
 
-def reflection(msg):
-    return ""
-
 def accessors(msg):
     return ""
 
