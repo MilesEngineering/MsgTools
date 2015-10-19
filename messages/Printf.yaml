@@ -13,6 +13,6 @@ Messages:
         Description: The line number that caused the message to appear.
       - Name: Buffer
         Type: uint8
-        Count: 128
+        Count: 120
         Units: ASCII
         Description: The string to display.

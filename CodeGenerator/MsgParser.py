@@ -112,7 +112,13 @@ def ProcessDir(template, msgDir, subdirComponent):
                     except:
                         pass
                     with open(outputFilename,'w') as outFile:
-                        ProcessFile(template, inFile, outFile, subdirComponent)
+                        try:
+                            ProcessFile(template, inFile, outFile, subdirComponent)
+                        except language.MessageException as e:
+                            sys.stderr.write(str(e)+'\n')
+                            outFile.close()
+                            os.remove(outputFilename)
+                            sys.exit(1)
     
 
 def ProcessFile(template, inFile, outFile, subdirComponent):

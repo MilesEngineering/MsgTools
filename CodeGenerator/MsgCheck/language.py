@@ -1,6 +1,9 @@
 import MsgParser
 import sys
 
+class MessageException(Exception):
+    pass
+
 # >/</= means big/little/native endian, see docs for struct.pack_into or struct.unpack_from.
 def fieldType(field):
     allowedFieldTypes = \
@@ -59,10 +62,12 @@ def accessors(msg):
                 #if not bits["Enum"] in allowedEnums:
                 #    sys.stderr.write('bad enum')
                 pass
+        if offset % MsgParser.fieldSize(field) != 0:
+            raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(MsgParser.fieldSize(field)))
         offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     
-    if offset > 256:
-        sys.stderr.write('message too big')
+    if offset > 128:
+        raise MessageException('message ' + msg["Name"] + ' too big\n')
 
     return ""
 
