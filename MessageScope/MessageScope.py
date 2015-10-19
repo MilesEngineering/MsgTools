@@ -70,7 +70,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         
         self.ReadTxDictionary()
 
-    def configure_gui(self, parent):   
+    def configure_gui(self, parent):
         hSplitter = QSplitter(parent)
         
         txSplitter = QSplitter(parent)
@@ -202,8 +202,15 @@ class MessageScopeGui(MsgGui.MsgGui):
                     if plot.fieldInfo == fieldInfo and plot.fieldSubindex == fieldIndex:
                         alreadyThere = True
                 if not alreadyThere:
-                    print("adding plot of " + msg_class.MsgName() + "." + fieldInfo.name + "[" + str(fieldIndex) + "]")
+                    plotName = msg_class.MsgName() + "." + fieldInfo.name + "[" + str(fieldIndex) + "]"
+                    print("adding plot of " + plotName)
                     msgPlot = MsgPlot(msg_class, fieldInfo, fieldIndex)
+                    # add a tab for new plot
+                    dock = QDockWidget(plotName, self)
+                    dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+                    #dock.setAllowedAreas()
+                    dock.setWidget(msgPlot.plotWidget)
+                    self.addDockWidget(Qt.RightDockWidgetArea, dock)
                     plotListForID.append(msgPlot)
         except AttributeError:
             print("caught exception AttributeError")

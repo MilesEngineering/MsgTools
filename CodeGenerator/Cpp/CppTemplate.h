@@ -12,13 +12,14 @@
 #define <MSGNAME>Message_H__
 
 #include <stdint.h>
+#include <cfloat>
 #include "FieldAccess.h"
 
 class <MSGNAME>Message : public Message
 {
     public:
-        enum { MSG_ID = <MSGID>};
-        enum { MSG_SIZE = <MSGSIZE> };
+        auto static constexpr MSG_ID = <MSGID>;
+        auto static constexpr MSG_SIZE = <MSGSIZE>;
         <MSGNAME>Message(int size=MSG_SIZE)
         : Message(size)
         {
@@ -35,6 +36,7 @@ class <MSGNAME>Message : public Message
             <INIT_CODE>
         }
         <ENUMERATIONS>
+        <FIELDINFOS>
         <ACCESSORS>
 #ifndef DISABLE_REFLECTION
         static MsgInfo* ReflectionInfo()
