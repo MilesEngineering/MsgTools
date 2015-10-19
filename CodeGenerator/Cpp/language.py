@@ -1,4 +1,5 @@
 import MsgParser
+from MsgUtils import *
 
 def fieldType(field):
     typeStr = field["Type"]
@@ -369,15 +370,33 @@ def fieldReflectionBitsType(field, bits):
         ret = "EnumFieldInfo"
     return ret
 
-def genericInfo(field, offset):
+def fieldMin(field):
+    ret = str(MsgParser.fieldMin(field))
+    if "Scale" in field or "Offset" in field:
+        ret += 'f'
+    else:
+        if fieldIsInt(field) and not fieldIsSigned(field):
+            ret += 'U'
+    return ret
+
+def fieldMax(field):
+    ret = str(MsgParser.fieldMax(field))
+    if "Scale" in field or "Offset" in field:
+        ret += 'f'
+    else:
+        if fieldIsInt(field) and not fieldIsSigned(field):
+            ret += 'U'
+    return ret
+
+def genericInfo(field, type, offset):
     loc = str(offset)
-    params  = '    auto static constexpr loc   = ' + loc + ';\n'
-    params += '    auto static constexpr max   = ' + str(MsgParser.fieldMax(field)) + ';\n'
-    params += '    auto static constexpr min   = ' + str(MsgParser.fieldMin(field)) + ';\n'
-    params += '    auto static constexpr units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
-    params += '    auto static constexpr count = ' + str(MsgParser.fieldCount(field)) + ';\n'
+    params  = '    int static constexpr loc   = ' + loc + ';\n'
+    params += '    '+type+' static constexpr max   = ' + fieldMax(field) + ';\n'
+    params += '    '+type+' static constexpr min   = ' + fieldMin(field) + ';\n'
+    params += '    char static constexpr units[] = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
+    params += '    int static constexpr count = ' + str(MsgParser.fieldCount(field)) + ';\n'
     if "Default" in field:
-        params += '    auto static constexpr defaultValue = ' + str(field["Default"]) + ";\n" 
+        params += '    '+type+' static constexpr defaultValue = ' + str(field["Default"]) + ";\n" 
     if "Scale" in field:
         params += '    auto static constexpr scale = ' + str(field["Scale"]) + ';\n'
     if "Offset" in field:
@@ -385,14 +404,22 @@ def genericInfo(field, offset):
     return params
     
 def fieldInfo(field, offset):
+    retType = fieldType(field)
+    if "Offset" in field or "Scale" in field:
+        retType = typeForScaledInt(field)
+
     params  = 'struct ' + field["Name"] + 'FieldInfo {\n'
-    params += genericInfo(field, offset)
+    params += genericInfo(field, retType, offset)
     params += '};\n'
     return params
 
 def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
+    retType = fieldType(field)
+    if "Offset" in bits or "Scale" in bits:
+        retType = typeForScaledInt(bits)
+
     params  = 'struct ' + bits["Name"] + 'FieldInfo {\n'
-    params += genericInfo(bits, offset)
+    params += genericInfo(bits, retType, offset)
     params += '    auto static constexpr bitOffset = ' + str(bitOffset) + ';\n'
     params += '    auto static constexpr numBits   = ' + str(numBits) + ';\n'
     params += '};\n'
