@@ -28,8 +28,6 @@ SerialConnection::SerialConnection()
     serialPort.setDataBits(DATA_8);
     serialPort.setStopBits(STOP_1);
 
-    startSequence = SerialHeader::StartSequenceFieldInfo::defaultValue;
-
     _buttonGroup.setStyleSheet("border:0;");
     QHBoxLayout* layout = new QHBoxLayout();
     layout->addWidget(&_statusLabel);
@@ -65,13 +63,13 @@ void SerialConnection::SerialDataReady()
     {
         bool foundStart = false;
         /** \note Synchronize on start sequence */
-        while(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(startSequence))
+        while(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(SerialHeader::StartSequenceFieldInfo::defaultValue))
         {
             /** peek at first byte.
              * if it's start byte, break.
              * else, throw it away and try again. */
-            serialPort.peek((char*)&tmpRxHdr, sizeof(startSequence));
-            if(tmpRxHdr.GetStartSequence() == startSequence)
+            serialPort.peek((char*)&tmpRxHdr, sizeof(SerialHeader::StartSequenceFieldInfo::defaultValue));
+            if(tmpRxHdr.GetStartSequence() == SerialHeader::StartSequenceFieldInfo::defaultValue)
             {
                 foundStart = true;
                 break;
@@ -86,7 +84,7 @@ void SerialConnection::SerialDataReady()
             if(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(tmpRxHdr))
             {
                 serialPort.read((char*)&tmpRxHdr, sizeof(tmpRxHdr));
-                if(tmpRxHdr.GetStartSequence() == startSequence)
+                if(tmpRxHdr.GetStartSequence() == SerialHeader::StartSequenceFieldInfo::defaultValue)
                 {
                     /** \note Stop counting before we reach header checksum location. */
                     uint16_t headerChecksum = 0;
