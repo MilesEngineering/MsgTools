@@ -7,20 +7,18 @@ install all:: Makefile MsgCheck Cpp Python Html
 hdir := ../messages/headers
 mdir := ../messages
 
-colorecho  = @printf "\033[0;32m====> Generating $(1)\033[0m\n"
-
 Cpp:
-	$(call colorecho,C++ Code)
+	$(call colorecho,Generating C++ Code)
 	$(PARSER) $(hdir) $(MSGDIR)/Cpp Cpp/language.py  Cpp/CppHeaderTemplate.h
 	$(PARSER) $(mdir) $(MSGDIR)/Cpp Cpp/language.py  Cpp/CppTemplate.h
 
 Python:
-	$(call colorecho,Python)
+	$(call colorecho,Generating Python)
 	$(PARSER) $(hdir) $(MSGDIR)/Python Python/language.py  Python/HeaderTemplate.py
 	$(PARSER) $(mdir) $(MSGDIR)/Python Python/language.py  Python/Template.py
 
 Html:
-	$(call colorecho,HTML)
+	$(call colorecho,Generating HTML)
 	$(PARSER) $(hdir) $(MSGDIR)/HTML HTML/language.py  HTML/HeaderTemplate.html
 	$(PARSER) $(mdir) $(MSGDIR)/HTML HTML/language.py  HTML/Template.html
 

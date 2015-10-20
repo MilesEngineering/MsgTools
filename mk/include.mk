@@ -39,3 +39,5 @@ OBJ_DIR := $(BUILDROOT)/obj/$(SRC_SUBDIR)
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
+
+colorecho  = @printf "\033[0;32m====> $(1)\033[0m\n"
