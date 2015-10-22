@@ -1,0 +1,58 @@
+Enums:
+  - Name: TestEnum
+    Options:
+      - Name: Val0
+        Value: 0
+      - Name: Val1
+        Value: 1
+      - Name: Val2
+        Value: 2
+      - Name: Val3
+        Value: 3
+  - Name: TestEnumTwo
+    Options:
+      - Name: Start
+        Value: 0
+      - Name: Stop
+        Value: 1
+Messages:
+  - Name: TestMsg1
+    ID: 0xFFFFFF99
+    Description: Used to test stuff.
+    Fields:
+      - Name: F1
+        Type: uint32
+        Units: enumeration
+        Description: Test Field 1
+        Enum: TestEnum
+        Min: 1
+        Max: 158212
+      - Name: F2
+        Type: float32
+        Units: m/s
+        Description: Test Field 2
+        Count: 3
+        Min: 0.0
+        Max: 1.0
+      - Name: F3
+        Type: uint16
+        Units: cm
+        Description: Test Field 3
+        Scale: 10.0
+        Min: 0.0
+        Max: 1.0
+      - Name: F4
+        Type: uint8
+        Units: meters
+        Description: Test Field 4
+        Offset: 20.0
+        Scale: 100.0
+      - Name: Field5
+        Type: uint8
+        Units: Hz
+        Description: With a reaaaally long description with spaces and stuff
+      - Name: Field6
+        Type: uint32
+        Units: enumeration
+        Description: Test Field 6
+        Enum: TestEnumTwo

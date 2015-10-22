@@ -1,0 +1,18 @@
+Messages:
+  - Name: Printf
+    ID: 0xFF
+    Description: Used to display debug information as strings.
+    Fields:
+      - Name: ThreadID
+        Type: uint32
+        Units: PlatformSpecific
+        Description: Some sort of identifier for the thread printing the message.
+      - Name: LineNumber
+        Type: uint32
+        Units: NA
+        Description: The line number that caused the message to appear.
+      - Name: Buffer
+        Type: uint8
+        Count: 120
+        Units: ASCII
+        Description: The string to display.

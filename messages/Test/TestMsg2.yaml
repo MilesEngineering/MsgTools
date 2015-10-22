@@ -1,0 +1,40 @@
+Messages:
+  - Name: TestMsg2
+    ID: 0xFFFFFF98
+    Description: Used to test more stuff.
+    Fields:
+      - Name: Latitude
+        Type: int32
+        Units: radians
+        Description: Demonstrate that a 32-bit scaled integer is accessed as a double in C++
+        Scale: 1.4629180792671596e-09
+      - Name: Field1
+        Type: float32
+        Units: m/s
+        Description: Test Field 1
+        Count: 3
+      - Name: Field2
+        Type: uint16
+        Units: ""
+        Description: Test Field 2, with bitfields
+        Bitfields:
+            - Name: BitsA
+              NumBits: 4
+              Default: 7.1
+              Scale: 14.357
+              Units: m/s
+            - Name: BitsB
+              NumBits: 3
+              Units: m/s2
+            - Name: BitsC
+              NumBits: 1
+              Default: 1
+              Units: bool
+      - Name: Field3
+        Type: uint8
+        Units: m/s
+        Description: Test Field 3
+      - Name: Field4
+        Type: uint8
+        Units: m/s
+        Description: With a reaaaally long description with spaces and stuff
