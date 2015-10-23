@@ -22,7 +22,6 @@ class SerialConnection : public ServerPort
     private:
         SerialHeader tmpRxHdr;
         bool gotHeader;
-        uint32_t startSequence;
         QextSerialPort serialPort;
         QGroupBox _buttonGroup;
         QSettings _settings;
