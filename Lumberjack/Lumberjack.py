@@ -39,6 +39,9 @@ in that directory.''')
         
         self.outputFiles = {}
 
+        # to handle timestamp wrapping
+        self._timestampOffset = 0
+        self._lastTimestamp = 0
 
     def PrintMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
@@ -71,7 +74,16 @@ in that directory.''')
             outputFile.write(tableHeader)
         
         try:
-            text = str(Messaging.hdr.GetTime(msg)) + ", "
+            # \todo Detect time rolling.  this only matters when we're processing a log file
+            # with insufficient timestamp size, such that time rolls over from a large number
+            # to a small one, during the log.
+            thisTimestamp = Messaging.hdr.GetTime(msg)
+            if thisTimestamp < self._lastTimestamp:
+                self._timestampOffset+=1
+
+            self._lastTimestamp = thisTimestamp
+
+            text = str((self._timestampOffset << 16) + thisTimestamp) + ", "
         except AttributeError:
             text = "unknown, "
 
