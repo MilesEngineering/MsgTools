@@ -31,7 +31,6 @@ class SerialConnection : public ServerPort
         int _rxErrorCount;
         uint16_t  _timestampOffset;
         uint16_t  _lastTimestamp;
-        QDateTime _lastTime;
         QDateTime _lastWrapTime;
         void radioButtonToggled(bool pressed);
         void gotRxError();

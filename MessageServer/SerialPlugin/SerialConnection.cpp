@@ -18,7 +18,6 @@ SerialConnection::SerialConnection()
   _rxErrorCount(0),
   _timestampOffset(0),
   _lastTimestamp(0),
-  _lastTime(),
   _lastWrapTime()
 {
     /** \note Needs to be 57600, 8N1 for 3dr radio. */
@@ -192,7 +191,6 @@ void SerialConnection::SerialMsgSlot(QSharedPointer<SerialMessage> msg)
         }
     }
     _lastTimestamp = thisTimestamp;
-    _lastTime = thisTime;
     dbmsg->hdr.SetTime((timestampOffset << 16) + thisTimestamp);
 
     memcpy(dbmsg->GetDataPtr(), msg->GetDataPtr(), msg->hdr.GetLength());
