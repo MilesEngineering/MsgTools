@@ -107,7 +107,17 @@ def numberOfFields(msg):
         if "Bitfields" in field:
             for bitfield in field["Bitfields"]:
                 count+=1
-    return count    
+    return count
+
+def numberOfSubfields(msg):
+    count = 0
+    for field in msg["Fields"]:
+        if "Bitfields" in field:
+            for bitfield in field["Bitfields"]:
+                count+=1
+        else:
+            count+=1
+    return count
 
 def fieldReplacements(line,msg):
     line = re.sub('<FOREACHFIELD\(', '', line)
@@ -129,6 +139,29 @@ def fieldReplacements(line,msg):
                 thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
                 ret +=  thisLine
                 count+=1
+    return ret 
+
+def subfieldReplacements(line,msg):
+    line = re.sub('<FOREACHSUBFIELD\(', '', line)
+    line = re.sub('\)>$', '', line)
+    ret = ""
+    count = 0
+    for field in msg["Fields"]:
+        if "Bitfields" in field:
+            for bitfield in field["Bitfields"]:
+                thisLine = line
+                thisLine = thisLine.replace("<FIELDNAME>", bitfield["Name"])
+                thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
+                thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
+                ret +=  thisLine
+                count+=1
+        else:
+            thisLine = line
+            thisLine = thisLine.replace("<FIELDNAME>", field["Name"])
+            thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
+            thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(field)))
+            ret +=  thisLine
+            count+=1
     return ret 
 
 def msgName(msg):
