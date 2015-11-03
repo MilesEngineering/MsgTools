@@ -1,4 +1,6 @@
 PARSER=$(TRACE_FLAG)python3 MsgParser.py
+CHECK=$(TRACE_FLAG)python3 MsgCheck.py
+DIGEST=$(MSGDIR)/MsgDigest.txt
 
 install all:: Makefile MsgCheck Cpp Python Html
 
@@ -24,7 +26,7 @@ Html:
 
 MsgCheck:
 	$(call colorecho,Checking message validity)
-	$(PARSER) $(mdir) $(MSGDIR)/MsgCheck MsgCheck/language.py  MsgCheck/Template.check
+	$(CHECK) $(mdir) $(DIGEST)
 
 clean clobber::
 	rm -rf $(MSGDIR) __pycache__ *.pyc
