@@ -36,7 +36,7 @@ $(MSGDIR)/Html/%.html : $(mdir)/%.yaml HTML/language.py  HTML/Template.html MsgP
 
 $(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES))
 	$(call colorecho,Checking message validity)
-	$(CHECK) $(mdir) $(DIGEST)
+	$(CHECK) $(DIGEST) $(mdir)
 
 clean clobber::
 	rm -rf $(MSGDIR) __pycache__ *.pyc

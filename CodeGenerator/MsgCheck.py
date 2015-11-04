@@ -105,8 +105,8 @@ def ProcessFile(outFile, inFile, subdirComponent):
 if __name__ == '__main__':
     if len(sys.argv) < 3:
         Usage();
-    msgDir = sys.argv[1]
-    outputFilename = sys.argv[2]
+    outputFilename = sys.argv[1]
+    msgDir = sys.argv[2]
     
     global msgNames
     msgNames = {}
@@ -118,3 +118,8 @@ if __name__ == '__main__':
     with open(outputFilename,'w') as outFile:
         # loop over input message files
         ProcessDir(outFile, msgDir, "")
+        try:
+            msgDir = sys.argv[3]
+            ProcessDir(outFile, msgDir, "")
+        except:
+            pass
