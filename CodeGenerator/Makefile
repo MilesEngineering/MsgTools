@@ -1,30 +1,40 @@
-PARSER=$(TRACE_FLAG)python3 MsgParser.py
-CHECK=$(TRACE_FLAG)python3 MsgCheck.py
+include ../makefile.inc
+
+PARSER=python3 MsgParser.py
+CHECK=python3 MsgCheck.py
 DIGEST=$(MSGDIR)/MsgDigest.txt
 
-install all:: Makefile MsgCheck Cpp Python Html
+.PHONY: all test
 
-.PHONY: all Cpp Python test Html MsgCheck
+mdir:=../messages
 
-hdir := ../messages/headers
-mdir := ../messages
+MSG_FILES := $(shell cd $(mdir) && find . -iname \*.yaml -printf '%P\n')
 
-Cpp:
-	$(call colorecho,Generating C++ Code)
-	$(PARSER) $(hdir) $(MSGDIR)/Cpp Cpp/language.py  Cpp/CppHeaderTemplate.h
-	$(PARSER) $(mdir) $(MSGDIR)/Cpp Cpp/language.py  Cpp/CppTemplate.h
+CPP_MSG_FILES := $(addprefix $(MSGDIR)/Cpp/,$(MSG_FILES:.yaml=.h))
+PYTHON_MSG_FILES := $(addprefix $(MSGDIR)/Python/,$(MSG_FILES:.yaml=.py))
+HTML_MSG_FILES := $(addprefix $(MSGDIR)/Html/,$(MSG_FILES:.yaml=.html))
 
-Python:
-	$(call colorecho,Generating Python)
-	$(PARSER) $(hdir) $(MSGDIR)/Python Python/language.py  Python/HeaderTemplate.py
-	$(PARSER) $(mdir) $(MSGDIR)/Python Python/language.py  Python/Template.py
+install all:: Makefile $(DIGEST) $(CPP_MSG_FILES) $(PYTHON_MSG_FILES) $(HTML_MSG_FILES)
 
-Html:
-	$(call colorecho,Generating HTML)
-	$(PARSER) $(hdir) $(MSGDIR)/HTML HTML/language.py  HTML/HeaderTemplate.html
-	$(PARSER) $(mdir) $(MSGDIR)/HTML HTML/language.py  HTML/Template.html
+$(MSGDIR)/Cpp/headers/%.h : $(mdir)/headers/%.yaml Cpp/language.py  Cpp/CppHeaderTemplate.h MsgParser.py Makefile
+	$(PARSER) $< $@ Cpp/language.py  Cpp/CppHeaderTemplate.h
 
-MsgCheck:
+$(MSGDIR)/Cpp/%.h : $(mdir)/%.yaml Cpp/language.py  Cpp/CppTemplate.h MsgParser.py Makefile
+	$(PARSER) $< $@ Cpp/language.py  Cpp/CppTemplate.h
+
+$(MSGDIR)/Python/headers/%.py : $(mdir)/headers/%.yaml Python/language.py  Python/HeaderTemplate.py MsgParser.py Makefile
+	$(PARSER) $< $@ Python/language.py  Python/HeaderTemplate.py
+
+$(MSGDIR)/Python/%.py : $(mdir)/%.yaml Python/language.py  Python/Template.py MsgParser.py Makefile
+	$(PARSER) $< $@ Python/language.py  Python/Template.py
+
+$(MSGDIR)/Html/headers/%.html : $(mdir)/headers/%.yaml HTML/language.py  HTML/HeaderTemplate.html MsgParser.py Makefile
+	$(PARSER) $< $@ HTML/language.py  HTML/HeaderTemplate.html
+
+$(MSGDIR)/Html/%.html : $(mdir)/%.yaml HTML/language.py  HTML/Template.html MsgParser.py Makefile
+	$(PARSER) $< $@ HTML/language.py  HTML/Template.html
+
+$(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES))
 	$(call colorecho,Checking message validity)
 	$(CHECK) $(mdir) $(DIGEST)
 
@@ -48,4 +58,3 @@ test: testCpp testPython
 # CodeGenerator/obj to CodeGenerator/expected, and then the test rule
 # ("make regressionTest") does a diff of the two directories!
 
-include ../makefile.inc

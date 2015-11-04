@@ -9,10 +9,6 @@ from time import gmtime, strftime
 
 from MsgUtils import *
 
-def Usage():
-    sys.stderr.write('Usage: ' + sys.argv[0] + ' msgdir outputdir language template\n')
-    sys.exit(1)
-
 def readFile(filename):
     #print("Processing ", filename)
     if filename.endswith(".yaml"):
@@ -81,63 +77,31 @@ def DoReplacements(line, msg, enums, subdirComponent):
     ret = replace(ret, "<MSGNAME>", msgName(msg))
     return ret
 
-def ProcessDir(template, msgDir, subdirComponent):
-    for filename in os.listdir(msgDir):
-        global inputFilename
-        inputFilename = msgDir + '/' + filename
-        global outputFilename
-        try:
-            outputFilename = language.outputFilename(outDir, subdirComponent, filename, templateFilename)
-        except AttributeError:
-            justFilename = filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
-            outputFilename = outDir
-            if subdirComponent != "":
-                outputFilename += "/" + subdirComponent
-            outputFilename += "/" + justFilename
-        if os.path.isdir(inputFilename):
-            if filename != 'headers':
-                subdirParam = filename
-                if subdirComponent != "":
-                    subdirParam = subdirComponent + "/" + subdirParam
-                ProcessDir(template, inputFilename, subdirParam)
+def CommonSubdir(f1, f2):
+    # find largest string shared at end of 2 filenames
+    d1 = os.path.dirname(f1)
+    d2 = os.path.dirname(f2)
+    minLen = min(len(d1), len(d2))
+    subdirComponent = ''
+    for i in range(1, minLen):
+        if d1[-i] == d2[-i]:
+            subdirComponent = d1[-i] + subdirComponent
         else:
-            inputFileTime = os.path.getmtime(inputFilename)
-            try:
-                outputFileTime = os.path.getmtime(outputFilename)
-            except:
-                outputFileTime = 0
-            if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
-                inFile = readFile(inputFilename)
-                if inFile != 0:
-                    print("Creating", outputFilename)
-                    try:
-                        os.makedirs(os.path.dirname(outputFilename))
-                    except:
-                        pass
-                    with open(outputFilename,'w') as outFile:
-                        try:
-                            ProcessFile(template, inFile, outFile, subdirComponent)
-                        except language.MessageException as e:
-                            sys.stderr.write(str(e)+'\n')
-                            outFile.close()
-                            os.remove(outputFilename)
-                            sys.exit(1)
-    
+            break
 
-def ProcessFile(template, inFile, outFile, subdirComponent):
-    for msg in Messages(inFile):
-        for line in template:
-            line = DoReplacements(line, msg, Enums(inFile), subdirComponent)
-            outFile.write(line)
+    # strip slashes at ends
+    return subdirComponent.strip("/")
 
 # main starts here
 if __name__ == '__main__':
     if len(sys.argv) < 5:
-        Usage();
-    msgDir = sys.argv[1]
-    outDir = sys.argv[2]
+        sys.stderr.write('Usage: ' + sys.argv[0] + ' input output language template\n')
+        sys.exit(1)
+    inputFilename = sys.argv[1]
+    outputFilename = sys.argv[2]
     languageFilename = sys.argv[3]
     templateFilename = sys.argv[4]
+    commonSubdir = CommonSubdir(inputFilename, outputFilename)
     
     currentDateTime = strftime("%d/%m/%Y at %H:%M:%S")
     
@@ -146,12 +110,24 @@ if __name__ == '__main__':
     language = languageFilename
     import language
 
-    templateFileTime = os.path.getmtime(templateFilename)
-    languageFileTime = os.path.getmtime(languageFilename)
-    
     # read the template file
     with open(templateFilename, 'r') as templateFile:
         template = templateFile.read().splitlines() 
     
-    # loop over input message files
-    ProcessDir(template, msgDir, "")
+    # read the input file
+    inFile = readFile(inputFilename)
+    try:
+        os.makedirs(os.path.dirname(outputFilename))
+    except:
+        pass
+    with open(outputFilename,'w') as outFile:
+        try:
+            for msg in Messages(inFile):
+                for line in template:
+                    line = DoReplacements(line, msg, Enums(inFile), commonSubdir)
+                    outFile.write(line)
+        except MessageException as e:
+            sys.stderr.write(str(e)+'\n')
+            outFile.close()
+            os.remove(outputFilename)
+            sys.exit(1)

@@ -1,4 +1,4 @@
-#include "Cpp/NetworkHeader.h"
+#include "Cpp/headers/NetworkHeader.h"
 #include <QObject>
 #include <QIODevice>
 #include "Message.h"

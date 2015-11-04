@@ -1,7 +1,7 @@
 #ifndef SERIAL_MESSAGE_H
 #define SERIAL_MESSAGE_H
 
-#include "Cpp/SerialHeader.h"
+#include "Cpp/headers/SerialHeader.h"
 
 class SerialMessage
 {

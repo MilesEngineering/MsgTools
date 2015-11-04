@@ -44,6 +44,7 @@ class Messaging:
         sys.path.append(loadDir)
         mainObjDir = os.path.dirname(os.path.abspath(__file__)) + "/../../obj/CodeGenerator/Python"
         sys.path.append(mainObjDir)
+        sys.path.append(mainObjDir+"/headers")
         
         headerModule = __import__(headerName)
 
