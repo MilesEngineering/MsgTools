@@ -111,6 +111,10 @@ if __name__ == '__main__':
     global msgNames
     msgNames = {}
 
+    try:
+        os.makedirs(os.path.dirname(outputFilename))
+    except:
+        pass
     with open(outputFilename,'w') as outFile:
         # loop over input message files
         ProcessDir(outFile, msgDir, "")
