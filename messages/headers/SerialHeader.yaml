@@ -5,14 +5,14 @@ Messages:
       - Name: StartSequence
         Type: uint32
         Default: 0xDEADBEEF
+      - Name: ID
+        Type: uint16
+        Default: 0
       - Name: Source
         Type: uint8
         Default: 0
       - Name: Destination
         Type: uint8
-        Default: 0
-      - Name: Length
-        Type: uint16
         Default: 0
       - Name: PackedField
         Type: uint16
@@ -23,7 +23,7 @@ Messages:
               NumBits: 2
               Default: 0
               Units: ""
-            - Name: ID
+            - Name: Length
               NumBits: 14
               Default: 0
               Units: ""
