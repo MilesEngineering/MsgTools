@@ -116,8 +116,9 @@ if __name__ == '__main__':
         # loop over input message files
         try:
             ProcessDir(outFile, msgDir, "")
-            msgDir = sys.argv[3]
-            ProcessDir(outFile, msgDir, "")
+            if len(sys.argv) > 3:
+                msgDir = sys.argv[3]
+                ProcessDir(outFile, msgDir, "")
         except MessageException as e:
             sys.stderr.write('deleting output file!')
             sys.stderr.write('\n'+str(e)+'\n')
