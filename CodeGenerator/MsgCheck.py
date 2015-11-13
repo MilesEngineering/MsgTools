@@ -43,13 +43,7 @@ def ProcessDir(outFile, msgDir, subdirComponent):
         else:
             inFile = readFile(inputFilename)
             if inFile != 0:
-                try:
-                    ProcessFile(outFile, inFile, subdirComponent)
-                except SystemExit:
-                    sys.exit(1)
-                except MessageException as e:
-                    sys.stderr.write(str(e)+'\n')
-                    sys.exit(1)
+                ProcessFile(outFile, inFile, subdirComponent)
 
 def fieldTypeValid(field):
     allowedFieldTypes = \
@@ -60,12 +54,15 @@ def fieldTypeValid(field):
 
 def ProcessMsg(msg, subdirComponent):
     if "ID" in msg:
+        global msgPaths
         global msgNames
         id = msg["ID"]
         if id in msgNames:
-            sys.stderr.write('\nERROR! '+msg['Name']+' uses id '+str(id)+', but already used by '+msgNames[id]+'\n\n')
-            sys.exit(1)
+            raise MessageException('\nERROR! '+msg['Name']+' uses id '+str(id)+', but already used by '+msgNames[id]+'\n\n')
+        if msg['Name'] in msgPaths:
+            raise MessageException('\nERROR! '+subdirComponent+'/'+msg['Name']+' being processed, but name already used by '+msgPaths[msg['Name']]+'/'+msg['Name']+'.\n\n')
     msgNames[id] = msg['Name']
+    msgPaths[msg['Name']] = subdirComponent
     offset = 0
     for field in msg["Fields"]:
         bitOffset = 0
@@ -73,20 +70,18 @@ def ProcessMsg(msg, subdirComponent):
             raise MessageException('field ' + field["Name"] + ' has invalid type ' + field['Type'])
         if "Enum" in field:
             #if not field["Enum"] in allowedEnums:
-            #    sys.stderr.write('bad enum')
-            #    sys.exit(1)
+            #    raise MessageException('bad enum')
             pass
         if "Bitfields" in field:
             for bits in field["Bitfields"]:
                 numBits = bits["NumBits"]
                 bitOffset += numBits
             if bitOffset > 8*fieldSize(field):
-                sys.stderr.write('too many bits')
-                sys.exit(1)
+                raise MessageException('too many bits')
             if "Enum" in bits:
                 #global allowedEnums
                 #if not bits["Enum"] in allowedEnums:
-                #    sys.stderr.write('bad enum')
+                #    raise MessageException('bad enum')
                 pass
         if offset % fieldSize(field) != 0:
             raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(fieldSize(field)))
@@ -110,6 +105,8 @@ if __name__ == '__main__':
     
     global msgNames
     msgNames = {}
+    global msgPaths
+    msgPaths = {}
 
     try:
         os.makedirs(os.path.dirname(outputFilename))
@@ -117,9 +114,13 @@ if __name__ == '__main__':
         pass
     with open(outputFilename,'w') as outFile:
         # loop over input message files
-        ProcessDir(outFile, msgDir, "")
         try:
+            ProcessDir(outFile, msgDir, "")
             msgDir = sys.argv[3]
             ProcessDir(outFile, msgDir, "")
-        except:
-            pass
+        except MessageException as e:
+            sys.stderr.write('deleting output file!')
+            sys.stderr.write('\n'+str(e)+'\n')
+            outFile.close()
+            os.remove(outputFilename)
+            sys.exit(1)
