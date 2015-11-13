@@ -441,5 +441,37 @@ def fieldInfos(msg):
 
     return "\n".join(ret)
 
+def structUnpacking(msg):
+    ret = []
+    
+    for field in msg["Fields"]:
+        if "Bitfields" in field:
+            for bits in field["Bitfields"]:
+                ret.append(bits["Name"] + " = msg.Get" + bits["Name"] + "();")
+        else:
+            if MsgParser.fieldCount(field) == 1:
+                ret.append(field["Name"] + " = msg.Get" + field["Name"] + "();")
+            else:
+                ret.append("for(int i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
+                ret.append("    "+field["Name"] + "[i] = msg.Get" + field["Name"] + "(i);")
+            
+    return "\n".join(ret)
+    
 def declarations(msg):
-    return [""]
+    ret = []
+    for field in msg["Fields"]:
+        if "Bitfields" in field:
+            for bits in field["Bitfields"]:
+                retType = fieldType(field)
+                if "Offset" in bits or "Scale" in bits:
+                    retType = typeForScaledInt(bits)
+                ret.append(retType + " " + bits["Name"] + ";")
+        else:
+            retType = fieldType(field)
+            if "Offset" in field or "Scale" in field:
+                retType = typeForScaledInt(field)
+            if MsgParser.fieldCount(field) == 1:
+                ret.append(retType + " " + field["Name"] + ";")
+            else:
+                ret.append(retType + " " + field["Name"] + "["+str(MsgParser.fieldCount(field))+"];")
+    return ret

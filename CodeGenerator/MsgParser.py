@@ -59,6 +59,7 @@ def DoReplacements(line, msg, enums, subdirComponent):
     ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))
     ret = optionalReplace(ret, "<REFLECTION>", 'reflection', msg)
     ret = optionalReplace(ret, "<FIELDINFOS>", 'fieldInfos', msg)
+    ret = optionalReplace(ret, "<STRUCTUNPACKING>", 'structUnpacking', msg)
     ret = replace(ret, "<DECLARATIONS>", "\n".join(language.declarations(msg)))
     ret = replace(ret, "<INIT_CODE>", "\n".join(language.initCode(msg)))
     ret = replace(ret, "<OUTPUTFILENAME>", outputFilename)
