@@ -5,16 +5,26 @@ Messages:
       - Name: StartSequence
         Type: uint32
         Default: 0xDEADBEEF
-      - Name: ID
+      - Name: PackedField1
         Type: uint16
-        Default: 0
+        Units: ""
+        Description: To hold bitfields
+        Bitfields:
+            - Name: FixedBitForMatlab
+              NumBits: 1
+              Default: 1
+              Units: ""
+            - Name: ID
+              NumBits: 15
+              Default: 0
+              Units: ""
       - Name: Source
         Type: uint8
         Default: 0
       - Name: Destination
         Type: uint8
         Default: 0
-      - Name: PackedField
+      - Name: PackedField2
         Type: uint16
         Units: ""
         Description: To hold bitfields
