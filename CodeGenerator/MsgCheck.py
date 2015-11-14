@@ -43,7 +43,14 @@ def ProcessDir(outFile, msgDir, subdirComponent):
         else:
             inFile = readFile(inputFilename)
             if inFile != 0:
-                ProcessFile(outFile, inFile, subdirComponent)
+                try:
+                    ProcessFile(outFile, inFile, subdirComponent)
+                except MessageException as e:
+                    sys.stderr.write('Error in ' + inputFilename)
+                    sys.stderr.write('\n'+str(e)+'\n')
+                    outFile.close()
+                    os.remove(outputFilename)
+                    sys.exit(1)
 
 def fieldTypeValid(field):
     allowedFieldTypes = \
@@ -52,7 +59,7 @@ def fieldTypeValid(field):
       "float64", "float32"]
     return field["Type"] in allowedFieldTypes
 
-def ProcessMsg(msg, subdirComponent):
+def ProcessMsg(msg, subdirComponent, allowedEnums):
     if "ID" in msg:
         global msgPaths
         global msgNames
@@ -69,8 +76,8 @@ def ProcessMsg(msg, subdirComponent):
         if not fieldTypeValid(field):
             raise MessageException('field ' + field["Name"] + ' has invalid type ' + field['Type'])
         if "Enum" in field:
-            #if not field["Enum"] in allowedEnums:
-            #    raise MessageException('bad enum')
+            if not field["Enum"] in allowedEnums:
+                raise MessageException('bad enum ' + field["Enum"])
             pass
         if "Bitfields" in field:
             for bits in field["Bitfields"]:
@@ -93,8 +100,14 @@ def ProcessMsg(msg, subdirComponent):
     return (subdirComponent+'/'+msg['Name']).ljust(32) + str(msg['ID']).rjust(5)+'\n'
 
 def ProcessFile(outFile, inFile, subdirComponent):
+    allowedEnums = {}
+    try:
+        for enum in inFile["Enums"]:
+            allowedEnums[enum["Name"]] = enum
+    except:
+        pass
     for msg in Messages(inFile):
-        outFile.write(ProcessMsg(msg, subdirComponent))
+        outFile.write(ProcessMsg(msg, subdirComponent, allowedEnums))
 
 # main starts here
 if __name__ == '__main__':
@@ -114,14 +127,7 @@ if __name__ == '__main__':
         pass
     with open(outputFilename,'w') as outFile:
         # loop over input message files
-        try:
+        ProcessDir(outFile, msgDir, "")
+        if len(sys.argv) > 3:
+            msgDir = sys.argv[3]
             ProcessDir(outFile, msgDir, "")
-            if len(sys.argv) > 3:
-                msgDir = sys.argv[3]
-                ProcessDir(outFile, msgDir, "")
-        except MessageException as e:
-            sys.stderr.write('deleting output file!')
-            sys.stderr.write('\n'+str(e)+'\n')
-            outFile.close()
-            os.remove(outputFilename)
-            sys.exit(1)
