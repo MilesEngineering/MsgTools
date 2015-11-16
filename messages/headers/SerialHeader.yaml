@@ -10,13 +10,13 @@ Messages:
         Units: ""
         Description: To hold bitfields
         Bitfields:
-            - Name: FixedBitForMatlab
-              NumBits: 1
-              Default: 1
-              Units: ""
             - Name: ID
               NumBits: 15
               Default: 0
+              Units: ""
+            - Name: FixedBitForMatlab
+              NumBits: 1
+              Default: 1
               Units: ""
       - Name: Source
         Type: uint8
