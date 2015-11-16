@@ -2,15 +2,15 @@
 import unittest
 import yaml
 import sys
-sys.path.append(".")
+sys.path.append("..")
 import MsgParser
-sys.path.append("Cpp")
+sys.path.append("../Cpp")
 import language
 
 class TestCpp(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        with open("test/TestCase1.yaml", 'r') as inputFile:
+        with open("TestCase1.yaml", 'r') as inputFile:
             self.msgIDL = inputFile.read()
         self.msgDict = yaml.load(self.msgIDL)
 

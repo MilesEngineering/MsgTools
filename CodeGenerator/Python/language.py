@@ -225,17 +225,24 @@ def accessors(msg):
     return gets+sets
 
 def initField(field, messageName):
+    ret = []
     if "Default" in field:
+        defaultValue = str(field["Default"])
         if "Enum" in field:
-            return messageName + ".Set" + field["Name"] + "(message_buffer, " + messageName + "." + str(field["Enum"]) + "['" +str(field["Default"]) + "'])"
+            defaultValue = messageName + "." + str(field["Enum"]) + "['" +str(field["Default"]) + "']"
         else:
-            return  messageName + ".Set" + field["Name"] + "(message_buffer, " + str(field["Default"]) + ")"
-    return ""
+            if pythonFieldCount(field) == 1:
+                ret.append(messageName + ".Set" + field["Name"] + "(message_buffer, " + defaultValue + ")")
+            else:
+                ret.append("for i in range(0,"+str(pythonFieldCount(field))+"):")
+                ret.append("    " + messageName + ".Set" + field["Name"] + "(message_buffer, " + defaultValue + ", i)")
+    return ret
 
 def initBitfield(field, bits, messageName):
+    ret = []
     if "Default" in bits:
-        return  messageName + ".Set" + MsgParser.BitfieldName(field, bits) + "(message_buffer, " + str(bits["Default"]) + ")"
-    return ""
+        ret.append(messageName + ".Set" + MsgParser.BitfieldName(field, bits) + "(message_buffer, " + str(bits["Default"]) + ")")
+    return ret
 
 def initCode(msg):
     ret = []
@@ -244,12 +251,12 @@ def initCode(msg):
     for field in msg["Fields"]:
         fieldInit = initField(field, msg["Name"])
         if fieldInit:
-            ret.append(fieldInit)
+            ret += fieldInit
         if "Bitfields" in field:
             for bits in field["Bitfields"]:
                 bits = initBitfield(field, bits, msg["Name"])
                 if bits:
-                    ret.append(bits)
+                    ret += bits
 
     return ret
 

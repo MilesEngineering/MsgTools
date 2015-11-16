@@ -41,13 +41,8 @@ $(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES))
 clean clobber::
 	rm -rf $(MSGDIR) __pycache__ *.pyc
 
-testCpp:
-	./test/TestCpp.py
-
-testPython:
-	./test/TestPython.py
-
-test: testCpp testPython
+test:
+	cd test && make
 
 #generate regression tests?  To aid in refactoring, by using all generated
 # code for regression tests, without having to manually write test cases.

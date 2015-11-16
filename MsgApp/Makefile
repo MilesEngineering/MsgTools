@@ -1,4 +1,10 @@
-SUBDIRS := Test
+.PHONY: all install clean clobber
 
-include ../makefile.inc
-include $(MK_DIR)/subdir.mk
+test:
+	cd Test && make
+
+clean:
+	cd Test && make clean
+
+clobber:
+	cd Test && make clobber

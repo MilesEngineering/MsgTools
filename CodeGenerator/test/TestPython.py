@@ -2,15 +2,15 @@
 import unittest
 import yaml
 import sys
-sys.path.append(".")
+sys.path.append("..")
 import MsgParser
-sys.path.append("Python")
+sys.path.append("../Python")
 import language
 
 class TestCpp(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        with open("test/TestCase1.yaml", 'r') as inputFile:
+        with open("TestCase1.yaml", 'r') as inputFile:
             self.msgIDL = inputFile.read()
         self.msgDict = yaml.load(self.msgIDL)
 
@@ -245,7 +245,8 @@ def SetFieldF(message_buffer, value):
         expected = []
         expected.append(messageName + ".SetFieldA(message_buffer, 1)")
         expected.append(messageName + ".SetFieldB(message_buffer, 2)")
-        expected.append(messageName + ".SetFieldC(message_buffer, 3)")
+        expected.append("for i in range(0,5):")
+        expected.append("    "+messageName + ".SetFieldC(message_buffer, 3, i)")
         expected.append(messageName + ".SetBitsA(message_buffer, 7.1)")
         expected.append(messageName + ".SetBitsC(message_buffer, 1)")
         expected.append(messageName + ".SetFieldE(message_buffer, 3.14159)")

@@ -16,7 +16,7 @@ Enums:
       - Name: Stop
         Value: 1
 Messages:
-  - Name: TestMsg1
+  - Name: TestCase2
     ID: 0xFFFFFF99
     Description: Used to test stuff.
     Fields:

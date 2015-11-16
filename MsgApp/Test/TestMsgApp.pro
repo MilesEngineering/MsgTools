@@ -15,7 +15,7 @@ TEMPLATE = app
 SOURCES += main.cpp\
 
 HEADERS  += ../MessageClient.h \
-    $$MSGDIR/Cpp/Network.h \
+    $$MSGDIR/Cpp/headers/NetworkHeader.h \
     ../Message.h \
     ../FieldInfo.h \
     ../MsgInfo.h \
