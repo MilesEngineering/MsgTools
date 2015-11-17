@@ -457,6 +457,22 @@ def structUnpacking(msg):
             
     return "\n".join(ret)
     
+def structPacking(msg):
+    ret = []
+    
+    for field in msg["Fields"]:
+        if "Bitfields" in field:
+            for bits in field["Bitfields"]:
+                ret.append("msg.Set" + bits["Name"] + "("+bits["Name"]+");")
+        else:
+            if MsgParser.fieldCount(field) == 1:
+                ret.append("msg.Set" + field["Name"] + "("+field["Name"]+");")
+            else:
+                ret.append("for(int i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
+                ret.append("    msg.Set" + field["Name"] + "("+field["Name"] + "[i], i);")
+            
+    return "\n".join(ret)
+    
 def declarations(msg):
     ret = []
     for field in msg["Fields"]:
@@ -465,11 +481,15 @@ def declarations(msg):
                 retType = fieldType(field)
                 if "Offset" in bits or "Scale" in bits:
                     retType = typeForScaledInt(bits)
+                elif "Enum" in bits:
+                    retType = "<MSGNAME>Message::"+bits["Enum"]
                 ret.append(retType + " " + bits["Name"] + ";")
         else:
             retType = fieldType(field)
             if "Offset" in field or "Scale" in field:
                 retType = typeForScaledInt(field)
+            elif "Enum" in field:
+                retType = "<MSGNAME>Message::"+field["Enum"]
             if MsgParser.fieldCount(field) == 1:
                 ret.append(retType + " " + field["Name"] + ";")
             else:
