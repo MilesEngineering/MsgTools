@@ -18,6 +18,7 @@ class SerialConnection : public ServerPort
         virtual void MessageSlot(QSharedPointer<Message> msg);
         virtual void SerialMsgSlot(QSharedPointer<SerialMessage> msg);
         virtual void SerialDataReady();
+        void BaudrateChanged(bool pressed);
         void PrintDebugInfo();
         QWidget* widget(int index) override;
     private:

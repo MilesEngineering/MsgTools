@@ -45,9 +45,12 @@ SerialConnection::SerialConnection()
     serialPort.setStopBits(STOP_1);
 
     _buttonGroup.setStyleSheet("border:0;");
-    QHBoxLayout* layout = new QHBoxLayout();
-    layout->addWidget(&_statusLabel);
-    layout->addWidget(new QLabel("/dev/"));
+
+    QGroupBox* buttonGroup1 = new QGroupBox;
+    buttonGroup1->setStyleSheet("border:0;");
+    QHBoxLayout* layout1 = new QHBoxLayout();
+    layout1->addWidget(&_statusLabel);
+    layout1->addWidget(new QLabel("/dev/"));
     qDebug() << "Looking for /dev/ttyUSB* and /dev/ttyACM0 *ONLY*!";
     QString lastconnection = _settings.value("LastSerialPortUsed", "").toString();
     foreach (QextPortInfo info, QextSerialEnumerator::getPorts())
@@ -59,11 +62,32 @@ SerialConnection::SerialConnection()
             //qDebug() << "Found port " << info.portName << " at " << info.physName;
             QRadioButton* rb = new QRadioButton(name);
             connect(rb, &QRadioButton::toggled, this, &SerialConnection::radioButtonToggled);
-            layout->addWidget(rb);
+            layout1->addWidget(rb);
             if(lastconnection == info.physName)
                 rb->click();
         }
     }
+    buttonGroup1->setLayout(layout1);
+
+    QGroupBox* buttonGroup2 = new QGroupBox;
+    buttonGroup2->setStyleSheet("border:0;");
+    QHBoxLayout* layout2 = new QHBoxLayout();
+
+    QRadioButton* baudRate  = new QRadioButton("57.6");
+    layout2->addWidget(baudRate);
+    connect(baudRate, &QRadioButton::toggled, this, &SerialConnection::BaudrateChanged);
+
+    QRadioButton* baudRate2  = new QRadioButton("115.2");
+    layout2->addWidget(baudRate2);
+    connect(baudRate2, &QRadioButton::toggled, this, &SerialConnection::BaudrateChanged);
+
+    buttonGroup2->setLayout(layout2);
+
+    baudRate->click();
+    
+    QHBoxLayout* layout = new QHBoxLayout();
+    layout->addWidget(buttonGroup1);
+    layout->addWidget(buttonGroup2);
     _buttonGroup.setLayout(layout);
     
     QTimer* timer = new QTimer(this);
@@ -77,6 +101,27 @@ SerialConnection::~SerialConnection()
 {
 }
 
+void SerialConnection::BaudrateChanged(bool pressed)
+{
+    if(pressed)
+    {
+        QRadioButton* button = dynamic_cast<QRadioButton*>(sender());
+        if(button->text() == "57.6")
+        {
+            serialPort.setBaudRate(BAUD57600);
+            qDebug() << "Setting baudrate " << button->text();
+        }
+        else if(button->text() == "115.2")
+        {
+            serialPort.setBaudRate(BAUD115200);
+            qDebug() << "Setting baudrate " << button->text();
+        }
+        else
+        {
+            qDebug() << "Error, unknown baudrate " << button->text();
+        }
+    }
+}
 void SerialConnection::SerialDataReady()
 {
     if(!gotHeader)
@@ -116,7 +161,6 @@ void SerialConnection::SerialDataReady()
                     else
                     {
                         gotRxError(HEADER);
-                        qDebug() << "Error in serial parser.  HeaderChecksum " << headerCrc << " != " << tmpRxHdr.GetHeaderChecksum();
                     }
                 }
                 else
@@ -141,7 +185,6 @@ void SerialConnection::SerialDataReady()
 
             if(tmpRxHdr.GetBodyChecksum() != bodyCrc)
             {
-                qDebug() << "Error in serial parser.  BodyChecksum " << bodyCrc << " != " << tmpRxHdr.GetBodyChecksum();
                 gotHeader = false;
                 gotRxError(BODY);
             }
