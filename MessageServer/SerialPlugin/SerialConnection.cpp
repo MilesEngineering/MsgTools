@@ -5,6 +5,21 @@
 #include <QRadioButton>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QTimer>
+
+uint16_t Crc(const uint8_t* data, int length)
+{
+    uint16_t crc = 0;
+    for (int i = 0; i<length; i++)
+    {
+        crc = (crc >> 8) | (crc << 8);
+        crc ^= data[i];
+        crc ^= (crc & 0xff) >> 4;
+        crc ^= crc << 12;
+        crc ^= (crc & 0xff) << 5;
+    }
+    return crc;
+}
 
 SerialConnection::SerialConnection()
 : ServerPort("Serial"),
@@ -15,13 +30,15 @@ SerialConnection::SerialConnection()
   _settings("MsgTools", "MessageServer_SerialPlugin"),
   _statusLabel(""),
   _rxMsgCount(0),
-  _rxErrorCount(0),
+  _rxStartErrorCount(0),
+  _rxHeaderErrorCount(0),
+  _rxBodyErrorCount(0),
   _timestampOffset(0),
   _lastTimestamp(0),
   _lastWrapTime()
 {
     /** \note Needs to be 57600, 8N1 for 3dr radio. */
-    serialPort.setBaudRate(BAUD57600);
+    serialPort.setBaudRate(BAUD115200);
     serialPort.setFlowControl(FLOW_OFF);
     serialPort.setParity(PAR_NONE);
     serialPort.setDataBits(DATA_8);
@@ -48,6 +65,10 @@ SerialConnection::SerialConnection()
         }
     }
     _buttonGroup.setLayout(layout);
+    
+    QTimer* timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(PrintDebugInfo()));
+    timer->start(500);
 
     connect(&serialPort, SIGNAL(readyRead()), this, SLOT(SerialDataReady()));
 }
@@ -75,7 +96,7 @@ void SerialConnection::SerialDataReady()
             }
             uint8_t throwAway;
             serialPort.read((char*)&throwAway, sizeof(throwAway));
-            gotRxError();
+            gotRxError(START);
         }
 
         if(foundStart)
@@ -86,23 +107,21 @@ void SerialConnection::SerialDataReady()
                 if(tmpRxHdr.GetStartSequence() == SerialHeader::StartSequenceFieldInfo::defaultValue)
                 {
                     /** \note Stop counting before we reach header checksum location. */
-                    uint16_t headerChecksum = 0;
-                    for(int i=0; i<SerialHeader::HeaderChecksumFieldInfo::loc; i++)
-                        headerChecksum += ((uint8_t*)&tmpRxHdr)[i];
+                    uint16_t headerCrc = Crc((uint8_t*)&tmpRxHdr, SerialHeader::HeaderChecksumFieldInfo::loc);
 
-                    if(headerChecksum == tmpRxHdr.GetHeaderChecksum())
+                    if(headerCrc == tmpRxHdr.GetHeaderChecksum())
                     {
                         gotHeader = true;
                     }
                     else
                     {
-                        gotRxError();
-                        qDebug() << "Error in serial parser.  HeaderChecksum " << headerChecksum << " != " << tmpRxHdr.GetHeaderChecksum();
+                        gotRxError(HEADER);
+                        qDebug() << "Error in serial parser.  HeaderChecksum " << headerCrc << " != " << tmpRxHdr.GetHeaderChecksum();
                     }
                 }
                 else
                 {
-                    gotRxError();
+                    gotRxError(START);
                     qDebug() << "Error in serial parser.  Thought I had start byte, now it's gone!";
                 }
             }
@@ -118,15 +137,13 @@ void SerialConnection::SerialDataReady()
             msg->hdr = tmpRxHdr;
             serialPort.read((char*)msg->GetDataPtr(), msg->hdr.GetLength());
 
-            uint16_t bodyChecksum = 0;
-            for(unsigned i=0; i<msg->hdr.GetLength(); i++)
-                bodyChecksum += msg->GetDataPtr()[i];
+            uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetLength());
 
-            if(tmpRxHdr.GetBodyChecksum() != bodyChecksum)
+            if(tmpRxHdr.GetBodyChecksum() != bodyCrc)
             {
-                qDebug() << "Error in serial parser.  BodyChecksum " << bodyChecksum << " != " << tmpRxHdr.GetBodyChecksum();
+                qDebug() << "Error in serial parser.  BodyChecksum " << bodyCrc << " != " << tmpRxHdr.GetBodyChecksum();
                 gotHeader = false;
-                gotRxError();
+                gotRxError(BODY);
             }
             else
             {
@@ -149,15 +166,11 @@ void SerialConnection::MessageSlot(QSharedPointer<Message> msg)
         serialHdr.SetDestination(msg->hdr.GetDestination());
         serialHdr.SetSource(msg->hdr.GetSource());
 
-        uint16_t headerChecksum = 0;
-        for(int i=0; i<SerialHeader::SIZE; i++)
-            headerChecksum += ((uint8_t*)&serialHdr)[i];
-        serialHdr.SetHeaderChecksum(headerChecksum);
+        uint16_t headerCrc = Crc((uint8_t*)&serialHdr, SerialHeader::SIZE);
+        serialHdr.SetHeaderChecksum(headerCrc);
 
-        uint16_t bodyChecksum = 0;
-        for(unsigned i=0; i<msg->hdr.GetLength(); i++)
-            bodyChecksum += msg->GetDataPtr()[i];
-        serialHdr.SetBodyChecksum(bodyChecksum);
+        uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetLength());
+        serialHdr.SetBodyChecksum(bodyCrc);
 
         serialPort.write((char*)&serialHdr, sizeof(serialHdr));
         serialPort.write((char*)msg->GetDataPtr(), msg->hdr.GetLength());
@@ -227,8 +240,22 @@ void SerialConnection::radioButtonToggled(bool pressed)
     }
 }
 
-void SerialConnection::gotRxError()
+void SerialConnection::gotRxError(RxErrorType errorType)
 {
-    _rxErrorCount++;
-    _statusLabel.setText(QString("Error: %1, Msg: %2").arg(_rxErrorCount).arg(_rxMsgCount));
+    switch(errorType)
+    {
+        case START:
+            _rxStartErrorCount++;
+            break;
+        case HEADER:
+            _rxHeaderErrorCount++;
+            break;
+        case BODY:
+            _rxBodyErrorCount++;
+            break;
+    }
+}
+void SerialConnection::PrintDebugInfo()
+{
+    _statusLabel.setText(QString("Errors: %1, %2, %3, Msg: %4").arg(_rxStartErrorCount).arg(_rxHeaderErrorCount).arg(_rxBodyErrorCount).arg(_rxMsgCount));
 }

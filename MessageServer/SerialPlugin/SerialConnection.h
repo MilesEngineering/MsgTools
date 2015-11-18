@@ -18,6 +18,7 @@ class SerialConnection : public ServerPort
         virtual void MessageSlot(QSharedPointer<Message> msg);
         virtual void SerialMsgSlot(QSharedPointer<SerialMessage> msg);
         virtual void SerialDataReady();
+        void PrintDebugInfo();
         QWidget* widget(int index) override;
     private:
         SerialHeader tmpRxHdr;
@@ -27,12 +28,15 @@ class SerialConnection : public ServerPort
         QSettings _settings;
         QLabel _statusLabel;
         int _rxMsgCount;
-        int _rxErrorCount;
+        int _rxStartErrorCount;
+        int _rxHeaderErrorCount;
+        int _rxBodyErrorCount;
         uint16_t  _timestampOffset;
         uint16_t  _lastTimestamp;
         QDateTime _lastWrapTime;
         void radioButtonToggled(bool pressed);
-        void gotRxError();
+        enum RxErrorType { START, HEADER, BODY };
+        void gotRxError(RxErrorType errorType);
 };
 
 #endif
