@@ -91,10 +91,10 @@ SerialConnection::SerialConnection()
     _buttonGroup.setLayout(layout);
     
     QTimer* timer = new QTimer(this);
-    connect(timer, SIGNAL(timeout()), this, SLOT(PrintDebugInfo()));
+    connect(timer, &QTimer::timeout, this, &SerialConnection::PrintDebugInfo);
     timer->start(500);
 
-    connect(&serialPort, SIGNAL(readyRead()), this, SLOT(SerialDataReady()));
+    connect(&serialPort, &QextSerialPort::readyRead, this, &SerialConnection::SerialDataReady);
 }
 
 SerialConnection::~SerialConnection()
