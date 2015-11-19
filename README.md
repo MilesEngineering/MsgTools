@@ -7,4 +7,4 @@ The entirety of this project is dual licensed under GLPv2 and a commercial licen
 
 All contributors to this project must assign copyright of their additions/modifications to Miles Gazic before contributing.
 
-(Test)
+See further documentation in the Docs directory.
