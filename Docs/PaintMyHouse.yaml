@@ -19,7 +19,7 @@ Enums:
         Value: 2
 Messages:
   - Name: PaintMyHouse
-    ID: 0xFFFFFF97
+    ID: 13
     Description: Used to tell someone to paint my house.
     Fields:
       - Name: Container1
@@ -27,24 +27,23 @@ Messages:
         Bitfields:
           - Name: HouseColor
             NumBits: 2
-            Description: Test Field 1
+            Description: The color I'd like my house painted.  Notice that it has an "Enum" element.
             Enum: Color
           - Name: BrushToUse
             NumBits: 2
-            Units: enumeration
-            Description: Test Field 6
+            Description: Which brush should be used to paint my house.
             Enum: Brush
           - Name: Area
             NumBits: 12
-            Units: cm
+            Units: m
             Description: Size of area to paint.
             Scale: 10.0
             Min: 0.0
-            Max: 1.0
+            Max: 100.0
       - Name: BrushSpeed
         Type: float32
         Units: m/s
-        Description: How fast to paint, in each direction of brush movement.
+        Description: How fast to paint, in each direction of brush movement, x/y/z.
         Count: 3
         Min: 0.0
         Max: 1.0
@@ -54,7 +53,7 @@ Messages:
         Description: Size of the entire house.
         Offset: 20.0
         Scale: 100.0
-      - Name: Frequency
+      - Name: BrushFrequency
         Type: uint8
         Units: Hz
         Description: Frequency of brush strokes.
