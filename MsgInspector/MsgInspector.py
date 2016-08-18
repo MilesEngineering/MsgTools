@@ -20,7 +20,7 @@ class TreeWidgetItem(QtGui.QTreeWidgetItem):
     def __lt__(self, otherItem):
         column = self.treeWidget().sortColumn()
         try:
-            return int(self.text(column)) < int(otherItem.text(column))
+            return float(self.text(column)) < float(otherItem.text(column))
         except ValueError:
             return self.text(column) < otherItem.text(column)
 
