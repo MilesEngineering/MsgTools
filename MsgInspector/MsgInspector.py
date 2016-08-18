@@ -12,6 +12,18 @@ import MsgGui
 
 from Messaging import Messaging
 
+class TreeWidgetItem(QtGui.QTreeWidgetItem):
+
+    def __init__(self, parent, stringList):
+        QtGui.QTreeWidgetItem.__init__(self, parent, stringList)
+
+    def __lt__(self, otherItem):
+        column = self.treeWidget().sortColumn()
+        try:
+            return int(self.text(column)) < int(otherItem.text(column))
+        except ValueError:
+            return self.text(column) < otherItem.text(column)
+
 class MsgInspector(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", argv, parent)
@@ -124,7 +136,7 @@ class MsgInspector(MsgGui.MsgGui):
                         columnText += ", "
                 msgStringList.append(columnText)
                 columnCounter += 1
-        msgItem = QTreeWidgetItem(None,msgStringList)
+        msgItem = TreeWidgetItem(None,msgStringList)
         if replaceMode and keyColumn >= 0:
             # find row that has key field that matches ours
             foundAndReplaced = 0
