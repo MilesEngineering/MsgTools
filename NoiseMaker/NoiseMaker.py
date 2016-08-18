@@ -13,7 +13,7 @@ import MsgGui
 
 from Messaging import Messaging
 
-class MsgInspector(MsgGui.MsgGui):
+class NoiseMaker(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Noise Maker 0.1", argv, parent)
         
@@ -94,6 +94,6 @@ class MsgInspector(MsgGui.MsgGui):
 # main starts here
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    msgApp = MsgInspector(sys.argv)
+    msgApp = NoiseMaker(sys.argv)
     msgApp.show()
     sys.exit(app.exec_())
