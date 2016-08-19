@@ -3,7 +3,7 @@
 #include "MsgApp/MsgInfo.h"
 #include "MsgApp/Reflection.h"
 #include "Cpp/Network/Connect.h"
-#include "Cpp/Test/TestCase1.h"
+#include "Cpp/test/TestCase1.h"
 
 #include <iostream>
 #include <string>

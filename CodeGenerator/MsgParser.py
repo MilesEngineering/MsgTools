@@ -81,8 +81,8 @@ def DoReplacements(line, msg, enums, subdirComponent):
 
 def CommonSubdir(f1, f2):
     # find largest string shared at end of 2 filenames
-    d1 = os.path.dirname(f1)
-    d2 = os.path.dirname(f2)
+    d1 = os.path.dirname(os.path.abspath(f1))
+    d2 = os.path.dirname(os.path.abspath(f2))
     minLen = min(len(d1), len(d2))
     subdirComponent = ''
     for i in range(1, minLen):
