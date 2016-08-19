@@ -50,8 +50,7 @@ TEST(MessageClientTest, Reflection)
         ConnectMessage* cm = (ConnectMessage*)cmRx;
         EXPECT_TRUE(cmRx != 0);
         /* Verify header */
-        auto const msgSize = ConnectMessage::MSG_SIZE;
-        EXPECT_EQ(cm->hdr->GetLength(), msgSize);
+        EXPECT_EQ(cm->hdr->GetLength(), (unsigned)ConnectMessage::MSG_SIZE);
         EXPECT_EQ(cm->hdr->GetSource(), cmTx->hdr->GetSource());
         EXPECT_EQ(cm->hdr->GetDestination(), cmTx->hdr->GetDestination());
         EXPECT_EQ(cm->hdr->GetID(), cmTx->hdr->GetID());
@@ -89,8 +88,7 @@ TEST(MessageClientTest, Reflection)
     if(maMsgInfo)
     {
         EXPECT_STREQ(maMsgInfo->Name().toUtf8().constData(), "MsgA");
-        auto const msgId = MsgAMessage::MSG_ID;
-        EXPECT_EQ(maMsgInfo->ID(), msgId);
+        EXPECT_EQ(maMsgInfo->ID(), (unsigned)MsgAMessage::MSG_ID);
     }
     /** \todo Add tests for setting/getting fields of MsgA, using regular accessors as well as reflection */
 }

@@ -40,7 +40,7 @@ class FieldAccess
             uint8_t* dest = (uint8_t*)location;
             uint8_t* source = (uint8_t*)&value;
 
-            for (int k = 0; k < sizeof(AccessType); k++)
+            for (unsigned k = 0; k < sizeof(AccessType); k++)
                 dest[k] = source[sizeof(AccessType) - k - 1];
 #endif
         }
@@ -58,7 +58,7 @@ class FieldAccess
             } dest;
             const uint8_t* source = (const uint8_t*)location;
 
-            for (int k = 0; k < sizeof(AccessType); k++)
+            for (unsigned k = 0; k < sizeof(AccessType); k++)
                 dest.u8[k] = source[sizeof(AccessType) - k - 1];
             return dest.u;
 #endif

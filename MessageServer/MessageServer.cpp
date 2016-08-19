@@ -233,6 +233,8 @@ void MessageServer::redirectDebugOutput(QtMsgType type, const QMessageLogContext
     case QtFatalMsg:
         fprintf(stderr, "Fatal: %s", output.toUtf8().constData());
         abort();
+    case QtInfoMsg:
+        break;
     }
 }
 
