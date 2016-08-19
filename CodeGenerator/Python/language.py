@@ -51,6 +51,8 @@ def bitfieldReflection(msg, field, bits):
               'name="'+name + '",'+\
               'type="'+bitsReflectionInterfaceType(bits) + '",'+\
               'units="'+MsgParser.fieldUnits(bits) + '",'+\
+              'minVal="'+str(MsgParser.fieldMin(bits)) + '",'+\
+              'maxVal="'+str(MsgParser.fieldMax(bits)) + '",'+\
               'description="'+MsgParser.fieldDescription(bits) + '",'+\
               'get='+"Get" + name + ','+\
               'set='+"Set" + name  + ', '
@@ -65,6 +67,8 @@ def fieldReflection(msg, field):
                   'name="'+field["Name"] + '",'+\
                   'type="'+reflectionInterfaceType(field) + '",'+\
                   'units="'+MsgParser.fieldUnits(field) + '",'+\
+                  'minVal="'+str(MsgParser.fieldMin(field)) + '",'+\
+                  'maxVal="'+str(MsgParser.fieldMax(field)) + '",'+\
                   'description="'+MsgParser.fieldDescription(field) + '",'+\
                   'get='+"Get" + field["Name"] + ','+\
                   'set='+"Set" + field["Name"]  + ','+\
@@ -99,13 +103,19 @@ def fnHdr(field, count, name):
         param += ", value"
     if  count > 1:
         param += ", idx"
+        
+    min = MsgParser.fieldMin(field)
+    max = MsgParser.fieldMax(field)
+        
     ret = '''\
 @staticmethod
 @msg.units('%s')
 @msg.default('%s')
+@msg.minVal('%s')
+@msg.maxVal('%s')
 @msg.count(%s)
 def %s(%s):
-    """%s"""''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(count), name, param, MsgParser.fieldDescription(field))
+    """%s"""''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(min), str(max), str(count), name, param, MsgParser.fieldDescription(field))
     return ret
 
 def enumLookup(msg, field):

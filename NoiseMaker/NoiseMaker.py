@@ -24,7 +24,7 @@ class NoiseMaker(MsgGui.MsgGui):
         
         self.msgTimer = QTimer(self)
         self.msgTimer.setInterval(10)
-        self.msgTimer.timeout.connect(self.msgTImeout)
+        self.msgTimer.timeout.connect(self.msgTimeout)
 
         self.startStop = QPushButton(self)
         self.startStop.setText('Stop')
@@ -52,40 +52,43 @@ class NoiseMaker(MsgGui.MsgGui):
             self.msgTimer.start()
             self.startStop.setText('Stop')
     
-    def msgTImeout(self):
+    def msgTimeout(self):
         self.currentTime += 10
         for msgName in self.msgTxTime:
             if self.currentTime > self.msgTxTime[msgName]:
                 msgClass = Messaging.MsgClassFromName[msgName]
                 self.msgTxTime[msgName] = self.currentTime + self.msgPeriod[msgName]
                 self.sendMsg(msgClass)
+    
+    def fieldValue(self, fieldInfo):
+        minVal = 0
+        maxVal = 255
+        try:
+            minVal = float(fieldInfo.minVal)
+            maxVal = float(fieldInfo.maxVal)
+        except (AttributeError, ValueError):
+            minVal = 0
+            maxVal = 255
+        self.fieldNumber += 1
+        if self.fieldNumber > 255:
+            self.fieldNumber = 0
+        return minVal + (maxVal-minVal) * self.fieldNumber / (255.0)
                 
     def sendMsg(self, msgClass):
         msg = msgClass.Create()
         Messaging.hdr.SetTime(msg, self.currentTime)
         for fieldInfo in msgClass.fields:
+            
             if fieldInfo.units == 'ASCII':
-                Messaging.set(msg, fieldInfo, 's'+str(self.fieldNumber))
-                self.fieldNumber += 1
-                if self.fieldNumber > 255:
-                    self.fieldNumber = 0
+                Messaging.set(msg, fieldInfo, 's'+str(self.fieldValue(fieldInfo)))
             else:
                 if(fieldInfo.count == 1):
-                    Messaging.set(msg, fieldInfo, self.fieldNumber)
-                    self.fieldNumber += 1
-                    if self.fieldNumber > 255:
-                        self.fieldNumber = 0
+                    Messaging.set(msg, fieldInfo, str(self.fieldValue(fieldInfo)))
                     for bitInfo in fieldInfo.bitfieldInfo:
-                        Messaging.set(msg, bitInfo, self.fieldNumber)
-                        self.fieldNumber += 1
-                    if self.fieldNumber > 255:
-                        self.fieldNumber = 0
+                        Messaging.set(msg, bitInfo, str(self.fieldValue(bitInfo)))
                 else:
                     for i in range(0,fieldInfo.count):
-                        Messaging.set(msg, fieldInfo, self.fieldNumber, i)
-                        self.fieldNumber += 1
-                        if self.fieldNumber > 255:
-                            self.fieldNumber = 0
+                        Messaging.set(msg, fieldInfo, self.fieldValue(fieldInfo), i)
         self.sendFn(msg.raw)
 
     def ShowMessage(self, msg):

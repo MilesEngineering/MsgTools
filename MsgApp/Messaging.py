@@ -28,6 +28,20 @@ def count(arg):
         return fcn
     return _count
 
+# A decorator to specify a min for fields
+def minVal(arg):
+    def _minVal(fcn):
+        fcn.minVal = arg
+        return fcn
+    return _minVal
+
+# A decorator to specify a max for fields
+def maxVal(arg):
+    def _maxVal(fcn):
+        fcn.maxVal = arg
+        return fcn
+    return _maxVal
+
 class Messaging:
     hdr=None
     hdrSize=0
@@ -113,20 +127,24 @@ class Messaging:
         return str(value)
 
 class BitFieldInfo(object):
-    def __init__(self, name, type, units, description, get, set, enum):
+    def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum):
         self.name=name
         self.type=type
         self.units=units
+        self.minVal=minVal
+        self.maxVal=maxVal
         self.description=description
         self.get=get
         self.set=set
         self.enum=enum
 
 class FieldInfo(object):
-    def __init__(self, name, type, units, description, get, set, count, bitfieldInfo, enum):
+    def __init__(self, name, type, units, minVal, maxVal, description, get, set, count, bitfieldInfo, enum):
         self.name=name
         self.type=type
         self.units=units
+        self.minVal=minVal
+        self.maxVal=maxVal
         self.description=description
         self.get=get
         self.set=set

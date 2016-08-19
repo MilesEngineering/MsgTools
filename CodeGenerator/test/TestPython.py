@@ -20,6 +20,8 @@ class TestCpp(unittest.TestCase):
 @staticmethod
 @msg.units('m/s')
 @msg.default('1')
+@msg.minVal('0')
+@msg.maxVal('4294967295')
 @msg.count(1)
 def GetFieldA(message_buffer):
     \"\"\"\"\"\"
@@ -30,6 +32,8 @@ def GetFieldA(message_buffer):
 @staticmethod
 @msg.units('')
 @msg.default('')
+@msg.minVal('0')
+@msg.maxVal('2147483647')
 @msg.count(1)
 def GetFABitsA(message_buffer):
     \"\"\"\"\"\"
@@ -40,6 +44,8 @@ def GetFABitsA(message_buffer):
 @staticmethod
 @msg.units('')
 @msg.default('2')
+@msg.minVal('0')
+@msg.maxVal('65535')
 @msg.count(1)
 def GetFieldB(message_buffer):
     \"\"\"\"\"\"
@@ -50,6 +56,8 @@ def GetFieldB(message_buffer):
 @staticmethod
 @msg.units('')
 @msg.default('3')
+@msg.minVal('0')
+@msg.maxVal('255')
 @msg.count(5)
 def GetFieldC(message_buffer, idx):
     \"\"\"\"\"\"
@@ -60,6 +68,8 @@ def GetFieldC(message_buffer, idx):
 @staticmethod
 @msg.units('')
 @msg.default('')
+@msg.minVal('0')
+@msg.maxVal('255')
 @msg.count(1)
 def GetFieldD(message_buffer):
     \"\"\"\"\"\"
@@ -70,6 +80,8 @@ def GetFieldD(message_buffer):
 @staticmethod
 @msg.units('')
 @msg.default('7.1')
+@msg.minVal('0.0')
+@msg.maxVal('215.355')
 @msg.count(1)
 def GetBitsA(message_buffer):
     \"\"\"\"\"\"
@@ -80,6 +92,8 @@ def GetBitsA(message_buffer):
 @staticmethod
 @msg.units('')
 @msg.default('')
+@msg.minVal('0')
+@msg.maxVal('7')
 @msg.count(1)
 def GetBitsB(message_buffer):
     \"\"\"\"\"\"
@@ -90,6 +104,8 @@ def GetBitsB(message_buffer):
 @staticmethod
 @msg.units('')
 @msg.default('1')
+@msg.minVal('0')
+@msg.maxVal('1')
 @msg.count(1)
 def GetBitsC(message_buffer):
     \"\"\"\"\"\"
@@ -100,6 +116,8 @@ def GetBitsC(message_buffer):
 @staticmethod
 @msg.units('')
 @msg.default('3.14159')
+@msg.minVal('0.0')
+@msg.maxVal('10.0')
 @msg.count(1)
 def GetFieldE(message_buffer):
     \"\"\"\"\"\"
@@ -110,6 +128,8 @@ def GetFieldE(message_buffer):
 @staticmethod
 @msg.units('')
 @msg.default('3.14')
+@msg.minVal('1.828')
+@msg.maxVal('176946.328')
 @msg.count(1)
 def GetFieldF(message_buffer):
     \"\"\"\"\"\"
@@ -121,6 +141,8 @@ def GetFieldF(message_buffer):
 @staticmethod
 @msg.units('m/s')
 @msg.default('1')
+@msg.minVal('0')
+@msg.maxVal('4294967295')
 @msg.count(1)
 def SetFieldA(message_buffer, value):
     \"\"\"\"\"\"
@@ -131,6 +153,8 @@ def SetFieldA(message_buffer, value):
 @staticmethod
 @msg.units('')
 @msg.default('')
+@msg.minVal('0')
+@msg.maxVal('2147483647')
 @msg.count(1)
 def SetFABitsA(message_buffer, value):
     \"\"\"\"\"\"
@@ -141,6 +165,8 @@ def SetFABitsA(message_buffer, value):
 @staticmethod
 @msg.units('')
 @msg.default('2')
+@msg.minVal('0')
+@msg.maxVal('65535')
 @msg.count(1)
 def SetFieldB(message_buffer, value):
     \"\"\"\"\"\"
@@ -151,6 +177,8 @@ def SetFieldB(message_buffer, value):
 @staticmethod
 @msg.units('')
 @msg.default('3')
+@msg.minVal('0')
+@msg.maxVal('255')
 @msg.count(5)
 def SetFieldC(message_buffer, value, idx):
     \"\"\"\"\"\"
@@ -161,6 +189,8 @@ def SetFieldC(message_buffer, value, idx):
 @staticmethod
 @msg.units('')
 @msg.default('')
+@msg.minVal('0')
+@msg.maxVal('255')
 @msg.count(1)
 def SetFieldD(message_buffer, value):
     \"\"\"\"\"\"
@@ -171,6 +201,8 @@ def SetFieldD(message_buffer, value):
 @staticmethod
 @msg.units('')
 @msg.default('7.1')
+@msg.minVal('0.0')
+@msg.maxVal('215.355')
 @msg.count(1)
 def SetBitsA(message_buffer, value):
     \"\"\"\"\"\"
@@ -181,6 +213,8 @@ def SetBitsA(message_buffer, value):
 @staticmethod
 @msg.units('')
 @msg.default('')
+@msg.minVal('0')
+@msg.maxVal('7')
 @msg.count(1)
 def SetBitsB(message_buffer, value):
     \"\"\"\"\"\"
@@ -191,6 +225,8 @@ def SetBitsB(message_buffer, value):
 @staticmethod
 @msg.units('')
 @msg.default('1')
+@msg.minVal('0')
+@msg.maxVal('1')
 @msg.count(1)
 def SetBitsC(message_buffer, value):
     \"\"\"\"\"\"
@@ -201,6 +237,8 @@ def SetBitsC(message_buffer, value):
 @staticmethod
 @msg.units('')
 @msg.default('3.14159')
+@msg.minVal('0.0')
+@msg.maxVal('10.0')
 @msg.count(1)
 def SetFieldE(message_buffer, value):
     \"\"\"\"\"\"
@@ -211,6 +249,8 @@ def SetFieldE(message_buffer, value):
 @staticmethod
 @msg.units('')
 @msg.default('3.14')
+@msg.minVal('1.828')
+@msg.maxVal('176946.328')
 @msg.count(1)
 def SetFieldF(message_buffer, value):
     \"\"\"\"\"\"
