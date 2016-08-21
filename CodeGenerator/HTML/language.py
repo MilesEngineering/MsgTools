@@ -14,19 +14,19 @@ def createFieldInfoRow(field):
     fieldtype = str(field["Type"]) if "Type" in field else "ERROR"
     count = str(field["Count"]) if "Count" in field else "1"
 
-    units = str(field["Units"]) if "Units" in field else "n/a"
+    units = str(field["Units"]) if "Units" in field else ""
 
     if "Enum" in field:
         units = str(field["Enum"])
     elif "Bitfields" in field:
         units = "Bitfield"
 
-    scale = str(field["Scale"]) if "Scale" in field else "n/a"
-    offset = str(field["Offset"]) if "Offset" in field else "n/a"
-    default = str(field["Default"]) if "Default" in field else "n/a"
+    scale = str(field["Scale"]) if "Scale" in field else ""
+    offset = str(field["Offset"]) if "Offset" in field else ""
+    default = str(field["Default"]) if "Default" in field else ""
     min = str(MsgParser.fieldMin(field))
     max = str(MsgParser.fieldMax(field))
-    description = str(field["Description"]) if "Description" in field else "n/a"
+    description = str(field["Description"]) if "Description" in field else ""
 
     html = "\
         <tr>\
@@ -47,17 +47,17 @@ def createBitfieldInfoRow(bitfield):
     name = "&nbsp&nbsp&nbsp&nbsp" + str(bitfield["Name"]) if "Name" in bitfield else "ERROR"
     bitfieldtype = str(bitfield["NumBits"]) + " bits" if "NumBits" in bitfield else "ERROR"
     count = str(bitfield["Count"]) if "Count" in bitfield else "1"
-    units = str(bitfield["Units"]) if "Units" in bitfield else "n/a"
+    units = str(bitfield["Units"]) if "Units" in bitfield else ""
 
     if "Enum" in bitfield:
         units = "<ENUM>" + str(bitfield["Enum"]) + "</ENUM>"
 
-    scale = str(bitfield["Scale"]) if "Scale" in bitfield else "n/a"
-    offset = str(bitfield["Offset"]) if "Offset" in bitfield else "n/a"
-    default = str(bitfield["Default"]) if "Default" in bitfield else "n/a"
+    scale = str(bitfield["Scale"]) if "Scale" in bitfield else ""
+    offset = str(bitfield["Offset"]) if "Offset" in bitfield else ""
+    default = str(bitfield["Default"]) if "Default" in bitfield else ""
     min = str(MsgParser.fieldMin(bitfield))
     max = str(MsgParser.fieldMax(bitfield))
-    description = str(bitfield["Description"]) if "Description" in bitfield else "n/a"
+    description = str(bitfield["Description"]) if "Description" in bitfield else ""
 
     html = "\
         <tr>\
