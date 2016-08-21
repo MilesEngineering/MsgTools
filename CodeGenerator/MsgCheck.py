@@ -86,9 +86,8 @@ def ProcessMsg(msg, subdirComponent, allowedEnums):
             if bitOffset > 8*fieldSize(field):
                 raise MessageException('too many bits')
             if "Enum" in bits:
-                #global allowedEnums
-                #if not bits["Enum"] in allowedEnums:
-                #    raise MessageException('bad enum')
+                if not bits["Enum"] in allowedEnums:
+                    raise MessageException('bad enum')
                 pass
         if offset % fieldSize(field) != 0:
             raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(fieldSize(field)))
