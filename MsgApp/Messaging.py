@@ -126,6 +126,20 @@ class Messaging:
             value = fieldInfo.get.__func__(message_buffer, index)
         return str(value)
 
+    @staticmethod
+    def getAlert(message_buffer, fieldInfo, index=0):
+        value = Messaging.get(message_buffer, fieldInfo, index)
+        alert = 0
+        try:
+            floatVal = float(value)
+            minVal = float(fieldInfo.minVal)
+            maxVal = float(fieldInfo.maxVal)
+            if(floatVal < minVal or floatVal > maxVal):
+                alert = 1
+        except ValueError:
+            pass
+        return alert
+
 class BitFieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum):
         self.name=name

@@ -17,16 +17,28 @@ class FieldItem(QObject, QTreeWidgetItem):
         self.fieldInfo = fieldInfo
         self.msg_class = msg_class
         self.msg_buffer_wrapper = msg_buffer_wrapper
-
+        
     def data(self, column, role):
-        if not column == 2:
+        if column != 2:
             return super(FieldItem, self).data(column, role)
 
-        if not role == Qt.DisplayRole:
-            return None
+        alert = Messaging.getAlert(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
+        if role == Qt.FontRole:
+            font = QFont()
+            if alert == 1:
+                font.setBold(1)
+            return font
+        if role == Qt.ForegroundRole:
+            brush = QBrush()
+            if alert == 1:
+                brush.setColor(Qt.red)
+            return brush
 
-        value  = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
-        return str(value)
+        if role == Qt.DisplayRole:
+            value  = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
+            return str(value)
+            
+        return super(FieldItem, self).data(column, role)
 
 class EditableFieldItem(FieldItem):
     def __init__(self, msg_class, msg_buffer_wrapper, fieldInfo, column_strings = []):
@@ -114,14 +126,26 @@ class FieldArrayItem(QObject, QTreeWidgetItem):
         if column != 2:
             return super(FieldArrayItem, self).data(column, role)
 
-        if role != Qt.DisplayRole:
-            return None
-
         if self.index == None:
             return ""
 
-        value  = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, self.index)
-        return str(value)
+        alert = Messaging.getAlert(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, self.index)
+        if role == Qt.FontRole:
+            font = QFont()
+            if alert == 1:
+                font.setBold(1)
+            return font
+        if role == Qt.ForegroundRole:
+            brush = QBrush()
+            if alert == 1:
+                brush.setColor(Qt.red)
+            return brush
+
+        if role == Qt.DisplayRole:
+            value  = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, self.index)
+            return str(value)
+
+        return super(FieldArrayItem, self).data(column, role)
 
 class EditableFieldArrayItem(FieldArrayItem):
     def __init__(self, messageClass, msg_buffer_wrapper, fieldInfo, field_array_constructor, index = None):

@@ -110,13 +110,16 @@ class MsgInspector(MsgGui.MsgGui):
             self.msgWidgets[id] = msgWidget
         
         msgStringList = []
+        columnAlerts = []
         msgStringList.append(str(Messaging.hdr.GetTime(msg)))
+        columnAlerts.append(0)
         keyColumn = -1
         columnCounter = 1
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
                 fieldValue = str(Messaging.get(msg, fieldInfo))
                 msgStringList.append(fieldValue)
+                columnAlerts.append(Messaging.getAlert(msg, fieldInfo))
                 if replaceMode and fieldInfo.name == self.keyFields[msgName]:
                     keyValue = fieldValue
                     keyColumn = columnCounter
@@ -124,19 +127,34 @@ class MsgInspector(MsgGui.MsgGui):
                 for bitInfo in fieldInfo.bitfieldInfo:
                     fieldValue = str(Messaging.get(msg, bitInfo))
                     msgStringList.append(fieldValue)
+                    columnAlerts.append(Messaging.getAlert(msg, bitInfo))
                     if replaceMode and bitInfo.name == self.keyFields[msgName]:
                         keyValue = fieldValue
                         keyColumn = columnCounter
                     columnCounter += 1
             else:
                 columnText = ""
+                alert = 0
                 for i in range(0,fieldInfo.count):
-                    columnText += str(Messaging.get(msg, fieldInfo, i))
+                    fieldValue = Messaging.get(msg, fieldInfo, i)
+                    columnText += str(fieldValue)
+                    if Messaging.getAlert(msg, fieldInfo, i):
+                        alert = 1
                     if(i<fieldInfo.count-1):
                         columnText += ", "
                 msgStringList.append(columnText)
+                columnAlerts.append(alert)
                 columnCounter += 1
         msgItem = TreeWidgetItem(None,msgStringList)
+        for column in range(0, len(columnAlerts)):
+            if columnAlerts[column]:
+                font = msgItem.font(column)
+                brush = msgItem.foreground(column)
+                font.setBold(1)
+                brush.setColor(QtCore.Qt.red)
+                msgItem.setFont(column, font)
+                msgItem.setForeground(column, brush)
+                msgItem.setBackground(column, brush)
         if replaceMode and keyColumn >= 0:
             # find row that has key field that matches ours
             foundAndReplaced = 0
