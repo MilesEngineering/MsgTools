@@ -24,6 +24,8 @@ def createFieldInfoRow(field):
     scale = str(field["Scale"]) if "Scale" in field else "n/a"
     offset = str(field["Offset"]) if "Offset" in field else "n/a"
     default = str(field["Default"]) if "Default" in field else "n/a"
+    min = str(MsgParser.fieldMin(field))
+    max = str(MsgParser.fieldMax(field))
     description = str(field["Description"]) if "Description" in field else "n/a"
 
     html = "\
@@ -35,6 +37,7 @@ def createFieldInfoRow(field):
             <td class='fieldscale'>" + scale + "</td>\
             <td class='fieldoffset'>" + offset + "</td>\
             <td class='fielddefault'>" + default + "</td>\
+            <td class='fielddefault'>" + min + " - " + max + "</td>\
             <td class='fielddescription'>" + description + "</td>\
         </tr>\
     "
@@ -52,6 +55,8 @@ def createBitfieldInfoRow(bitfield):
     scale = str(bitfield["Scale"]) if "Scale" in bitfield else "n/a"
     offset = str(bitfield["Offset"]) if "Offset" in bitfield else "n/a"
     default = str(bitfield["Default"]) if "Default" in bitfield else "n/a"
+    min = str(MsgParser.fieldMin(bitfield))
+    max = str(MsgParser.fieldMax(bitfield))
     description = str(bitfield["Description"]) if "Description" in bitfield else "n/a"
 
     html = "\
@@ -63,6 +68,7 @@ def createBitfieldInfoRow(bitfield):
             <td>" + scale + "</td>\
             <td>" + offset + "</td>\
             <td>" + default + "</td>\
+            <td>" + min + " - " + max + "</td>\
             <td>" + description + "</td>\
         </tr>\
     "
