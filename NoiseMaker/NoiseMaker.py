@@ -72,7 +72,11 @@ class NoiseMaker(MsgGui.MsgGui):
         self.fieldNumber += 1
         if self.fieldNumber > 255:
             self.fieldNumber = 0
-        return minVal + (maxVal-minVal) * self.fieldNumber / (255.0)
+        # go from 10% below range to 10% above range
+        bottom = minVal - 0.1 * (maxVal-minVal)
+        range = 1.2 * (maxVal-minVal) 
+        scale = self.fieldNumber / (255.0)
+        return bottom + range * scale
                 
     def sendMsg(self, msgClass):
         msg = msgClass.Create()
