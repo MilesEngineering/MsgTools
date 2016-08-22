@@ -61,7 +61,7 @@ def createBitfieldInfoRow(bitfield):
 
     html = "\
         <tr>\
-            <td><span class='glyphicon glyphicon-arrow-right' aria-hidden='true'>" + name + "</span>    </td>\
+            <td> <span style=\"font-size: 1.3em;\">&#x21e8;</span>" + name + " </td>\
             <td>" + bitfieldtype + "</td>\
             <td>" + count + "</td>\
             <td>" + units + "</td>\

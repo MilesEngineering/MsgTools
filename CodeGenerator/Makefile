@@ -31,7 +31,10 @@ $(MSGDIR)/Python/%.py : $(mdir)/%.yaml Python/language.py  Python/Template.py Ms
 $(MSGDIR)/Html/headers/%.html : $(mdir)/headers/%.yaml HTML/language.py  HTML/HeaderTemplate.html MsgParser.py Makefile
 	$(PARSER) $< $@ HTML/language.py  HTML/HeaderTemplate.html
 
-$(MSGDIR)/Html/%.html : $(mdir)/%.yaml HTML/language.py  HTML/Template.html MsgParser.py Makefile
+$(MSGDIR)/Html/bootstrap.min.css :
+	cp HTML/bootstrap.min.css $@
+
+$(MSGDIR)/Html/%.html : $(mdir)/%.yaml HTML/language.py  HTML/Template.html MsgParser.py Makefile $(MSGDIR)/Html/bootstrap.min.css
 	$(PARSER) $< $@ HTML/language.py  HTML/Template.html
 
 $(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES))
