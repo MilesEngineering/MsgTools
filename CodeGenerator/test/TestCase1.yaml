@@ -42,6 +42,7 @@ Messages:
               Scale: 14.357
             - Name: BitsB
               NumBits: 3
+              Enum: EnumA
             - Name: BitsC
               NumBits: 1
               Default: 1
