@@ -54,7 +54,8 @@ class MsgPlot:
         self.ptr1 = 0
 
     def addData(self, message_buffer):
-        newDataPoint = float(Messaging.get(message_buffer, self.fieldInfo, self.fieldSubindex))
+        # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
+        newDataPoint = Messaging.getFloat(message_buffer, self.fieldInfo, self.fieldSubindex)
         # TODO do something to get time on the X axis!
         newTime = float(Messaging.hdr.GetTime(message_buffer)/1000.0)
         # add data in the array until MAX_LENGTH is reached, then drop data off start of array

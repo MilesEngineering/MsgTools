@@ -127,6 +127,13 @@ class Messaging:
         return str(value)
 
     @staticmethod
+    def getFloat(message_buffer, fieldInfo, index=0):
+        value = Messaging.get(message_buffer, fieldInfo, index)
+        if len(fieldInfo.enum) != 0:
+            value = fieldInfo.enum[0].get(value, value)
+        return float(value)
+
+    @staticmethod
     def getAlert(message_buffer, fieldInfo, index=0):
         value = Messaging.get(message_buffer, fieldInfo, index)
         alert = 0
