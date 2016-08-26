@@ -1,8 +1,8 @@
 #!/cygdrive/c/Python34/python.exe
 import sys
 
-from PySide.QtGui import *
-from PySide.QtCore import *
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 
 from Messaging import Messaging
 
@@ -170,7 +170,7 @@ class EditableFieldArrayItem(FieldArrayItem):
         super(EditableFieldArrayItem, self).setData(column, role, Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, int(self.index)))
 
 class MessageItem(QObject, QTreeWidgetItem):
-    send_message = Signal(object)
+    send_message = pyqtSignal(object)
 
     def __init__(self, msg_name, tree_widget, msg_class, msg_buffer,
                  child_constructor = FieldItem,
@@ -227,7 +227,7 @@ class MessageItem(QObject, QTreeWidgetItem):
                 pass
 
 class EditableMessageItem(MessageItem):
-    send_message = Signal(object)
+    send_message = pyqtSignal(object)
 
     def __init__(self, msg_name, tree_widget, msg_class, msg_buffer):
         super(EditableMessageItem, self).__init__(msg_name, tree_widget, msg_class, msg_buffer, EditableFieldItem, EditableFieldArrayItem, EditableFieldBitfieldItem)

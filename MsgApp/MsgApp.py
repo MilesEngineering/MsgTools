@@ -10,14 +10,14 @@ To avoid incorrectly using python2 in your path, you may want to try launching b
 NOT
     python path/to/script/ScriptName.py\n''')
 
-from PySide.QtCore import *
-from PySide.QtGui import *
-from PySide.QtNetwork import *
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+from PyQt4.QtNetwork import *
 
 from Messaging import Messaging
 
 class MsgApp(QMainWindow):
-    RxMsg = Signal(bytearray)
+    RxMsg = pyqtSignal(bytearray)
     
     def __init__(self, name, headerName, argv):
         self.name = name
@@ -161,7 +161,7 @@ class MsgApp(QMainWindow):
         print("Socket Error: " + str(socketError))
 
     # Qt signal/slot based reading of TCP socket
-    @Slot(str)
+    @pyqtSlot(str)
     def readRxBuffer(self):
         input_stream = QDataStream(self.connection)
         while(self.connection.bytesAvailable() > 0):

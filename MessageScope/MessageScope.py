@@ -6,8 +6,8 @@ import collections
 import functools
 import threading
 
-from PySide.QtGui import *
-from PySide.QtCore import *
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 
 import os
 srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
@@ -18,11 +18,16 @@ import MsgGui
 from Messaging import Messaging
 
 import TxTreeWidget
-from MsgPlot import MsgPlot
-
+plottingLoaded=0
+try:
+    from MsgPlot import MsgPlot
+    plottingLoaded=1
+except ImportError:
+    print("Error loading plot interface.")
+    print("Perhaps you forgot to install pyqtgraph.")
 
 class RxRateCalculatorThread(QObject):
-    rates_updated = Signal(object)
+    rates_updated = pyqtSignal(object)
 
     def __init__(self, rx_msg_deque, thread_lock):
         super(RxRateCalculatorThread, self).__init__()
@@ -30,7 +35,7 @@ class RxRateCalculatorThread(QObject):
         self.rx_msg_deque = rx_msg_deque
         self.thread_lock = thread_lock
 
-    @Slot()
+    @pyqtSlot()
     def run(self):
         rates = {}
 
@@ -204,14 +209,15 @@ class MessageScopeGui(MsgGui.MsgGui):
                 if not alreadyThere:
                     plotName = msg_class.MsgName() + "." + fieldInfo.name + "[" + str(fieldIndex) + "]"
                     print("adding plot of " + plotName)
-                    msgPlot = MsgPlot(msg_class, fieldInfo, fieldIndex)
-                    # add a tab for new plot
-                    dock = QDockWidget(plotName, self)
-                    dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-                    #dock.setAllowedAreas()
-                    dock.setWidget(msgPlot.plotWidget)
-                    self.addDockWidget(Qt.RightDockWidgetArea, dock)
-                    plotListForID.append(msgPlot)
+                    if plottingLoaded:
+                        msgPlot = MsgPlot(msg_class, fieldInfo, fieldIndex)
+                        # add a tab for new plot
+                        dock = QDockWidget(plotName, self)
+                        dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+                        #dock.setAllowedAreas()
+                        dock.setWidget(msgPlot.plotWidget)
+                        self.addDockWidget(Qt.RightDockWidgetArea, dock)
+                        plotListForID.append(msgPlot)
         except AttributeError:
             print("caught exception AttributeError")
 

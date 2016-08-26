@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
-from PySide import QtCore, QtGui
-from PySide.QtGui import *
+from PyQt4 import QtCore, QtGui
+from PyQt4.QtGui import *
 
 import os
 srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
