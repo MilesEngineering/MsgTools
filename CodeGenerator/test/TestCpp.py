@@ -54,9 +54,9 @@ float GetBitsA() const
 }""")
         expected.append("""\
 //  , (0 to 7)
-uint8_t GetBitsB() const
+EnumA GetBitsB() const
 {
-    return (GetFieldD() >> 4) & 0x7;
+    return EnumA((GetFieldD() >> 4) & 0x7);
 }""")
         expected.append("""\
 //  , (0 to 1)
@@ -114,9 +114,9 @@ void SetBitsA(float value)
 }""")
         expected.append("""\
 //  , (0 to 7)
-void SetBitsB(uint8_t value)
+void SetBitsB(EnumA value)
 {
-    SetFieldD((GetFieldD() & ~(0x7 << 4)) | ((value & 0x7) << 4));
+    SetFieldD((GetFieldD() & ~(0x7 << 4)) | ((uint8_t(value) & 0x7) << 4));
 }""")
         expected.append("""\
 //  , (0 to 1)

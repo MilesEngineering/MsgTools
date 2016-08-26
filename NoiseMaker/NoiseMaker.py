@@ -96,7 +96,7 @@ class NoiseMaker(MsgGui.MsgGui):
         self.sendFn(msg.raw)
 
     def ShowMessage(self, msg):
-        print('rx!')
+        pass
 
 # main starts here
 if __name__ == '__main__':

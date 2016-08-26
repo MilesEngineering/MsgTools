@@ -120,6 +120,10 @@ def %s(%s):
 
 def enumLookup(msg, field):
     lookup  = "defaultValue = 0\n"
+    lookup += "    try:\n"
+    lookup += "        value = int(float(value))\n"
+    lookup += "    except ValueError:\n"
+    lookup += "        pass\n"
     lookup += "    if isinstance(value, int) or value.isdigit():\n"
     lookup += "        defaultValue = int(value)\n"
     lookup += "    value = " + msg["Name"] + "." + str(field["Enum"]) + ".get(value, defaultValue)\n"
@@ -169,7 +173,7 @@ def setFn(msg, field, offset):
         lookup = enumLookup(msg, field)
     math = MsgParser.setMath("value", field, "int")
     storageType = field["Type"]
-    if "int" in storageType and not "Enum" in field:
+    if "int" in storageType:
         math = "min(max(%s, %s), %s)" % (math, MsgParser.fieldStorageMin(storageType), MsgParser.fieldStorageMax(storageType))
     math = lookup + "tmp = " + math
     if count > 1:

@@ -98,6 +98,7 @@ def GetBitsA(message_buffer):
 def GetBitsB(message_buffer):
     \"\"\"\"\"\"
     value = (MsgA.GetFieldD(message_buffer) >> 4) & 0x7
+    value = MsgA.ReverseEnumA.get(value, value)
     return value
 """)
         expected.append("""\
@@ -218,6 +219,14 @@ def SetBitsA(message_buffer, value):
 @msg.count(1)
 def SetBitsB(message_buffer, value):
     \"\"\"\"\"\"
+    defaultValue = 0
+    try:
+        value = int(float(value))
+    except ValueError:
+        pass
+    if isinstance(value, int) or value.isdigit():
+        defaultValue = int(value)
+    value = MsgA.EnumA.get(value, defaultValue)
     tmp = min(max(value, 0), 7)
     MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x7 << 4)) | ((tmp & 0x7) << 4))
 """)
