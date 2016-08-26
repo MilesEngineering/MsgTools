@@ -25,9 +25,15 @@ QSPEC := -spec  linux-g++
 
 endif
 
+ifeq ($(UNAME),Cygwin)
 $(OBJ_DIR)/Makefile: *.pro | $(OBJ_DIR)
 	@echo Building `cygpath -w $@`
 	cd $(OBJ_DIR) ; $(QMAKE) $(QSPEC) `cygpath -w $(SRCDIR)/$(TARGET).pro`
+else
+$(OBJ_DIR)/Makefile: *.pro | $(OBJ_DIR)
+	@echo Building $@
+	cd $(OBJ_DIR) ; $(QMAKE) $(QSPEC) $(SRCDIR)/$(TARGET).pro
+endif
 
 $(TARGET) : $(TARGET).pro $(OBJ_DIR)/Makefile
 	@echo Building $@
