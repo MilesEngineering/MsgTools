@@ -6,10 +6,8 @@ from PyQt4.QtCore import *
 
 from Messaging import Messaging
 
-class FieldItem(QObject, QTreeWidgetItem):
+class FieldItem(QTreeWidgetItem):
     def __init__(self, msg_class, msg_buffer_wrapper, fieldInfo, column_strings = []):
-        QObject.__init__(self)
-
         column_strings = column_strings if len(column_strings) > 0 else [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
         
         QTreeWidgetItem.__init__(self, None, column_strings)
@@ -101,10 +99,8 @@ class EditableFieldBitfieldItem(EditableFieldItem):
             bitfieldBitsItem = EditableFieldBits(self.msg_class, self.msg_buffer_wrapper, bitfieldInfo)
             self.addChild(bitfieldBitsItem)
 
-class FieldArrayItem(QObject, QTreeWidgetItem):
+class FieldArrayItem(QTreeWidgetItem):
     def __init__(self, msg_class, msg_buffer_wrapper, fieldInfo, field_array_constructor, index = None):
-        QObject.__init__(self)
-
         column_strings = [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
         
         if index != None:
@@ -169,15 +165,19 @@ class EditableFieldArrayItem(FieldArrayItem):
         # get the value back from the message/header buffer and pass on to super-class' setData
         super(EditableFieldArrayItem, self).setData(column, role, Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, int(self.index)))
 
-class MessageItem(QObject, QTreeWidgetItem):
+class QObjectProxy(QObject):
     send_message = pyqtSignal(object)
+    def __init__(self):
+        QObject.__init__(self)
 
+class MessageItem(QTreeWidgetItem):
     def __init__(self, msg_name, tree_widget, msg_class, msg_buffer,
                  child_constructor = FieldItem,
                  child_array_constructor = FieldArrayItem,
                  child_bitfield_constructor = FieldBitfieldItem):
-        QObject.__init__(self)
         QTreeWidgetItem.__init__(self, None, [msg_name])
+        
+        self.qobjectProxy = QObjectProxy()
 
         self.tree_widget = tree_widget
 
@@ -227,12 +227,11 @@ class MessageItem(QObject, QTreeWidgetItem):
                 pass
 
 class EditableMessageItem(MessageItem):
-    send_message = pyqtSignal(object)
 
     def __init__(self, msg_name, tree_widget, msg_class, msg_buffer):
         super(EditableMessageItem, self).__init__(msg_name, tree_widget, msg_class, msg_buffer, EditableFieldItem, EditableFieldArrayItem, EditableFieldBitfieldItem)
 
         sendButton = QPushButton("Send", tree_widget)
         sendButton.autoFillBackground()
-        sendButton.clicked.connect(lambda: self.send_message.emit(self.msg_buffer_wrapper["msg_buffer"]))
+        sendButton.clicked.connect(lambda: self.qobjectProxy.send_message.emit(self.msg_buffer_wrapper["msg_buffer"]))
         tree_widget.setItemWidget(self, 4, sendButton)

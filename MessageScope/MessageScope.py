@@ -184,7 +184,7 @@ class MessageScopeGui(MsgGui.MsgGui):
             messageBuffer = message_class.Create()
 
             messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageBuffer)
-            messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
+            messageTreeWidgetItem.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, messageBuffer):
         self.sendFn(messageBuffer.raw)
