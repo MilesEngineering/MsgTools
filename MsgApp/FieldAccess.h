@@ -23,8 +23,12 @@
 #define Set_float(location, value) FieldAccess::SetField<float>(location, value)
 #define Set_double(location, value) FieldAccess::SetField<float>(location, value)
 
-/** \todo Do we need to support non-aligned fields?  If so, then the big endian version of the code below needs to do a copy a byte at a time */
-/** \todo If we *don't* do non-aligned fields, then we can possible implement faster code for 16/32/64 bit types by using GCC's __builtin_bswap16,
+/** \todo If we change the S/Get_xxx() functions to take (msgLocation, offset), and we
+    assume the msgLocation is aligned and that offset is a compile-time constant, if we're
+    smart we can do a compile-time choice of aligned field (so, pointer dereference), vs.
+    unaligned field (byte copy one at a time), for each field's accessor code. */
+/** \todo For aligned fields, where we need to swap endian, we can possibly implement faster code
+    for 16/32/64 bit types by using GCC's __builtin_bswap16,
     __builtin_bswap32, __builtin_bswap64, so we'd want template specializations for that. */
 /** \todo Not sure if gcc will unroll the loops, but if it doesn't, we may want to do that manually. */
 class FieldAccess
@@ -33,23 +37,20 @@ class FieldAccess
         template <typename AccessType>
         static inline void SetField(void* location, const AccessType& value)
         {
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-            *(AccessType*)location = value;
-#else
             // copy bytes of value into location in swapped order
             uint8_t* dest = (uint8_t*)location;
             uint8_t* source = (uint8_t*)&value;
 
             for (unsigned k = 0; k < sizeof(AccessType); k++)
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+                dest[k] = source[k];
+#else
                 dest[k] = source[sizeof(AccessType) - k - 1];
 #endif
         }
         template <typename AccessType>
         static inline AccessType GetField(const void* location)
         {
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-            return *(const AccessType*)location;
-#else
             // copy bytes at location into aligned union, return value
             union
             {
@@ -59,9 +60,12 @@ class FieldAccess
             const uint8_t* source = (const uint8_t*)location;
 
             for (unsigned k = 0; k < sizeof(AccessType); k++)
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+                dest.u8[k] = source[k];
+#else
                 dest.u8[k] = source[sizeof(AccessType) - k - 1];
-            return dest.u;
 #endif
+            return dest.u;
         }
 };
 
