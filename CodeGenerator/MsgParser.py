@@ -26,6 +26,11 @@ def optionalReplace(line, pattern, fn, param):
         return replace(line, pattern, method(param))
     return line
 
+# I changed to searching for tags in angle brackets (like <TAG>), and
+# looking them up in the replacements hash table (instead of testing
+# all tags in the hash table), and saw no performance improvement.
+# In fact, application timing doesn't change even if *no* replacements
+# are made.  Perhaps timing is dominated by YAML parsing?
 def DoReplacements(line, msg, enums, replacements):
     ret = line + '\n'
     for tag in replacements:
