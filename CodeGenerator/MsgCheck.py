@@ -80,8 +80,9 @@ def ProcessMsg(msg, subdirComponent, enums):
                 if not bits["Enum"] in enumNames:
                     raise MessageException('bad enum')
                 pass
-        if offset % fieldSize(field) != 0:
-            raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(fieldSize(field)))
+        # disable enforcement of native alignment
+        #if offset % fieldSize(field) != 0:
+        #    raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(fieldSize(field)))
         offset += fieldSize(field) * fieldCount(field)
     
     if offset > 128:
