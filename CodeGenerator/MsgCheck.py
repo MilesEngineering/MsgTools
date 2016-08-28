@@ -6,9 +6,6 @@ from time import gmtime, strftime
 
 from MsgUtils import *
 
-class MessageException(Exception):
-    pass
-
 def Usage():
     sys.stderr.write('Usage: ' + sys.argv[0] + ' msgdir outputfile\n')
     sys.exit(1)

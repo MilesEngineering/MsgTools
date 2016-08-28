@@ -28,6 +28,9 @@ def readFile(filename):
     else:
         return 0
 
+class MessageException(Exception):
+    pass
+
 def fieldSize(field):
     fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
     return fieldSizes[str.lower(field["Type"])]
@@ -216,8 +219,7 @@ def msgID(msg, enums):
             try:
                 value = int(value)
             except ValueError:
-                print("ERROR! Can't find value for " + value)
-                value = 14
+                raise MessageException("ERROR! Can't find value for " + str(value))
             ret = (ret << previousShift) + value
             #print("ret is now " + str(ret))
             previousShift += id["Bits"]
