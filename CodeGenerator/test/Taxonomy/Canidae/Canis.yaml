@@ -1,5 +1,5 @@
 includes:
-    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/Canidae/Canidae.yaml
+    - !include Canidae.yaml
 Enums: 
   - Name: Species
     Options:

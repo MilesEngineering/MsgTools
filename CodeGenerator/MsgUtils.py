@@ -1,20 +1,27 @@
 import re
 import io
 import json
+import os.path
 
+# create a class to load YAML files, and any YAML files they include
 import yaml
+class YamlLoader(yaml.Loader):
+    def __init__(self, stream):
+        self._dirname = os.path.dirname(stream.name)
+        yaml.Loader.__init__(self, stream)
 
-def yaml_include(loader, node):
-    #print("got include for [" + str(node.value) + "]")
-    with io.open(node.value) as inputfile:
-        return yaml.load(inputfile)
-yaml.add_constructor("!include", yaml_include)
+    def include(self, node):
+        filename = os.path.join(self._dirname, node.value)
+        inFile = io.open(filename, 'r')
+        return yaml.load(inFile, YamlLoader)
+
+YamlLoader.add_constructor('!include', YamlLoader.include)
 
 def readFile(filename):
     #print("Processing ", filename)
     if filename.endswith(".yaml"):
         inFile = io.open(filename)
-        return yaml.load(inFile)
+        return yaml.load(inFile, YamlLoader)
     elif filename.endswith(".json"):
         inFile = io.open(filename)
         return json.load(inFile)

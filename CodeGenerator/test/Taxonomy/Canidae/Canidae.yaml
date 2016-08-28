@@ -1,5 +1,5 @@
 includes:
-    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/headers/TaxonomyHeader.yaml
+    - !include ../headers/TaxonomyHeader.yaml
 Enums: 
   - Name: Foods
     Options:

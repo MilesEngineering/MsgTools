@@ -1,6 +1,6 @@
 includes:
-    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/Canidae/Vulpes.yaml
-    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/Canidae/Canidae.yaml
+    - !include Vulpes.yaml
+    - !include Canidae.yaml
 Messages:
   - Name: Fox
     Description: Foxity fox fox
