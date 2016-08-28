@@ -1,5 +1,12 @@
 Enums: 
   - Name: Species
     Options:
-      - Name: SomethingFoxy
+      - Name: Lagopus
+        Description: Arctic Fox
         Value: 1
+      - Name: Zerda
+        Description: Fennec Fox
+        Value: 2
+      - Name: Bengalensis
+        Description: Bengal Fox
+        Value: 3

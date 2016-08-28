@@ -12,7 +12,7 @@ Messages:
         Value: Vulpes
         Bits: 8
       - Name: Species
-        Value: SomethingFoxy
+        Value: Lagopus
         Bits: 16
     Fields:
       - Name: FavoriteFood
