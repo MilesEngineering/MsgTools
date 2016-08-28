@@ -1,0 +1,9 @@
+includes:
+    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/Canidae/Canidae.yaml
+Enums: 
+  - Name: Species
+    Options:
+      - Name: Lupis
+        Value: 1
+      - Name: Familaris
+        Value: 2

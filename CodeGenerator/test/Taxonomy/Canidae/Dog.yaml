@@ -1,0 +1,26 @@
+includes:
+    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/Canidae/Canis.yaml
+Messages:
+  - Name: Dog
+    Description: Doggone it
+    IDs:
+      - Name: Family
+        Value: Canidae
+        Bits: 8
+      - Name: Genus
+        Value: Canis
+        Bits: 8
+      - Name: Species
+        Value: Familaris
+        Bits: 16
+    Fields:
+      - Name: FavoriteFood
+        Type: int8
+        Enum: Foods
+      - Name: Name
+        Type: uint8
+        Units: ASCII
+        Count: 16
+      - Name: FriendFamily
+        Type: uint8
+        Enum: Families

@@ -1,0 +1,5 @@
+Enums: 
+  - Name: Species
+    Options:
+      - Name: SomethingFoxy
+        Value: 1

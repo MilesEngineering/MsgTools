@@ -1,0 +1,20 @@
+Enums:
+  - Name: Families
+    Options:
+      - Name: Canidae
+        Value: 1
+      - Name: Felidae
+        Value: 2
+      - Name: Ursidae
+        Value: 4
+Messages:
+  - Name: CompositeIDHeader
+    Description: Used to test a header that has several fields combined to form a message ID.
+    Fields:
+      - Name: Family
+        Type: uint8
+        Enum: Families
+      - Name: Genus
+        Type: uint8
+      - Name: Species
+        Type: uint16

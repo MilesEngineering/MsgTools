@@ -1,0 +1,20 @@
+includes:
+    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/Canidae/Canis.yaml
+Messages:
+  - Name: Wolf
+    Description: Howl.
+    IDs:
+      - Name: Family
+        Value: Canidae
+        Bits: 8
+      - Name: Genus
+        Value: Canis
+        Bits: 8
+      - Name: Species
+        Value: Lupis
+        Bits: 16
+    Fields:
+      - Name: Height
+        Type: uint8
+      - Name: Weight
+        Type: uint8

@@ -1,0 +1,24 @@
+includes:
+    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/Canidae/Vulpes.yaml
+    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/Canidae/Canidae.yaml
+Messages:
+  - Name: Fox
+    Description: Foxity fox fox
+    IDs:
+      - Name: Family
+        Value: Canidae
+        Bits: 8
+      - Name: Genus
+        Value: Vulpes
+        Bits: 8
+      - Name: Species
+        Value: SomethingFoxy
+        Bits: 16
+    Fields:
+      - Name: FavoriteFood
+        Type: int8
+        Enum: Foods
+      - Name: Name
+        Type: uint8
+        Units: ASCII
+        Count: 16

@@ -1,4 +1,25 @@
 import re
+import io
+import json
+
+import yaml
+
+def yaml_include(loader, node):
+    #print("got include for [" + str(node.value) + "]")
+    with io.open(node.value) as inputfile:
+        return yaml.load(inputfile)
+yaml.add_constructor("!include", yaml_include)
+
+def readFile(filename):
+    #print("Processing ", filename)
+    if filename.endswith(".yaml"):
+        inFile = io.open(filename)
+        return yaml.load(inFile)
+    elif filename.endswith(".json"):
+        inFile = io.open(filename)
+        return json.load(inFile)
+    else:
+        return 0
 
 def fieldSize(field):
     fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
@@ -166,6 +187,46 @@ def subfieldReplacements(line,msg):
 
 def msgName(msg):
     return msg["Name"]
+
+def msgID(msg, enums):
+    ret = "<MSGID>"
+    if "IDs" in msg:
+        ret = 0
+        # iterate over list of keys
+        previousShift = 0
+        for id in msg["IDs"]:
+            value = id["Value"]
+            #print("got value " + str(value))
+            try:
+                value = int(value)
+            except ValueError:
+                for enum in enums:
+                    for option in enum["Options"]:
+                        if value == option["Name"]:
+                            value = int(option["Value"])
+                            #print("found value " + str(value))
+                            break
+            try:
+                value = int(value)
+            except ValueError:
+                print("ERROR! Can't find value for " + value)
+                value = 14
+            ret = (ret << previousShift) + value
+            #print("ret is now " + str(ret))
+            previousShift += id["Bits"]
+        ret = hex(ret)
+    if "ID" in msg:
+        ret = msg["ID"]
+    return str(ret)
+
+def Enums(inputData):
+    enumList = []
+    if "Enums" in inputData:
+        enumList = inputData["Enums"]
+    if "includes" in inputData:
+        for data in inputData["includes"]:
+            enumList = enumList + Enums(data)
+    return enumList
 
 def getMath(x, field, cast):
     ret = x

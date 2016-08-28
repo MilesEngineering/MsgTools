@@ -1,33 +1,13 @@
 #!/usr/bin/env python3
 import sys
-import yaml
-import json
 import os
-import io
 import string
 from time import gmtime, strftime
 
 from MsgUtils import *
 
-def readFile(filename):
-    #print("Processing ", filename)
-    if filename.endswith(".yaml"):
-        inFile = io.open(filename)
-        return yaml.load(inFile)
-    elif filename.endswith(".json"):
-        inFile = io.open(filename)
-        return json.load(inFile)
-    else:
-        return 0
-
-def Messages(inFile):
-    return inFile["Messages"]
-
-def Enums(inFile):
-    try:
-        return inFile["Enums"]
-    except:
-        return {}
+def Messages(inputData):
+    return inputData["Messages"]
 
 def replace(line, pattern, replacement):
     if pattern in line:
@@ -46,37 +26,22 @@ def optionalReplace(line, pattern, fn, param):
         return replace(line, pattern, method(param))
     return line
 
-def DoReplacements(line, msg, enums, subdirComponent):
+def DoReplacements(line, msg, enums, replacements):
     ret = line + '\n'
-    ret = replace(ret, "<MSGNAME>", msgName(msg))
-    ret = replace(ret, "<NUMBER_OF_FIELDS>", str(numberOfFields(msg)))
-    ret = replace(ret, "<NUMBER_OF_SUBFIELDS>", str(numberOfSubfields(msg)))
-    if "ID" in msg:
-        ret = replace(ret, "<MSGID>", str(msg["ID"]))
-    ret = replace(ret, "<MSGSIZE>", str(language.msgSize(msg)))
-    ret = replace(ret, "<MSGDESCRIPTION>", str(msg["Description"]))
-    ret = optionalReplace(ret, "<ENUMERATIONS>", 'enums', enums)
-    ret = replace(ret, "<ACCESSORS>", "\n".join(language.accessors(msg)))
+    for tag in replacements:
+        ret = replace(ret, tag, replacements[tag])
     ret = optionalReplace(ret, "<REFLECTION>", 'reflection', msg)
     ret = optionalReplace(ret, "<FIELDINFOS>", 'fieldInfos', msg)
     ret = optionalReplace(ret, "<STRUCTUNPACKING>", 'structUnpacking', msg)
     ret = optionalReplace(ret, "<STRUCTPACKING>", 'structPacking', msg)
-    ret = replace(ret, "<DECLARATIONS>", "\n".join(language.declarations(msg)))
-    ret = replace(ret, "<INIT_CODE>", "\n".join(language.initCode(msg)))
-    ret = replace(ret, "<OUTPUTFILENAME>", outputFilename)
-    ret = replace(ret, "<INPUTFILENAME>", inputFilename)
-    ret = replace(ret, "<TEMPLATEFILENAME>", templateFilename)
-    ret = replace(ret, "<LANGUAGEFILENAME>", languageFilename)
-    ret = replace(ret, "<MESSAGE_SUBDIR>", subdirComponent)
-    ret = replace(ret, "<DATE>", currentDateTime)
     if "<FOREACHFIELD" in ret:
         ret = fieldReplacements(ret, msg)
     if "<FOREACHSUBFIELD" in ret:
         ret = subfieldReplacements(ret, msg)
-    
+
     # ugly, but do this twice, before and after other replacements, because the code generator
     # might insert it while doing other replacements.
-    ret = replace(ret, "<MSGNAME>", msgName(msg))
+    ret = replace(ret, "<MSGNAME>", replacements["<MSGNAME>"])
     return ret
 
 def CommonSubdir(f1, f2):
@@ -117,17 +82,36 @@ if __name__ == '__main__':
         template = templateFile.read().splitlines() 
     
     # read the input file
-    inFile = readFile(inputFilename)
+    inputData = readFile(inputFilename)
     try:
         os.makedirs(os.path.dirname(outputFilename))
     except:
         pass
     with open(outputFilename,'w') as outFile:
         try:
-            for msg in Messages(inFile):
-                for line in template:
-                    line = DoReplacements(line, msg, Enums(inFile), commonSubdir)
-                    outFile.write(line)
+            replacements = {}
+            enums = Enums(inputData)
+            replacements["<ENUMERATIONS>"] = language.enums(enums)
+            if "Messages" in inputData:
+                for msg in Messages(inputData):
+                    replacements["<MSGNAME>"] = msgName(msg)
+                    replacements["<NUMBER_OF_FIELDS>"] = str(numberOfFields(msg))
+                    replacements["<NUMBER_OF_SUBFIELDS>"] = str(numberOfSubfields(msg))
+                    replacements["<MSGID>"] = str(msgID(msg, enums))
+                    replacements["<MSGSIZE>"] = str(language.msgSize(msg))
+                    replacements["<MSGDESCRIPTION>"] = str(msg["Description"])
+                    replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))
+                    replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg))
+                    replacements["<INIT_CODE>"] = "\n".join(language.initCode(msg))
+                    replacements["<OUTPUTFILENAME>"] = outputFilename
+                    replacements["<INPUTFILENAME>"] = inputFilename
+                    replacements["<TEMPLATEFILENAME>"] = templateFilename
+                    replacements["<LANGUAGEFILENAME>"] = languageFilename
+                    replacements["<MESSAGE_SUBDIR>"] = commonSubdir
+                    replacements["<DATE>"] = currentDateTime
+                    for line in template:
+                        line = DoReplacements(line, msg, enums, replacements)
+                        outFile.write(line)
         except MessageException as e:
             sys.stderr.write(str(e)+'\n')
             outFile.close()

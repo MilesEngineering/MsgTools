@@ -1,0 +1,17 @@
+includes:
+    - !include /home/mgazic/sw/MsgTools/CodeGenerator/test/Taxonomy/headers/TaxonomyHeader.yaml
+Enums: 
+  - Name: Foods
+    Options:
+      - Name: Steak
+        Value: 1
+      - Name: Bacon
+        Value: 2
+  - Name: Genuses
+    Options:
+      - Name: Canis
+        Value: 1
+      - Name: Vulpes
+        Value: 2
+      - Name: Lycalopex
+        Value: 3
