@@ -2,8 +2,9 @@ import MsgParser
 
 def msgSize(msg):
     offset = 0
-    for field in msg["Fields"]:
-        offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     return offset
 
 def accessors(msg):
@@ -77,17 +78,18 @@ def createBitfieldInfoRow(bitfield):
 def initCode(msg):
     ret = []
 
-    for field in msg["Fields"]:
-        fieldInfoRow = createFieldInfoRow(field)
-        
-        if fieldInfoRow:
-            ret.append(fieldInfoRow)
-        
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                bits_html = createBitfieldInfoRow(bits)
-                if bits:    
-                    ret.append(bits_html)
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            fieldInfoRow = createFieldInfoRow(field)
+            
+            if fieldInfoRow:
+                ret.append(fieldInfoRow)
+            
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    bits_html = createBitfieldInfoRow(bits)
+                    if bits:    
+                        ret.append(bits_html)
 
     return ret
 

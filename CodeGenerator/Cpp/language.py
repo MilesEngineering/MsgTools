@@ -13,8 +13,9 @@ def fieldType(field):
     
 def msgSize(msg):
     offset = 0
-    for field in msg["Fields"]:
-        offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     return offset
 
 def fnHdr(field):
@@ -164,20 +165,21 @@ def accessors(msg):
     arrayAccessors = []
     
     offset = 0
-    for field in msg["Fields"]:
-        gets.append(getFn(field, offset))
-        sets.append(setFn(field, offset))
-        arrAcc = arrayAccessor(field, offset)
-        if arrAcc != "":
-            arrayAccessors.append(arrAcc)
-        bitOffset = 0
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                numBits = bits["NumBits"]
-                gets.append(getBitsFn(field, bits, offset, bitOffset, numBits))
-                sets.append(setBitsFn(field, bits, offset, bitOffset, numBits))
-                bitOffset += numBits
-        offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            gets.append(getFn(field, offset))
+            sets.append(setFn(field, offset))
+            arrAcc = arrayAccessor(field, offset)
+            if arrAcc != "":
+                arrayAccessors.append(arrAcc)
+            bitOffset = 0
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    numBits = bits["NumBits"]
+                    gets.append(getBitsFn(field, bits, offset, bitOffset, numBits))
+                    sets.append(setBitsFn(field, bits, offset, bitOffset, numBits))
+                    bitOffset += numBits
+            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return gets+sets+arrayAccessors
 
@@ -200,15 +202,16 @@ def initCode(msg):
     ret = []
     
     offset = 0
-    for field in msg["Fields"]:
-        fieldInit = initField(field)
-        if fieldInit:
-            ret.append(fieldInit)
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                bits = initBitfield(field, bits)
-                if bits:
-                    ret.append(bits)
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            fieldInit = initField(field)
+            if fieldInit:
+                ret.append(fieldInit)
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    bits = initBitfield(field, bits)
+                    if bits:
+                        ret.append(bits)
 
     return ret
 
@@ -316,15 +319,16 @@ def reflection(msg):
     ret = []
     
     offset = 0
-    for field in msg["Fields"]:
-        ret.append(fieldReflection(field, offset))
-        bitOffset = 0
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                numBits = bits["NumBits"]
-                ret.append(fieldBitsReflection(field, bits, offset, bitOffset, numBits))
-                bitOffset += numBits
-        offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            ret.append(fieldReflection(field, offset))
+            bitOffset = 0
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    numBits = bits["NumBits"]
+                    ret.append(fieldBitsReflection(field, bits, offset, bitOffset, numBits))
+                    bitOffset += numBits
+            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return "\n".join(ret)
 
@@ -429,69 +433,73 @@ def fieldInfos(msg):
     ret = []
     
     offset = 0
-    for field in msg["Fields"]:
-        ret.append(fieldInfo(field, offset))
-        bitOffset = 0
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                numBits = bits["NumBits"]
-                ret.append(fieldBitsInfo(field, bits, offset, bitOffset, numBits))
-                bitOffset += numBits
-        offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            ret.append(fieldInfo(field, offset))
+            bitOffset = 0
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    numBits = bits["NumBits"]
+                    ret.append(fieldBitsInfo(field, bits, offset, bitOffset, numBits))
+                    bitOffset += numBits
+            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return "\n".join(ret)
 
 def structUnpacking(msg):
     ret = []
-    
-    for field in msg["Fields"]:
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                ret.append(bits["Name"] + " = msg.Get" + bits["Name"] + "();")
-        else:
-            if MsgParser.fieldCount(field) == 1:
-                ret.append(field["Name"] + " = msg.Get" + field["Name"] + "();")
+
+    if "Fields" in msg:    
+        for field in msg["Fields"]:
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    ret.append(bits["Name"] + " = msg.Get" + bits["Name"] + "();")
             else:
-                ret.append("for(int i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
-                ret.append("    "+field["Name"] + "[i] = msg.Get" + field["Name"] + "(i);")
+                if MsgParser.fieldCount(field) == 1:
+                    ret.append(field["Name"] + " = msg.Get" + field["Name"] + "();")
+                else:
+                    ret.append("for(int i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
+                    ret.append("    "+field["Name"] + "[i] = msg.Get" + field["Name"] + "(i);")
             
     return "\n".join(ret)
     
 def structPacking(msg):
     ret = []
-    
-    for field in msg["Fields"]:
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                ret.append("msg.Set" + bits["Name"] + "("+bits["Name"]+");")
-        else:
-            if MsgParser.fieldCount(field) == 1:
-                ret.append("msg.Set" + field["Name"] + "("+field["Name"]+");")
+
+    if "Fields" in msg:    
+        for field in msg["Fields"]:
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    ret.append("msg.Set" + bits["Name"] + "("+bits["Name"]+");")
             else:
-                ret.append("for(int i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
-                ret.append("    msg.Set" + field["Name"] + "("+field["Name"] + "[i], i);")
-            
+                if MsgParser.fieldCount(field) == 1:
+                    ret.append("msg.Set" + field["Name"] + "("+field["Name"]+");")
+                else:
+                    ret.append("for(int i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
+                    ret.append("    msg.Set" + field["Name"] + "("+field["Name"] + "[i], i);")
+                
     return "\n".join(ret)
     
 def declarations(msg):
     ret = []
-    for field in msg["Fields"]:
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                retType = fieldType(field)
-                if "Offset" in bits or "Scale" in bits:
-                    retType = typeForScaledInt(bits)
-                elif "Enum" in bits:
-                    retType = "<MSGNAME>Message::"+bits["Enum"]
-                ret.append(retType + " " + bits["Name"] + ";")
-        else:
-            retType = fieldType(field)
-            if "Offset" in field or "Scale" in field:
-                retType = typeForScaledInt(field)
-            elif "Enum" in field:
-                retType = "<MSGNAME>Message::"+field["Enum"]
-            if MsgParser.fieldCount(field) == 1:
-                ret.append(retType + " " + field["Name"] + ";")
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    retType = fieldType(field)
+                    if "Offset" in bits or "Scale" in bits:
+                        retType = typeForScaledInt(bits)
+                    elif "Enum" in bits:
+                        retType = "<MSGNAME>Message::"+bits["Enum"]
+                    ret.append(retType + " " + bits["Name"] + ";")
             else:
-                ret.append(retType + " " + field["Name"] + "["+str(MsgParser.fieldCount(field))+"];")
+                retType = fieldType(field)
+                if "Offset" in field or "Scale" in field:
+                    retType = typeForScaledInt(field)
+                elif "Enum" in field:
+                    retType = "<MSGNAME>Message::"+field["Enum"]
+                if MsgParser.fieldCount(field) == 1:
+                    ret.append(retType + " " + field["Name"] + ";")
+                else:
+                    ret.append(retType + " " + field["Name"] + "["+str(MsgParser.fieldCount(field))+"];")
     return ret

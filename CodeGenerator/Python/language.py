@@ -11,8 +11,9 @@ def fieldType(field):
 
 def msgSize(msg):
     offset = 0
-    for field in msg["Fields"]:
-        offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
     return offset
 
 def pythonFieldCount(field):
@@ -88,8 +89,9 @@ def fieldReflection(msg, field):
 
 def reflection(msg):
     fieldInfos = []
-    for field in msg["Fields"]:
-        fieldInfos.append(fieldReflection(msg, field))
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            fieldInfos.append(fieldReflection(msg, field))
     return ",\n".join(fieldInfos)
 
 # don't need separate field infos and reflection for python, just use reflection only, there's
@@ -224,17 +226,18 @@ def accessors(msg):
     sets = []
     
     offset = 0
-    for field in msg["Fields"]:
-        gets.append(getFn(msg, field, offset))
-        sets.append(setFn(msg, field, offset))
-        bitOffset = 0
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                numBits = bits["NumBits"]
-                gets.append(getBitsFn(msg, field, bits, offset, bitOffset, numBits))
-                sets.append(setBitsFn(msg, field, bits, offset, bitOffset, numBits))
-                bitOffset += numBits
-        offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            gets.append(getFn(msg, field, offset))
+            sets.append(setFn(msg, field, offset))
+            bitOffset = 0
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    numBits = bits["NumBits"]
+                    gets.append(getBitsFn(msg, field, bits, offset, bitOffset, numBits))
+                    sets.append(setBitsFn(msg, field, bits, offset, bitOffset, numBits))
+                    bitOffset += numBits
+            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return gets+sets
 
@@ -262,15 +265,16 @@ def initCode(msg):
     ret = []
     
     offset = 0
-    for field in msg["Fields"]:
-        fieldInit = initField(field, msg["Name"])
-        if fieldInit:
-            ret += fieldInit
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                bits = initBitfield(field, bits, msg["Name"])
-                if bits:
-                    ret += bits
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            fieldInit = initField(field, msg["Name"])
+            if fieldInit:
+                ret += fieldInit
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    bits = initBitfield(field, bits, msg["Name"])
+                    if bits:
+                        ret += bits
 
     return ret
 

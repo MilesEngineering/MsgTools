@@ -10,3 +10,6 @@ Enums:
       - Name: Bengalensis
         Description: Bengal Fox
         Value: 3
+      - Name: Vulpes
+        Description: Fox
+        Value: 4

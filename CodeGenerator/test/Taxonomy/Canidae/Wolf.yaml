@@ -5,13 +5,13 @@ Messages:
     Description: Howl.
     IDs:
       - Name: Family
-        Value: Canidae
+        Value: Families.Canidae
         Bits: 8
       - Name: Genus
-        Value: Canis
+        Value: Genuses.Canis
         Bits: 8
       - Name: Species
-        Value: Lupis
+        Value: Species.Lupis
         Bits: 16
     Fields:
       - Name: Height

@@ -34,6 +34,11 @@ def ProcessDir(outFile, msgDir, subdirComponent):
                 outFile.close()
                 os.remove(outputFilename)
                 sys.exit(1)
+            except:
+                sys.stderr.write("\nError in " + inputFilename + "!\n\n")
+                outFile.close()
+                os.remove(outputFilename)
+                raise
 
 def fieldTypeValid(field):
     allowedFieldTypes = \
@@ -59,28 +64,29 @@ def ProcessMsg(msg, subdirComponent, enums):
     msgNames[idInt] = msg['Name']
     msgPaths[msg['Name']] = subdirComponent
     offset = 0
-    for field in msg["Fields"]:
-        bitOffset = 0
-        if not fieldTypeValid(field):
-            raise MessageException('field ' + field["Name"] + ' has invalid type ' + field['Type'])
-        if "Enum" in field:
-            if not field["Enum"] in enumNames:
-                raise MessageException('bad enum ' + field["Enum"])
-            pass
-        if "Bitfields" in field:
-            for bits in field["Bitfields"]:
-                numBits = bits["NumBits"]
-                bitOffset += numBits
-            if bitOffset > 8*fieldSize(field):
-                raise MessageException('too many bits')
-            if "Enum" in bits:
-                if not bits["Enum"] in enumNames:
-                    raise MessageException('bad enum')
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            bitOffset = 0
+            if not fieldTypeValid(field):
+                raise MessageException('field ' + field["Name"] + ' has invalid type ' + field['Type'])
+            if "Enum" in field:
+                if not field["Enum"] in enumNames:
+                    raise MessageException('bad enum ' + field["Enum"])
                 pass
-        # disable enforcement of native alignment
-        #if offset % fieldSize(field) != 0:
-        #    raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(fieldSize(field)))
-        offset += fieldSize(field) * fieldCount(field)
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    numBits = bits["NumBits"]
+                    bitOffset += numBits
+                if bitOffset > 8*fieldSize(field):
+                    raise MessageException('too many bits')
+                if "Enum" in bits:
+                    if not bits["Enum"] in enumNames:
+                        raise MessageException('bad enum')
+                    pass
+            # disable enforcement of native alignment
+            #if offset % fieldSize(field) != 0:
+            #    raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(fieldSize(field)))
+            offset += fieldSize(field) * fieldCount(field)
     
     if offset > 128:
         raise MessageException('message ' + msg["Name"] + ' too big\n')

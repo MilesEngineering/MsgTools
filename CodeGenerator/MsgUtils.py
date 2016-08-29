@@ -136,21 +136,23 @@ def fieldCount(field):
 
 def numberOfFields(msg):
     count = 0
-    for field in msg["Fields"]:
-        count+=1
-        if "Bitfields" in field:
-            for bitfield in field["Bitfields"]:
-                count+=1
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            count+=1
+            if "Bitfields" in field:
+                for bitfield in field["Bitfields"]:
+                    count+=1
     return count
 
 def numberOfSubfields(msg):
     count = 0
-    for field in msg["Fields"]:
-        if "Bitfields" in field:
-            for bitfield in field["Bitfields"]:
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            if "Bitfields" in field:
+                for bitfield in field["Bitfields"]:
+                    count+=1
+            else:
                 count+=1
-        else:
-            count+=1
     return count
 
 def fieldReplacements(line,msg):
@@ -214,10 +216,12 @@ def msgID(msg, enums):
                 value = int(value)
             except ValueError:
                 for enum in enums:
+                    enumType = enum["Name"]
                     for option in enum["Options"]:
-                        if value == option["Name"]:
+                        if value == enumType + "." + option["Name"]:
+                            enumName = value
                             value = int(option["Value"])
-                            #print("found value " + str(value))
+                            #print("found value " + str(value) + " for " + enumType + "." + str(enumName))
                             break
             try:
                 value = int(value)

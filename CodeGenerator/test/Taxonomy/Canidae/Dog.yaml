@@ -5,13 +5,13 @@ Messages:
     Description: Doggone it
     IDs:
       - Name: Family
-        Value: Canidae
+        Value: Families.Canidae
         Bits: 8
       - Name: Genus
-        Value: Canis
+        Value: Genuses.Canis
         Bits: 8
       - Name: Species
-        Value: Familaris
+        Value: Species.Familaris
         Bits: 16
     Fields:
       - Name: FavoriteFood
