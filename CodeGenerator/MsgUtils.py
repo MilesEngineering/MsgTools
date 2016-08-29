@@ -3,6 +3,9 @@ import io
 import json
 import os.path
 
+class MessageException(Exception):
+    pass
+
 # create a class to load YAML files, and any YAML files they include
 import yaml
 class YamlLoader(yaml.Loader):
@@ -12,8 +15,11 @@ class YamlLoader(yaml.Loader):
 
     def include(self, node):
         filename = os.path.join(self._dirname, node.value)
-        inFile = io.open(filename, 'r')
-        return yaml.load(inFile, YamlLoader)
+        try:
+            inFile = io.open(filename, 'r')
+            return yaml.load(inFile, YamlLoader)
+        except FileNotFoundError:
+            raise MessageException("Error loading " + filename + " for include statement [" + node.value + "]")
 
 YamlLoader.add_constructor('!include', YamlLoader.include)
 
@@ -27,9 +33,6 @@ def readFile(filename):
         return json.load(inFile)
     else:
         return 0
-
-class MessageException(Exception):
-    pass
 
 def fieldSize(field):
     fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
