@@ -24,16 +24,16 @@ def ProcessDir(outFile, msgDir, subdirComponent):
                     subdirParam = subdirComponent + "/" + subdirParam
                 ProcessDir(outFile, inputFilename, subdirParam)
         else:
-            inputData = readFile(inputFilename)
-            if inputData != 0:
-                try:
+            try:
+                inputData = readFile(inputFilename)
+                if inputData != 0:
                     ProcessFile(outFile, inputData, subdirComponent)
-                except MessageException as e:
-                    sys.stderr.write('Error in ' + inputFilename)
-                    sys.stderr.write('\n'+str(e)+'\n')
-                    outFile.close()
-                    os.remove(outputFilename)
-                    sys.exit(1)
+            except MessageException as e:
+                sys.stderr.write('Error in ' + inputFilename)
+                sys.stderr.write('\n'+str(e)+'\n')
+                outFile.close()
+                os.remove(outputFilename)
+                sys.exit(1)
 
 def fieldTypeValid(field):
     allowedFieldTypes = \
