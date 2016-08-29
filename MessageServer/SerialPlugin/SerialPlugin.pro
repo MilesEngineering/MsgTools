@@ -21,5 +21,5 @@ QT += network xml widgets core gui
 
 MY_TARGET = $$TARGET
 MY_TARGET = $$replace(MY_TARGET, ^lib, ).plugin
-COPY_TARGET = $(COPY_FILE) $(TARGET) ../$$MY_TARGET
+COPY_TARGET = $(COPY_FILE) $(TARGET) ../$$MY_TARGET ; $(COPY_FILE) release/$(TARGET) ../release/$$MY_TARGET ; echo Ignoring results of copy commands, only one of the 2 succeeds
 QMAKE_POST_LINK = $$COPY_TARGET
