@@ -40,15 +40,11 @@ $(MSGDIR)/Python/%.py : $(mdir)/%.yaml Python/language.py  Python/Template.py Ms
 
 $(MSGDIR)/Html/headers/%.html : $(mdir)/headers/%.yaml HTML/language.py  HTML/HeaderTemplate.html MsgParser.py Makefile
 	$(PARSER) $< $@ HTML/language.py  HTML/HeaderTemplate.html
+	@if [ ! -f $(dir $@)/bootstrap.min.css ]; then cp HTML/bootstrap.min.css $(dir $@); fi; 
 
-$(MSGDIR)/Html/bootstrap.min.css : $(MSGDIR)/Html
-	cp HTML/bootstrap.min.css $@
-
-$(MSGDIR)/Html :
-	mkdir -p $(MSGDIR)/Html
-
-$(MSGDIR)/Html/%.html : $(mdir)/%.yaml HTML/language.py  HTML/Template.html MsgParser.py Makefile $(MSGDIR)/Html/bootstrap.min.css
+$(MSGDIR)/Html/%.html : $(mdir)/%.yaml HTML/language.py  HTML/Template.html MsgParser.py Makefile
 	$(PARSER) $< $@ HTML/language.py  HTML/Template.html
+	@if [ ! -f $(dir $@)/bootstrap.min.css ]; then cp HTML/bootstrap.min.css $(dir $@); fi; 
 
 $(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES))
 	$(call colorecho,Checking message validity)

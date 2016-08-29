@@ -32,6 +32,7 @@ $(MSGDIR)/Python/test/%.py : %.yaml ../Python/language.py  ../Python/Template.py
 
 $(MSGDIR)/Html/test/%.html : %.yaml ../HTML/language.py  ../HTML/Template.html ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../HTML/language.py  ../HTML/Template.html
+	@if [ ! -f $(dir $@)/bootstrap.min.css ]; then cp ../HTML/bootstrap.min.css $(dir $@); fi; 
 
 $(DIGEST): $(MSG_FILES)
 	$(call colorecho,Checking message validity)
