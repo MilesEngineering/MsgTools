@@ -12,11 +12,17 @@ CPP_MSG_FILES := $(addprefix $(MSGDIR)/Cpp/test/,$(MSG_FILES:.yaml=.h))
 PYTHON_MSG_FILES := $(addprefix $(MSGDIR)/Python/test/,$(MSG_FILES:.yaml=.py))
 HTML_MSG_FILES := $(addprefix $(MSGDIR)/Html/test/,$(MSG_FILES:.yaml=.html))
 
-pr:
-	@echo MSG_FILES is $(MSG_FILES)
-	@echo CPP_MSG_FILES is $(CPP_MSG_FILES)
+.PHONY: python cpp html check
 
-install all:: Makefile $(DIGEST) $(CPP_MSG_FILES) $(PYTHON_MSG_FILES) $(HTML_MSG_FILES) testCpp testPython
+python: $(PYTHON_MSG_FILES)
+
+cpp: $(CPP_MSG_FILES)
+
+html: $(HTML_MSG_FILES)
+
+check: $(DIGEST)
+
+install all:: Makefile check cpp python html testCpp testPython
 
 $(MSGDIR)/Cpp/test/%.h : %.yaml ../Cpp/language.py  ../Cpp/CppTemplate.h ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Cpp/language.py  ../Cpp/CppTemplate.h
