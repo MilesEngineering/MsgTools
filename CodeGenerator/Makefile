@@ -13,18 +13,21 @@ MSG_FILES := $(shell cd $(mdir) && find . -iname \*.yaml -printf '%P\n')
 CPP_MSG_FILES := $(addprefix $(MSGDIR)/Cpp/,$(MSG_FILES:.yaml=.h))
 PYTHON_MSG_FILES := $(addprefix $(MSGDIR)/Python/,$(MSG_FILES:.yaml=.py))
 HTML_MSG_FILES := $(addprefix $(MSGDIR)/Html/,$(MSG_FILES:.yaml=.html))
+JAVA_MSG_FILES := $(addprefix $(MSGDIR)/Java/,$(MSG_FILES:.yaml=.java))
 
-.PHONY: python cpp html check
+.PHONY: python cpp java html check
 
 python: $(PYTHON_MSG_FILES)
 
 cpp: $(CPP_MSG_FILES)
 
+java: $(JAVA_MSG_FILES)
+
 html: $(HTML_MSG_FILES)
 
 check: $(DIGEST)
 
-install all:: Makefile check cpp python html
+install all:: Makefile check cpp python java html
 
 $(MSGDIR)/Cpp/headers/%.h : $(mdir)/headers/%.yaml Cpp/language.py  Cpp/CppHeaderTemplate.h MsgParser.py Makefile
 	$(PARSER) $< $@ Cpp/language.py  Cpp/CppHeaderTemplate.h
@@ -45,6 +48,12 @@ $(MSGDIR)/Html/headers/%.html : $(mdir)/headers/%.yaml HTML/language.py  HTML/He
 $(MSGDIR)/Html/%.html : $(mdir)/%.yaml HTML/language.py  HTML/Template.html MsgParser.py Makefile
 	$(PARSER) $< $@ HTML/language.py  HTML/Template.html
 	@if [ ! -f $(dir $@)/bootstrap.min.css ]; then cp HTML/bootstrap.min.css $(dir $@); fi; 
+
+$(MSGDIR)/Java/headers/%.java : $(mdir)/headers/%.yaml Java/language.py  Java/JavaHeaderTemplate.java MsgParser.py Makefile
+	$(PARSER) $< $@ Java/language.py  Java/JavaHeaderTemplate.java
+
+$(MSGDIR)/Java/%.java : $(mdir)/%.yaml Java/language.py  Java/JavaTemplate.java MsgParser.py Makefile
+	$(PARSER) $< $@ Java/language.py  Java/JavaTemplate.java
 
 $(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES))
 	$(call colorecho,Checking message validity)

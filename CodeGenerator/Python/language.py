@@ -9,13 +9,6 @@ def fieldType(field):
     typeStr = str.lower(field["Type"])
     return fieldTypeDict[typeStr]
 
-def msgSize(msg):
-    offset = 0
-    if "Fields" in msg:
-        for field in msg["Fields"]:
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
-    return offset
-
 def pythonFieldCount(field):
     count = MsgParser.fieldCount(field)
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):

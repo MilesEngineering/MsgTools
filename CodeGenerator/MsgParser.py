@@ -103,7 +103,7 @@ if __name__ == '__main__':
                     replacements["<NUMBER_OF_FIELDS>"] = str(numberOfFields(msg))
                     replacements["<NUMBER_OF_SUBFIELDS>"] = str(numberOfSubfields(msg))
                     replacements["<MSGID>"] = str(msgID(msg, enums))
-                    replacements["<MSGSIZE>"] = str(language.msgSize(msg))
+                    replacements["<MSGSIZE>"] = str(msgSize(msg))
                     replacements["<MSGDESCRIPTION>"] = str(msg["Description"])
                     replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))
                     replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg))

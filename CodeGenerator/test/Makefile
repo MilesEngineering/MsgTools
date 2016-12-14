@@ -4,28 +4,34 @@ PARSER:=python3 ../MsgParser.py
 CHECK:=python3 ../MsgCheck.py
 DIGEST:=$(MSGDIR)/test/TestMsgDigest.txt
 
-.PHONY: all test testCpp testPython
+.PHONY: all test testCpp testPython testJava
 
 MSG_FILES := $(shell find . -iname \*.yaml -printf '%P\n')
 
 CPP_MSG_FILES := $(addprefix $(MSGDIR)/Cpp/test/,$(MSG_FILES:.yaml=.h))
 PYTHON_MSG_FILES := $(addprefix $(MSGDIR)/Python/test/,$(MSG_FILES:.yaml=.py))
+JAVA_MSG_FILES := $(addprefix $(MSGDIR)/Java/test/,$(MSG_FILES:.yaml=.java))
 HTML_MSG_FILES := $(addprefix $(MSGDIR)/Html/test/,$(MSG_FILES:.yaml=.html))
 
-.PHONY: python cpp html check
+.PHONY: python cpp java html check
 
 python: $(PYTHON_MSG_FILES)
 
 cpp: $(CPP_MSG_FILES)
 
+java: $(JAVA_MSG_FILES)
+
 html: $(HTML_MSG_FILES)
 
 check: $(DIGEST)
 
-install all:: Makefile check cpp python html testCpp testPython
+install all:: Makefile check cpp python java html testCpp testPython testJava
 
 $(MSGDIR)/Cpp/test/%.h : %.yaml ../Cpp/language.py  ../Cpp/CppTemplate.h ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Cpp/language.py  ../Cpp/CppTemplate.h
+
+$(MSGDIR)/Java/test/%.java : %.yaml ../Java/language.py  ../Java/JavaTemplate.java ../MsgParser.py Makefile
+	$(PARSER) $< $@ ../Java/language.py  ../Java/JavaTemplate.java
 
 $(MSGDIR)/Python/test/%.py : %.yaml ../Python/language.py  ../Python/Template.py ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Python/language.py  ../Python/Template.py
@@ -46,3 +52,6 @@ testCpp:
 
 testPython:
 	./TestPython.py
+
+testJava:
+	./TestJava.py

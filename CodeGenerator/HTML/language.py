@@ -1,12 +1,5 @@
 import MsgParser
 
-def msgSize(msg):
-    offset = 0
-    if "Fields" in msg:
-        for field in msg["Fields"]:
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
-    return offset
-
 def accessors(msg):
     return ""
 

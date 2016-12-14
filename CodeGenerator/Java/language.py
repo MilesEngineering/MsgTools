@@ -2,36 +2,24 @@ import MsgParser
 from MsgUtils import *
 
 def fieldType(field):
-    typeStr = field["Type"]
-    if str.find(typeStr, "int") != -1:
-        return typeStr + "_t"
-    if str.lower(typeStr) == "float32":
-        return "float";
-    if str.lower(typeStr) == "float64":
-        return "double";
-    return "?"
-    
+    fieldTypeDict = \
+    {"uint64":"long", "uint32":"long","uint16": "int",   "uint8": "short",
+     "int64":"long",   "int32":"int",  "int16": "short",  "int8": "char",
+      "float64":"double", "float32":"float"}
+    typeStr = str.lower(field["Type"])
+    return fieldTypeDict[typeStr]
+
+def fieldAccessorType(field):
+    fieldTypeDict = \
+    {"uint64":"long", "uint32":"int", "uint16": "short", "uint8": "char",
+     "int64":"long",   "int32":"int",  "int16": "short",  "int8": "char",
+      "float64":"double", "float32":"float"}
+    typeStr = str.lower(field["Type"])
+    type = fieldTypeDict[typeStr]
+    return type.capitalize()
+
 def fnHdr(field):
     ret = "// %s %s, (%s to %s)" % (MsgParser.fieldDescription(field), MsgParser.fieldUnits(field), MsgParser.fieldMin(field), MsgParser.fieldMax(field))
-    return ret
-
-def arrayAccessor(field, offset):
-    if "Offset" in field or "Scale" in field:
-        return ""
-    if MsgParser.fieldCount(field) == 1:
-        return ""
-    
-    loc = str(offset)
-    access = "(%s*)&m_data[%s]" % (fieldType(field), loc)
-    ret = '''\
-%s
-%s* %s()
-{
-    return %s;
-}''' % (fnHdr(field), fieldType(field), field["Name"], access)
-
-    if(MsgParser.fieldSize(field) != 1):
-        ret = "#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ && %s == %s\n" % (MsgParser.fieldSize(field), offset) + ret + "\n#endif\n"
     return ret
 
 def typeForScaledInt(field):
@@ -82,7 +70,7 @@ def getFn(field, offset):
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "int idx"
-    access = "Get_%s(&m_data[%s])" % (fieldType(field), loc)
+    access = "(%s)m_data.get%s(%s)" % (fieldType(field), fieldAccessorType(field), loc)
     access = getMath(access, field, typeForScaledInt(field))
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
@@ -92,7 +80,7 @@ def getFn(field, offset):
         access = retType + "(" + access + ")"
     ret = '''\
 %s
-%s Get%s(%s) const
+%s Get%s(%s)
 {
     return %s;
 }''' % (fnHdr(field), retType, field["Name"], param, access)
@@ -115,8 +103,8 @@ def setFn(field, offset):
 %s
 void Set%s(%s)
 {
-    Set_%s(&m_data[%s], %s);
-}''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString)
+    m_data.put%s(%s, (%s)%s);
+}''' % (fnHdr(field), field["Name"], param, fieldAccessorType(field), loc, fieldAccessorType(field).lower(), valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
@@ -130,7 +118,7 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
         access = retType + "(" + access + ")"
     ret = '''\
 %s
-%s Get%s() const
+%s Get%s()
 {
     return %s;
 }''' % (fnHdr(bits), retType, MsgParser.BitfieldName(field, bits), access)
@@ -155,16 +143,12 @@ void Set%s(%s value)
 def accessors(msg):
     gets = []
     sets = []
-    arrayAccessors = []
     
     offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
             gets.append(getFn(field, offset))
             sets.append(setFn(field, offset))
-            arrAcc = arrayAccessor(field, offset)
-            if arrAcc != "":
-                arrayAccessors.append(arrAcc)
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
@@ -174,7 +158,7 @@ def accessors(msg):
                     bitOffset += numBits
             offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
-    return gets+sets+arrayAccessors
+    return gets+sets
 
 def initField(field):
     if "Default" in field:
@@ -218,93 +202,25 @@ def enums(e):
         ret += "};\n"
     return ret
 
-def fieldReflectionType(field):
-    ret = fieldType(field)
-    if ret == "double" or ret == "float":
-        return "FloatFieldInfo"
-
-    if ret.startswith("int"):
-        ret = "IntFieldInfo"
-    if ret.startswith("uint"):
-        ret = "UIntFieldInfo"
-
-    if "NumBits" in field:
-        ret = "BitfieldInfo"
-        if "Offset" in field or "Scale" in field:
-            ret = "ScaledBitfieldInfo"
-    else:
-        if "Offset" in field or "Scale" in field:
-            ret = "ScaledFieldInfo"
-    if "Enum" in field:
-        ret = "EnumFieldInfo"
-    return ret
-
-def fieldReflectionBitsType(field, bits):
-    ret = fieldType(field)
-    if ret == "double" or ret == "float":
-        return "FloatFieldInfo"
-
-    if ret.startswith("int"):
-        ret = "IntFieldInfo"
-    if ret.startswith("uint"):
-        ret = "UIntFieldInfo"
-
-    if "NumBits" in bits:
-        ret = "BitfieldInfo"
-        if "Offset" in bits or "Scale" in bits:
-            ret = "ScaledBitfieldInfo"
-    else:
-        if "Offset" in field or "Scale" in field:
-            ret = "ScaledFieldInfo"
-    if "Enum" in field:
-        ret = "EnumFieldInfo"
-    return ret
-
 def fieldReflection(field, offset):
     loc = str(offset)
-    type = fieldReflectionType(field)
-    params = type;
+    params = "FieldInfo";
     params += "("
     params += '"'+field["Name"] + '"'
     params += ', "' + MsgParser.fieldDescription(field) + '"'
     params += ', "' + MsgParser.fieldUnits(field) + '"'
-    params += ", " + loc
-    params += ", " + str(MsgParser.fieldSize(field))
     params += ", " + str(MsgParser.fieldCount(field))
-    if "Offset" in field or "Scale" in field:
-        if "Scale" in field:
-            params += ", " + str(field["Scale"])
-        else:
-            params += ", 1.0"
-        if "Offset" in field:
-            params += ", " + str(field["Offset"])
-        else:
-            params += ", 0.0"
     params += ")"
     return params
 
 def fieldBitsReflection(field, bits, offset, bitOffset, numBits):
     loc = str(offset)
-    type = fieldReflectionBitsType(field, bits)
-    params = type;
+    params = "FieldInfo";
     params += "("
     params += '"'+bits["Name"] + '"'
     params += ', "' + MsgParser.fieldDescription(bits) + '"'
     params += ', "' + MsgParser.fieldUnits(bits) + '"'
-    params += ", " + loc
-    params += ", " + str(bitOffset)
-    params += ", " + str(numBits)
-    params += ", " + str(MsgParser.fieldSize(field))
     params += ", " + str(MsgParser.fieldCount(bits))
-    if "Offset" in bits or "Scale" in bits:
-        if "Scale" in bits:
-            params += ", " + str(bits["Scale"])
-        else:
-            params += ", 1.0"
-        if "Offset" in bits:
-            params += ", " + str(bits["Offset"])
-        else:
-            params += ", 0.0"
     params += ")"
     return params
 
@@ -326,36 +242,44 @@ def reflection(msg):
     return "\n".join(ret)
 
 def fieldMin(field):
-    ret = str(MsgParser.fieldMin(field))
+    val = MsgParser.fieldMin(field)
+    ret = str(val)
     if "Scale" in field or "Offset" in field:
         ret += 'f'
     else:
-        if fieldIsInt(field) and not fieldIsSigned(field):
-            ret += 'U'
+        try:
+            if val > fieldStorageMax("int32"):
+                ret += 'L'
+        except TypeError:
+            pass
     return ret
 
 def fieldMax(field):
-    ret = str(MsgParser.fieldMax(field))
+    val = MsgParser.fieldMax(field)
+    ret = str(val)
     if "Scale" in field or "Offset" in field:
         ret += 'f'
     else:
-        if fieldIsInt(field) and not fieldIsSigned(field):
-            ret += 'U'
+        try:
+            if val > fieldStorageMax("int32"):
+                ret += 'L'
+        except TypeError:
+            pass
     return ret
 
 def genericInfo(field, type, offset):
     loc = str(offset)
-    params  = '    int static constexpr loc   = ' + loc + ';\n'
-    params += '    '+type+' static constexpr max   = ' + fieldMax(field) + ';\n'
-    params += '    '+type+' static constexpr min   = ' + fieldMin(field) + ';\n'
-    params += '    char static constexpr units[] = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
-    params += '    int static constexpr count = ' + str(MsgParser.fieldCount(field)) + ';\n'
+    params  = '    static final int loc   = ' + loc + ';\n'
+    params += '    static final '+type+' max   = ' + fieldMax(field) + ';\n'
+    params += '    static final '+type+' min   = ' + fieldMin(field) + ';\n'
+    params += '    static final String units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
+    params += '    static final int count = ' + str(MsgParser.fieldCount(field)) + ';\n'
     if "Default" in field:
-        params += '    '+type+' static constexpr defaultValue = ' + str(field["Default"]) + ";\n" 
+        params += '    static final '+type+' defaultValue = ' + str(field["Default"]) + ";\n" 
     if "Scale" in field:
-        params += '    auto static constexpr scale = ' + str(field["Scale"]) + ';\n'
+        params += '    static final int scale = ' + str(field["Scale"]) + ';\n'
     if "Offset" in field:
-        params += '    auto static constexpr offset = ' + str(field["Offset"]) + ';\n'
+        params += '    static final int offset = ' + str(field["Offset"]) + ';\n'
     return params
     
 def fieldInfo(field, offset):
@@ -363,7 +287,7 @@ def fieldInfo(field, offset):
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
 
-    params  = 'struct ' + field["Name"] + 'FieldInfo {\n'
+    params  = 'class ' + field["Name"] + 'FieldInfo {\n'
     params += genericInfo(field, retType, offset)
     params += '};\n'
     return params
@@ -373,10 +297,10 @@ def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
 
-    params  = 'struct ' + bits["Name"] + 'FieldInfo {\n'
+    params  = 'class ' + bits["Name"] + 'FieldInfo {\n'
     params += genericInfo(bits, retType, offset)
-    params += '    auto static constexpr bitOffset = ' + str(bitOffset) + ';\n'
-    params += '    auto static constexpr numBits   = ' + str(numBits) + ';\n'
+    params += '    static final int bitOffset = ' + str(bitOffset) + ';\n'
+    params += '    static final int numBits   = ' + str(numBits) + ';\n'
     params += '};\n'
     return params
 

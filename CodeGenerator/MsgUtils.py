@@ -38,6 +38,13 @@ def fieldSize(field):
     fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
     return fieldSizes[str.lower(field["Type"])]
 
+def msgSize(msg):
+    offset = 0
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            offset += fieldSize(field) * fieldCount(field)
+    return offset
+
 def fieldIsInt(field):
     isInt  = 0
     if "NumBits" in field:
