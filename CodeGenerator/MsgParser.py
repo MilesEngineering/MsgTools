@@ -79,8 +79,8 @@ if __name__ == '__main__':
     
     # import the language file
     sys.path.append(os.path.dirname(languageFilename))
-    language = languageFilename
-    import language
+    languageName = os.path.splitext(os.path.basename(languageFilename) )[0]
+    language = __import__(languageName)
 
     # read the template file
     with open(templateFilename, 'r') as templateFile:
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     inputData = readFile(inputFilename)
     try:
         os.makedirs(os.path.dirname(outputFilename))
-    except:
+    except FileExistsError:
         pass
     with open(outputFilename,'w') as outFile:
         try:

@@ -110,13 +110,13 @@ void SetFieldD(uint8_t value)
 //  , (0.0 to 215.355)
 void SetBitsA(float value)
 {
-    SetFieldD((GetFieldD() & ~(0xf << 0)) | ((uint8_t(value / 14.357f) & 0xf) << 0));
+    SetFieldD((GetFieldD() & ~(0xf << 0)) | (((uint8_t)(value / 14.357f) & 0xf) << 0));
 }""")
         expected.append("""\
 //  , (0 to 7)
 void SetBitsB(EnumA value)
 {
-    SetFieldD((GetFieldD() & ~(0x7 << 4)) | ((uint8_t(value) & 0x7) << 4));
+    SetFieldD((GetFieldD() & ~(0x7 << 4)) | (((uint8_t)(value) & 0x7) << 4));
 }""")
         expected.append("""\
 //  , (0 to 1)
@@ -134,7 +134,7 @@ void SetFieldE(float value)
 //  , (1.828 to 176946.328)
 void SetFieldF(float value)
 {
-    Set_uint16_t(&m_data[16], uint16_t((value - 1.828f) / 2.7f));
+    Set_uint16_t(&m_data[16], (uint16_t)((value - 1.828f) / 2.7f));
 }""")
         expected.append("""\
 //  , (0 to 255)

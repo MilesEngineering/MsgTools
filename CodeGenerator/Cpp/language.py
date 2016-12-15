@@ -1,6 +1,18 @@
 import MsgParser
 from MsgUtils import *
 
+# used as a prefix to namespace functions, enums, etc.
+namespace = ""
+firstParam = ""
+firstParamDecl = ""
+const = " const"
+
+def params(p1, p2):
+    splitter = ""
+    if p1 != "" and p2 != "":
+        splitter = ", "
+    return p1 + splitter + p2
+
 def fieldType(field):
     typeStr = field["Type"]
     if str.find(typeStr, "int") != -1:
@@ -25,10 +37,10 @@ def arrayAccessor(field, offset):
     access = "(%s*)&m_data[%s]" % (fieldType(field), loc)
     ret = '''\
 %s
-%s* %s()
+%s* %s(%s)
 {
     return %s;
-}''' % (fnHdr(field), fieldType(field), field["Name"], access)
+}''' % (fnHdr(field), fieldType(field), namespace+field["Name"], firstParamDecl, access)
 
     if(MsgParser.fieldSize(field) != 1):
         ret = "#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ && %s == %s\n" % (MsgParser.fieldSize(field), offset) + ret + "\n#endif\n"
@@ -39,6 +51,12 @@ def typeForScaledInt(field):
     if numBits > 24:
         return "double"
     return "float"
+
+def castForScaledInt(field):
+    ret = typeForScaledInt(field)
+    if namespace != "":
+        ret = "(" + ret + ")"
+    return ret
 
 # for floats, append f to constants to eliminate compiler warnings
 def fieldScale(field):
@@ -83,29 +101,29 @@ def getFn(field, offset):
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "int idx"
     access = "Get_%s(&m_data[%s])" % (fieldType(field), loc)
-    access = getMath(access, field, typeForScaledInt(field))
+    access = getMath(access, field, castForScaledInt(field))
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
-    elif "Enum" in field:
-        retType = field["Enum"]
+    elif "Enum" in field and namespace == "":
+        retType = namespace+field["Enum"]
         access = retType + "(" + access + ")"
     ret = '''\
 %s
-%s Get%s(%s) const
+%s %s(%s)%s
 {
     return %s;
-}''' % (fnHdr(field), retType, field["Name"], param, access)
+}''' % (fnHdr(field), retType, namespace+"Get"+field["Name"], params(firstParamDecl, param), const, access)
     return ret
 
 def setFn(field, offset):
     paramType = fieldType(field)
-    valueString = setMath("value", field, fieldType(field))
+    valueString = setMath("value", field, "("+fieldType(field)+")")
     if "Offset" in field or "Scale" in field:
         paramType = typeForScaledInt(field)
-    elif "Enum" in field:
-        valueString = paramType + "(" + valueString + ")"
-        paramType = field["Enum"]
+    elif "Enum" in field and namespace == "":
+        valueString = "("+paramType+")" + "(" + valueString + ")"
+        paramType = namespace+field["Enum"]
     param = paramType + " value"
     loc = str(offset)
     if MsgParser.fieldCount(field) > 1:
@@ -113,43 +131,45 @@ def setFn(field, offset):
         param += ", int idx"
     ret = '''\
 %s
-void Set%s(%s)
+void %s(%s)
 {
     Set_%s(&m_data[%s], %s);
-}''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString)
+}''' % (fnHdr(field), namespace+"Set"+field["Name"], params(firstParamDecl, param), fieldType(field), loc, valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
-    access = "(Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
-    access = getMath(access, bits, typeForScaledInt(bits))
+    access = "(%sGet%s(%s) >> %s) & %s" % (namespace, field["Name"], firstParam, str(bitOffset), MsgParser.Mask(numBits))
+    access = getMath(access, bits, castForScaledInt(bits))
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
-    elif "Enum" in bits:
-        retType = bits["Enum"]
+    elif "Enum" in bits and namespace == "":
+        retType = namespace+bits["Enum"]
         access = retType + "(" + access + ")"
     ret = '''\
 %s
-%s Get%s() const
+%s %s(%s)%s
 {
     return %s;
-}''' % (fnHdr(bits), retType, MsgParser.BitfieldName(field, bits), access)
+}''' % (fnHdr(bits), retType, namespace+"Get"+MsgParser.BitfieldName(field, bits), firstParamDecl, const, access)
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
     paramType = fieldType(field)
-    valueString = setMath("value", bits, fieldType(field))
+    valueString = setMath("value", bits, "("+fieldType(field)+")")
     if "Offset" in bits or "Scale" in bits:
         paramType = typeForScaledInt(bits)
-    elif "Enum" in bits:
-        valueString = paramType + "(" + valueString + ")"
-        paramType = bits["Enum"]
+    elif "Enum" in bits and namespace == "":
+        valueString = "("+paramType+")" + "(" + valueString + ")"
+        paramType = namespace+bits["Enum"]
+    oldVal = '''%s(%s) & ~(%s << %s)''' % (namespace+"Get"+field["Name"], firstParam, MsgParser.Mask(numBits), str(bitOffset));
+    newVal = '''(%s) | ((%s & %s) << %s)''' % (oldVal, valueString, MsgParser.Mask(numBits), str(bitOffset));
     ret = '''\
 %s
-void Set%s(%s value)
+void %s(%s value)
 {
-    Set%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
-}''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), paramType, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
+    %s(%s);
+}''' % (fnHdr(bits), namespace+"Set"+MsgParser.BitfieldName(field, bits), params(firstParamDecl, paramType), namespace+"Set"+field["Name"], params(firstParam, newVal))
     return ret
 
 def accessors(msg):
@@ -180,15 +200,15 @@ def initField(field):
     if "Default" in field:
         if MsgParser.fieldCount(field) > 1:
             ret = "for (int i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
-            ret += "    Set" + field["Name"] + "(" + str(field["Default"]) + ", i);" 
+            ret += "    "+namespace+"Set" + field["Name"] + "(" + params(firstParam, str(field["Default"])) + ", i);" 
             return ret;
         else:
-            return  "Set" + field["Name"] + "(" + str(field["Default"]) + ");"
+            return  namespace+"Set" + field["Name"] + "(" + params(firstParam, str(field["Default"])) + ");"
     return ""
 
 def initBitfield(field, bits):
     if "Default" in bits:
-        return  "Set" + MsgParser.BitfieldName(field, bits) + "(" +str(bits["Default"]) + ");"
+        return  namespace+"Set" + MsgParser.BitfieldName(field, bits) + "(" + params(firstParam,str(bits["Default"])) + ");"
     return ""
 
 def initCode(msg):
@@ -211,7 +231,7 @@ def initCode(msg):
 def enums(e):
     ret = ""
     for enum in e:
-        ret +=  "enum " + enum["Name"]+" {"
+        ret +=  "enum " + namespace + enum["Name"]+" {"
         for option in enum["Options"]:
             ret += option["Name"]+" = "+str(option["Value"]) + ', '
         ret = ret[:-2]
