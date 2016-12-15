@@ -13,8 +13,9 @@ C_MSG_FILES := $(addprefix $(MSGDIR)/C/test/,$(MSG_FILES:.yaml=.h))
 PYTHON_MSG_FILES := $(addprefix $(MSGDIR)/Python/test/,$(MSG_FILES:.yaml=.py))
 JAVA_MSG_FILES := $(addprefix $(MSGDIR)/Java/test/,$(MSG_FILES:.yaml=.java))
 HTML_MSG_FILES := $(addprefix $(MSGDIR)/Html/test/,$(MSG_FILES:.yaml=.html))
+MATLAB_MSG_FILES := $(addprefix $(MSGDIR)/Matlab/test/,$(MSG_FILES:.yaml=.m))
 
-.PHONY: python cpp c java html check
+.PHONY: python cpp c java matlab html check
 
 python: $(PYTHON_MSG_FILES)
 
@@ -26,9 +27,11 @@ java: $(JAVA_MSG_FILES)
 
 html: $(HTML_MSG_FILES)
 
+matlab: $(MATLAB_MSG_FILES)
+
 check: $(DIGEST)
 
-install all:: Makefile check cpp c python java html testCpp testPython testJava
+install all:: Makefile check cpp c python java matlab html testCpp testPython testJava
 
 $(MSGDIR)/Cpp/test/%.h : %.yaml ../Cpp/language.py  ../Cpp/CppTemplate.h ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Cpp/language.py  ../Cpp/CppTemplate.h
@@ -41,6 +44,9 @@ $(MSGDIR)/Java/test/%.java : %.yaml ../Java/language.py  ../Java/JavaTemplate.ja
 
 $(MSGDIR)/Python/test/%.py : %.yaml ../Python/language.py  ../Python/Template.py ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Python/language.py  ../Python/Template.py
+
+$(MSGDIR)/Matlab/test/%.m : %.yaml ../Matlab/language.py  ../Matlab/Template.m ../MsgParser.py Makefile
+	$(PARSER) $< $@ ../Matlab/language.py  ../Matlab/Template.m
 
 $(MSGDIR)/Html/test/%.html : %.yaml ../HTML/language.py  ../HTML/Template.html ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../HTML/language.py  ../HTML/Template.html
