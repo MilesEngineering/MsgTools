@@ -28,42 +28,6 @@ def typeForScaledInt(field):
         return "double"
     return "float"
 
-# for floats, append f to constants to eliminate compiler warnings
-def fieldScale(field):
-    if "Scale" in field:
-        ret = field["Scale"]
-        if typeForScaledInt(field) == "float":
-            ret = str(ret) + "f"
-    return ret
-
-def fieldOffset(field):
-    if "Offset" in field:
-        ret = field["Offset"]
-        if typeForScaledInt(field) == "float":
-            ret = str(ret) + "f"
-    return ret
-
-# override the implementation from MsgUtils so we can append 'f' to scale and offset for floats
-def getMath(x, field, cast):
-    ret = x
-    if cast and ("Offset" in field or "Scale" in field):
-        ret = "%s(%s)" % (cast, ret)
-    if "Scale" in field:
-        ret = "(%s * %s)" % (ret, fieldScale(field))
-    if "Offset" in field:
-        ret = "(%s + %s)" % (ret, fieldOffset(field))
-    return ret
-
-def setMath(x, field, cast):
-    ret = x
-    if "Offset" in field:
-        ret = "(%s - %s)" % (ret, fieldOffset(field))
-    if "Scale" in field:
-        ret = "%s / %s" % (ret, fieldScale(field))
-    if cast and ("Offset" in field or "Scale" in field):
-        ret = "%s(%s)" % (cast, ret)
-    return ret
-
 def getFn(field, offset):
     loc = str(offset)
     param = ""
@@ -71,7 +35,7 @@ def getFn(field, offset):
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "int idx"
     access = "(%s)m_data.get%s(%s)" % (fieldType(field), fieldAccessorType(field), loc)
-    access = getMath(access, field, typeForScaledInt(field))
+    access = getMath(access, field, typeForScaledInt(field), 'f')
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
@@ -88,7 +52,7 @@ def getFn(field, offset):
 
 def setFn(field, offset):
     paramType = fieldType(field)
-    valueString = setMath("value", field, fieldType(field))
+    valueString = setMath("value", field, fieldType(field), 'f')
     if "Offset" in field or "Scale" in field:
         paramType = typeForScaledInt(field)
     elif "Enum" in field:
@@ -109,7 +73,7 @@ void Set%s(%s)
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
     access = "(Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
-    access = getMath(access, bits, typeForScaledInt(bits))
+    access = getMath(access, bits, typeForScaledInt(bits), 'f')
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
@@ -126,7 +90,7 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
     paramType = fieldType(field)
-    valueString = setMath("value", bits, fieldType(field))
+    valueString = setMath("value", bits, fieldType(field), 'f')
     if "Offset" in bits or "Scale" in bits:
         paramType = typeForScaledInt(bits)
     elif "Enum" in bits:

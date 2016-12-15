@@ -251,22 +251,44 @@ def Enums(inputData):
             enumList = enumList + Enums(data)
     return enumList
 
-def getMath(x, field, cast):
+def typeForScaledInt(field):
+    numBits = fieldNumBits(field)
+    if numBits > 24:
+        return "double"
+    return "float"
+
+# for floats, append tag such as 'f' to constants to eliminate compiler warnings
+def fieldScale(field, floatTag):
+    if "Scale" in field:
+        ret = field["Scale"]
+        if typeForScaledInt(field) == "float":
+            ret = str(ret) + floatTag
+    return ret
+
+def fieldOffset(field, floatTag):
+    if "Offset" in field:
+        ret = field["Offset"]
+        if typeForScaledInt(field) == "float":
+            ret = str(ret) + floatTag
+    return ret
+
+# add tag (such as 'f') to scale and offset for floats
+def getMath(x, field, cast, floatTag=""):
     ret = x
     if cast and ("Offset" in field or "Scale" in field):
         ret = "%s(%s)" % (cast, ret)
     if "Scale" in field:
-        ret = "(%s * %s)" % (ret, field["Scale"])
+        ret = "(%s * %s)" % (ret, fieldScale(field, floatTag))
     if "Offset" in field:
-        ret = "(%s + %s)" % (ret, field["Offset"])
+        ret = "(%s + %s)" % (ret, fieldOffset(field, floatTag))
     return ret
 
-def setMath(x, field, cast):
+def setMath(x, field, cast, floatTag=""):
     ret = x
     if "Offset" in field:
-        ret = "(%s - %s)" % (ret, field["Offset"])
+        ret = "(%s - %s)" % (ret, fieldOffset(field, floatTag))
     if "Scale" in field:
-        ret = "%s / %s" % (ret, field["Scale"])
+        ret = "%s / %s" % (ret, fieldScale(field, floatTag))
     if cast and ("Offset" in field or "Scale" in field):
         ret = "%s(%s)" % (cast, ret)
     return ret
