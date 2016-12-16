@@ -17,7 +17,7 @@ const uint32_t <MSGNAME>_MSG_ID = <MSGID>;
 const int <MSGNAME>_MSG_SIZE = <MSGSIZE>;
 <ENUMERATIONS>
 <ACCESSORS>
-void <MSGNAME>_Init(char* m_data)
+void <MSGNAME>_Init(uint8_t* m_data)
 {
     <INIT_CODE>
 }
