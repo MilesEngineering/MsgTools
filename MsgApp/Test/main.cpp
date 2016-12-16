@@ -4,6 +4,11 @@
 #include "MsgApp/Reflection.h"
 #include "Cpp/Network/Connect.h"
 #include "Cpp/test/TestCase1.h"
+#include "Cpp/test/TestCase2.h"
+#include "Cpp/test/TestCase3.h"
+#include "C/test/TestCase1.h"
+#include "C/test/TestCase2.h"
+#include "C/test/TestCase3.h"
 
 #include <iostream>
 #include <string>
@@ -93,6 +98,42 @@ TEST(MessageClientTest, Reflection)
     /** \todo Add tests for setting/getting fields of MsgA, using regular accessors as well as reflection */
 }
 
+#define SET(type, field, offset) (type::field##FieldInfo::min + (type::field##FieldInfo::max-type::field##FieldInfo::min)/offset)
+#define STEPS 10
+
+TEST(MessageClientTest, CppAndC)
+{
+    TestCase2Message tc2;
+    for(int offset=0; offset<STEPS; offset++)
+    {
+        SET(TestCase2Message, F1, offset);
+        for(int i=0; i<TestCase2Message::F2FieldInfo::count; i++)
+            SET(TestCase2Message, F2, STEPS-offset);
+        SET(TestCase2Message, F3, offset);
+        SET(TestCase2Message, F4, STEPS-offset);
+        SET(TestCase2Message, Field5, offset);
+        SET(TestCase2Message, Field6, STEPS-offset);
+
+        EXPECT_EQ(tc2.GetF1(), TestCase2_GetF1(tc2.m_data));
+        for(int i=0; i<TestCase2Message::F2FieldInfo::count; i++)
+            EXPECT_EQ(tc2.GetF2(i), TestCase2_GetF2(tc2.m_data, i));
+        EXPECT_EQ(tc2.GetF3(), TestCase2_GetF3(tc2.m_data));
+        EXPECT_EQ(tc2.GetF4(), TestCase2_GetF4(tc2.m_data));
+        EXPECT_EQ(tc2.GetField5(), TestCase2_GetField5(tc2.m_data));
+        EXPECT_EQ(tc2.GetField6(), TestCase2_GetField6(tc2.m_data));
+    }
+
+    MsgAMessage tc1;
+    for(int offset=0; offset<STEPS; offset++)
+    {
+        SET(MsgAMessage, FieldA, offset);
+        SET(MsgAMessage, FABitsA, offset);
+        SET(MsgAMessage, FieldB, offset);
+        EXPECT_EQ(tc1.GetFieldA(), MsgA_GetFieldA(tc1.m_data));
+        EXPECT_EQ(tc1.GetFABitsA(), MsgA_GetFABitsA(tc1.m_data));
+        EXPECT_EQ(tc1.GetFieldB(), MsgA_GetFieldB(tc1.m_data));
+    }
+}
 
 int main(int argc, char *argv[])
 {
