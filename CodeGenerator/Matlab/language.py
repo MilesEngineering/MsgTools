@@ -36,8 +36,8 @@ function ret = get.%s(%s)
     ret = %s;
 ''' % (fnHdr(field), field["Name"], param, access)
     if "Enum" in field:
-        ret += "    if isKey(obj."+field["Name"]+"Enum, ret)\n"
-        ret += "        ret = obj."+field["Name"]+"Enum(ret);\n"
+        ret += "    if isKey(obj."+field["Enum"]+", ret)\n"
+        ret += "        ret = obj."+field["Enum"]+"(ret);\n"
         ret += "    end\n"
     ret += "end\n"
     return ret
@@ -55,8 +55,8 @@ def setFn(field, offset):
 function obj = set.%s(%s)
 ''' % (fnHdr(field), field["Name"], param)
     if "Enum" in field:
-        ret += "    if isKey(obj."+field["Name"]+"ReverseEnum, value)\n"
-        ret += "        value = obj."+field["Name"]+"ReverseEnum(value);\n"
+        ret += "    if isKey(obj.Reverse"+field["Enum"]+", value)\n"
+        ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
         ret += "    end\n"
     ret += '''\
     obj.m_data(%s:%s) = typecast((%s)%s, "uint8");
@@ -75,8 +75,8 @@ function ret = get.%s()
     ret = %s;
 ''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), access)
     if "Enum" in bits:
-        ret += "    if isKey(obj."+bits["Name"]+"Enum, ret)\n"
-        ret += "        ret = obj."+bits["Name"]+"Enum(ret);\n"
+        ret += "    if isKey(obj."+bits["Enum"]+", ret)\n"
+        ret += "        ret = obj."+bits["Enum"]+"(ret);\n"
         ret += "    end\n"
     ret += "end\n"
     return ret
@@ -91,8 +91,8 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
 function obj = set.%s(value)
 ''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits))
     if "Enum" in field:
-        ret += "    if isKey(obj."+field["Name"]+"ReverseEnum, value)\n"
-        ret += "        value = obj."+field["Name"]+"ReverseEnum(value);\n"
+        ret += "    if isKey(obj.Reverse"+field["Enum"]+", value)\n"
+        ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
         ret += "    end\n"
     ret += '''\
     obj.%s = bitor(bitand(obj.%s, bitcmp(bitshift(%s,%s))), (bitshift((bitand(%s, %s)), %s)));
