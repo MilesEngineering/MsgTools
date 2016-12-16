@@ -87,15 +87,15 @@ TEST(MessageClientTest, Reflection)
     }
 
     /** \todo This is bad!  Need to have the message info get added automatically to reflection! */
-    Reflection::AddMsg(MsgAMessage::ReflectionInfo());
-    MsgInfo* maMsgInfo = Reflection::FindMsgByID(MsgAMessage::MSG_ID);
+    Reflection::AddMsg(TestCase1Message::ReflectionInfo());
+    MsgInfo* maMsgInfo = Reflection::FindMsgByID(TestCase1Message::MSG_ID);
     EXPECT_TRUE(maMsgInfo != NULL);
     if(maMsgInfo)
     {
-        EXPECT_STREQ(maMsgInfo->Name().toUtf8().constData(), "MsgA");
-        EXPECT_EQ(maMsgInfo->ID(), (unsigned)MsgAMessage::MSG_ID);
+        EXPECT_STREQ(maMsgInfo->Name().toUtf8().constData(), "TestCase1");
+        EXPECT_EQ(maMsgInfo->ID(), (unsigned)TestCase1Message::MSG_ID);
     }
-    /** \todo Add tests for setting/getting fields of MsgA, using regular accessors as well as reflection */
+    /** \todo Add tests for setting/getting fields of TestCase1, using regular accessors as well as reflection */
 }
 
 #define SET(type, field, offset) (type::field##FieldInfo::min + (type::field##FieldInfo::max-type::field##FieldInfo::min)/offset)
@@ -123,15 +123,15 @@ TEST(MessageClientTest, CppAndC)
         EXPECT_EQ(tc2.GetField6(), TestCase2_GetField6(tc2.m_data));
     }
 
-    MsgAMessage tc1;
+    TestCase1Message tc1;
     for(int offset=0; offset<STEPS; offset++)
     {
-        SET(MsgAMessage, FieldA, offset);
-        SET(MsgAMessage, FABitsA, offset);
-        SET(MsgAMessage, FieldB, offset);
-        EXPECT_EQ(tc1.GetFieldA(), MsgA_GetFieldA(tc1.m_data));
-        EXPECT_EQ(tc1.GetFABitsA(), MsgA_GetFABitsA(tc1.m_data));
-        EXPECT_EQ(tc1.GetFieldB(), MsgA_GetFieldB(tc1.m_data));
+        SET(TestCase1Message, FieldA, offset);
+        SET(TestCase1Message, FABitsA, offset);
+        SET(TestCase1Message, FieldB, offset);
+        EXPECT_EQ(tc1.GetFieldA(), TestCase1_GetFieldA(tc1.m_data));
+        EXPECT_EQ(tc1.GetFABitsA(), TestCase1_GetFABitsA(tc1.m_data));
+        EXPECT_EQ(tc1.GetFieldB(), TestCase1_GetFieldB(tc1.m_data));
     }
 }
 

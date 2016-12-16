@@ -9,29 +9,30 @@
 
 %}
 
-classdef <MSGNAME>Message
+classdef <MSGNAME>
 
     properties (Constant)
-        MSG_ID = <MSGID>
-        MSG_SIZE = <MSGSIZE>
+        MSG_ID = <MSGID>;
+        MSG_SIZE = <MSGSIZE>;
         <ENUMERATIONS>
     end
     properties (hidden)
         % the buffer of data
-        m_data
+        m_data;
     end
     properties  (Dependent)
             <DECLARATIONS>
     end
     methods
-        % create a message based on a data buffer
-        function obj = <MSGNAME>Message(data)
-            obj.m_data = data;
-        end
-        % create a new message (allocates a buffer for it)
-        function obj = <MSGNAME>Message
-            obj.m_data = zeros(MSG_SIZE, 'uint8');
-            <INIT_CODE>
+        function obj = <MSGNAME>(data)
+            if nargin == 0
+                % create a new message (allocates a buffer for it)
+                obj.m_data = zeros(obj.MSG_SIZE, 'uint8');
+                <INIT_CODE>
+            else
+                % create a message based on a data buffer
+                obj.m_data = data;
+            end
         end
     end
     methods

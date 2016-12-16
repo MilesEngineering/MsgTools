@@ -15,7 +15,7 @@ Enums:
         Value: 5
         Description: D Option
 Messages:
-  - Name: MsgA
+  - Name: TestCase1
     ID: 123
     Description: blah
     Fields:

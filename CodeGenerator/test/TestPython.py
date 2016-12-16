@@ -25,7 +25,7 @@ class TestCpp(unittest.TestCase):
 @msg.count(1)
 def GetFieldA(message_buffer):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>L', message_buffer, MsgA.MSG_OFFSET + 0)[0]
+    value = struct.unpack_from('>L', message_buffer, TestCase1.MSG_OFFSET + 0)[0]
     return value
 """)
         expected.append("""\
@@ -37,7 +37,7 @@ def GetFieldA(message_buffer):
 @msg.count(1)
 def GetFABitsA(message_buffer):
     \"\"\"\"\"\"
-    value = (MsgA.GetFieldA(message_buffer) >> 0) & 0x7fffffff
+    value = (TestCase1.GetFieldA(message_buffer) >> 0) & 0x7fffffff
     return value
 """)
         expected.append("""\
@@ -49,7 +49,7 @@ def GetFABitsA(message_buffer):
 @msg.count(1)
 def GetFieldB(message_buffer):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>H', message_buffer, MsgA.MSG_OFFSET + 4)[0]
+    value = struct.unpack_from('>H', message_buffer, TestCase1.MSG_OFFSET + 4)[0]
     return value
 """)
         expected.append("""\
@@ -61,7 +61,7 @@ def GetFieldB(message_buffer):
 @msg.count(5)
 def GetFieldC(message_buffer, idx):
     \"\"\"\"\"\"
-    value = struct.unpack_from('B', message_buffer, MsgA.MSG_OFFSET + 6+idx*1)[0]
+    value = struct.unpack_from('B', message_buffer, TestCase1.MSG_OFFSET + 6+idx*1)[0]
     return value
 """)
         expected.append("""\
@@ -73,7 +73,7 @@ def GetFieldC(message_buffer, idx):
 @msg.count(1)
 def GetFieldD(message_buffer):
     \"\"\"\"\"\"
-    value = struct.unpack_from('B', message_buffer, MsgA.MSG_OFFSET + 11)[0]
+    value = struct.unpack_from('B', message_buffer, TestCase1.MSG_OFFSET + 11)[0]
     return value
 """)
         expected.append("""\
@@ -85,7 +85,7 @@ def GetFieldD(message_buffer):
 @msg.count(1)
 def GetBitsA(message_buffer):
     \"\"\"\"\"\"
-    value = (float((MsgA.GetFieldD(message_buffer) >> 0) & 0xf) * 14.357)
+    value = (float((TestCase1.GetFieldD(message_buffer) >> 0) & 0xf) * 14.357)
     return value
 """)
         expected.append("""\
@@ -97,8 +97,8 @@ def GetBitsA(message_buffer):
 @msg.count(1)
 def GetBitsB(message_buffer):
     \"\"\"\"\"\"
-    value = (MsgA.GetFieldD(message_buffer) >> 4) & 0x7
-    value = MsgA.ReverseEnumA.get(value, value)
+    value = (TestCase1.GetFieldD(message_buffer) >> 4) & 0x7
+    value = TestCase1.ReverseEnumA.get(value, value)
     return value
 """)
         expected.append("""\
@@ -110,7 +110,7 @@ def GetBitsB(message_buffer):
 @msg.count(1)
 def GetBitsC(message_buffer):
     \"\"\"\"\"\"
-    value = (MsgA.GetFieldD(message_buffer) >> 7) & 0x1
+    value = (TestCase1.GetFieldD(message_buffer) >> 7) & 0x1
     return value
 """)
         expected.append("""\
@@ -122,7 +122,7 @@ def GetBitsC(message_buffer):
 @msg.count(1)
 def GetFieldE(message_buffer):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>f', message_buffer, MsgA.MSG_OFFSET + 12)[0]
+    value = struct.unpack_from('>f', message_buffer, TestCase1.MSG_OFFSET + 12)[0]
     return value
 """)
         expected.append("""\
@@ -134,7 +134,7 @@ def GetFieldE(message_buffer):
 @msg.count(1)
 def GetFieldF(message_buffer):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>H', message_buffer, MsgA.MSG_OFFSET + 16)[0]
+    value = struct.unpack_from('>H', message_buffer, TestCase1.MSG_OFFSET + 16)[0]
     value = ((value * 2.7) + 1.828)
     return value
 """)
@@ -148,7 +148,7 @@ def GetFieldF(message_buffer):
 def SetFieldA(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(value, 0), 4294967295)
-    struct.pack_into('>L', message_buffer, MsgA.MSG_OFFSET + 0, tmp)
+    struct.pack_into('>L', message_buffer, TestCase1.MSG_OFFSET + 0, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -160,7 +160,7 @@ def SetFieldA(message_buffer, value):
 def SetFABitsA(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(value, 0), 2147483647)
-    MsgA.SetFieldA(message_buffer, (MsgA.GetFieldA(message_buffer) & ~(0x7fffffff << 0)) | ((tmp & 0x7fffffff) << 0))
+    TestCase1.SetFieldA(message_buffer, (TestCase1.GetFieldA(message_buffer) & ~(0x7fffffff << 0)) | ((tmp & 0x7fffffff) << 0))
 """)
         expected.append("""\
 @staticmethod
@@ -172,7 +172,7 @@ def SetFABitsA(message_buffer, value):
 def SetFieldB(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(value, 0), 65535)
-    struct.pack_into('>H', message_buffer, MsgA.MSG_OFFSET + 4, tmp)
+    struct.pack_into('>H', message_buffer, TestCase1.MSG_OFFSET + 4, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -184,7 +184,7 @@ def SetFieldB(message_buffer, value):
 def SetFieldC(message_buffer, value, idx):
     \"\"\"\"\"\"
     tmp = min(max(value, 0), 255)
-    struct.pack_into('B', message_buffer, MsgA.MSG_OFFSET + 6+idx*1, tmp)
+    struct.pack_into('B', message_buffer, TestCase1.MSG_OFFSET + 6+idx*1, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -196,7 +196,7 @@ def SetFieldC(message_buffer, value, idx):
 def SetFieldD(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(value, 0), 255)
-    struct.pack_into('B', message_buffer, MsgA.MSG_OFFSET + 11, tmp)
+    struct.pack_into('B', message_buffer, TestCase1.MSG_OFFSET + 11, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -208,7 +208,7 @@ def SetFieldD(message_buffer, value):
 def SetBitsA(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(int(value / 14.357), 0), 15)
-    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0xf << 0)) | ((tmp & 0xf) << 0))
+    TestCase1.SetFieldD(message_buffer, (TestCase1.GetFieldD(message_buffer) & ~(0xf << 0)) | ((tmp & 0xf) << 0))
 """)
         expected.append("""\
 @staticmethod
@@ -226,9 +226,9 @@ def SetBitsB(message_buffer, value):
         pass
     if isinstance(value, int) or value.isdigit():
         defaultValue = int(value)
-    value = MsgA.EnumA.get(value, defaultValue)
+    value = TestCase1.EnumA.get(value, defaultValue)
     tmp = min(max(value, 0), 7)
-    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x7 << 4)) | ((tmp & 0x7) << 4))
+    TestCase1.SetFieldD(message_buffer, (TestCase1.GetFieldD(message_buffer) & ~(0x7 << 4)) | ((tmp & 0x7) << 4))
 """)
         expected.append("""\
 @staticmethod
@@ -240,7 +240,7 @@ def SetBitsB(message_buffer, value):
 def SetBitsC(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(value, 0), 1)
-    MsgA.SetFieldD(message_buffer, (MsgA.GetFieldD(message_buffer) & ~(0x1 << 7)) | ((tmp & 0x1) << 7))
+    TestCase1.SetFieldD(message_buffer, (TestCase1.GetFieldD(message_buffer) & ~(0x1 << 7)) | ((tmp & 0x1) << 7))
 """)
         expected.append("""\
 @staticmethod
@@ -252,7 +252,7 @@ def SetBitsC(message_buffer, value):
 def SetFieldE(message_buffer, value):
     \"\"\"\"\"\"
     tmp = value
-    struct.pack_into('>f', message_buffer, MsgA.MSG_OFFSET + 12, tmp)
+    struct.pack_into('>f', message_buffer, TestCase1.MSG_OFFSET + 12, tmp)
 """)
         expected.append("""\
 @staticmethod
@@ -264,7 +264,7 @@ def SetFieldE(message_buffer, value):
 def SetFieldF(message_buffer, value):
     \"\"\"\"\"\"
     tmp = min(max(int((value - 1.828) / 2.7), 0), 65535)
-    struct.pack_into('>H', message_buffer, MsgA.MSG_OFFSET + 16, tmp)
+    struct.pack_into('>H', message_buffer, TestCase1.MSG_OFFSET + 16, tmp)
 """)
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
@@ -277,7 +277,7 @@ def SetFieldF(message_buffer, value):
             language.accessors(MsgParser.Messages(self.msgDict)[1])
 
     def test_msgNames(self):
-        expected = "MsgA"
+        expected = "TestCase1"
         observed = MsgParser.msgName(MsgParser.Messages(self.msgDict)[0])
         self.assertMultiLineEqual(expected, observed)
         with self.assertRaises(IndexError):

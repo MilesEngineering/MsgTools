@@ -26,7 +26,7 @@ def getFn(field, offset):
     end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     param = "obj"
     access = "typecast(obj.m_data(%s:%s), \"%s\")" % (loc, end_loc, fieldType(field))
-    access = getMath(access, field, typeForScaledInt(field), 'f')
+    access = getMath(access, field, typeForScaledInt(field))
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
@@ -43,29 +43,25 @@ function ret = get.%s(%s)
     return ret
 
 def setFn(field, offset):
-    paramType = "obj, " + fieldType(field)
-    valueString = setMath("value", field, fieldType(field), 'f')
-    if "Offset" in field or "Scale" in field:
-        paramType = typeForScaledInt(field)
-    param = "value"
+    valueString = setMath("value", field, fieldType(field))
     loc = str(offset)
     end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     ret = '''\
 %s
-function obj = set.%s(%s)
-''' % (fnHdr(field), field["Name"], param)
+function obj = set.%s(obj, value)
+''' % (fnHdr(field), field["Name"])
     if "Enum" in field:
         ret += "    if isKey(obj.Reverse"+field["Enum"]+", value)\n"
         ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
         ret += "    end\n"
     ret += '''\
-    obj.m_data(%s:%s) = typecast((%s)%s, "uint8");
+    obj.m_data(%s:%s) = typecast(%s(%s), "uint8");
 end''' % (loc, end_loc, fieldType(field), valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
     access = "bitand(bitshift(obj.%s, -%s), %s)" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
-    access = getMath(access, bits, typeForScaledInt(bits), 'f')
+    access = getMath(access, bits, typeForScaledInt(bits))
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
@@ -83,12 +79,12 @@ function ret = get.%s()
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
     paramType = fieldType(field)
-    valueString = setMath("value", bits, fieldType(field), 'f')
+    valueString = setMath("value", bits, fieldType(field))
     if "Offset" in bits or "Scale" in bits:
         paramType = typeForScaledInt(bits)
     ret = '''\
 %s
-function obj = set.%s(value)
+function obj = set.%s(obj, value)
 ''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits))
     if "Enum" in field:
         ret += "    if isKey(obj.Reverse"+field["Enum"]+", value)\n"
@@ -103,7 +99,7 @@ def accessors(msg):
     gets = []
     sets = []
     
-    offset = 0
+    offset = 1
     if "Fields" in msg:
         for field in msg["Fields"]:
             gets.append(getFn(field, offset))
@@ -148,10 +144,7 @@ def declarations(msg):
                 for bits in field["Bitfields"]:
                     ret.append(bits["Name"] + ";")
             else:
-                if MsgParser.fieldCount(field) == 1:
-                    ret.append(field["Name"] + ";")
-                else:
-                    ret.append(field["Name"] + "(1:"+str(MsgParser.fieldCount(field))+");")
+                ret.append(field["Name"] + ";")
     return ret
 
 def fieldDefault(field):
@@ -163,7 +156,10 @@ def fieldDefault(field):
 def initField(field):
     defaultValue = fieldType(field) + "("+ fieldDefault(field) +")"
     if MsgParser.fieldCount(field) > 1:
-        return "obj." + field["Name"] + "(1:"+str(MsgParser.fieldCount(field))+") = " + defaultValue + ";" 
+        ret =  "for index="+str(MsgParser.fieldCount(field))+": -1: 1\n"
+        ret += "    obj." + field["Name"] + "(index) = " + defaultValue + ";\n"
+        ret += "end"
+        return ret
     else:
         return  "obj." + field["Name"] + " = " + defaultValue + ";"
 
@@ -177,7 +173,7 @@ def initBitfield(field, bits):
 def initCode(msg):
     ret = []
     
-    offset = 0
+    offset = 1
     if "Fields" in msg:
         for field in msg["Fields"]:
             fieldInit = initField(field)

@@ -153,7 +153,7 @@ uint8_t* FieldC()
             language.accessors(MsgParser.Messages(self.msgDict)[1])
 
     def test_msgNames(self):
-        expected = "MsgA"
+        expected = "TestCase1"
         observed = MsgParser.msgName(MsgParser.Messages(self.msgDict)[0])
         self.assertMultiLineEqual(expected, observed)
         with self.assertRaises(IndexError):
