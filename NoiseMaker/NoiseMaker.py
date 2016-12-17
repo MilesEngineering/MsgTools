@@ -15,7 +15,7 @@ from Messaging import Messaging
 
 class NoiseMaker(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
-        MsgGui.MsgGui.__init__(self, "Noise Maker 0.1", argv, parent)
+        MsgGui.MsgGui.__init__(self, "Noise Maker 0.1", argv, [], parent)
         
         # event-based way of getting messages
         self.RxMsg.connect(self.ShowMessage)

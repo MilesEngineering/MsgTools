@@ -26,7 +26,7 @@ class TreeWidgetItem(QtGui.QTreeWidgetItem):
 
 class MsgInspector(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
-        MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", argv, parent)
+        MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", argv, [], parent)
         
         # event-based way of getting messages
         self.RxMsg.connect(self.ShowMessage)

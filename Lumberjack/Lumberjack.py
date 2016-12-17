@@ -26,7 +26,7 @@ if the file extension is .txt it will be assumed to be a log file created by the
 Lumberjack will create a directory named after the input file, and put multiple .csv files (one per message)
 in that directory.''')
         
-        MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", [argv[0],"file"]+argv[1:], parent)
+        MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", [argv[0],"file"]+argv[1:], [], parent)
         
         self.outputName = self.connectionName.replace('.log', '')
         self.outputName = self.outputName.replace('.txt', '')
@@ -59,7 +59,7 @@ in that directory.''')
             outputFile = self.outputFiles[id]
         else:
             # create a new file
-            outputFile = open(self.outputName + "/" + msgName + ".csv", 'w')
+            outputFile = open(self.outputName + "/" + msgName.replace("/","_") + ".csv", 'w')
 
             # store a pointer to it, so we can find it next time (instead of creating it again)
             self.outputFiles[id] = outputFile

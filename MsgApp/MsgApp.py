@@ -19,7 +19,7 @@ from Messaging import Messaging
 class MsgApp(QMainWindow):
     RxMsg = pyqtSignal(bytearray)
     
-    def __init__(self, name, headerName, argv):
+    def __init__(self, name, headerName, argv, options):
         self.name = name
         
         # error out unless python version 3
@@ -36,12 +36,14 @@ class MsgApp(QMainWindow):
             self.connectionType = "file"
             self.connectionName = argv[2]
         else:
-            optlist, args = getopt.getopt(sys.argv[1:], '', ['connectionType=', 'connectionName=', 'msg='])
+            allOptions = options
+            options += ['connectionType=', 'connectionName=', 'msg=']
+            self.optlist, args = getopt.getopt(sys.argv[1:], '', allOptions)
             # connection modes
             self.connectionType = "qtsocket"
             self.connectionName = "127.0.0.1:5678"
 
-            for opt in optlist:
+            for opt in self.optlist:
                 if opt[0] == '--connectionType':
                     self.connectionType = opt[1]
                 if opt[0] == '--connectionName':
