@@ -12,10 +12,11 @@ CPP_MSG_FILES := $(addprefix $(MSGDIR)/Cpp/test/,$(MSG_FILES:.yaml=.h))
 C_MSG_FILES := $(addprefix $(MSGDIR)/C/test/,$(MSG_FILES:.yaml=.h))
 PYTHON_MSG_FILES := $(addprefix $(MSGDIR)/Python/test/,$(MSG_FILES:.yaml=.py))
 JAVA_MSG_FILES := $(addprefix $(MSGDIR)/Java/test/,$(MSG_FILES:.yaml=.java))
+JS_MSG_FILES := $(addprefix $(MSGDIR)/Javascript/test/,$(MSG_FILES:.yaml=.js))
 HTML_MSG_FILES := $(addprefix $(MSGDIR)/Html/test/,$(MSG_FILES:.yaml=.html))
 MATLAB_MSG_FILES := $(addprefix $(MSGDIR)/Matlab/test/,$(MSG_FILES:.yaml=.m))
 
-.PHONY: python cpp c java matlab html check
+.PHONY: python cpp c java js matlab html check
 
 python: $(PYTHON_MSG_FILES)
 
@@ -25,13 +26,15 @@ c: $(C_MSG_FILES)
 
 java: $(JAVA_MSG_FILES)
 
+js: $(JS_MSG_FILES)
+
 html: $(HTML_MSG_FILES)
 
 matlab: $(MATLAB_MSG_FILES)
 
 check: $(DIGEST)
 
-install all:: Makefile check cpp c python java matlab html testCpp testPython testJava
+install all:: Makefile check cpp c python java js matlab html testCpp testPython testJava
 
 $(MSGDIR)/Cpp/test/%.h : %.yaml ../Cpp/language.py  ../Cpp/CppTemplate.h ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Cpp/language.py  ../Cpp/CppTemplate.h
@@ -41,6 +44,9 @@ $(MSGDIR)/C/test/%.h : %.yaml ../Cpp/Clanguage.py  ../Cpp/language.py  ../Cpp/CT
 
 $(MSGDIR)/Java/test/%.java : %.yaml ../Java/language.py  ../Java/JavaTemplate.java ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Java/language.py  ../Java/JavaTemplate.java
+
+$(MSGDIR)/Javascript/test/%.js : %.yaml ../Javascript/language.py  ../Javascript/Template.js ../MsgParser.py Makefile
+	$(PARSER) $< $@ ../Javascript/language.py  ../Javascript/Template.js
 
 $(MSGDIR)/Python/test/%.py : %.yaml ../Python/language.py  ../Python/Template.py ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Python/language.py  ../Python/Template.py
