@@ -13,11 +13,12 @@
 
 #include <stdint.h>
 
-const uint32_t <MSGNAME>_MSG_ID = <MSGID>;
-const int <MSGNAME>_MSG_SIZE = <MSGSIZE>;
+#define <MSGNAME>_MSG_ID <MSGID>
+#define <MSGNAME>_MSG_SIZE <MSGSIZE>
 <ENUMERATIONS>
+<FIELDINFOS>
 <ACCESSORS>
-void <MSGNAME>_Init(uint8_t* m_data)
+extern inline void <MSGNAME>_Init(uint8_t* m_data)
 {
     <INIT_CODE>
 }

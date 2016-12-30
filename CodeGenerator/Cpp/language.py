@@ -6,6 +6,8 @@ namespace = ""
 firstParam = ""
 firstParamDecl = ""
 const = " const"
+enumNamespace = 0
+functionPrefix = ""
 
 def params(p1, p2):
     splitter = ""
@@ -40,7 +42,7 @@ def arrayAccessor(field, offset):
 %s* %s(%s)
 {
     return %s;
-}''' % (fnHdr(field), fieldType(field), namespace+field["Name"], firstParamDecl, access)
+}''' % (fnHdr(field), functionPrefix+fieldType(field), namespace+field["Name"], firstParamDecl, access)
 
     if(MsgParser.fieldSize(field) != 1):
         ret = "#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ && %s == %s\n" % (MsgParser.fieldSize(field), offset) + ret + "\n#endif\n"
@@ -71,7 +73,7 @@ def getFn(field, offset):
 %s %s(%s)%s
 {
     return %s;
-}''' % (fnHdr(field), retType, namespace+"Get"+field["Name"], params(firstParamDecl, param), const, access)
+}''' % (fnHdr(field), functionPrefix+retType, namespace+"Get"+field["Name"], params(firstParamDecl, param), const, access)
     return ret
 
 def setFn(field, offset):
@@ -89,10 +91,10 @@ def setFn(field, offset):
         param += ", int idx"
     ret = '''\
 %s
-void %s(%s)
+%s %s(%s)
 {
     Set_%s(&m_data[%s], %s);
-}''' % (fnHdr(field), namespace+"Set"+field["Name"], params(firstParamDecl, param), fieldType(field), loc, valueString)
+}''' % (fnHdr(field), functionPrefix+"void", namespace+"Set"+field["Name"], params(firstParamDecl, param), fieldType(field), loc, valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
@@ -109,7 +111,7 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
 %s %s(%s)%s
 {
     return %s;
-}''' % (fnHdr(bits), retType, namespace+"Get"+MsgParser.BitfieldName(field, bits), firstParamDecl, const, access)
+}''' % (fnHdr(bits), functionPrefix+retType, namespace+"Get"+MsgParser.BitfieldName(field, bits), firstParamDecl, const, access)
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
@@ -124,10 +126,10 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
     newVal = '''(%s) | ((%s & %s) << %s)''' % (oldVal, valueString, MsgParser.Mask(numBits), str(bitOffset));
     ret = '''\
 %s
-void %s(%s value)
+%s %s(%s value)
 {
     %s(%s);
-}''' % (fnHdr(bits), namespace+"Set"+MsgParser.BitfieldName(field, bits), params(firstParamDecl, paramType), namespace+"Set"+field["Name"], params(firstParam, newVal))
+}''' % (fnHdr(bits), functionPrefix+"void", namespace+"Set"+MsgParser.BitfieldName(field, bits), params(firstParamDecl, paramType), namespace+"Set"+field["Name"], params(firstParam, newVal))
     return ret
 
 def accessors(msg):
@@ -191,7 +193,10 @@ def enums(e):
     for enum in e:
         ret +=  "enum " + namespace + enum["Name"]+" {"
         for option in enum["Options"]:
-            ret += option["Name"]+" = "+str(option["Value"]) + ', '
+            optionName = option["Name"]
+            if enumNamespace != 0:
+                optionName = enum["Name"] + "_" + optionName
+            ret += optionName+" = "+str(option["Value"]) + ', '
         ret = ret[:-2]
         ret += "};\n"
     return ret
