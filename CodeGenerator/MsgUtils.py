@@ -211,7 +211,7 @@ def msgName(msg):
     return msg["Name"]
 
 def msgID(msg, enums):
-    ret = "<MSGID>"
+    ret = "UNDEFINED_MSGID"
     if "IDs" in msg:
         ret = 0
         # iterate over list of keys
