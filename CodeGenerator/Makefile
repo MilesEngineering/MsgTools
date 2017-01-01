@@ -38,39 +38,39 @@ check: $(DIGEST)
 
 install all:: Makefile check cpp c python java js matlab html
 
-$(MSGDIR)/Cpp/headers/%.h : $(mdir)/headers/%.yaml Cpp/language.py  Cpp/CppHeaderTemplate.h MsgParser.py Makefile
+$(MSGDIR)/Cpp/headers/%.h : $(mdir)/headers/%.yaml Cpp/language.py  Cpp/CppHeaderTemplate.h MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Cpp/language.py  Cpp/CppHeaderTemplate.h
 
-$(MSGDIR)/Cpp/%.h : $(mdir)/%.yaml Cpp/language.py  Cpp/CppTemplate.h MsgParser.py Makefile
+$(MSGDIR)/Cpp/%.h : $(mdir)/%.yaml Cpp/language.py  Cpp/CppTemplate.h MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Cpp/language.py  Cpp/CppTemplate.h
 
-$(MSGDIR)/C/%.h : $(mdir)/%.yaml Cpp/Clanguage.py Cpp/language.py  Cpp/CTemplate.h MsgParser.py Makefile
+$(MSGDIR)/C/%.h : $(mdir)/%.yaml Cpp/Clanguage.py Cpp/language.py  Cpp/CTemplate.h MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Cpp/Clanguage.py  Cpp/CTemplate.h
 
-$(MSGDIR)/Python/headers/%.py : $(mdir)/headers/%.yaml Python/language.py  Python/HeaderTemplate.py MsgParser.py Makefile
+$(MSGDIR)/Python/headers/%.py : $(mdir)/headers/%.yaml Python/language.py  Python/HeaderTemplate.py MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Python/language.py  Python/HeaderTemplate.py
 
-$(MSGDIR)/Python/%.py : $(mdir)/%.yaml Python/language.py  Python/Template.py MsgParser.py Makefile
+$(MSGDIR)/Python/%.py : $(mdir)/%.yaml Python/language.py  Python/Template.py MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Python/language.py  Python/Template.py
 
-$(MSGDIR)/Html/headers/%.html : $(mdir)/headers/%.yaml HTML/language.py  HTML/HeaderTemplate.html MsgParser.py Makefile
+$(MSGDIR)/Html/headers/%.html : $(mdir)/headers/%.yaml HTML/language.py  HTML/HeaderTemplate.html MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ HTML/language.py  HTML/HeaderTemplate.html
 	@if [ ! -f $(dir $@)/bootstrap.min.css ]; then cp HTML/bootstrap.min.css $(dir $@); fi; 
 
-$(MSGDIR)/Html/%.html : $(mdir)/%.yaml HTML/language.py  HTML/Template.html MsgParser.py Makefile
+$(MSGDIR)/Html/%.html : $(mdir)/%.yaml HTML/language.py  HTML/Template.html MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ HTML/language.py  HTML/Template.html
 	@if [ ! -f $(dir $@)/bootstrap.min.css ]; then cp HTML/bootstrap.min.css $(dir $@); fi; 
 
-$(MSGDIR)/Java/headers/%.java : $(mdir)/headers/%.yaml Java/language.py  Java/JavaHeaderTemplate.java MsgParser.py Makefile
+$(MSGDIR)/Java/headers/%.java : $(mdir)/headers/%.yaml Java/language.py  Java/JavaHeaderTemplate.java MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Java/language.py  Java/JavaHeaderTemplate.java
 
-$(MSGDIR)/Java/%.java : $(mdir)/%.yaml Java/language.py  Java/JavaTemplate.java MsgParser.py Makefile
+$(MSGDIR)/Java/%.java : $(mdir)/%.yaml Java/language.py  Java/JavaTemplate.java MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Java/language.py  Java/JavaTemplate.java
 
-$(MSGDIR)/Javascript/%.js : $(mdir)/%.yaml Javascript/language.py  Javascript/Template.js MsgParser.py Makefile
+$(MSGDIR)/Javascript/%.js : $(mdir)/%.yaml Javascript/language.py  Javascript/Template.js MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Javascript/language.py  Javascript/Template.js
 
-$(MSGDIR)/Matlab/%.m : $(mdir)/%.yaml Matlab/language.py Matlab/Template.m MsgParser.py Makefile
+$(MSGDIR)/Matlab/%.m : $(mdir)/%.yaml Matlab/language.py Matlab/Template.m MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Matlab/language.py  Matlab/Template.m
 
 $(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES))
