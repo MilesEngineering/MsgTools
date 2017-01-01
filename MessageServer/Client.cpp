@@ -1,6 +1,4 @@
 #include "Client.h"
-#include "../MsgApp/FieldInfo.h"
-#include "../MsgApp/MsgInfo.h"
 #include "Cpp/Network/Connect.h"
 
 Client::Client(QTcpSocket* sock)
@@ -41,7 +39,7 @@ void Client::HandleIncomingPacket()
         }
         if(_receivedHeader)
         {
-            int len = _rxHeader->GetTotalLength();
+            int len = _rxHeader->GetDataLength();
             if (_tcpSocket->bytesAvailable() < len)
             {
                 //#qDebug() << "  Client " <<  tcpSocket->peerAddress().toString()+QString(":%1").arg(tcpSocket->peerPort()) << " Waiting for " << tempRxHeader.Length << " bytes, only have " << tcpSocket->bytesAvailable() << endl;
@@ -57,7 +55,7 @@ void Client::HandleIncomingPacket()
             //#qDebug() << "  Client " <<  tcpSocket->peerAddress().toString()+QString(":%1").arg(tcpSocket->peerPort()) << " Sending " << tempRxHeader.Length << " byte message ("
             //#         << tempRxHeader.InterfaceID << "/" << tempRxHeader.MessageID << ")." << endl;
 
-            if(msg->hdr.GetID() == ConnectMessage::MSG_ID)
+            if(msg->GetMessageID() == ConnectMessage::MSG_ID)
             {
                 ConnectMessage* connectMsg = (ConnectMessage*)msg.data();
                 char name[ConnectMessage::MSG_SIZE];
@@ -76,7 +74,7 @@ void Client::HandleIncomingPacket()
 void Client::MessageSlot(QSharedPointer<Message> msg)
 {
     _tcpSocket->write((const char*)msg->RawBuffer(), Message::HeaderSize());
-    int len = msg->GetTotalLength();
+    int len = msg->GetDataLength();
     _tcpSocket->write((const char*)msg->GetDataPtr(), len);
 }
 

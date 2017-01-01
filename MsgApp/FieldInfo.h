@@ -14,8 +14,8 @@ class FieldInfo
         const QString Description() const { return _description; }
         const QString Units() const { return _units; }
         int Count() const { return _count; }
-        virtual void SetValue(QString value, Message& msg, int index = 0) const = 0;
-        virtual const QString Value(Message& msg, int index = 0) const = 0;
+        virtual void SetValue(QString value, uint8_t* data, int index = 0) const = 0;
+        virtual const QString Value(uint8_t* data, int index = 0) const = 0;
     protected:
         QString _name;
         QString _description;
@@ -26,12 +26,13 @@ class FieldInfo
         
 };
 
+
 class IntFieldInfo : public  FieldInfo
 {
     public:
         IntFieldInfo(const char* name, const char* desc, const char* units, int location, int size, int count);
-        virtual void SetValue(QString value, Message& msg, int index = 0) const;
-        virtual const QString Value(Message& msg, int index = 0) const;
+        virtual void SetValue(QString value, uint8_t* data, int index = 0) const;
+        virtual const QString Value(uint8_t* data, int index = 0) const;
 };
 
 class UIntFieldInfo : public  FieldInfo
@@ -41,18 +42,18 @@ class UIntFieldInfo : public  FieldInfo
         : FieldInfo(name, desc, units, location, size, count)
         {
         }
-        virtual void SetValue(QString value, Message& msg, int index = 0) const
+        virtual void SetValue(QString value, uint8_t* data, int index = 0) const
         {
-            FromUint64_t(value.toInt(), msg, index);
+            FromUint64_t(value.toInt(), data, index);
         }
-        virtual const QString Value(Message& msg, int index = 0) const
+        virtual const QString Value(uint8_t* data, int index = 0) const
         {
             if(_units.toUpper() == "ASCII" && _count > 1)
             {
                 QString ret = "";
                 for(int i=0; i<_count; i++)
                 {
-                    char value = ToUint64_t(msg, i);
+                    char value = ToUint64_t(data, i);
                     if(value == 0)
                         break;
                     ret += value;
@@ -61,12 +62,12 @@ class UIntFieldInfo : public  FieldInfo
             }
             else
             {
-                return QString("%1").arg(ToUint64_t(msg, index));
+                return QString("%1").arg(ToUint64_t(data, index));
             }
         }
-        virtual void FromUint64_t(uint64_t value, Message& msg, int index) const
+        virtual void FromUint64_t(uint64_t value, uint8_t* data, int index) const
         {
-            uint8_t* ptr = &msg.m_data[_location + index * _fieldSize];
+            uint8_t* ptr = &data[_location + index * _fieldSize];
             switch(_fieldSize)
             {
                 case 1:
@@ -83,10 +84,10 @@ class UIntFieldInfo : public  FieldInfo
                     break;
             }
         }
-        virtual uint64_t ToUint64_t(Message& msg, int index) const
+        virtual uint64_t ToUint64_t(uint8_t* data, int index) const
         {
             uint64_t value = 0;
-            uint8_t* ptr = &msg.m_data[_location + index * _fieldSize];
+            uint8_t* ptr = &data[_location + index * _fieldSize];
             switch(_fieldSize)
             {
                 case 1:
@@ -113,9 +114,9 @@ class FloatFieldInfo : public  FieldInfo
         : FieldInfo(name, desc, units, location, size, count)
         {
         }
-        virtual void SetValue(QString value, Message& msg, int index = 0) const
+        virtual void SetValue(QString value, uint8_t* data, int index = 0) const
         {
-            uint8_t* ptr = &msg.m_data[_location + index * _fieldSize];
+            uint8_t* ptr = &data[_location + index * _fieldSize];
             switch(_fieldSize)
             {
                 case 4:
@@ -126,10 +127,10 @@ class FloatFieldInfo : public  FieldInfo
                     break;
             }
         }
-        virtual const QString Value(Message& msg, int index = 0) const
+        virtual const QString Value(uint8_t* data, int index = 0) const
         {
             QString value("");
-            uint8_t* ptr = &msg.m_data[_location + index * _fieldSize];
+            uint8_t* ptr = &data[_location + index * _fieldSize];
             switch(_fieldSize)
             {
                 case 4:
@@ -146,9 +147,25 @@ class FloatFieldInfo : public  FieldInfo
 class EnumFieldInfo : public UIntFieldInfo
 {
     public:
-        EnumFieldInfo(const char* name, const char* desc, const char* units, int location, int size, int count);
-        virtual void SetValue(QString value, Message& msg, int index = 0) const;
-        virtual const QString Value(Message& msg, int index = 0) const;
+        EnumFieldInfo(const char* name, const char* desc, const char* units, int location, int size, int count)
+        : UIntFieldInfo(name, desc, units, location, size, count)
+        {
+            /** \todo Need to populate hash tables to convert between int and enum string! */
+        }
+        virtual void SetValue(QString value, uint8_t* data, int index = 0) const
+        {
+            if(_nameToVal.contains(value))
+                value = QString("%1").arg(_nameToVal[value]);
+            UIntFieldInfo::SetValue(value, data, index);
+        }
+        virtual const QString Value(uint8_t* data, int index = 0) const
+        {
+            QString ret = UIntFieldInfo::Value(data, index);
+            uint64_t intVal = ret.toInt();
+            if(_valToName.contains(intVal))
+                ret = _valToName[intVal];
+            return ret;
+        }
     private:
         QHash<uint64_t, QString> _valToName;
         QHash<QString, uint64_t> _nameToVal;
@@ -165,16 +182,16 @@ class BitfieldInfo : public UIntFieldInfo
             /** \todo This isn't right! */
             _mask = _numBits << _shift;
         }
-        virtual void FromUint64_t(uint64_t value, Message& msg, int index) const
+        virtual void FromUint64_t(uint64_t value, uint8_t* data, int index) const
         {
-            uint64_t parent = UIntFieldInfo::ToUint64_t(msg, index);
+            uint64_t parent = UIntFieldInfo::ToUint64_t(data, index);
             parent &= ~_mask;
             parent |= (value << _shift);
-            UIntFieldInfo::FromUint64_t(parent, msg, index);
+            UIntFieldInfo::FromUint64_t(parent, data, index);
         }
-        virtual uint64_t ToUint64_t(Message& msg, int index) const
+        virtual uint64_t ToUint64_t(uint8_t* data, int index) const
         {
-            uint64_t parent = UIntFieldInfo::ToUint64_t(msg, index);
+            uint64_t parent = UIntFieldInfo::ToUint64_t(data, index);
             return  (parent & _mask) >> _shift;
         }
     private:
@@ -192,13 +209,13 @@ class ScaledFieldInfo : public UIntFieldInfo
           _offset(offset)
         {
         }
-        virtual void SetValue(QString value, Message& msg, int index = 0) const
+        virtual void SetValue(QString value, uint8_t* data, int index = 0) const
         {
-            UIntFieldInfo::FromUint64_t((value.toDouble() - _offset) / _scale, msg, index);
+            UIntFieldInfo::FromUint64_t((value.toDouble() - _offset) / _scale, data, index);
         }
-        virtual const QString Value(Message& msg, int index = 0) const
+        virtual const QString Value(uint8_t* data, int index = 0) const
         {
-            float value = UIntFieldInfo::ToUint64_t(msg, index) * _scale + _offset;
+            float value = UIntFieldInfo::ToUint64_t(data, index) * _scale + _offset;
             return QString("%1").arg(value);
         }
     private:
@@ -215,13 +232,13 @@ class ScaledBitfieldInfo : public  BitfieldInfo
           _offset(offset)
         {
         }
-        virtual void SetValue(QString value, Message& msg, int index = 0) const
+        virtual void SetValue(QString value, uint8_t* data, int index = 0) const
         {
-            BitfieldInfo::FromUint64_t((value.toDouble() - _offset) / _scale, msg, index);
+            BitfieldInfo::FromUint64_t((value.toDouble() - _offset) / _scale, data, index);
         }
-        virtual const QString Value(Message& msg, int index = 0) const
+        virtual const QString Value(uint8_t* data, int index = 0) const
         {
-            float value = BitfieldInfo::ToUint64_t(msg, index) * _scale + _offset;
+            float value = BitfieldInfo::ToUint64_t(data, index) * _scale + _offset;
             return QString("%1").arg(value);
         }
 

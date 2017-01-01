@@ -29,8 +29,26 @@ class <MSGNAME>
         }
         <ENUMERATIONS>
         <FIELDINFOS>
+        void SetMessageID(uint32_t id)
+        {
+            <SETMSGID>;
+        }
+        uint32_t GetMessageID()
+        {
+            return <GETMSGID>;
+        }
         <ACCESSORS>
-    private:
+        static MsgInfo* ReflectionInfo()
+        {
+            static bool firstTime = true;
+            static MsgInfo msgInfo(<MSGID>, "<MSGNAME>", "<MSGDESCRIPTION>", SIZE);
+            if(firstTime)
+            {
+                msgInfo.AddField(new <REFLECTION>);
+            }
+            return &msgInfo;
+        }
+    public:
         uint8_t m_data[SIZE];
 };
 

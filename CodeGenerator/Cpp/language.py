@@ -3,6 +3,7 @@ from MsgUtils import *
 
 # used as a prefix to namespace functions, enums, etc.
 namespace = ""
+enumClass = "class "
 firstParam = ""
 firstParamDecl = ""
 const = " const"
@@ -191,7 +192,7 @@ def initCode(msg):
 def enums(e):
     ret = ""
     for enum in e:
-        ret +=  "enum " + namespace + enum["Name"]+" {"
+        ret +=  "enum " + enumClass + namespace + enum["Name"]+" {"
         for option in enum["Options"]:
             optionName = option["Name"]
             if enumNamespace != 0:
@@ -437,3 +438,9 @@ def declarations(msg):
                 else:
                     ret.append(retType + " " + field["Name"] + "["+str(MsgParser.fieldCount(field))+"];")
     return ret
+
+def getMsgID(msg):
+    return baseGetMsgID("", "", 1, 0, msg)
+    
+def setMsgID(msg):
+    return baseSetMsgID("", "", 1, 0, msg)

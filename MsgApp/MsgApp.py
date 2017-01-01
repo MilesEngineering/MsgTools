@@ -179,7 +179,7 @@ class MsgApp(QMainWindow):
                 return
             
             # need to decode body len to read the body
-            bodyLen = Messaging.hdr.GetLength(self.rxBuf)
+            bodyLen = Messaging.hdr.GetDataLength(self.rxBuf)
             
             # read the body, unless we have the body
             if(len(self.rxBuf) < Messaging.hdrSize + bodyLen):
@@ -230,7 +230,7 @@ class MsgApp(QMainWindow):
                     pass
 
                 # need to decode body len to read the body
-                bodyLen = Messaging.hdr.GetLength(self.rxBuf)
+                bodyLen = Messaging.hdr.GetDataLength(self.rxBuf)
                 
                 # read the body
                 self.rxBuf += self.readFn(bodyLen)

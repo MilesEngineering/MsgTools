@@ -220,9 +220,25 @@ class MessageScopeGui(MsgGui.MsgGui):
                         plotListForID.append(msgPlot)
         except AttributeError:
             print("caught exception AttributeError")
+    
+    def MsgRoute(self, msg_buffer):
+        msg_route = []
+        try:
+            msg_route.append(str(Messaging.hdr.GetSource(msg_buffer)))
+        except AttributeError:
+            pass
+        try:
+            msg_route.append(str(Messaging.hdr.GetDestination(msg_buffer)))
+        except AttributeError:
+            pass
+        try:
+            msg_route.append(str(Messaging.hdr.GetDeviceID(msg_buffer)))
+        except AttributeError:
+            pass
+        return msg_route
 
     def ProcessMessage(self, msg_buffer):
-        msg_id = hex(Messaging.hdr.GetID(msg_buffer))
+        msg_id = hex(Messaging.hdr.GetMessageID(msg_buffer))
 
         if not msg_id in Messaging.MsgNameFromID:
             print("WARNING! No definition for ", msg_id, "!\n")
@@ -232,9 +248,8 @@ class MessageScopeGui(MsgGui.MsgGui):
         msg_class = Messaging.MsgClassFromName[msg_name]
         msg_fields = msg_class.fields
 
-        msg_key = str(Messaging.hdr.GetSource(msg_buffer)) + "," + \
-                  str(Messaging.hdr.GetDestination(msg_buffer)) + "," + \
-                  msg_id
+        msg_key = ",".join(self.MsgRoute(msg_buffer)) + "," + msg_id
+        
         self.display_message_in_rx_list(msg_key, msg_name, msg_buffer)
         self.display_message_in_rx_tree(msg_key, msg_name, msg_class, msg_buffer)
         self.display_message_in_plots(msg_class, msg_buffer)
@@ -251,10 +266,9 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         if not msg_key in self.rx_msg_list:
             widget_name = msg_name
-            src = Messaging.hdr.GetSource(msg_buffer)
-            dst = Messaging.hdr.GetDestination(msg_buffer)
-            if src != 0 or dst != 0:
-                widget_name += " ("+str(src)+"->"+str(dst)+")"
+            msg_route = self.MsgRoute(msg_buffer)
+            if len(msg_route) > 0 and not(all ("0" == a for a in msg_route)):
+                widget_name += " ("+"->".join(msg_route)+")"
             msg_list_item = QTreeWidgetItem([ widget_name, str(rx_time), "- Hz" ])
             msg_list_item.msg_key = msg_key
             msg_list_item.msg_name = msg_name

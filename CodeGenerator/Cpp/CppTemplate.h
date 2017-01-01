@@ -25,7 +25,7 @@ class <MSGNAME>Message : public Message
         {
             if(Exists())
             {
-                SetPayloadLength(size);
+                SetDataLength(size);
                 SetMessageID(MSG_ID);
                 InitializeTime();
                 Init();

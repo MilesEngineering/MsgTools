@@ -95,10 +95,11 @@ def GetBitsA(message_buffer):
 @msg.minVal('0')
 @msg.maxVal('7')
 @msg.count(1)
-def GetBitsB(message_buffer):
+def GetBitsB(message_buffer, enumAsInt=0):
     \"\"\"\"\"\"
     value = (TestCase1.GetFieldD(message_buffer) >> 4) & 0x7
-    value = TestCase1.ReverseEnumA.get(value, value)
+    if not enumAsInt:
+        value = TestCase1.ReverseEnumA.get(value, value)
     return value
 """)
         expected.append("""\

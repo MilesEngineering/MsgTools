@@ -1,4 +1,5 @@
 import MsgParser
+from MsgUtils import *
 
 # >/</= means big/little/native endian, see docs for struct.pack_into or struct.unpack_from.
 def fieldType(field):
@@ -98,6 +99,9 @@ def fnHdr(field, count, name):
         param += ", value"
     if  count > 1:
         param += ", idx"
+    if str.find(name, "Set") != 0:
+        if "Enum" in field:
+            param += ", enumAsInt=0"
         
     min = MsgParser.fieldMin(field)
     max = MsgParser.fieldMax(field)
@@ -126,12 +130,12 @@ def enumLookup(msg, field):
     return lookup
 
 def reverseEnumLookup(msg, field):
-    lookup = "value = " + msg["Name"] + ".Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
+    lookup = "if not enumAsInt:\n"
+    lookup += "        value = " + msg["Name"] + ".Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
     return lookup
 
 def getFn(msg, field, offset):
     loc = msg["Name"] + ".MSG_OFFSET + " + str(offset)
-    param = "message_buffer"
     type = fieldType(field)
     count = MsgParser.fieldCount(field)
     cleanup = ""
@@ -147,7 +151,6 @@ def getFn(msg, field, offset):
     ''' 
         else:
             loc += "+idx*" + str(MsgParser.fieldSize(field))
-            param += ", idx"
     if "Offset" in field or "Scale" in field:
         cleanup = "value = " + MsgParser.getMath("value", field, "")+"\n    "
     ret = '''\
@@ -158,7 +161,6 @@ def getFn(msg, field, offset):
     return ret
 
 def setFn(msg, field, offset):
-    param = "message_buffer, value"
     loc = msg["Name"] + ".MSG_OFFSET + " + str(offset)
     count = MsgParser.fieldCount(field)
     type = fieldType(field)
@@ -178,7 +180,6 @@ def setFn(msg, field, offset):
             math = "tmp = value.encode('utf-8')"
         else:
             loc += "+idx*" + str(MsgParser.fieldSize(field))
-            param += ", idx"
     ret  = '''\
 %s
     %s
@@ -293,3 +294,9 @@ def enums(e):
 
 def declarations(msg):
     return [""]
+
+def getMsgID(msg):
+    return baseGetMsgID("<MSGNAME>.", "message_buffer", 0, 1, msg)
+    
+def setMsgID(msg):
+    return baseSetMsgID("<MSGNAME>.", "message_buffer, ", 0, 1, msg)

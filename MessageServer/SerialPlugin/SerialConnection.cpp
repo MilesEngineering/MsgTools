@@ -1,5 +1,4 @@
 #include "SerialConnection.h"
-#include "Cpp/headers/SerialHeader.h"
 #include "qextserialport/src/qextserialenumerator.h"
 #include <QDebug>
 #include <QRadioButton>
@@ -95,6 +94,14 @@ SerialConnection::SerialConnection()
     timer->start(500);
 
     connect(&serialPort, &QextSerialPort::readyRead, this, &SerialConnection::SerialDataReady);
+
+    // Make a list of fields in the serial header and network header that have matching names.
+    foreach(const FieldInfo* serialFieldInfo, SerialHeaderWrapper::ReflectionInfo()->GetFields())
+    {
+        const FieldInfo* networkFieldInfo = NetworkHeader::ReflectionInfo()->GetField(serialFieldInfo->Name());
+        if(networkFieldInfo)
+            correspondingFields.append(QPair<const FieldInfo*, const FieldInfo*>(serialFieldInfo, networkFieldInfo));
+    }
 }
 
 SerialConnection::~SerialConnection()
@@ -130,8 +137,8 @@ void SerialConnection::SerialDataReady()
         /** \note Synchronize on start sequence */
         while(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(SerialHeader::StartSequenceFieldInfo::defaultValue))
         {
-            /** peek at first byte.
-             * if it's start byte, break.
+            /** peek at start of message.
+             * if it's start sequence, break.
              * else, throw it away and try again. */
             serialPort.peek((char*)&tmpRxHdr, sizeof(SerialHeader::StartSequenceFieldInfo::defaultValue));
             if(tmpRxHdr.GetStartSequence() == SerialHeader::StartSequenceFieldInfo::defaultValue)
@@ -174,14 +181,14 @@ void SerialConnection::SerialDataReady()
 
     if(gotHeader)
     {
-        if(serialPort.bytesAvailable() >= tmpRxHdr.GetLength())
+        if(serialPort.bytesAvailable() >= tmpRxHdr.GetDataLength())
         {
             // allocate the serial message body, read from the serial port
-            QSharedPointer<SerialMessage> msg(SerialMessage::New(tmpRxHdr.GetLength()));
+            QSharedPointer<SerialMessage> msg(SerialMessage::New(tmpRxHdr.GetDataLength()));
             msg->hdr = tmpRxHdr;
-            serialPort.read((char*)msg->GetDataPtr(), msg->hdr.GetLength());
+            serialPort.read((char*)msg->GetDataPtr(), msg->hdr.GetDataLength());
 
-            uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetLength());
+            uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetDataLength());
 
             if(tmpRxHdr.GetBodyChecksum() != bodyCrc)
             {
@@ -200,34 +207,45 @@ void SerialConnection::SerialDataReady()
 
 void SerialConnection::MessageSlot(QSharedPointer<Message> msg)
 {
-    if(msg->hdr.GetID() < 0xFFFF)
+    if(msg->hdr.GetMessageID() < 0xFFFF)
     {
-        SerialHeader serialHdr;
-        serialHdr.SetID(msg->hdr.GetID());
-        serialHdr.SetPriority(msg->hdr.GetPriority());
-        serialHdr.SetLength(msg->hdr.GetLength());
-        serialHdr.SetDestination(msg->hdr.GetDestination());
-        serialHdr.SetSource(msg->hdr.GetSource());
+        SerialHeaderWrapper serialHdr;
+        serialHdr.SetMessageID(msg->hdr.GetMessageID());
+        // loop through fields using reflection, and transfer contents from
+        // network message to serial message
+        for(int i=0; i<correspondingFields.length(); i++)
+        {
+            QPair<const FieldInfo*,const FieldInfo*> pair = correspondingFields[i];
+            const FieldInfo* serInfo = pair.first;
+            const FieldInfo* netInfo = pair.second;
+            serInfo->SetValue(netInfo->Value(msg->hdr.m_data), serialHdr.m_data);
+        }
 
         uint16_t headerCrc = Crc((uint8_t*)&serialHdr, SerialHeader::SIZE);
         serialHdr.SetHeaderChecksum(headerCrc);
 
-        uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetLength());
+        uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetDataLength());
         serialHdr.SetBodyChecksum(bodyCrc);
 
         serialPort.write((char*)&serialHdr, sizeof(serialHdr));
-        serialPort.write((char*)msg->GetDataPtr(), msg->hdr.GetLength());
+        serialPort.write((char*)msg->GetDataPtr(), msg->hdr.GetDataLength());
     }
 }
 
 void SerialConnection::SerialMsgSlot(QSharedPointer<SerialMessage> msg)
 {
-    QSharedPointer<Message> dbmsg (Message::New(msg->hdr.GetLength()));
+    QSharedPointer<Message> dbmsg (Message::New(msg->hdr.GetDataLength()));
+    dbmsg->hdr.SetMessageID(msg->hdr.GetMessageID());
 
-    dbmsg->hdr.SetPriority(msg->hdr.GetPriority());
-    dbmsg->hdr.SetDestination(msg->hdr.GetDestination());
-    dbmsg->hdr.SetSource(msg->hdr.GetSource());
-    dbmsg->hdr.SetID(msg->hdr.GetID());
+    // loop through fields using reflection, and transfer contents from
+    // serial message to network message
+    for(int i=0; i<correspondingFields.length(); i++)
+    {
+        QPair<const FieldInfo*, const FieldInfo*> pair = correspondingFields[i];
+        const FieldInfo* serInfo = pair.first;
+        const FieldInfo* netInfo = pair.second;
+        netInfo->SetValue(serInfo->Value(msg->hdr.m_data), dbmsg->hdr.m_data);
+    }
     
     /** \todo Detect time rolling */
     uint16_t thisTimestamp = msg->hdr.GetTime();
@@ -247,7 +265,7 @@ void SerialConnection::SerialMsgSlot(QSharedPointer<SerialMessage> msg)
     _lastTimestamp = thisTimestamp;
     dbmsg->hdr.SetTime((timestampOffset << 16) + thisTimestamp);
 
-    memcpy(dbmsg->GetDataPtr(), msg->GetDataPtr(), msg->hdr.GetLength());
+    memcpy(dbmsg->GetDataPtr(), msg->GetDataPtr(), msg->hdr.GetDataLength());
     emit MsgSignal(dbmsg);
 }
 

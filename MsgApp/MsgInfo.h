@@ -24,7 +24,7 @@ class MsgInfo
         MsgId ID() const { return _id; }
         int   Size() const;
 
-        const QVector<FieldInfo *>& GetFields() const;
+        const QVector<FieldInfo *>& GetFields() const { return _fields; }
         const FieldInfo*            GetField(QString name) const { return _fieldHash.value(name); }
 
         void AddField(FieldInfo* fieldInfo) { _fields.append(fieldInfo); _fieldHash[fieldInfo->Name()] = fieldInfo; }
@@ -36,6 +36,35 @@ class MsgInfo
         QString                    _name;
         QString                    _description;
         int                        _size;
+};
+
+/** Utility class to cache FieldInfo by QString, for a given msgInfo. */
+class FieldInfoCache
+{
+public:
+    FieldInfoCache()
+    : fieldInfos()
+    {
+    }
+    FieldInfo* lookup(MsgInfo* msgInfo, const QString& name)
+    {
+        if(!fieldInfos.contains(name))
+        {
+            FieldInfo* fi = 0;
+            foreach(FieldInfo* fieldInfo, msgInfo->GetFields())
+            {
+                if(fieldInfo->Name().contains(name))
+                {
+                    fi = fieldInfo;
+                    break;
+                }
+            }
+            fieldInfos[name] = fi;
+        }
+        return fieldInfos[name];
+    }
+    private:
+        QHash<QString, FieldInfo*> fieldInfos;
 };
 
 #endif

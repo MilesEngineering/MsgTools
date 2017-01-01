@@ -13,7 +13,7 @@ HEADERS += \
     SerialPlugin.h \
     SerialConnection.h \
     ../ServerPort.h \
-    ../Message.h \
+    ../../MsgApp/Message.h \
     ../ServerInterface.h \
     SerialMessage.h
 

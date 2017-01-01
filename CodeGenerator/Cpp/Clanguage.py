@@ -9,6 +9,7 @@ language.firstParamDecl = "uint8_t* m_data"
 language.const = ""
 language.enumNamespace = 1
 language.functionPrefix = "extern inline "
+language.enumClass = ""
 
 enums = language.enums
 accessors = language.accessors

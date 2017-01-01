@@ -242,6 +242,63 @@ def msgID(msg, enums):
         ret = msg["ID"]
     return str(ret)
 
+def addShift(base, value, shiftValue):
+    ret = value
+    if base != "":
+        ret = "(("+base+")<<"+str(shiftValue)+")"+"+"+value
+    return ret
+    
+def baseGetMsgID(prefix, baseParam, castEnums, enumAsIntParam, msg):
+    ret = ""
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            if "IDBits" in field:
+                numBits = field["IDBits"]
+                param = baseParam
+                if "Enum" in field and enumAsIntParam:
+                    param += ", 1"
+                getStr = prefix+"Get"+field["Name"]+"("+param+")"
+                if "Enum" in field and castEnums:
+                    getStr = "uint32_t("+getStr+")"
+                ret =  addShift(ret, getStr, numBits)
+            if "Bitfields" in field:
+                for bitfield in field["Bitfields"]:
+                    if "IDBits" in bitfield:
+                        numBits = bitfield["IDBits"]
+                        param = baseParam
+                        if "Enum" in bitfield and enumAsIntParam:
+                            param += ", 1"
+                        getStr = prefix+"Get"+BitfieldName(field, bitfield)+"("+param+")"
+                        if "Enum" in bitfield and castEnums:
+                            getStr = "uint32_t("+getStr+")"
+                        ret =  addShift(ret, getStr, numBits)
+    return ret
+    
+def baseSetMsgID(prefix, param, castEnums, enumAsIntParam, msg):
+    ret = ""
+    numBits = 0
+    if "Fields" in msg:
+        for field in reversed(msg["Fields"]):
+            if "IDBits" in field:
+                if numBits != 0:
+                    ret += "\nid = id >> " + str(numBits)+"\n"
+                numBits = field["IDBits"]
+                setStr = "id & "+Mask(numBits)
+                if "Enum" in field and castEnums:
+                    setStr = field["Enum"]+"("+setStr+")"
+                ret +=  prefix+"Set"+field["Name"]+"("+param+setStr+")"
+            if "Bitfields" in field:
+                for bitfield in reversed(field["Bitfields"]):
+                    if "IDBits" in bitfield:
+                        if numBits != 0:
+                            ret += "\nid = id >> " + str(numBits)+"\n"
+                        numBits = bitfield["IDBits"]
+                        setStr = "id & "+Mask(numBits)
+                        if "Enum" in bitfield and castEnums:
+                            setStr = bitfield["Enum"]+"("+setStr+")"
+                        ret +=  prefix+"Set"+bitfield["Name"]+"("+param+setStr+")"
+    return ret
+    
 def Enums(inputData):
     enumList = []
     if "Enums" in inputData:

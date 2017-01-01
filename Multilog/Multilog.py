@@ -102,7 +102,7 @@ filenames will be composed like so:
         # if user specified allowed messages...
         if self.allowedMessages:
             # read the ID, and get the message name, to check if it's allowed
-            id       = hex(Messaging.hdr.GetID(msg))
+            id       = hex(Messaging.hdr.GetMessageID(msg))
             msgName = Messaging.MsgNameFromID[id]
         
             # only log this message if it's in that list

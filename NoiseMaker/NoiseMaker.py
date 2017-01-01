@@ -80,7 +80,10 @@ class NoiseMaker(MsgGui.MsgGui):
                 
     def sendMsg(self, msgClass):
         msg = msgClass.Create()
-        Messaging.hdr.SetTime(msg, self.currentTime)
+        try:
+            Messaging.hdr.SetTime(msg, self.currentTime)
+        except AttributeError:
+            pass
         for fieldInfo in msgClass.fields:
             
             if fieldInfo.units == 'ASCII':

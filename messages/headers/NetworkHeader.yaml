@@ -11,6 +11,7 @@ Messages:
       - Name: ID
         Type: uint32
         Default: 0
+        IDBits: 32
       - Name: PackedField
         Type: uint32
         Units: ""
@@ -20,7 +21,7 @@ Messages:
               NumBits: 8
               Default: 0
               Units: ""
-            - Name: Length
+            - Name: DataLength
               Default: 0
               NumBits: 24
               Units: ""

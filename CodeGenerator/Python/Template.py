@@ -21,11 +21,8 @@ class <MSGNAME> :
     def Create() :
         message_buffer = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + <MSGNAME>.SIZE)
 
-        Messaging.hdr.SetSource(message_buffer, 0)
-        Messaging.hdr.SetDestination(message_buffer, 0)
-        Messaging.hdr.SetID(message_buffer, <MSGNAME>.ID)
-        Messaging.hdr.SetLength(message_buffer, <MSGNAME>.SIZE)
-        Messaging.hdr.SetPriority(message_buffer, 0)
+        Messaging.hdr.SetMessageID(message_buffer, <MSGNAME>.ID)
+        Messaging.hdr.SetDataLength(message_buffer, <MSGNAME>.SIZE)
 
         <INIT_CODE>
         return message_buffer

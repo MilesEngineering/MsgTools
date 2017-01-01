@@ -63,7 +63,7 @@ class MsgInspector(MsgGui.MsgGui):
 
     def ShowMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = hex(Messaging.hdr.GetID(msg))
+        id       = hex(Messaging.hdr.GetMessageID(msg))
         msgName = Messaging.MsgNameFromID[id]
         msgClass = Messaging.MsgClassFromName[msgName]
 
@@ -111,7 +111,10 @@ class MsgInspector(MsgGui.MsgGui):
         
         msgStringList = []
         columnAlerts = []
-        msgStringList.append(str(Messaging.hdr.GetTime(msg)))
+        try:
+            msgStringList.append(str(Messaging.hdr.GetTime(msg)))
+        except AttributeError:
+            msgStringList.append("Unknown")
         columnAlerts.append(0)
         keyColumn = -1
         columnCounter = 1

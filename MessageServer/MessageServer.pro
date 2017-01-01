@@ -11,7 +11,7 @@ SOURCES += main.cpp \
 HEADERS += MessageServer.h \
     Client.h \
     ServerPort.h \
-    Message.h \
+    ../MsgApp/Message.h \
     ServerInterface.h
 
 QT += network xml widgets core gui

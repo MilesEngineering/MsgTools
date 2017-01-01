@@ -25,6 +25,16 @@ class <MSGNAME> :
     @staticmethod
     def MsgName():
         return "<MSGNAME>"
+
+    @staticmethod
+    def SetMessageID(message_buffer, id):
+        <SETMSGID>
+
+    @staticmethod
+    def GetMessageID(message_buffer):
+        id = <GETMSGID>
+        return id
+
     # Accessors
     <ACCESSORS>
 

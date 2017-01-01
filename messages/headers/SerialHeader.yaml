@@ -14,6 +14,7 @@ Messages:
               NumBits: 15
               Default: 0
               Units: ""
+              IDBits: 15
             - Name: FixedBitForMatlab
               NumBits: 1
               Default: 1
@@ -33,7 +34,7 @@ Messages:
               NumBits: 2
               Default: 0
               Units: ""
-            - Name: Length
+            - Name: DataLength
               NumBits: 14
               Default: 0
               Units: ""

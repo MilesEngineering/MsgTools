@@ -39,6 +39,8 @@ def DoReplacements(line, msg, enums, replacements):
     ret = optionalReplace(ret, "<FIELDINFOS>", 'fieldInfos', msg)
     ret = optionalReplace(ret, "<STRUCTUNPACKING>", 'structUnpacking', msg)
     ret = optionalReplace(ret, "<STRUCTPACKING>", 'structPacking', msg)
+    ret = optionalReplace(ret, "<GETMSGID>", 'getMsgID', msg)
+    ret = optionalReplace(ret, "<SETMSGID>", 'setMsgID', msg)
     if "<FOREACHFIELD" in ret:
         ret = fieldReplacements(ret, msg)
     if "<FOREACHSUBFIELD" in ret:

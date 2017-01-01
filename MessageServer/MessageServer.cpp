@@ -114,7 +114,7 @@ void MessageServer::MessageSlot(QSharedPointer<Message> msg)
     if(_logFile)
     {
         _logFile->write((const char*)msg->RawBuffer(), Message::HeaderSize());
-        _logFile->write((const char*)msg->GetDataPtr(), msg->GetTotalLength());
+        _logFile->write((const char*)msg->GetDataPtr(), msg->GetDataLength());
     }
 }
 

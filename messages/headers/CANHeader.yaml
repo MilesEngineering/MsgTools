@@ -11,6 +11,7 @@ Messages:
       - Name: ID
         Type: uint16
         Default: 0
+        IDBits: 16
       - Name: Length
         Type: uint16
         Default: 0

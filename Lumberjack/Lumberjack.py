@@ -45,7 +45,7 @@ in that directory.''')
 
     def PrintMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = hex(Messaging.hdr.GetID(msg))
+        id       = hex(Messaging.hdr.GetMessageID(msg))
         msgName = Messaging.MsgNameFromID[id]
         msgClass = Messaging.MsgClassFromName[msgName]
 

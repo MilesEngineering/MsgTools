@@ -22,7 +22,7 @@ class SerialConnection : public ServerPort
         void PrintDebugInfo();
         QWidget* widget(int index) override;
     private:
-        SerialHeader tmpRxHdr;
+        SerialHeaderWrapper tmpRxHdr;
         bool gotHeader;
         QextSerialPort serialPort;
         QGroupBox _buttonGroup;
@@ -38,6 +38,7 @@ class SerialConnection : public ServerPort
         void radioButtonToggled(bool pressed);
         enum RxErrorType { START, HEADER, BODY };
         void gotRxError(RxErrorType errorType);
+        QList<QPair<const FieldInfo*, const FieldInfo*> > correspondingFields;
 };
 
 #endif
