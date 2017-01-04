@@ -1,6 +1,8 @@
-#include "MsgApp/MessageClient.h"
+#define UNDEFINED_MSGID (-1)
+
 #include "MsgApp/FieldInfo.h"
 #include "MsgApp/MsgInfo.h"
+#include "MsgApp/MessageClient.h"
 #include "MsgApp/Reflection.h"
 #include "Cpp/Network/Connect.h"
 #include "Cpp/test/TestCase1.h"
@@ -33,9 +35,9 @@ TEST(MessageClientTest, Reflection)
     MessageClient mc(&buffer);
 
     ConnectMessage* cmTx = new ConnectMessage();
-    cmTx->hdr->SetSource(0x1234);
-    cmTx->hdr->SetDestination(0x5678);
-    cmTx->hdr->SetPriority(1234);
+    cmTx->hdr.SetSource(0x1234);
+    cmTx->hdr.SetDestination(0x5678);
+    cmTx->hdr.SetPriority(1234);
     strcpy((char*)cmTx->Name(), "test1");
     /* Connect the signal so we can receive a message, and test that send/receive works. */
     QSignalSpy* ss = new QSignalSpy(&mc, SIGNAL(newMessageComplete(Message*)));
@@ -55,11 +57,11 @@ TEST(MessageClientTest, Reflection)
         ConnectMessage* cm = (ConnectMessage*)cmRx;
         EXPECT_TRUE(cmRx != 0);
         /* Verify header */
-        EXPECT_EQ(cm->hdr->GetLength(), (unsigned)ConnectMessage::MSG_SIZE);
-        EXPECT_EQ(cm->hdr->GetSource(), cmTx->hdr->GetSource());
-        EXPECT_EQ(cm->hdr->GetDestination(), cmTx->hdr->GetDestination());
-        EXPECT_EQ(cm->hdr->GetID(), cmTx->hdr->GetID());
-        EXPECT_EQ(cm->hdr->GetPriority(), cmTx->hdr->GetPriority());
+        EXPECT_EQ(cm->hdr.GetDataLength(), (unsigned)ConnectMessage::MSG_SIZE);
+        EXPECT_EQ(cm->hdr.GetSource(), cmTx->hdr.GetSource());
+        EXPECT_EQ(cm->hdr.GetDestination(), cmTx->hdr.GetDestination());
+        EXPECT_EQ(cm->hdr.GetID(), cmTx->hdr.GetID());
+        EXPECT_EQ(cm->hdr.GetPriority(), cmTx->hdr.GetPriority());
         /* Verify body */
         EXPECT_STREQ((char*)cm->Name(), (char*)cmTx->Name());
     }
@@ -82,7 +84,7 @@ TEST(MessageClientTest, Reflection)
     EXPECT_TRUE(fi != NULL);
     if(fi)
     {
-        QString v = fi->Value(*cm);
+        QString v = fi->Value(cm->GetDataPtr());
         EXPECT_STREQ(v.toUtf8().constData(), "test1");
     }
 
@@ -114,13 +116,13 @@ TEST(MessageClientTest, CppAndC)
         SET(TestCase2Message, Field5, offset);
         SET(TestCase2Message, Field6, STEPS-offset);
 
-        EXPECT_EQ(tc2.GetF1(), TestCase2_GetF1(tc2.m_data));
+        EXPECT_EQ(unsigned(tc2.GetF1()), TestCase2_GetF1(tc2.GetDataPtr()));
         for(int i=0; i<TestCase2Message::F2FieldInfo::count; i++)
-            EXPECT_EQ(tc2.GetF2(i), TestCase2_GetF2(tc2.m_data, i));
-        EXPECT_EQ(tc2.GetF3(), TestCase2_GetF3(tc2.m_data));
-        EXPECT_EQ(tc2.GetF4(), TestCase2_GetF4(tc2.m_data));
-        EXPECT_EQ(tc2.GetField5(), TestCase2_GetField5(tc2.m_data));
-        EXPECT_EQ(tc2.GetField6(), TestCase2_GetField6(tc2.m_data));
+            EXPECT_EQ(tc2.GetF2(i), TestCase2_GetF2(tc2.GetDataPtr(), i));
+        EXPECT_EQ(tc2.GetF3(), TestCase2_GetF3(tc2.GetDataPtr()));
+        EXPECT_EQ(tc2.GetF4(), TestCase2_GetF4(tc2.GetDataPtr()));
+        EXPECT_EQ(tc2.GetField5(), TestCase2_GetField5(tc2.GetDataPtr()));
+        EXPECT_EQ(unsigned(tc2.GetField6()), TestCase2_GetField6(tc2.GetDataPtr()));
     }
 
     TestCase1Message tc1;
@@ -129,9 +131,9 @@ TEST(MessageClientTest, CppAndC)
         SET(TestCase1Message, FieldA, offset);
         SET(TestCase1Message, FABitsA, offset);
         SET(TestCase1Message, FieldB, offset);
-        EXPECT_EQ(tc1.GetFieldA(), TestCase1_GetFieldA(tc1.m_data));
-        EXPECT_EQ(tc1.GetFABitsA(), TestCase1_GetFABitsA(tc1.m_data));
-        EXPECT_EQ(tc1.GetFieldB(), TestCase1_GetFieldB(tc1.m_data));
+        EXPECT_EQ(tc1.GetFieldA(), TestCase1_GetFieldA(tc1.GetDataPtr()));
+        EXPECT_EQ(tc1.GetFABitsA(), TestCase1_GetFABitsA(tc1.GetDataPtr()));
+        EXPECT_EQ(tc1.GetFieldB(), TestCase1_GetFieldB(tc1.GetDataPtr()));
     }
 }
 

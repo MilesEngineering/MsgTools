@@ -1,3 +1,7 @@
+#define UNDEFINED_MSGID (-1)
+
+#include "MsgApp/FieldInfo.h"
+#include "MsgApp/MsgInfo.h"
 #include "Cpp/headers/NetworkHeader.h"
 #include <QObject>
 #include <QIODevice>
@@ -31,8 +35,8 @@ class MessageClient : public QObject
                         int length = _ioDevice.read((char*)&_inProgressHeader, sizeof(_inProgressHeader));
                         if(length == sizeof(_inProgressHeader))
                         {
-                            _inProgressMessage = new Message(_inProgressHeader.GetLength());
-                            *_inProgressMessage->hdr = _inProgressHeader;
+                            _inProgressMessage = new Message(_inProgressHeader.GetDataLength());
+                            memcpy(&_inProgressMessage->hdr, &_inProgressHeader, sizeof(_inProgressHeader));
                             _gotHeader = true;
                         }
                     }
@@ -44,7 +48,7 @@ class MessageClient : public QObject
 
                 if(_gotHeader)
                 {
-                    int bytesWanted = _inProgressHeader.GetLength();
+                    int bytesWanted = _inProgressHeader.GetDataLength();
                     bytesAvailable = _ioDevice.bytesAvailable();
                     if(bytesAvailable >= bytesWanted)
                     {
@@ -65,8 +69,10 @@ class MessageClient : public QObject
     public slots:
         bool sendMessage(Message* msg)
         {
-            int count = sizeof(NetworkHeader) + msg->hdr->GetLength();
-            return count == _ioDevice.write((char*)msg->hdr, count);
+            int count = sizeof(NetworkHeader) + msg->hdr.GetDataLength();
+            int txCount = _ioDevice.write((char*)&(msg->hdr), sizeof(msg->hdr));
+            txCount += _ioDevice.write((char*)msg->GetDataPtr(), msg->hdr.GetDataLength());
+            return count == txCount;
         }
     private:
         QIODevice& _ioDevice;
