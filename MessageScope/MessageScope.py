@@ -26,6 +26,10 @@ try:
 except ImportError:
     print("Error loading plot interface.")
     print("Perhaps you forgot to install pyqtgraph.")
+except RuntimeError:
+    print("Error loading plot interface.")
+    print("Perhaps you need to install the PyQt5 version of pyqtgraph.")
+    
 
 class RxRateCalculatorThread(QObject):
     rates_updated = pyqtSignal(object)
