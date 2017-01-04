@@ -10,14 +10,12 @@ To avoid incorrectly using python2 in your path, you may want to try launching b
 NOT
     python path/to/script/ScriptName.py\n''')
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.QtNetwork import *
+from PyQt5 import QtGui, QtWidgets, QtCore, QtNetwork
 
 from Messaging import Messaging
 
-class MsgApp(QMainWindow):
-    RxMsg = pyqtSignal(bytearray)
+class MsgApp(QtWidgets.QMainWindow):
+    RxMsg = QtCore.pyqtSignal(bytearray)
     
     def __init__(self, name, headerName, argv, options):
         self.name = name
@@ -62,7 +60,7 @@ class MsgApp(QMainWindow):
         msgdir = srcroot+"/../obj/CodeGenerator/Python/"
         self.msgLib = Messaging(msgdir, 0, headerName)
         
-        self.status = QLabel("Initializing")
+        self.status = QtWidgets.QLabel("Initializing")
         self.statusBar().addPermanentWidget(self.status)
 
         self.OpenConnection()
@@ -73,8 +71,8 @@ class MsgApp(QMainWindow):
         print("\n\ndone reading message definitions, opening the connection ", self.connectionType, " ", self.connectionName)
 
         if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
-            connectAction = QAction('&Connect', self)
-            disconnectAction = QAction('&Disconnect', self)
+            connectAction = QtWidgets.QAction('&Connect', self)
+            disconnectAction = QtWidgets.QAction('&Disconnect', self)
 
             menubar = self.menuBar()
             connectMenu = menubar.addMenu('&Connect')
@@ -102,7 +100,7 @@ class MsgApp(QMainWindow):
                 disconnectAction.triggered.connect(self.connection.disconnect)
                 # die "Could not create socket: $!\n" unless $connection
             elif(self.connectionType.lower() == "qtsocket"):
-                self.connection = QTcpSocket(self)
+                self.connection = QtNetwork.QTcpSocket(self)
                 self.connection.error.connect(self.displayError)
                 ret = self.connection.readyRead.connect(self.readRxBuffer)
                 self.connection.connectToHost(ip, port)
@@ -150,7 +148,7 @@ class MsgApp(QMainWindow):
         # send a connect message
         connectBuffer = self.msgLib.Connect.Connect.Create();
         self.msgLib.Connect.Connect.SetName(connectBuffer, self.name);
-        output_stream = QDataStream(self.connection)
+        output_stream = QtCore.QDataStream(self.connection)
         self.sendFn(connectBuffer.raw);
         self.status.setText('Connected')
     
@@ -163,9 +161,8 @@ class MsgApp(QMainWindow):
         print("Socket Error: " + str(socketError))
 
     # Qt signal/slot based reading of TCP socket
-    @pyqtSlot(str)
     def readRxBuffer(self):
-        input_stream = QDataStream(self.connection)
+        input_stream = QtCore.QDataStream(self.connection)
         while(self.connection.bytesAvailable() > 0):
             # read the header, unless we have the header
             if(len(self.rxBuf) < Messaging.hdrSize):

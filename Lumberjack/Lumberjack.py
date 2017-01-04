@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
-from PySide import QtCore, QtGui
-from PySide.QtGui import *
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 import os
 srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
@@ -102,6 +101,6 @@ in that directory.''')
 
 # main starts here
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     msgApp = Lumberjack(sys.argv)
     msgApp.MessageLoop()

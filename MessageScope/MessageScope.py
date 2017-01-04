@@ -6,8 +6,9 @@ import collections
 import functools
 import threading
 
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 
 import os
 srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
@@ -35,7 +36,6 @@ class RxRateCalculatorThread(QObject):
         self.rx_msg_deque = rx_msg_deque
         self.thread_lock = thread_lock
 
-    @pyqtSlot()
     def run(self):
         rates = {}
 

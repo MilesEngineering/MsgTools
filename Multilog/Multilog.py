@@ -6,8 +6,7 @@
 #         text gets inserted in log whenever you hit enter in annotation box or click 'note' button next to annotate box.
 
 import sys
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtGui import *
+from PyQt5 import QtCore, QtGui, QtWidgets
 from time import strftime
 
 import os
@@ -46,17 +45,17 @@ filenames will be composed like so:
         self.RxMsg.connect(self.LogMessage)
 
         # tab widget to show multiple messages, one per tab
-        widget = QWidget(self)
-        vLayout = QtGui.QVBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        vLayout = QtWidgets.QVBoxLayout(widget)
         self.setCentralWidget(widget)
         self.resize(640, 480)
-        self.statusMsg = QLabel("NOT logging")
+        self.statusMsg = QtWidgets.QLabel("NOT logging")
         vLayout.addWidget(self.statusMsg)
 
-        hLayout = QtGui.QHBoxLayout()
+        hLayout = QtWidgets.QHBoxLayout()
         vLayout.addLayout(hLayout)
-        lvLayout = QtGui.QVBoxLayout()
-        rvLayout = QtGui.QVBoxLayout()
+        lvLayout = QtWidgets.QVBoxLayout()
+        rvLayout = QtWidgets.QVBoxLayout()
         hLayout.addLayout(lvLayout)
         hLayout.addLayout(rvLayout)
         
@@ -68,8 +67,8 @@ filenames will be composed like so:
                 label = option[1].replace("_"," ")
 
                 # add text field
-                lvLayout.addWidget(QLabel(label))
-                lineEdit = QLineEdit()
+                lvLayout.addWidget(QtWidgets.QLabel(label))
+                lineEdit = QtWidgets.QLineEdit()
                 rvLayout.addWidget(lineEdit)
                 self.lineEdits.append(lineEdit)
             elif option[0] == '--button':
@@ -82,7 +81,7 @@ filenames will be composed like so:
 
                 # add button
                 label = options["label"].replace("_"," ")
-                button = QPushButton(label)
+                button = QtWidgets.QPushButton(label)
                 # how to set hot key?  do it at window level, or at button level?  or something else?
                 #button.hotKey = options["hotkey"]
                 button.label = label
@@ -162,7 +161,7 @@ filenames will be composed like so:
 
 # main starts here
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     msgApp = Multilog(sys.argv)
     msgApp.show()
     sys.exit(app.exec_())

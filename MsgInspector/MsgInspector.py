@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtGui import *
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 import os
 srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
@@ -12,10 +11,10 @@ import MsgGui
 
 from Messaging import Messaging
 
-class TreeWidgetItem(QtGui.QTreeWidgetItem):
+class TreeWidgetItem(QtWidgets.QTreeWidgetItem):
 
     def __init__(self, parent, stringList):
-        QtGui.QTreeWidgetItem.__init__(self, parent, stringList)
+        QtWidgets.QTreeWidgetItem.__init__(self, parent, stringList)
 
     def __lt__(self, otherItem):
         column = self.treeWidget().sortColumn()
@@ -32,7 +31,7 @@ class MsgInspector(MsgGui.MsgGui):
         self.RxMsg.connect(self.ShowMessage)
 
         # tab widget to show multiple messages, one per tab
-        self.tabWidget = QTabWidget(self)
+        self.tabWidget = QtWidgets.QTabWidget(self)
         self.setCentralWidget(self.tabWidget)
         self.resize(640, 480)
         
@@ -82,11 +81,11 @@ class MsgInspector(MsgGui.MsgGui):
         if(not(id in self.msgWidgets)):
             firstTime = 1
             # create a new tree widget
-            msgWidget = QtGui.QTreeWidget()
+            msgWidget = QtWidgets.QTreeWidget()
             msgWidget.msgName = msgName
             # configure the header so we can click on it to sort
             header = msgWidget.header()
-            header.setClickable(1)
+            header.setSectionsClickable(1)
             header.setSortIndicatorShown(1)
             # show sort indicator ascending on Time, if not sorting, because we append incoming messages
             header.setSortIndicator(0, QtCore.Qt.AscendingOrder)
@@ -181,7 +180,7 @@ class MsgInspector(MsgGui.MsgGui):
 
 # main starts here
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     msgApp = MsgInspector(sys.argv)
     msgApp.show()
     sys.exit(app.exec_())

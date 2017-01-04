@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import sys
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtGui import *
-from PyQt4.QtCore import QTimer
+from PyQt5 import QtGui, QtWidgets
+from PyQt5.QtCore import QTimer
 
 import os
 srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
@@ -26,7 +25,7 @@ class NoiseMaker(MsgGui.MsgGui):
         self.msgTimer.setInterval(10)
         self.msgTimer.timeout.connect(self.msgTimeout)
 
-        self.startStop = QPushButton(self)
+        self.startStop = QtWidgets.QPushButton(self)
         self.startStop.setText('Stop')
         self.startStop.clicked.connect(self.startStopFn)
         self.setCentralWidget(self.startStop)
@@ -103,7 +102,7 @@ class NoiseMaker(MsgGui.MsgGui):
 
 # main starts here
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     msgApp = NoiseMaker(sys.argv)
     msgApp.show()
     sys.exit(app.exec_())
