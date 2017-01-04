@@ -49,20 +49,33 @@ SerialConnection::SerialConnection()
     buttonGroup1->setStyleSheet("border:0;");
     QHBoxLayout* layout1 = new QHBoxLayout();
     layout1->addWidget(&_statusLabel);
-    layout1->addWidget(new QLabel("/dev/"));
-    qDebug() << "Looking for /dev/ttyUSB* and /dev/ttyACM0 *ONLY*!";
     QString lastconnection = _settings.value("LastSerialPortUsed", "").toString();
+#ifndef WIN32
+    layout1->addWidget(new QLabel("/dev/"));
+    qDebug() << "Looking for /dev/ttyUSB*, ttyS*, ttyACM0, COM *ONLY*!";
+    const QStringList acceptableNames = QStringList() << "USB" << "ttyS" << "ACM0" << "COM";
+#endif
     foreach (QextPortInfo info, QextSerialEnumerator::getPorts())
     {
+#ifndef WIN32
         /** \todo Restrict list of UARTs to the below selection */
-        if(info.portName.contains("USB") || info.portName.contains("ACM0"))
+        bool found = false;
+        foreach(QString acceptableName, acceptableNames)
+        {
+            if(info.portName.contains(acceptableName))
+            {
+                found = true;
+            }
+        }
+        if(found)
+#endif
         {
             QString name = info.portName;
-            //qDebug() << "Found port " << info.portName << " at " << info.physName;
+            qDebug() << "Found port " << info.portName << " at " << info.physName;
             QRadioButton* rb = new QRadioButton(name);
             connect(rb, &QRadioButton::toggled, this, &SerialConnection::radioButtonToggled);
             layout1->addWidget(rb);
-            if(lastconnection == info.physName)
+            if(lastconnection == info.portName)
                 rb->click();
         }
     }
@@ -72,18 +85,19 @@ SerialConnection::SerialConnection()
     buttonGroup2->setStyleSheet("border:0;");
     QHBoxLayout* layout2 = new QHBoxLayout();
 
-    QRadioButton* baudRate  = new QRadioButton("57.6");
-    layout2->addWidget(baudRate);
-    connect(baudRate, &QRadioButton::toggled, this, &SerialConnection::BaudrateChanged);
+    QStringList speeds = QStringList() << "57.6" << "115.2";
+    QString lastSpeed = _settings.value("LastSerialPortSpeedUsed", "").toString();
+    foreach(QString speed, speeds)
+    {
 
-    QRadioButton* baudRate2  = new QRadioButton("115.2");
-    layout2->addWidget(baudRate2);
-    connect(baudRate2, &QRadioButton::toggled, this, &SerialConnection::BaudrateChanged);
-
+        QRadioButton* baudRate  = new QRadioButton(speed);
+        layout2->addWidget(baudRate);
+        connect(baudRate, &QRadioButton::toggled, this, &SerialConnection::BaudrateChanged);
+        if(lastSpeed == speed)
+            baudRate->click();
+    }
     buttonGroup2->setLayout(layout2);
 
-    baudRate->click();
-    
     QHBoxLayout* layout = new QHBoxLayout();
     layout->addWidget(buttonGroup1);
     layout->addWidget(buttonGroup2);
@@ -127,6 +141,7 @@ void SerialConnection::BaudrateChanged(bool pressed)
         {
             qDebug() << "Error, unknown baudrate " << button->text();
         }
+        _settings.setValue("LastSerialPortSpeedUsed", button->text());
     }
 }
 void SerialConnection::SerialDataReady()
@@ -207,29 +222,26 @@ void SerialConnection::SerialDataReady()
 
 void SerialConnection::MessageSlot(QSharedPointer<Message> msg)
 {
-    if(msg->hdr.GetMessageID() < 0xFFFF)
+    SerialHeaderWrapper serialHdr;
+    serialHdr.SetMessageID(msg->hdr.GetMessageID());
+    // loop through fields using reflection, and transfer contents from
+    // network message to serial message
+    for(int i=0; i<correspondingFields.length(); i++)
     {
-        SerialHeaderWrapper serialHdr;
-        serialHdr.SetMessageID(msg->hdr.GetMessageID());
-        // loop through fields using reflection, and transfer contents from
-        // network message to serial message
-        for(int i=0; i<correspondingFields.length(); i++)
-        {
-            QPair<const FieldInfo*,const FieldInfo*> pair = correspondingFields[i];
-            const FieldInfo* serInfo = pair.first;
-            const FieldInfo* netInfo = pair.second;
-            serInfo->SetValue(netInfo->Value(msg->hdr.m_data), serialHdr.m_data);
-        }
-
-        uint16_t headerCrc = Crc((uint8_t*)&serialHdr, SerialHeader::SIZE);
-        serialHdr.SetHeaderChecksum(headerCrc);
-
-        uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetDataLength());
-        serialHdr.SetBodyChecksum(bodyCrc);
-
-        serialPort.write((char*)&serialHdr, sizeof(serialHdr));
-        serialPort.write((char*)msg->GetDataPtr(), msg->hdr.GetDataLength());
+        QPair<const FieldInfo*,const FieldInfo*> pair = correspondingFields[i];
+        const FieldInfo* serInfo = pair.first;
+        const FieldInfo* netInfo = pair.second;
+        serInfo->SetValue(netInfo->Value(msg->hdr.m_data), serialHdr.m_data);
     }
+
+    uint16_t headerCrc = Crc((uint8_t*)&serialHdr, SerialHeader::HeaderChecksumFieldInfo::loc);
+    serialHdr.SetHeaderChecksum(headerCrc);
+
+    uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetDataLength());
+    serialHdr.SetBodyChecksum(bodyCrc);
+
+    serialPort.write((char*)&serialHdr, sizeof(serialHdr));
+    serialPort.write((char*)msg->GetDataPtr(), msg->hdr.GetDataLength());
 }
 
 void SerialConnection::SerialMsgSlot(QSharedPointer<SerialMessage> msg)
@@ -289,7 +301,11 @@ void SerialConnection::radioButtonToggled(bool pressed)
     QRadioButton* rb = dynamic_cast<QRadioButton*>(sender());
     if(pressed)
     {
+#ifdef WIN32
+        const QString portName(rb->text());
+#else
         const QString portName(QString("/dev/") + rb->text());
+#endif
         serialPort.setPortName(portName);
         if(serialPort.open(QextSerialPort::ReadWrite))
         {

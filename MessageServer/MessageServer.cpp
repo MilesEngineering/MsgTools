@@ -101,7 +101,7 @@ void MessageServer::LoadPluginButton()
         QFileDialog::getOpenFileName
         (this, tr("Open Plugin"),
          _settings.value("plugin/filename", QCoreApplication::applicationDirPath()).toString(),
-         tr("Plugin Files (*.plugin)"));
+         tr("Plugin Files (*.plugin *.dll)"));
     // if they hit cancel, don't do anything
     if(pluginFileName.isNull())
         return;
