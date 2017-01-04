@@ -35,6 +35,20 @@ class FieldItem(QTreeWidgetItem):
 
         if role == Qt.DisplayRole:
             value  = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
+            
+            try:
+                self.overrideWidget
+                valueAsString = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
+                
+                if valueAsString in self.comboBoxIndexOfEnum:
+                    #self.overrideWidget.setCurrentText(valueAsString)
+                    self.overrideWidget.setCurrentIndex(self.comboBoxIndexOfEnum[valueAsString])
+                else:
+                    #self.overrideWidget.setEditText(valueAsString)
+                    self.overrideWidget.setCurrentIndex(-1)
+            except AttributeError:
+                pass
+                
             return str(value)
             
         return super(FieldItem, self).data(column, role)
@@ -50,10 +64,19 @@ class EditableFieldItem(FieldItem):
             # if we need keys in order originally specified, it needs to be declared as an OrderedDict
             self.overrideWidget.addItems(sorted(list(fieldInfo.enum[0].keys())))
             self.overrideWidget.activated.connect(self.overrideWidgetValueChanged)
+            # there's some odd behavior in the UI when the box is editable :(
+            # if you want it editable, uncomment this line, and play around and see if you like it
+            #self.overrideWidget.setEditable(1)
+            # store a hash table of value->ComboBoxIndex
+            # this is NOT the same as value->enumIndex!
+            self.comboBoxIndexOfEnum = {}
+            for i in range(0, self.overrideWidget.count()):
+                self.comboBoxIndexOfEnum[self.overrideWidget.itemText(i)] = i
 
     def overrideWidgetValueChanged(self, value):
+        valueAsString = self.overrideWidget.itemText(value)
         # set the value in the message/header buffer
-        Messaging.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, value)
+        Messaging.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, valueAsString)
 
         # no need to reset UI to value read from message, if user picked value from drop down.
         # \todo: need to if they type something, though.
@@ -80,7 +103,7 @@ class FieldBits(FieldItem):
        super(FieldBits, self).__init__(msg_class, msg_buffer_wrapper, bitfieldInfo, column_strings)
 
 class FieldBitfieldItem(FieldItem):
-    def __init__(self, msg_class, msg_buffer_wrapper, fieldInfo):
+    def __init__(self, tree_widget, msg_class, msg_buffer_wrapper, fieldInfo):
         super(FieldBitfieldItem, self).__init__(msg_class, msg_buffer_wrapper, fieldInfo)
 
         for bitfieldInfo in fieldInfo.bitfieldInfo:
@@ -93,12 +116,17 @@ class EditableFieldBits(EditableFieldItem):
        super(EditableFieldBits, self).__init__(msg_class, msg_buffer_wrapper, bitfieldInfo, column_strings)
 
 class EditableFieldBitfieldItem(EditableFieldItem):
-    def __init__(self, msg_class, msg_buffer_wrapper, fieldInfo):
+    def __init__(self, tree_widget, msg_class, msg_buffer_wrapper, fieldInfo):
         super(EditableFieldBitfieldItem, self).__init__(msg_class, msg_buffer_wrapper, fieldInfo)
 
         for bitfieldInfo in fieldInfo.bitfieldInfo:
             bitfieldBitsItem = EditableFieldBits(self.msg_class, self.msg_buffer_wrapper, bitfieldInfo)
             self.addChild(bitfieldBitsItem)
+            try:
+                bitfieldBitsItem.overrideWidget
+                tree_widget.setItemWidget(bitfieldBitsItem, 2, bitfieldBitsItem.overrideWidget)
+            except AttributeError:
+                pass
 
 class FieldArrayItem(QTreeWidgetItem):
     def __init__(self, msg_class, msg_buffer_wrapper, fieldInfo, field_array_constructor, index = None):
@@ -214,7 +242,7 @@ class MessageItem(QTreeWidgetItem):
 
             if fieldInfo.count == 1:
                 if fieldInfo.bitfieldInfo != None:
-                    messageFieldTreeItem = child_bitfield_constructor(self.msg_class, self.msg_buffer_wrapper, fieldInfo)
+                    messageFieldTreeItem = child_bitfield_constructor(tree_widget, self.msg_class, self.msg_buffer_wrapper, fieldInfo)
                 else:
                     messageFieldTreeItem = child_constructor(self.msg_class, self.msg_buffer_wrapper, fieldInfo)
             else:
