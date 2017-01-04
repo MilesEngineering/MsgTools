@@ -7,7 +7,7 @@ from MsgApp import *
 class MsgGui(MsgApp, QtWidgets.QMainWindow):
     def __init__(self, name, argv, options, parent=None):
         # default to Network, unless we have a input filename that contains .txt
-        headerName = "BMAPHeader"
+        headerName = "NetworkHeader"
         if any(".txt" in s for s in argv) or any(".TXT" in s for s in argv):
             headerName = "SerialHeader"
 
