@@ -6,6 +6,7 @@
 #include <QSharedPointer>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QLabel>
+#include <QHash>
 
 class ServerPort : public QObject
 {
@@ -15,7 +16,10 @@ class ServerPort : public QObject
         : removeClient(),
           name(n),
           statusLabel(),
-          initName(n)
+          initName(n),
+          subscriptions(),
+          subscriptionMask(~0),
+          subscriptionValue(0)
         {
             removeClient.setText(QString("Remove"));
             statusLabel.setText(name);
@@ -38,6 +42,9 @@ class ServerPort : public QObject
         QString name;
         QLabel statusLabel;
         QString initName;
+        QHash<uint32_t, bool> subscriptions;
+        uint32_t subscriptionMask;
+        uint32_t subscriptionValue;
 };
 
 #endif

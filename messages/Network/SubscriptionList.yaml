@@ -1,0 +1,9 @@
+Messages:
+  - Name: SubscriptionList
+    ID: 0xFFFFFF02
+    Description: A list of subscriptions.
+    Fields:
+      - Name: IDs
+        Type: uint32
+        Count: 16
+        Description: The IDs of the messages you'd like to receive.

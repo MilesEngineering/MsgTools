@@ -1,5 +1,7 @@
 #include "Client.h"
 #include "Cpp/Network/Connect.h"
+#include "Cpp/Network/SubscriptionList.h"
+#include "Cpp/Network/MaskedSubscription.h"
 
 Client::Client(QTcpSocket* sock)
 : ServerPort(sock->peerAddress().toString()),
@@ -66,6 +68,21 @@ void Client::HandleIncomingPacket()
                 name[sizeof(name)-1] = '\0';
                 SetName(name);
             }
+            else if(msg->GetMessageID() == MaskedSubscriptionMessage::MSG_ID)
+            {
+                MaskedSubscriptionMessage* subMsg = (MaskedSubscriptionMessage*)msg.data();
+                subscriptionMask = subMsg->GetMask();
+                subscriptionValue = subMsg->GetValue();
+            }
+            else if(msg->GetMessageID() == SubscriptionListMessage::MSG_ID)
+            {
+                SubscriptionListMessage* subMsg = (SubscriptionListMessage*)msg.data();
+                for(int i=0;i<SubscriptionListMessage::IDsFieldInfo::count; i++)
+                {
+                    uint32_t id = subMsg->GetIDs(i);
+                    subscriptions[id] = true;
+                }
+            }
             emit MsgSignal(msg);
         }
     }
@@ -73,9 +90,13 @@ void Client::HandleIncomingPacket()
 
 void Client::MessageSlot(QSharedPointer<Message> msg)
 {
-    _tcpSocket->write((const char*)msg->RawBuffer(), Message::HeaderSize());
-    int len = msg->GetDataLength();
-    _tcpSocket->write((const char*)msg->GetDataPtr(), len);
+    if((msg->GetMessageID() & subscriptionMask) == subscriptionValue ||
+        subscriptions.contains(msg->GetMessageID()))
+    {
+        _tcpSocket->write((const char*)msg->RawBuffer(), Message::HeaderSize());
+        int len = msg->GetDataLength();
+        _tcpSocket->write((const char*)msg->GetDataPtr(), len);
+    }
 }
 
 #if 1 //def REFLECTION_OF_ENUMS_WORKS

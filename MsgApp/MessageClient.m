@@ -20,12 +20,14 @@ classdef MessageClient
             connectMsg = Connect;
             connectMsg.Name(1:10) = uint8('Matlab 1.0');
             obj.SendMsg(connectMsg);
+            % note: We need to send a SubscriptionList/MaskedSubscription
+            % message to receive *any* messages!
         end
         function ret = GetMsg(obj)
-            fprintf('Waiting for %d header bytes\n', obj.hdrObj.SIZE);
+            %fprintf('Waiting for %d header bytes\n', obj.hdrObj.SIZE);
             hdrData = read(obj.clientSocket, obj.hdrObj.SIZE);
             hdr = feval(obj.hdrClass.Name, hdrData);
-            fprintf('Waiting for %d body bytes\n', hdr.DataLength);
+            %fprintf('Waiting for %d body bytes\n', hdr.DataLength);
             bodyData = read(obj.clientSocket, hdr.DataLength);
             msg = obj.msgTools.ConstructMsg(hdr.MessageID, bodyData);
             ret = msg;

@@ -1,0 +1,13 @@
+Messages:
+  - Name: MaskedSubscription
+    ID: 0xFFFFFF03
+    Description: A subscription mask and value.
+    Fields:
+      - Name: Mask
+        Type: uint32
+        Description: The mask of the ID you'd like to receive.  0=Don't care, 1=Must match.
+        DefaultValue: 0
+      - Name: Value
+        Type: uint32
+        Description: The value of the ID you'd like to receive.
+        DefaultValue: 0

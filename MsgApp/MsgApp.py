@@ -150,6 +150,9 @@ class MsgApp(QtWidgets.QMainWindow):
         self.msgLib.Connect.Connect.SetName(connectBuffer, self.name);
         output_stream = QtCore.QDataStream(self.connection)
         self.sendFn(connectBuffer.raw);
+        # send a subscription message
+        subscribeBuffer = self.msgLib.MaskedSubscription.MaskedSubscription.Create();
+        self.sendFn(subscribeBuffer.raw);
         self.status.setText('Connected')
     
     def onDisconnect(self):
