@@ -188,3 +188,6 @@ def initCode(msg):
                         ret.append(bits)
 
     return ret
+
+def undefinedMsgId():
+    return "-1"

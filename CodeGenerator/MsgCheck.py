@@ -52,7 +52,7 @@ def ProcessMsg(msg, subdirComponent, enums):
     for enum in enums:
         enumNames[enum["Name"]] = enum
 
-    id = msgID(msg, enums)
+    id = msgID(msg, enums, -1)
     idInt = int(id, 0)
     if "ID" in msg or "IDs" in msg:
         global msgPaths

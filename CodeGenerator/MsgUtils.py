@@ -210,8 +210,8 @@ def subfieldReplacements(line,msg):
 def msgName(msg):
     return msg["Name"]
 
-def msgID(msg, enums):
-    ret = "UNDEFINED_MSGID"
+def msgID(msg, enums, undefinedMsgId):
+    ret = undefinedMsgId
     if "IDs" in msg:
         ret = 0
         # iterate over list of keys
@@ -237,7 +237,7 @@ def msgID(msg, enums):
             ret = (ret << previousShift) + value
             #print("ret is now " + str(ret))
             previousShift += id["Bits"]
-        ret = hex(ret)
+        ret = ret
     if "ID" in msg:
         ret = msg["ID"]
     return str(ret)

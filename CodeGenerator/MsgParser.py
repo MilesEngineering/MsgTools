@@ -104,7 +104,12 @@ if __name__ == '__main__':
                     replacements["<MSGNAME>"] = msgName(msg)
                     replacements["<NUMBER_OF_FIELDS>"] = str(numberOfFields(msg))
                     replacements["<NUMBER_OF_SUBFIELDS>"] = str(numberOfSubfields(msg))
-                    replacements["<MSGID>"] = str(msgID(msg, enums))
+                    undefinedMsgId = "UNDEFINED_MSGID"
+                    try:
+                        undefinedMsgId = language.undefinedMsgId()
+                    except AttributeError:
+                        pass
+                    replacements["<MSGID>"] = str(msgID(msg, enums, undefinedMsgId))
                     replacements["<MSGSIZE>"] = str(msgSize(msg))
                     replacements["<MSGDESCRIPTION>"] = str(msg["Description"])
                     replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))
