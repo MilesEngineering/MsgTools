@@ -70,6 +70,9 @@ $(MSGDIR)/Java/%.java : $(mdir)/%.yaml Java/language.py  Java/JavaTemplate.java 
 $(MSGDIR)/Javascript/%.js : $(mdir)/%.yaml Javascript/language.py  Javascript/Template.js MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Javascript/language.py  Javascript/Template.js
 
+$(MSGDIR)/Matlab/headers/%.m : $(mdir)/headers/%.yaml Matlab/language.py Matlab/HeaderTemplate.m MsgParser.py MsgUtils.py Makefile
+	$(PARSER) $< $@ Matlab/language.py  Matlab/HeaderTemplate.m
+
 $(MSGDIR)/Matlab/%.m : $(mdir)/%.yaml Matlab/language.py Matlab/Template.m MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Matlab/language.py  Matlab/Template.m
 

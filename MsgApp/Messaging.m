@@ -50,7 +50,7 @@ classdef Messaging
             obj.msgSizeFromID.remove(uint32(0));
             obj.ProcessDir(msgdir);
         end
-        function ret = ProcessDir(obj, dirname)
+        function ProcessDir(obj, dirname)
             fprintf('Processing %s\n', dirname);
             addpath(Messaging.AbsPath(dirname));
 
@@ -58,15 +58,23 @@ classdef Messaging
             filenames = dir(strcat(dirname,'/*.m'));
             for f = 1:numel(filenames)
                 [~, classname,~] = fileparts(filenames(f).name);
-                fprintf('classname = %s\n', classname);
                 mc = meta.class.fromName(classname);
                 if ~isempty(mc)
                     idIdx = strcmp({mc.PropertyList.Name}, 'MSG_ID')==1;
-                    sizeIdx = strcmp({mc.PropertyList.Name}, 'MSG_SIZE')==1;
-                    id = mc.PropertyList(idIdx).DefaultValue;
-                    size = mc.PropertyList(sizeIdx).DefaultValue;
-                    obj.msgClassFromID(id) = mc;
-                    obj.msgSizeFromID(id) = size;
+                    if any(idIdx)
+                        id = mc.PropertyList(idIdx).DefaultValue;
+                        if id > 0
+                            fprintf('class %s, ID %d=0x%s\n', classname, id, dec2hex(id));
+                            sizeIdx = strcmp({mc.PropertyList.Name}, 'MSG_SIZE')==1;
+                            size = mc.PropertyList(sizeIdx).DefaultValue;
+                            obj.msgClassFromID(id) = mc;
+                            obj.msgSizeFromID(id) = size;
+                        else
+                            fprintf('ignoring class %s, invalid ID %d\n', classname, id);
+                        end
+                    else
+                        fprintf('ignoring class %s, no ID\n', classname);
+                    end
                     %for p = 1:numel(mc.PropertyList)
                     %    if mc.PropertyList(p).HasDefault
                     %        fprintf('%s = %d\n', mc.PropertyList(p).Name, mc.PropertyList(p).DefaultValue);

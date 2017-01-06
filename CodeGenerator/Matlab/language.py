@@ -28,7 +28,7 @@ def getFn(field, offset):
     loc = str(offset)
     end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     param = "obj"
-    access = "typecast(obj.m_data(%s:%s), '%s')" % (loc, end_loc, fieldType(field))
+    access = "swapbytes(typecast(obj.m_data(%s:%s), '%s'))" % (loc, end_loc, fieldType(field))
     access = getMath(access, field, typeForScaledInt(field))
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
@@ -58,7 +58,7 @@ function obj = set.%s(obj, value)
         ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
         ret += "    end\n"
     ret += '''\
-    obj.m_data(%s:%s) = typecast(%s(%s), 'uint8');
+    obj.m_data(%s:%s) = typecast(swapbytes(%s(%s)), 'uint8');
 end''' % (loc, end_loc, fieldType(field), valueString)
     return ret
 
@@ -191,3 +191,59 @@ def initCode(msg):
 
 def undefinedMsgId():
     return "-1"
+
+def addShift(base, value, shiftValue):
+    ret = value
+    if base != "":
+        ret = "bitshift("+base+", "+str(shiftValue)+")"+"+"+value
+    return ret
+
+def getMsgID(msg):
+    ret = ""
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            if "IDBits" in field:
+                numBits = field["IDBits"]
+                if "Enum" in field and enumAsIntParam:
+                    pass
+                getStr = "obj."+field["Name"]
+                if "Enum" in field and castEnums:
+                    getStr = "uint32_t("+getStr+")"
+                ret =  addShift(ret, getStr, numBits)
+            if "Bitfields" in field:
+                for bitfield in field["Bitfields"]:
+                    if "IDBits" in bitfield:
+                        numBits = bitfield["IDBits"]
+                        if "Enum" in bitfield and enumAsIntParam:
+                            pass
+                        getStr = "obj."+BitfieldName(field, bitfield)
+                        if "Enum" in bitfield and castEnums:
+                            getStr = "uint32_t("+getStr+")"
+                        ret =  addShift(ret, getStr, numBits)
+    return ret
+    
+def setMsgID(msg):
+    ret = ""
+    numBits = 0
+    if "Fields" in msg:
+        for field in reversed(msg["Fields"]):
+            if "IDBits" in field:
+                if numBits != 0:
+                    ret += "\nid = id >> " + str(numBits)+"\n"
+                numBits = field["IDBits"]
+                setStr = "bitand(id, "+Mask(numBits)+")"
+                if "Enum" in field and castEnums:
+                    setStr = field["Enum"]+"("+setStr+")"
+                ret +=  "obj."+field["Name"]+" = "+setStr
+            if "Bitfields" in field:
+                for bitfield in reversed(field["Bitfields"]):
+                    if "IDBits" in bitfield:
+                        if numBits != 0:
+                            ret += "\nid = id >> " + str(numBits)+"\n"
+                        numBits = bitfield["IDBits"]
+                        setStr = "bitand(id, "+Mask(numBits)+")"
+                        if "Enum" in bitfield and castEnums:
+                            setStr = bitfield["Enum"]+"("+setStr+")"
+                        ret +=  "obj."+bitfield["Name"]+" = "+setStr
+    return ret
+
