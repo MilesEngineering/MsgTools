@@ -215,7 +215,7 @@ def msgID(msg, enums, undefinedMsgId):
     if "IDs" in msg:
         ret = 0
         # iterate over list of keys
-        previousShift = 0
+        shiftValue = 0
         for id in msg["IDs"]:
             value = id["Value"]
             #print("got value " + str(value))
@@ -234,9 +234,9 @@ def msgID(msg, enums, undefinedMsgId):
                 value = int(value)
             except ValueError:
                 raise MessageException("ERROR! Can't find value for " + str(value))
-            ret = (ret << previousShift) + value
-            #print("ret is now " + str(ret))
-            previousShift += id["Bits"]
+            ret = (ret << shiftValue) + value
+            print("id is now " + str(ret))
+            shiftValue = id["Bits"]
         ret = ret
     if "ID" in msg:
         ret = msg["ID"]

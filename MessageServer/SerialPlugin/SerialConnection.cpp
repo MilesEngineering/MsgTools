@@ -225,29 +225,32 @@ void SerialConnection::SerialDataReady()
 
 void SerialConnection::MessageSlot(QSharedPointer<Message> msg)
 {
-    if((msg->GetMessageID() & subscriptionMask) == subscriptionValue ||
-        subscriptions.contains(msg->GetMessageID()))
+    if(msg->GetMessageID() < 0xFFFFF)
     {
-        SerialHeaderWrapper serialHdr;
-        serialHdr.SetMessageID(msg->hdr.GetMessageID());
-        // loop through fields using reflection, and transfer contents from
-        // network message to serial message
-        for(int i=0; i<correspondingFields.length(); i++)
+        if((msg->GetMessageID() & subscriptionMask) == subscriptionValue ||
+            subscriptions.contains(msg->GetMessageID()))
         {
-            QPair<const FieldInfo*,const FieldInfo*> pair = correspondingFields[i];
-            const FieldInfo* serInfo = pair.first;
-            const FieldInfo* netInfo = pair.second;
-            serInfo->SetValue(netInfo->Value(msg->hdr.m_data), serialHdr.m_data);
+            SerialHeaderWrapper serialHdr;
+            serialHdr.SetMessageID(msg->hdr.GetMessageID());
+            // loop through fields using reflection, and transfer contents from
+            // network message to serial message
+            for(int i=0; i<correspondingFields.length(); i++)
+            {
+                QPair<const FieldInfo*,const FieldInfo*> pair = correspondingFields[i];
+                const FieldInfo* serInfo = pair.first;
+                const FieldInfo* netInfo = pair.second;
+                serInfo->SetValue(netInfo->Value(msg->hdr.m_data), serialHdr.m_data);
+            }
+
+            uint16_t headerCrc = Crc((uint8_t*)&serialHdr, SerialHeader::HeaderChecksumFieldInfo::loc);
+            serialHdr.SetHeaderChecksum(headerCrc);
+
+            uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetDataLength());
+            serialHdr.SetBodyChecksum(bodyCrc);
+
+            serialPort.write((char*)&serialHdr, sizeof(serialHdr));
+            serialPort.write((char*)msg->GetDataPtr(), msg->hdr.GetDataLength());
         }
-
-        uint16_t headerCrc = Crc((uint8_t*)&serialHdr, SerialHeader::HeaderChecksumFieldInfo::loc);
-        serialHdr.SetHeaderChecksum(headerCrc);
-
-        uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetDataLength());
-        serialHdr.SetBodyChecksum(bodyCrc);
-
-        serialPort.write((char*)&serialHdr, sizeof(serialHdr));
-        serialPort.write((char*)msg->GetDataPtr(), msg->hdr.GetDataLength());
     }
 }
 

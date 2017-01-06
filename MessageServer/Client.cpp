@@ -57,7 +57,8 @@ void Client::HandleIncomingPacket()
             //#qDebug() << "  Client " <<  tcpSocket->peerAddress().toString()+QString(":%1").arg(tcpSocket->peerPort()) << " Sending " << tempRxHeader.Length << " byte message ("
             //#         << tempRxHeader.InterfaceID << "/" << tempRxHeader.MessageID << ")." << endl;
 
-            if(msg->GetMessageID() == ConnectMessage::MSG_ID)
+            uint32_t id = msg->GetMessageID();
+            if(id == ConnectMessage::MSG_ID)
             {
                 ConnectMessage* connectMsg = (ConnectMessage*)msg.data();
                 char name[ConnectMessage::MSG_SIZE];
@@ -68,13 +69,13 @@ void Client::HandleIncomingPacket()
                 name[sizeof(name)-1] = '\0';
                 SetName(name);
             }
-            else if(msg->GetMessageID() == MaskedSubscriptionMessage::MSG_ID)
+            else if(id == MaskedSubscriptionMessage::MSG_ID)
             {
                 MaskedSubscriptionMessage* subMsg = (MaskedSubscriptionMessage*)msg.data();
                 subscriptionMask = subMsg->GetMask();
                 subscriptionValue = subMsg->GetValue();
             }
-            else if(msg->GetMessageID() == SubscriptionListMessage::MSG_ID)
+            else if(id == SubscriptionListMessage::MSG_ID)
             {
                 SubscriptionListMessage* subMsg = (SubscriptionListMessage*)msg.data();
                 for(int i=0;i<SubscriptionListMessage::IDsFieldInfo::count; i++)
