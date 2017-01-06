@@ -16,7 +16,7 @@ classdef <MSGNAME>
         MSG_SIZE = <MSGSIZE>;
         <ENUMERATIONS>
     end
-    properties (hidden)
+    properties (Hidden)
         % the buffer of data
         m_data;
     end

@@ -1,6 +1,9 @@
 import MsgParser
 from MsgUtils import *
 
+def Mask(numBits):
+    return str(2 ** numBits - 1)
+
 def fieldType(field):
     typeStr = field["Type"]
     if "int" in typeStr:
@@ -25,7 +28,7 @@ def getFn(field, offset):
     loc = str(offset)
     end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     param = "obj"
-    access = "typecast(obj.m_data(%s:%s), \"%s\")" % (loc, end_loc, fieldType(field))
+    access = "typecast(obj.m_data(%s:%s), '%s')" % (loc, end_loc, fieldType(field))
     access = getMath(access, field, typeForScaledInt(field))
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
@@ -55,12 +58,12 @@ function obj = set.%s(obj, value)
         ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
         ret += "    end\n"
     ret += '''\
-    obj.m_data(%s:%s) = typecast(%s(%s), "uint8");
+    obj.m_data(%s:%s) = typecast(%s(%s), 'uint8');
 end''' % (loc, end_loc, fieldType(field), valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
-    access = "bitand(bitshift(obj.%s, -%s), %s)" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+    access = "bitand(bitshift(obj.%s, -%s), %s)" % (field["Name"], str(bitOffset), Mask(numBits))
     access = getMath(access, bits, typeForScaledInt(bits))
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
@@ -91,8 +94,8 @@ function obj = set.%s(obj, value)
         ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
         ret += "    end\n"
     ret += '''\
-    obj.%s = bitor(bitand(obj.%s, bitcmp(bitshift(%s,%s))), (bitshift((bitand(%s, %s)), %s)));
-end''' % (field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
+    obj.%s = bitor(bitand(obj.%s, bitcmp(bitshift(%s(%s),%s))), (bitshift((bitand(%s, %s)), %s)));
+end''' % (field["Name"], field["Name"], fieldType(field), Mask(numBits), str(bitOffset), valueString, Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
