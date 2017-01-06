@@ -27,7 +27,7 @@ classdef <MSGNAME>
         function obj = <MSGNAME>(data)
             if nargin == 0
                 % create a new message (allocates a buffer for it)
-                obj.m_data = zeros(obj.MSG_SIZE, 'uint8');
+                obj.m_data = zeros(obj.MSG_SIZE, 1, 'uint8');
                 <INIT_CODE>
             else
                 % create a message based on a data buffer

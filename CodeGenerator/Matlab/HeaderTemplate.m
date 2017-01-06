@@ -20,7 +20,7 @@ classdef <MSGNAME>
         m_data;
     end
     methods
-        function set.MessageID(obj, id)
+        function obj = set.MessageID(obj, id)
             <SETMSGID>;
         end
 
@@ -37,7 +37,7 @@ classdef <MSGNAME>
         function obj = <MSGNAME>(data)
             if nargin == 0
                 % create a new message (allocates a buffer for it)
-                obj.m_data = zeros(obj.SIZE, 'uint8');
+                obj.m_data = zeros(obj.SIZE, 1, 'uint8');
                 <INIT_CODE>
             else
                 % create a message based on a data buffer
