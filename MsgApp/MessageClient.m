@@ -17,6 +17,9 @@ classdef MessageClient
                 port=5678;
             end
             obj.clientSocket = tcpclient(server, port);
+            connectMsg = Connect;
+            connectMsg.Name(1:10) = uint8('Matlab 1.0');
+            obj.SendMsg(connectMsg);
         end
         function ret = GetMsg(obj)
             fprintf('Waiting for %d header bytes\n', obj.hdrObj.SIZE);
@@ -34,6 +37,11 @@ classdef MessageClient
             % hdr.DataLength = length(msg.m_data);
             write(obj.clientSocket, hdr.m_data);
             write(obj.clientSocket, msg.m_data);
+        end
+        function PrintMessages(obj)
+            while(1)
+                msg = obj.GetMsg()
+            end
         end
     end
 end
