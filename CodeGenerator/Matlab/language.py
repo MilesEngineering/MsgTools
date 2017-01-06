@@ -67,7 +67,7 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
         retType = typeForScaledInt(bits)
     ret = '''\
 %s
-function ret = get.%s()
+function ret = get.%s(obj)
     ret = %s;
 ''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), access)
     if "Enum" in bits:
@@ -140,11 +140,10 @@ def declarations(msg):
     ret = []
     if "Fields" in msg:
         for field in msg["Fields"]:
+            ret.append(field["Name"] + ";")
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     ret.append(bits["Name"] + ";")
-            else:
-                ret.append(field["Name"] + ";")
     return ret
 
 def fieldDefault(field):
