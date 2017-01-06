@@ -8,7 +8,7 @@ Enums:
       - Name: Ursidae
         Value: 4
 Messages:
-  - Name: CompositeIDHeader
+  - Name: TaxonomyHeader
     Description: Used to test a header that has several fields combined to form a message ID.
     Fields:
       - Name: Family
