@@ -214,20 +214,20 @@ def getMsgID(msg):
         for field in msg["Fields"]:
             if "IDBits" in field:
                 numBits = field["IDBits"]
-                if "Enum" in field and enumAsIntParam:
+                if "Enum" in field:
                     pass
                 getStr = "obj."+field["Name"]
-                if "Enum" in field and castEnums:
+                if "Enum" in field:
                     getStr = "uint32_t("+getStr+")"
                 ret =  addShift(ret, getStr, numBits)
             if "Bitfields" in field:
                 for bitfield in field["Bitfields"]:
                     if "IDBits" in bitfield:
                         numBits = bitfield["IDBits"]
-                        if "Enum" in bitfield and enumAsIntParam:
+                        if "Enum" in bitfield:
                             pass
                         getStr = "obj."+BitfieldName(field, bitfield)
-                        if "Enum" in bitfield and castEnums:
+                        if "Enum" in bitfield:
                             getStr = "uint32_t("+getStr+")"
                         ret =  addShift(ret, getStr, numBits)
     return ret
@@ -242,7 +242,7 @@ def setMsgID(msg):
                     ret += "\nid = id >> " + str(numBits)+"\n"
                 numBits = field["IDBits"]
                 setStr = "bitand(id, "+Mask(numBits)+")"
-                if "Enum" in field and castEnums:
+                if "Enum" in field:
                     setStr = field["Enum"]+"("+setStr+")"
                 ret +=  "obj."+field["Name"]+" = "+setStr
             if "Bitfields" in field:
@@ -252,7 +252,7 @@ def setMsgID(msg):
                             ret += "\nid = id >> " + str(numBits)+"\n"
                         numBits = bitfield["IDBits"]
                         setStr = "bitand(id, "+Mask(numBits)+")"
-                        if "Enum" in bitfield and castEnums:
+                        if "Enum" in bitfield:
                             setStr = bitfield["Enum"]+"("+setStr+")"
                         ret +=  "obj."+bitfield["Name"]+" = "+setStr
     return ret
