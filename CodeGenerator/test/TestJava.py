@@ -10,7 +10,7 @@ import language
 class TestJava(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        with open("TestCase1.yaml", 'r') as inputFile:
+        with open("test/TestCase1.yaml", 'r') as inputFile:
             self.msgIDL = inputFile.read()
         self.msgDict = yaml.load(self.msgIDL)
 

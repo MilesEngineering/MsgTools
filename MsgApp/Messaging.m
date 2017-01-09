@@ -4,7 +4,7 @@
 
 classdef Messaging
     properties
-        msgClassFromID;
+        msgClassnameFromID;
         msgSizeFromID;
     end
     methods (Static)
@@ -44,20 +44,27 @@ classdef Messaging
                 msgdir = '../../obj/CodeGenerator/Matlab/';
                 fprintf('msgdir: %s\n', msgdir);
             end
-            obj.msgClassFromID = containers.Map(uint32(0),metaclass(msgdir));
-            obj.msgClassFromID.remove(uint32(0));
+            obj.msgClassnameFromID = containers.Map(uint32(0),'classname');
+            obj.msgClassnameFromID.remove(uint32(0));
             obj.msgSizeFromID = containers.Map(uint32(0),metaclass(msgdir));
             obj.msgSizeFromID.remove(uint32(0));
-            obj.ProcessDir(msgdir);
+            addpath(Messaging.AbsPath(msgdir));
+            obj.ProcessDir(msgdir, msgdir);
         end
-        function ProcessDir(obj, dirname)
+        function ProcessDir(obj, basedir, dirname)
             fprintf('Processing %s\n', dirname);
-            addpath(Messaging.AbsPath(dirname));
 
             % loop over filenames in dir
             filenames = dir(strcat(dirname,'/*.m'));
             for f = 1:numel(filenames)
                 [~, classname,~] = fileparts(filenames(f).name);
+                subdir = strrep(dirname, basedir, '');
+                classname = strcat(strrep(strrep(subdir, '/', '.'), '+', ''), '.', classname);
+                % if classname starts with ., remove it
+                if ~isempty(classname) && classname(1) == '.'
+                    classname = classname(2:end);
+                end
+                %fprintf('class %s\n', classname);
                 mc = meta.class.fromName(classname);
                 if ~isempty(mc)
                     idIdx = strcmp({mc.PropertyList.Name}, 'MSG_ID')==1;
@@ -67,7 +74,7 @@ classdef Messaging
                             fprintf('class %s, ID %d=0x%s\n', classname, id, dec2hex(id));
                             sizeIdx = strcmp({mc.PropertyList.Name}, 'MSG_SIZE')==1;
                             size = mc.PropertyList(sizeIdx).DefaultValue;
-                            obj.msgClassFromID(id) = mc;
+                            obj.msgClassnameFromID(id) = classname;
                             obj.msgSizeFromID(id) = size;
                         else
                             fprintf('ignoring class %s, invalid ID %d\n', classname, id);
@@ -90,7 +97,7 @@ classdef Messaging
             subFolders(ismember(subFolders,{'.','..'})) = [];
             % Print folder names to command window.
             for k = 1 : length(subFolders)
-                obj.ProcessDir(char(strcat(dirname,'/',subFolders(k))));
+                obj.ProcessDir(basedir, char(strcat(dirname,'/',subFolders(k))));
             end
         end
         % http://stackoverflow.com/questions/7102828/instantiate-class-from-name-in-matlab
@@ -98,8 +105,9 @@ classdef Messaging
             if(nargin < 3)
                 inputMsgBuffer = [];
             end
-            myClass = obj.msgClassFromID(msgid);
-            ctorMethod = findobj(myClass.MethodList, 'Access','public', 'Name',myClass.Name);
+            myClassname = obj.msgClassnameFromID(msgid);
+            fprintf('myClass is %s\n', myClassname);
+            ctorMethodName = myClassname; %findobj(myClass.MethodList, 'Access','public', 'Name',myClass.Name);
 
             % get number of contructor arguments
             %numArgs = numel(ctorMethod.InputNames);
@@ -107,9 +115,9 @@ classdef Messaging
             %# create object
             try
                 if(nargin < 3)
-                    ret = feval(ctorMethod.Name);
+                    ret = feval(ctorMethodName);
                 else
-                    ret = feval(ctorMethod.Name,inputMsgBuffer);
+                    ret = feval(ctorMethodName,inputMsgBuffer);
                 end
             catch ME
                 warning(ME.identifier, ME.message)

@@ -16,7 +16,6 @@ PYTHON_MSG_FILES := $(addprefix $(MSGDIR)/Python/,$(MSG_FILES:.yaml=.py))
 HTML_MSG_FILES := $(addprefix $(MSGDIR)/Html/,$(MSG_FILES:.yaml=.html))
 JAVA_MSG_FILES := $(addprefix $(MSGDIR)/Java/,$(MSG_FILES:.yaml=.java))
 JS_MSG_FILES := $(addprefix $(MSGDIR)/Javascript/,$(MSG_FILES:.yaml=.js))
-MATLAB_MSG_FILES := $(addprefix $(MSGDIR)/Matlab/,$(MSG_FILES:.yaml=.m))
 
 .PHONY: python cpp c java js matlab html check
 
@@ -30,7 +29,9 @@ java: $(JAVA_MSG_FILES)
 
 js: $(JS_MSG_FILES)
 
-matlab: $(MATLAB_MSG_FILES)
+matlab:
+	$(PARSER) $(mdir)/headers $(MSGDIR)/Matlab/+headers Matlab/language.py  Matlab/HeaderTemplate.m
+	$(PARSER) $(mdir) $(MSGDIR)/Matlab/ Matlab/language.py  Matlab/Template.m
 
 html: $(HTML_MSG_FILES)
 
@@ -69,12 +70,6 @@ $(MSGDIR)/Java/%.java : $(mdir)/%.yaml Java/language.py  Java/JavaTemplate.java 
 
 $(MSGDIR)/Javascript/%.js : $(mdir)/%.yaml Javascript/language.py  Javascript/Template.js MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Javascript/language.py  Javascript/Template.js
-
-$(MSGDIR)/Matlab/headers/%.m : $(mdir)/headers/%.yaml Matlab/language.py Matlab/HeaderTemplate.m MsgParser.py MsgUtils.py Makefile
-	$(PARSER) $< $@ Matlab/language.py  Matlab/HeaderTemplate.m
-
-$(MSGDIR)/Matlab/%.m : $(mdir)/%.yaml Matlab/language.py Matlab/Template.m MsgParser.py MsgUtils.py Makefile
-	$(PARSER) $< $@ Matlab/language.py  Matlab/Template.m
 
 $(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES))
 	$(call colorecho,Checking message validity)

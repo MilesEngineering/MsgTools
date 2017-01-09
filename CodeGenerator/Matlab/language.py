@@ -1,6 +1,9 @@
 import MsgParser
 from MsgUtils import *
 
+def outputSubdir(outDir, filename):
+    return outDir + "/+" + filename
+
 def Mask(numBits):
     return str(2 ** numBits - 1)
 
@@ -121,20 +124,27 @@ def accessors(msg):
 def enums(e):
     ret = ""
     for enum in e:
+        keys = ""
+        for option in enum["Options"]:
+            keys += "    " + str(option["Value"]) + ",\n"
+        keys = keys[:-2]
+        values = ""
+        for option in enum["Options"]:
+            values += "    '" + option["Name"] + "',\n"
+        values = values[:-2]
         # forward enum
         fwd = enum["Name"]+" = containers.Map({...\n"
-        for option in enum["Options"]:
-            fwd += "    " + str(option["Value"]) + ",\n"
-        fwd = fwd[:-2]
+        fwd += keys
         fwd += "}, {\n"
-        for option in enum["Options"]:
-            fwd += "    '" + option["Name"] + "',\n"
-        fwd = fwd[:-2]
+        fwd += values
         fwd += "});\n"
 
         # Reverse enum
-        back = "Reverse" + enum["Name"]+" = {"
-        back = "Reverse" + enum["Name"]+" = containers.Map(values(<MSGNAME>."+enum["Name"]+"), keys(<MSGNAME>."+enum["Name"]+"));\n"
+        back = "Reverse" + enum["Name"]+" = containers.Map({...\n"
+        back += values
+        back += "}, {\n"
+        back += keys
+        back += "});\n"
 
         ret += fwd + back
     return ret

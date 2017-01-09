@@ -6,15 +6,14 @@ DIGEST:=$(MSGDIR)/test/TestMsgDigest.txt
 
 .PHONY: all test testCpp testPython testJava
 
-MSG_FILES := $(shell find . -iname \*.yaml -printf '%P\n')
+MSG_FILES := $(shell find test -iname \*.yaml)
 
-CPP_MSG_FILES := $(addprefix $(MSGDIR)/Cpp/test/,$(MSG_FILES:.yaml=.h))
-C_MSG_FILES := $(addprefix $(MSGDIR)/C/test/,$(MSG_FILES:.yaml=.h))
-PYTHON_MSG_FILES := $(addprefix $(MSGDIR)/Python/test/,$(MSG_FILES:.yaml=.py))
-JAVA_MSG_FILES := $(addprefix $(MSGDIR)/Java/test/,$(MSG_FILES:.yaml=.java))
-JS_MSG_FILES := $(addprefix $(MSGDIR)/Javascript/test/,$(MSG_FILES:.yaml=.js))
-HTML_MSG_FILES := $(addprefix $(MSGDIR)/Html/test/,$(MSG_FILES:.yaml=.html))
-MATLAB_MSG_FILES := $(addprefix $(MSGDIR)/Matlab/test/,$(MSG_FILES:.yaml=.m))
+CPP_MSG_FILES := $(addprefix $(MSGDIR)/Cpp/,$(MSG_FILES:.yaml=.h))
+C_MSG_FILES := $(addprefix $(MSGDIR)/C/,$(MSG_FILES:.yaml=.h))
+PYTHON_MSG_FILES := $(addprefix $(MSGDIR)/Python/,$(MSG_FILES:.yaml=.py))
+JAVA_MSG_FILES := $(addprefix $(MSGDIR)/Java/,$(MSG_FILES:.yaml=.java))
+JS_MSG_FILES := $(addprefix $(MSGDIR)/Javascript/,$(MSG_FILES:.yaml=.js))
+HTML_MSG_FILES := $(addprefix $(MSGDIR)/Html/,$(MSG_FILES:.yaml=.html))
 
 .PHONY: python cpp c java js matlab html check
 
@@ -30,31 +29,29 @@ js: $(JS_MSG_FILES)
 
 html: $(HTML_MSG_FILES)
 
-matlab: $(MATLAB_MSG_FILES)
+matlab:
+	$(PARSER) test $(MSGDIR)/Matlab/+test ../Matlab/language.py  ../Matlab/Template.m
 
 check: $(DIGEST)
 
 install all:: Makefile check cpp c python java js matlab html testCpp testPython testJava
 
-$(MSGDIR)/Cpp/test/%.h : %.yaml ../Cpp/language.py  ../Cpp/CppTemplate.h ../MsgParser.py Makefile
+$(MSGDIR)/Cpp/%.h : %.yaml ../Cpp/language.py  ../Cpp/CppTemplate.h ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Cpp/language.py  ../Cpp/CppTemplate.h
 
-$(MSGDIR)/C/test/%.h : %.yaml ../Cpp/Clanguage.py  ../Cpp/language.py  ../Cpp/CTemplate.h ../MsgParser.py Makefile
+$(MSGDIR)/C/%.h : %.yaml ../Cpp/Clanguage.py  ../Cpp/language.py  ../Cpp/CTemplate.h ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Cpp/Clanguage.py  ../Cpp/CTemplate.h
 
-$(MSGDIR)/Java/test/%.java : %.yaml ../Java/language.py  ../Java/JavaTemplate.java ../MsgParser.py Makefile
+$(MSGDIR)/Java/%.java : %.yaml ../Java/language.py  ../Java/JavaTemplate.java ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Java/language.py  ../Java/JavaTemplate.java
 
-$(MSGDIR)/Javascript/test/%.js : %.yaml ../Javascript/language.py  ../Javascript/Template.js ../MsgParser.py Makefile
+$(MSGDIR)/Javascript/%.js : %.yaml ../Javascript/language.py  ../Javascript/Template.js ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Javascript/language.py  ../Javascript/Template.js
 
-$(MSGDIR)/Python/test/%.py : %.yaml ../Python/language.py  ../Python/Template.py ../MsgParser.py Makefile
+$(MSGDIR)/Python/%.py : %.yaml ../Python/language.py  ../Python/Template.py ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../Python/language.py  ../Python/Template.py
 
-$(MSGDIR)/Matlab/test/%.m : %.yaml ../Matlab/language.py  ../Matlab/Template.m ../MsgParser.py Makefile
-	$(PARSER) $< $@ ../Matlab/language.py  ../Matlab/Template.m
-
-$(MSGDIR)/Html/test/%.html : %.yaml ../HTML/language.py  ../HTML/Template.html ../MsgParser.py Makefile
+$(MSGDIR)/Html/%.html : %.yaml ../HTML/language.py  ../HTML/Template.html ../MsgParser.py Makefile
 	$(PARSER) $< $@ ../HTML/language.py  ../HTML/Template.html
 	@if [ ! -f $(dir $@)/bootstrap.min.css ]; then cp ../HTML/bootstrap.min.css $(dir $@); fi; 
 

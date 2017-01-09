@@ -66,24 +66,11 @@ def CommonSubdir(f1, f2):
     # strip slashes at ends
     return subdirComponent.strip("/")
 
-# main starts here
-if __name__ == '__main__':
-    if len(sys.argv) < 5:
-        sys.stderr.write('Usage: ' + sys.argv[0] + ' input output language template\n')
-        sys.exit(1)
-    inputFilename = sys.argv[1]
-    outputFilename = sys.argv[2]
-    languageFilename = sys.argv[3]
-    templateFilename = sys.argv[4]
+def ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename):
     commonSubdir = CommonSubdir(inputFilename, outputFilename)
     
     currentDateTime = strftime("%d/%m/%Y at %H:%M:%S")
     
-    # import the language file
-    sys.path.append(os.path.dirname(languageFilename))
-    languageName = os.path.splitext(os.path.basename(languageFilename) )[0]
-    language = __import__(languageName)
-
     # read the template file
     with open(templateFilename, 'r') as templateFile:
         template = templateFile.read().splitlines() 
@@ -129,3 +116,55 @@ if __name__ == '__main__':
             outFile.close()
             os.remove(outputFilename)
             sys.exit(1)
+
+def ProcessDir(msgDir, outDir, languageFilename, templateFilename):
+    # make the output directory
+    try:
+        os.makedirs(outDir)
+    except:
+        pass
+    for filename in os.listdir(msgDir):
+        inputFilename = msgDir + '/' + filename
+        if os.path.isdir(inputFilename):
+            if filename != 'headers':
+                try:
+                    outputFilename = language.outputSubdir(outDir, filename)
+                except AttributeError:
+                    outputFilename = outDir + "/" + filename
+                ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename)
+        else:
+            try:
+                outputFilename = language.outputFilename(outDir, filename, templateFilename)
+            except AttributeError:
+                justFilename = filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
+                outputFilename = outDir + "/" + justFilename
+            inputFileTime = os.path.getmtime(inputFilename)
+            try:
+                outputFileTime = os.path.getmtime(outputFilename)
+            except:
+                outputFileTime = 0
+            templateFileTime = os.path.getmtime(templateFilename)
+            languageFileTime = os.path.getmtime(languageFilename)
+            if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
+                print("Creating " + outputFilename)
+                ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename)
+
+# main starts here
+if __name__ == '__main__':
+    if len(sys.argv) < 5:
+        sys.stderr.write('Usage: ' + sys.argv[0] + ' input output language template\n')
+        sys.exit(1)
+    inputFilename = sys.argv[1]
+    outputFilename = sys.argv[2]
+    languageFilename = sys.argv[3]
+    templateFilename = sys.argv[4]
+
+    # import the language file
+    sys.path.append(os.path.dirname(languageFilename))
+    languageName = os.path.splitext(os.path.basename(languageFilename) )[0]
+    language = __import__(languageName)
+
+    if(os.path.isdir(inputFilename)):
+        ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename)
+    else:
+        ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename)
