@@ -196,7 +196,7 @@ def enums(e):
         for option in enum["Options"]:
             optionName = option["Name"]
             if enumNamespace != 0:
-                optionName = enum["Name"] + "_" + optionName
+                optionName = "<MSGNAME>"+"_"+enum["Name"] + "_" + optionName
             ret += optionName+" = "+str(option["Value"]) + ', '
         ret = ret[:-2]
         ret += "};\n"
