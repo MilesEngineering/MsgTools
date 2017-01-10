@@ -235,7 +235,6 @@ def msgID(msg, enums, undefinedMsgId):
             except ValueError:
                 raise MessageException("ERROR! Can't find value for " + str(value))
             ret = (ret << shiftValue) + value
-            print("id is now " + str(ret))
             shiftValue = id["Bits"]
         ret = ret
     if "ID" in msg:
