@@ -36,33 +36,52 @@ def getFn(field, offset):
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
+    asInt = ""
+    if "Enum" in field:
+        asInt = "AsInt"
     ret = '''\
 %s
-function ret = get.%s(%s)
+function ret = get.%s%s(%s)
     ret = %s;
-''' % (fnHdr(field), field["Name"], param, access)
+end
+''' % (fnHdr(field), field["Name"], asInt, param, access)
     if "Enum" in field:
+        ret += '''\
+%s
+function ret = get.%s(%s)
+    ret = obj.%sAsInt;
+''' % (fnHdr(field), field["Name"], param, field["Name"])
         ret += "    if isKey(obj."+field["Enum"]+", ret)\n"
         ret += "        ret = obj."+field["Enum"]+"(ret);\n"
         ret += "    end\n"
-    ret += "end\n"
+        ret += "end\n"
     return ret
 
 def setFn(field, offset):
     valueString = setMath("value", field, fieldType(field))
     loc = str(offset)
     end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
+    asInt = ""
+    if "Enum" in field:
+        asInt = "AsInt"
     ret = '''\
+%s
+function obj = set.%s%s(obj, value)
+''' % (fnHdr(field), field["Name"], asInt)
+    ret += '''\
+    obj.m_data(%s:%s) = typecast(swapbytes(%s(%s)), 'uint8');
+end
+''' % (loc, end_loc, fieldType(field), valueString)
+    if "Enum" in field:
+        ret += '''\
 %s
 function obj = set.%s(obj, value)
 ''' % (fnHdr(field), field["Name"])
-    if "Enum" in field:
         ret += "    if isKey(obj.Reverse"+field["Enum"]+", value)\n"
         ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
         ret += "    end\n"
-    ret += '''\
-    obj.m_data(%s:%s) = typecast(swapbytes(%s(%s)), 'uint8');
-end''' % (loc, end_loc, fieldType(field), valueString)
+        ret += "    obj."+field["Name"]+"AsInt = value;\n"
+        ret += "end\n"
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
@@ -71,16 +90,25 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
+    asInt = ""
+    if "Enum" in bits:
+        asInt = "AsInt"
     ret = '''\
 %s
-function ret = get.%s(obj)
+function ret = get.%s%s(obj)
     ret = %s;
-''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), access)
+end
+''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), asInt, access)
     if "Enum" in bits:
+        ret += '''\
+%s
+function ret = get.%s(obj)
+    ret = obj.%sAsInt;
+''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), MsgParser.BitfieldName(field, bits))
         ret += "    if isKey(obj."+bits["Enum"]+", ret)\n"
         ret += "        ret = obj."+bits["Enum"]+"(ret);\n"
         ret += "    end\n"
-    ret += "end\n"
+        ret += "end\n"
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
@@ -88,17 +116,26 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
     valueString = setMath("value", bits, fieldType(field))
     if "Offset" in bits or "Scale" in bits:
         paramType = typeForScaledInt(bits)
+    asInt = ""
+    if "Enum" in bits:
+        asInt = "AsInt"
     ret = '''\
 %s
-function obj = set.%s(obj, value)
-''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits))
-    if "Enum" in field:
-        ret += "    if isKey(obj.Reverse"+field["Enum"]+", value)\n"
-        ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
-        ret += "    end\n"
+function obj = set.%s%s(obj, value)
+''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), asInt)
     ret += '''\
     obj.%s = bitor(bitand(obj.%s, bitcmp(bitshift(%s(%s),%s))), (bitshift((bitand(%s, %s)), %s)));
 end''' % (field["Name"], field["Name"], fieldType(field), Mask(numBits), str(bitOffset), valueString, Mask(numBits), str(bitOffset))
+    if "Enum" in bits:
+        ret += '''\
+%s
+function obj = set.%s(obj, value)
+''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits))
+        ret += "    if isKey(obj.Reverse"+bits["Enum"]+", value)\n"
+        ret += "        value = obj.Reverse"+bits["Enum"]+"(value);\n"
+        ret += "    end\n"
+        ret += "    obj."+MsgParser.BitfieldName(field, bits)+"AsInt = value;\n"
+        ret += "end\n"
     return ret
 
 def accessors(msg):
@@ -154,9 +191,13 @@ def declarations(msg):
     if "Fields" in msg:
         for field in msg["Fields"]:
             ret.append(field["Name"] + ";")
+            if "Enum" in field:
+                ret.append(field["Name"] + "AsInt;")
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     ret.append(bits["Name"] + ";")
+                    if "Enum" in bits:
+                        ret.append(bits["Name"] + "AsInt;")
     return ret
 
 def fieldDefault(field):
@@ -218,7 +259,8 @@ def getMsgID(msg):
                     pass
                 getStr = "obj."+field["Name"]
                 if "Enum" in field:
-                    getStr = "uint32_t("+getStr+")"
+                    getStr += "AsInt"
+                getStr = "uint32("+getStr+")"
                 ret =  addShift(ret, getStr, numBits)
             if "Bitfields" in field:
                 for bitfield in field["Bitfields"]:
@@ -228,7 +270,8 @@ def getMsgID(msg):
                             pass
                         getStr = "obj."+BitfieldName(field, bitfield)
                         if "Enum" in bitfield:
-                            getStr = "uint32_t("+getStr+")"
+                            getStr += "AsInt"
+                        getStr = "uint32("+getStr+")"
                         ret =  addShift(ret, getStr, numBits)
     return ret
     
@@ -239,11 +282,11 @@ def setMsgID(msg):
         for field in reversed(msg["Fields"]):
             if "IDBits" in field:
                 if numBits != 0:
-                    ret += "\nid = id >> " + str(numBits)+"\n"
+                    ret += "\nid = bitshift(id, -" + str(numBits)+")\n"
                 numBits = field["IDBits"]
                 setStr = "bitand(id, "+Mask(numBits)+")"
-                if "Enum" in field:
-                    setStr = field["Enum"]+"("+setStr+")"
+                #if "Enum" in field:
+                #    setStr = field["Enum"]+"("+setStr+")"
                 ret +=  "obj."+field["Name"]+" = "+setStr
             if "Bitfields" in field:
                 for bitfield in reversed(field["Bitfields"]):
@@ -252,8 +295,8 @@ def setMsgID(msg):
                             ret += "\nid = id >> " + str(numBits)+"\n"
                         numBits = bitfield["IDBits"]
                         setStr = "bitand(id, "+Mask(numBits)+")"
-                        if "Enum" in bitfield:
-                            setStr = bitfield["Enum"]+"("+setStr+")"
+                        #if "Enum" in bitfield:
+                        #    setStr = bitfield["Enum"]+"("+setStr+")"
                         ret +=  "obj."+bitfield["Name"]+" = "+setStr
     return ret
 
