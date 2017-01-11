@@ -30,6 +30,9 @@ classdef MessageClient
         function ret = GetMsg(obj)
             %fprintf('Waiting for %d header bytes\n', obj.hdrObj.SIZE);
             hdrData = read(obj.clientSocket, obj.hdrObj.SIZE);
+            if(length(hdrData) ~= obj.hdrObj.SIZE)
+                fprintf('\nERROR!  Read %d/%d bytes from socket\n', length(hdrData), obj.hdrObj.SIZE);
+            end
             hdr = feval(obj.hdrClass.Name, hdrData);
             %fprintf('Waiting for %d body bytes\n', hdr.DataLength);
             bodyData = read(obj.clientSocket, hdr.DataLength);
