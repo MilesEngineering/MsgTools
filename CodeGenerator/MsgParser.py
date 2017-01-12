@@ -164,7 +164,10 @@ if __name__ == '__main__':
     languageName = os.path.splitext(os.path.basename(languageFilename) )[0]
     language = __import__(languageName)
 
-    if(os.path.isdir(inputFilename)):
-        ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename)
+    if(os.path.exists(inputFilename)):
+        if(os.path.isdir(inputFilename)):
+            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename)
+        else:
+            ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename)
     else:
-        ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename)
+        print("Path " + inputFilename + " does not exist!")

@@ -13,7 +13,8 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
-build-MessageServer-Qt*qt5*/
+build-*-Qt*qt5*/
+build-*-Desktop-Debug/
 *.plugin
 
 # Windows image file caches
@@ -29,6 +30,11 @@ $RECYCLE.BIN/
 # Mac desktop service store files
 .DS_Store
 
+# subversion internal files, in case someone put a subversion repo inside our directory structure
+.svn*
+
+# java and python compiled files
+*.class
+
 # Other custom ignores:
 *.pyc
-Thea

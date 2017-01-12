@@ -30,8 +30,8 @@ java: $(JAVA_MSG_FILES)
 js: $(JS_MSG_FILES)
 
 matlab:
-	$(PARSER) $(mdir)/headers $(MSGDIR)/Matlab/+headers Matlab/language.py  Matlab/HeaderTemplate.m
-	$(PARSER) $(mdir) $(MSGDIR)/Matlab/ Matlab/language.py  Matlab/Template.m
+	$(PARSER) $(mdir)/headers $(MSGDIR)/Matlab/+Messages/headers Matlab/language.py  Matlab/HeaderTemplate.m
+	$(PARSER) $(mdir) $(MSGDIR)/Matlab/+Messages Matlab/language.py  Matlab/Template.m
 
 html: $(HTML_MSG_FILES)
 

@@ -5,12 +5,12 @@
 #include "MsgApp/MessageClient.h"
 #include "MsgApp/Reflection.h"
 #include "Cpp/Network/Connect.h"
-#include "Cpp/test/TestCase1.h"
-#include "Cpp/test/TestCase2.h"
-#include "Cpp/test/TestCase3.h"
-#include "C/test/TestCase1.h"
-#include "C/test/TestCase2.h"
-#include "C/test/TestCase3.h"
+#include "Cpp/TestCase1.h"
+#include "Cpp/TestCase2.h"
+#include "Cpp/TestCase3.h"
+#include "C/TestCase1.h"
+#include "C/TestCase2.h"
+#include "C/TestCase3.h"
 
 #include <iostream>
 #include <string>
