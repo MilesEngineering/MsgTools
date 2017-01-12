@@ -20,10 +20,10 @@ from datetime import timedelta
 
 start_time = datetime.now()
 
-def millis():
+def elapsedSeconds():
    dt = datetime.now() - start_time
-   ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
-   return ms
+   seconds = float(dt.days * 24 * 60 * 60 + dt.seconds) + dt.microseconds / 1000000.0
+   return seconds+10000
 
 pause = 0
 
@@ -39,8 +39,6 @@ class CustomViewBox(pg.ViewBox):
 class MsgPlot:
     MAX_LENGTH = 100
     def __init__(self, msgClass, fieldInfo, subindex):
-        #self.win = pg.GraphicsWindow()
-        #self.win.setWindowTitle(msgClass.MsgName())
         self.msgClass = msgClass
         self.fieldInfo = fieldInfo
         self.fieldSubindex = subindex
@@ -55,9 +53,8 @@ class MsgPlot:
         except AttributeError:
             pass
         yAxisLabel += "  (" + fieldInfo.units+")"
-        xAxisLabel = "time (msg)"
+        xAxisLabel = "time (s)"
         self.plotWidget = pg.PlotWidget()
-        #self.myPlot = self.win.addPlot(viewBox=vb, labels={'left':  yAxisLabel, 'bottom': xAxisLabel})
         self.myPlot = self.plotWidget
         self.dataArray = []
         self.timeArray = []
@@ -71,7 +68,7 @@ class MsgPlot:
             newTime = float(Messaging.hdr.GetTime(message_buffer)/1000.0)
         except AttributeError:
             # if header has no time, fallback to PC time.
-            newTime = millis()
+            newTime = elapsedSeconds()
         
         # add data in the array until MAX_LENGTH is reached, then drop data off start of array
         # such that plot appears to scroll.  The array size is limited to MAX_LENGTH.
@@ -86,7 +83,6 @@ class MsgPlot:
 
         global pause
         if not pause:
-            self.ptr1 += 1
             self.curve.setData(self.timeArray, self.dataArray)
             self.curve.setPos(self.ptr1, 0)
 

@@ -211,8 +211,9 @@ class MessageScopeGui(MsgGui.MsgGui):
                     if plot.fieldInfo == fieldInfo and plot.fieldSubindex == fieldIndex:
                         alreadyThere = True
                 if not alreadyThere:
-                    plotName = msg_class.MsgName() + "." + fieldInfo.name + "[" + str(fieldIndex) + "]"
-                    print("adding plot of " + plotName)
+                    plotName = msg_class.MsgName() + "." + fieldInfo.name
+                    if fieldInfo.count != 1:
+                        plotName += "[" + str(fieldIndex) + "]"
                     if plottingLoaded:
                         msgPlot = MsgPlot(msg_class, fieldInfo, fieldIndex)
                         # add a tab for new plot
