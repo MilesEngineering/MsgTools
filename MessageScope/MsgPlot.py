@@ -55,12 +55,13 @@ class MsgPlot:
         except AttributeError:
             pass
         yAxisLabel += "  (" + fieldInfo.units+")"
-        xAxisLabel = "time (count)"
+        xAxisLabel = "time (msg)"
         self.plotWidget = pg.PlotWidget()
         #self.myPlot = self.win.addPlot(viewBox=vb, labels={'left':  yAxisLabel, 'bottom': xAxisLabel})
         self.myPlot = self.plotWidget
         self.dataArray = []
-        self.curve = self.myPlot.plot(self.dataArray)
+        self.timeArray = []
+        self.curve = self.myPlot.plot(self.timeArray, self.dataArray)
         self.ptr1 = 0
 
     def addData(self, message_buffer):
@@ -71,21 +72,22 @@ class MsgPlot:
         except AttributeError:
             # if header has no time, fallback to PC time.
             newTime = millis()
-        # TODO do something to get time on the X axis!
-        # right now we're just plotting each incoming point with equal spacing
         
         # add data in the array until MAX_LENGTH is reached, then drop data off start of array
         # such that plot appears to scroll.  The array size is limited to MAX_LENGTH.
         if len(self.dataArray) >= MsgPlot.MAX_LENGTH:
             self.dataArray[:-1] = self.dataArray[1:]  # shift data in the array one sample left
             self.dataArray[-1] = newDataPoint
+            self.timeArray[:-1] = self.timeArray[1:]  # shift data in the array one sample left
+            self.timeArray[-1] = newTime
         else:
             self.dataArray.append(newDataPoint)
+            self.timeArray.append(newTime)
 
         global pause
         if not pause:
             self.ptr1 += 1
-            self.curve.setData(self.dataArray)
+            self.curve.setData(self.timeArray, self.dataArray)
             self.curve.setPos(self.ptr1, 0)
 
 try:
