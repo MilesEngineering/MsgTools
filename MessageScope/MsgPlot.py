@@ -15,6 +15,16 @@ import sys
 sys.path.append(srcroot+"/../MsgApp")
 from Messaging import Messaging
 
+from datetime import datetime
+from datetime import timedelta
+
+start_time = datetime.now()
+
+def millis():
+   dt = datetime.now() - start_time
+   ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
+   return ms
+
 pause = 0
 
 class CustomViewBox(pg.ViewBox):
@@ -56,8 +66,14 @@ class MsgPlot:
     def addData(self, message_buffer):
         # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
         newDataPoint = Messaging.getFloat(message_buffer, self.fieldInfo, self.fieldSubindex)
+        try:
+            newTime = float(Messaging.hdr.GetTime(message_buffer)/1000.0)
+        except AttributeError:
+            # if header has no time, fallback to PC time.
+            newTime = millis()
         # TODO do something to get time on the X axis!
-        newTime = float(Messaging.hdr.GetTime(message_buffer)/1000.0)
+        # right now we're just plotting each incoming point with equal spacing
+        
         # add data in the array until MAX_LENGTH is reached, then drop data off start of array
         # such that plot appears to scroll.  The array size is limited to MAX_LENGTH.
         if len(self.dataArray) >= MsgPlot.MAX_LENGTH:
