@@ -17,14 +17,14 @@ classdef MessageClient
                 port=5678;
             end
             obj.clientSocket = tcpclient(server, port);
-            connectMsg = Network.Connect;
+            connectMsg = Messages.Network.Connect;
             connectMsg.Name(1:10) = uint8('Matlab 1.0');
             obj.SendMsg(connectMsg);
             % note: We need to send a SubscriptionList/MaskedSubscription
             % message to receive *any* messages!
             % commented-out code below subscribes to all IDs (because Mask
             % defaults to zero)
-            % subMsg = Network.MaskedSubscription;
+            % subMsg = Messages.Network.MaskedSubscription;
             % obj.SendMsg(subMsg);
         end
         function ret = GetMsg(obj)
@@ -54,12 +54,12 @@ classdef MessageClient
         end
         function PrintMessages(obj, id, mask)
             if(nargin > 2)
-                subMsg = Network.MaskedSubscription;
+                subMsg = Messages.Network.MaskedSubscription;
                 subMsg.Mask = mask;
                 subMsg.Value = id;
                 obj.SendMsg(subMsg);
             elseif(nargin > 1)
-                subMsg = Network.MaskedSubscription;
+                subMsg = Messages.Network.MaskedSubscription;
                 subMsg.Value = id;
                 subMsg.Mask = bitcmp(0);
                 obj.SendMsg(subMsg);
