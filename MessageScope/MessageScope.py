@@ -23,11 +23,10 @@ plottingLoaded=0
 try:
     from MsgPlot import MsgPlot
     plottingLoaded=1
-except ImportError:
-    print("Error loading plot interface.")
+except ImportError as e:
+    print("Error loading plot interface ["+str(e)+"]")
     print("Perhaps you forgot to install pyqtgraph.")
 except RuntimeError as e:
-    print()
     print("Error loading plot interface ["+str(e)+"]")
     print("Perhaps you need to install the PyQt5 version of pyqtgraph.")
     
