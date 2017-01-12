@@ -26,8 +26,9 @@ try:
 except ImportError:
     print("Error loading plot interface.")
     print("Perhaps you forgot to install pyqtgraph.")
-except RuntimeError:
-    print("Error loading plot interface.")
+except RuntimeError as e:
+    print()
+    print("Error loading plot interface ["+str(e)+"]")
     print("Perhaps you need to install the PyQt5 version of pyqtgraph.")
     
 
