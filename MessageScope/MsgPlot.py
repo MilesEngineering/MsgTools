@@ -23,7 +23,7 @@ start_time = datetime.now()
 def elapsedSeconds():
    dt = datetime.now() - start_time
    seconds = float(dt.days * 24 * 60 * 60 + dt.seconds) + dt.microseconds / 1000000.0
-   return seconds+10000
+   return seconds
 
 pause = 0
 
