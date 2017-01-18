@@ -59,6 +59,8 @@ class RxRateCalculatorThread(QObject):
             deltas.append((rx_msg_deque[i] - rx_msg_deque[i + 1]).total_seconds())
         
         average_time_delta = sum(deltas) / float(len(deltas))
+        if(average_time_delta == 0):
+            average_time_delta = 1
         average_rate = 1 / average_time_delta
 
         rx_msg_deque.pop()
