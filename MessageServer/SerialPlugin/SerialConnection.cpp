@@ -149,75 +149,94 @@ void SerialConnection::BaudrateChanged(bool pressed)
 }
 void SerialConnection::SerialDataReady()
 {
-    if(!gotHeader)
+    while(serialPort.bytesAvailable() > 0)
     {
-        bool foundStart = false;
-        /** \note Synchronize on start sequence */
-        while(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(SerialHeader::StartSequenceFieldInfo::defaultValue))
+        if(!gotHeader)
         {
-            /** peek at start of message.
-             * if it's start sequence, break.
-             * else, throw it away and try again. */
-            serialPort.peek((char*)&tmpRxHdr, sizeof(SerialHeader::StartSequenceFieldInfo::defaultValue));
-            if(tmpRxHdr.GetStartSequence() == SerialHeader::StartSequenceFieldInfo::defaultValue)
+            bool foundStart = false;
+            /** \note Synchronize on start sequence */
+            while(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(SerialHeader::StartSequenceFieldInfo::defaultValue))
             {
-                foundStart = true;
-                break;
-            }
-            uint8_t throwAway;
-            serialPort.read((char*)&throwAway, sizeof(throwAway));
-            gotRxError(START);
-        }
-
-        if(foundStart)
-        {
-            if(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(tmpRxHdr))
-            {
-                serialPort.read((char*)&tmpRxHdr, sizeof(tmpRxHdr));
+                /** peek at start of message.
+                 * if it's start sequence, break.
+                 * else, throw it away and try again. */
+                serialPort.peek((char*)&tmpRxHdr, sizeof(SerialHeader::StartSequenceFieldInfo::defaultValue));
                 if(tmpRxHdr.GetStartSequence() == SerialHeader::StartSequenceFieldInfo::defaultValue)
                 {
-                    /** \note Stop counting before we reach header checksum location. */
-                    uint16_t headerCrc = Crc((uint8_t*)&tmpRxHdr, SerialHeader::HeaderChecksumFieldInfo::loc);
+                    foundStart = true;
+                    break;
+                }
+                uint8_t throwAway;
+                serialPort.read((char*)&throwAway, sizeof(throwAway));
+                gotRxError(START);
+            }
 
-                    if(headerCrc == tmpRxHdr.GetHeaderChecksum())
+            if(foundStart)
+            {
+                if(serialPort.bytesAvailable() > 0 && unsigned(serialPort.bytesAvailable()) >= sizeof(tmpRxHdr))
+                {
+                    serialPort.read((char*)&tmpRxHdr, sizeof(tmpRxHdr));
+                    if(tmpRxHdr.GetStartSequence() == SerialHeader::StartSequenceFieldInfo::defaultValue)
                     {
-                        gotHeader = true;
+                        /** \note Stop counting before we reach header checksum location. */
+                        uint16_t headerCrc = Crc((uint8_t*)&tmpRxHdr, SerialHeader::HeaderChecksumFieldInfo::loc);
+
+                        if(headerCrc == tmpRxHdr.GetHeaderChecksum())
+                        {
+                            gotHeader = true;
+                        }
+                        else
+                        {
+                            gotRxError(HEADER);
+                        }
                     }
                     else
                     {
-                        gotRxError(HEADER);
+                        gotRxError(START);
+                        qDebug() << "Error in serial parser.  Thought I had start byte, now it's gone!";
                     }
                 }
                 else
                 {
-                    gotRxError(START);
-                    qDebug() << "Error in serial parser.  Thought I had start byte, now it's gone!";
+                    break;
                 }
-            }
-        }
-    }
-
-    if(gotHeader)
-    {
-        if(serialPort.bytesAvailable() >= tmpRxHdr.GetDataLength())
-        {
-            // allocate the serial message body, read from the serial port
-            QSharedPointer<SerialMessage> msg(SerialMessage::New(tmpRxHdr.GetDataLength()));
-            msg->hdr = tmpRxHdr;
-            serialPort.read((char*)msg->GetDataPtr(), msg->hdr.GetDataLength());
-
-            uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetDataLength());
-
-            if(tmpRxHdr.GetBodyChecksum() != bodyCrc)
-            {
-                gotHeader = false;
-                gotRxError(BODY);
             }
             else
             {
-                gotHeader = false;
-                _rxMsgCount++;
-                SerialMsgSlot(msg);
+                break;
+            }
+        }
+
+        if(gotHeader)
+        {
+            if(serialPort.bytesAvailable() >= tmpRxHdr.GetDataLength())
+            {
+                // allocate the serial message body, read from the serial port
+                int len1 = tmpRxHdr.GetDataLength();
+                QSharedPointer<SerialMessage> msg(SerialMessage::New(len1));
+                msg->hdr = tmpRxHdr;
+                int len2 = msg->hdr.GetDataLength();
+                if(len1 != len2)
+                    qDebug("error copying header!");
+                serialPort.read((char*)msg->GetDataPtr(), len2);
+
+                uint16_t bodyCrc = Crc(msg->GetDataPtr(), msg->hdr.GetDataLength());
+
+                if(tmpRxHdr.GetBodyChecksum() != bodyCrc)
+                {
+                    gotHeader = false;
+                    gotRxError(BODY);
+                }
+                else
+                {
+                    gotHeader = false;
+                    _rxMsgCount++;
+                    SerialMsgSlot(msg);
+                }
+            }
+            else
+            {
+                break;
             }
         }
     }
