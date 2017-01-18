@@ -63,6 +63,9 @@ class MsgInspector(MsgGui.MsgGui):
     def ShowMessage(self, msg):
         # read the ID, and get the message name, so we can print stuff about the body
         id       = hex(Messaging.hdr.GetMessageID(msg))
+        if not id in Messaging.MsgNameFromID:
+            print("WARNING! No definition for ", id, "!\n")
+            return
         msgName = Messaging.MsgNameFromID[id]
         msgClass = Messaging.MsgClassFromName[msgName]
 
