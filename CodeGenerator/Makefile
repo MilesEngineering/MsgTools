@@ -45,7 +45,10 @@ $(MSGDIR)/Cpp/headers/%.h : $(mdir)/headers/%.yaml Cpp/language.py  Cpp/CppHeade
 $(MSGDIR)/Cpp/%.h : $(mdir)/%.yaml Cpp/language.py  Cpp/CppTemplate.h MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Cpp/language.py  Cpp/CppTemplate.h
 
-$(MSGDIR)/C/%.h : $(mdir)/%.yaml Cpp/Clanguage.py Cpp/language.py  Cpp/CTemplate.h MsgParser.py MsgUtils.py Makefile
+$(MSGDIR)/C/headers/%.h : $(mdir)/headers/%.yaml Cpp/Clanguage.py  Cpp/CHeaderTemplate.h MsgParser.py MsgUtils.py Makefile
+	$(PARSER) $< $@ Cpp/Clanguage.py  Cpp/CHeaderTemplate.h
+
+$(MSGDIR)/C/%.h : $(mdir)/%.yaml Cpp/Clanguage.py Cpp/Clanguage.py  Cpp/CTemplate.h MsgParser.py MsgUtils.py Makefile
 	$(PARSER) $< $@ Cpp/Clanguage.py  Cpp/CTemplate.h
 
 $(MSGDIR)/Python/headers/%.py : $(mdir)/headers/%.yaml Python/language.py  Python/HeaderTemplate.py MsgParser.py MsgUtils.py Makefile

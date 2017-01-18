@@ -44,3 +44,9 @@ def fieldInfos(msg):
             offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return ret
+
+def getMsgID(msg):
+    return baseGetMsgID("<MSGNAME>_", "m_data", 0, 0, msg)
+    
+def setMsgID(msg):
+    return baseSetMsgID("<MSGNAME>_", "m_data, ", 0, 0, msg)
