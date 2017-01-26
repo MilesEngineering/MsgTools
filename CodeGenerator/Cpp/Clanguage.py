@@ -19,9 +19,11 @@ initCode = language.initCode
 def fieldInfo(field, offset):
     ret = ""
     if "Default" in field:
-        ret += '#define <MSGNAME>_'+field["Name"]+'_Default ' + str(field["Default"]) + "\n"
+        ret += '#define <MSGNAME>_'+field["Name"]+'_DEFAULT ' + str(field["Default"]) + "\n"
     if MsgParser.fieldCount(field) > 1:
-        ret += '#define <MSGNAME>_'+field["Name"]+'_Count ' + str(MsgParser.fieldCount(field)) + "\n"
+        ret += '#define <MSGNAME>_'+field["Name"]+'_COUNT ' + str(MsgParser.fieldCount(field)) + "\n"
+    ret += '#define <MSGNAME>_'+field["Name"]+'_OFFSET ' + str(offset) + "\n"
+    ret += '#define <MSGNAME>_'+field["Name"]+'_SIZE ' + str(MsgParser.fieldSize(field)) + "\n"
     return ret
 
 def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
