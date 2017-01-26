@@ -20,6 +20,8 @@ def fieldInfo(field, offset):
     ret = ""
     if "Default" in field:
         ret += '#define <MSGNAME>_'+field["Name"]+'_Default ' + str(field["Default"]) + "\n"
+    if MsgParser.fieldCount(field) > 1:
+        ret += '#define <MSGNAME>_'+field["Name"]+'_Count ' + str(MsgParser.fieldCount(field)) + "\n"
     return ret
 
 def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
