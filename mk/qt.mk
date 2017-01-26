@@ -1,58 +1,40 @@
 ifeq ($(UNAME),Cygwin)
 
-QT_ROOT_53_WIN := /cygdrive/c/qt/qt5.3.0/5.3/msvc2013_64/
 QT_ROOT_57_WIN := /cygdrive/c/Qt/5.7/mingw53_32
 QT_ROOT_58_WIN := /cygdrive/c/Qt/Qt5.8.0/5.8/mingw53_32
 
-ifneq ("$(wildcard $(QTROOT_53_WIN))","")
+ifeq ("$(wildcard $(QTROOT_58_WIN))","")
 
-# for Qt 5.3 installed by cygwin installer, with visual studio compiler
-QT_ROOT := $(QT_ROOT_53_WIN)
-QMAKE := $(QT_ROOT)/bin/qmake.exe
-QTBIN := /cygdrive/c/QtSDK/mingw/bin
-MAKE_FOR_QT = PATH=$(QTBIN):/usr/bin; MAKE=c:/QtSDK/Madde/bin/make.exe /cygdrive/c/QtSDK/Madde/bin/make.exe
-
-else ifeq ("$(wildcard $(QTROOT_58_WIN))","")
-
-# for Qt 5.7 installed by cygwin installer, with mingw compiler
+# for Qt 5.8 installed by windows Qt installer, with mingw compiler
 QT_ROOT := $(QT_ROOT_58_WIN)
 QMAKE := $(QT_ROOT)/bin/qmake.exe
-QTBIN := /cygdrive/c/Qt/Tools/mingw530_32/bin
+QTBIN := /cygdrive/c/Qt/Qt5.8.0/Tools/mingw530_32/bin
 MAKE_FOR_QT = PATH=$(QTBIN):/usr/bin ; mingw32-make
-
-# for some reason Qt builds the binary properly, but running it fails because it can't find DLLs.
-# it works if you run it from QtCreator, though.
-# Extensive googling reveals that this behavior is expected, and the solution is to either:
-# 1) copy DLLs to the location the binary is in manually 
-# 2) copy DLLs to the location the binary is in using windeployqt.exe
-# 3) manually modify the system path
-run:
-	PATH=$(QT_ROOT_58_WIN)/bin/ ; $(OBJ_DIR)/release/$(TARGET).exe
 
 else ifeq ("$(wildcard $(QTROOT_57_WIN))","")
 
-# for Qt 5.7 installed by cygwin installer, with mingw compiler
+# for Qt 5.7 installed by windows Qt installer, with mingw compiler
 QT_ROOT := $(QT_ROOT_57_WIN)
 QMAKE := $(QT_ROOT)/bin/qmake.exe
 QTBIN := /cygdrive/c/Qt/Tools/mingw530_32/bin
 MAKE_FOR_QT = PATH=$(QTBIN):/usr/bin ; mingw32-make
 
+else ifeq ("$(wildcard /usr/bin/qmake)","")
+
+# for qt in path
+QMAKE := qmake-qt5
+MAKE_FOR_QT := make
+
+endif
+
 # for some reason Qt builds the binary properly, but running it fails because it can't find DLLs.
 # it works if you run it from QtCreator, though.
 # Extensive googling reveals that this behavior is expected, and the solution is to either:
 # 1) copy DLLs to the location the binary is in manually 
 # 2) copy DLLs to the location the binary is in using windeployqt.exe
 # 3) manually modify the system path
-run:
-	PATH=$(QT_ROOT_57_WIN)/bin/ ; $(OBJ_DIR)/release/$(TARGET).exe
-
-else ifeq ("$(wildcard /usr/bin/qmake)","")
-
-# for qt in cygwin
-QMAKE := qmake-qt5
-MAKE_FOR_QT := make
-
-endif
+run: $(TARGET)
+	PATH=$(QT_ROOT)/bin/ ; $(OBJ_DIR)/release/$(TARGET).exe
 
 else
 
