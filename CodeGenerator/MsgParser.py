@@ -81,7 +81,12 @@ def ProcessFile(inputFilename, outputFilename, languageFilename, templateFilenam
         os.makedirs(os.path.dirname(outputFilename))
     except FileExistsError:
         pass
-    with open(outputFilename,'w') as outFile:
+    lineEndings = os.linesep
+    # for windows, override lineseperator, to force windows native line endings,
+    # even if we're running cygwin with \n line endings.
+    if sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
+        lineEndings="\r\n"
+    with open(outputFilename,'w', newline=lineEndings) as outFile:
         try:
             replacements = {}
             enums = Enums(inputData)
