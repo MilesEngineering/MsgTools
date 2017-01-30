@@ -255,7 +255,9 @@ def baseGetMsgID(prefix, baseParam, castEnums, enumAsIntParam, msg):
                 numBits = field["IDBits"]
                 param = baseParam
                 if "Enum" in field and enumAsIntParam:
-                    param += ", 1"
+                    if param != "":
+                        param += ", "
+                    param += "1"
                 getStr = prefix+"Get"+field["Name"]+"("+param+")"
                 if "Enum" in field and castEnums:
                     getStr = "uint32_t("+getStr+")"
@@ -266,7 +268,9 @@ def baseGetMsgID(prefix, baseParam, castEnums, enumAsIntParam, msg):
                         numBits = bitfield["IDBits"]
                         param = baseParam
                         if "Enum" in bitfield and enumAsIntParam:
-                            param += ", 1"
+                            if param != "":
+                                param += ", "
+                            param += "1"
                         getStr = prefix+"Get"+BitfieldName(field, bitfield)+"("+param+")"
                         if "Enum" in bitfield and castEnums:
                             getStr = "uint32_t("+getStr+")"
