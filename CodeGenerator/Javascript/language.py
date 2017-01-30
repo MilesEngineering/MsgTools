@@ -23,20 +23,37 @@ def typeForScaledInt(field):
         return "double"
     return "float"
 
+def enumLookup(field):
+    lookup  = "defaultValue = 0\n"
+    lookup += "    try:\n"
+    lookup += "        value = int(float(value))\n"
+    lookup += "    except ValueError:\n"
+    lookup += "        pass\n"
+    lookup += "    if isinstance(value, int) or value.isdigit():\n"
+    lookup += "        defaultValue = int(value)\n"
+    lookup += "    value = <MSG_NAME>." + str(field["Enum"]) + ".get(value, defaultValue)\n"
+    lookup += "    "
+    return lookup
+
+def reverseEnumLookup(field):
+    lookup = "if not enumAsInt:\n"
+    lookup += "        value = <MSG_NAME>.Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
+    return lookup
+
 def getFn(field, offset):
     loc = str(offset)
     param = ""
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
-        param += "int idx"
-    access = "%s(m_data.get%s(%s))" % (fieldType(field), fieldType(field), loc)
-    access = getMath(access, field, typeForScaledInt(field), 'f')
-    retType = fieldType(field)
-    if "Offset" in field or "Scale" in field:
-        retType = typeForScaledInt(field)
-    elif "Enum" in field:
-        retType = field["Enum"]
-        access = retType + "(" + access + ")"
+        param += "idx"
+    if "Enum" in field:
+        if param != "":
+            param += ", "
+        param += "enumAsInt=0"
+    access = "(this.m_data.get%s(%s))" % (fieldType(field), loc)
+    access = getMath(access, field, "")
+    if "Enum" in field:
+        cleanup = reverseEnumLookup(field)
     ret = '''\
 %s
 <MSGNAME>.prototype.Get%s = function(%s)
@@ -46,13 +63,11 @@ def getFn(field, offset):
     return ret
 
 def setFn(field, offset):
-    paramType = fieldType(field)
-    valueString = setMath("value", field, fieldType(field), 'f')
-    if "Offset" in field or "Scale" in field:
-        paramType = typeForScaledInt(field)
-    elif "Enum" in field:
-        valueString = paramType + "(" + valueString + ")"
-        paramType = field["Enum"]
+    valueString = setMath("value", field, "")
+    lookup = ""
+    if "Enum" in field:
+        # find index that corresponds to string input param
+        lookup = enumLookup(field)        
     param = "value"
     loc = str(offset)
     if MsgParser.fieldCount(field) > 1:
@@ -62,40 +77,37 @@ def setFn(field, offset):
 %s
 <MSGNAME>.prototype.Set%s = function(%s)
 {
-    m_data.set%s(%s, %s(%s));
-};''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, fieldType(field).lower(), valueString)
+    this.m_data.set%s(%s, %s);
+};''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
-    access = "(Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
-    access = getMath(access, bits, typeForScaledInt(bits), 'f')
-    retType = fieldType(field)
-    if "Offset" in bits or "Scale" in bits:
-        retType = typeForScaledInt(bits)
-    elif "Enum" in bits:
-        retType = bits["Enum"]
-        access = retType + "(" + access + ")"
+    access = "(this.Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+    access = getMath(access, bits, "")
+    param = ""
+    if "Enum" in bits:
+        param += "enumAsInt=0"
+    if "Enum" in bits:
+        cleanup = reverseEnumLookup(bits)
     ret = '''\
 %s
-<MSGNAME>.prototype.Get%s = function()
+<MSGNAME>.prototype.Get%s = function(%s)
 {
     return %s;
-};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), access)
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, access)
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
-    paramType = fieldType(field)
-    valueString = setMath("value", bits, fieldType(field), 'f')
-    if "Offset" in bits or "Scale" in bits:
-        paramType = typeForScaledInt(bits)
-    elif "Enum" in bits:
-        valueString = paramType + "(" + valueString + ")"
-        paramType = bits["Enum"]
+    valueString = setMath("value", bits, "")
+    lookup = ""
+    if "Enum" in bits:
+        # find index that corresponds to string input param
+        lookup = enumLookup(bits)
     ret = '''\
 %s
 <MSGNAME>.prototype.Set%s = function(value)
 {
-    Set%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
+    Set%s((this.Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
 };''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
@@ -207,32 +219,6 @@ def reflection(msg):
 
     return "\n".join(ret)
 
-def fieldMin(field):
-    val = MsgParser.fieldMin(field)
-    ret = str(val)
-    if "Scale" in field or "Offset" in field:
-        ret += 'f'
-    else:
-        try:
-            if val > fieldStorageMax("int32"):
-                ret += 'L'
-        except TypeError:
-            pass
-    return ret
-
-def fieldMax(field):
-    val = MsgParser.fieldMax(field)
-    ret = str(val)
-    if "Scale" in field or "Offset" in field:
-        ret += 'f'
-    else:
-        try:
-            if val > fieldStorageMax("int32"):
-                ret += 'L'
-        except TypeError:
-            pass
-    return ret
-
 def genericInfo(field, type, offset):
     loc = str(offset)
     params  = '    static final int loc   = ' + loc + ';\n'
@@ -291,7 +277,7 @@ def declarations(msg):
     return []
 
 def getMsgID(msg):
-    return baseGetMsgID("", "", 1, 0, msg)
+    return baseGetMsgID("this.", "", 0, 1, msg)
     
 def setMsgID(msg):
-    return baseSetMsgID("", "", 1, 0, msg)
+    return baseSetMsgID("this.", "", 0, 1, msg)
