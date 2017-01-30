@@ -29,7 +29,7 @@ def getFn(field, offset):
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "int idx"
-    access = "(%s)m_data.get%s(%s)" % (fieldType(field), fieldType(field), loc)
+    access = "%s(m_data.get%s(%s))" % (fieldType(field), fieldType(field), loc)
     access = getMath(access, field, typeForScaledInt(field), 'f')
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
@@ -42,7 +42,7 @@ def getFn(field, offset):
 <MSGNAME>.prototype.Get%s = function(%s)
 {
     return %s;
-}''' % (fnHdr(field), field["Name"], param, access)
+};''' % (fnHdr(field), field["Name"], param, access)
     return ret
 
 def setFn(field, offset):
@@ -53,17 +53,17 @@ def setFn(field, offset):
     elif "Enum" in field:
         valueString = paramType + "(" + valueString + ")"
         paramType = field["Enum"]
-    param = paramType + " value"
+    param = "value"
     loc = str(offset)
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
-        param += ", int idx"
+        param += ", idx"
     ret = '''\
 %s
 <MSGNAME>.prototype.Set%s = function(%s)
 {
-    m_data.set%s(%s, (%s)%s);
-}''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, fieldType(field).lower(), valueString)
+    m_data.set%s(%s, %s(%s));
+};''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, fieldType(field).lower(), valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
@@ -80,7 +80,7 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
 <MSGNAME>.prototype.Get%s = function()
 {
     return %s;
-}''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), access)
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), access)
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
@@ -93,10 +93,10 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
         paramType = bits["Enum"]
     ret = '''\
 %s
-<MSGNAME>.prototype.Set%s = function(%s value)
+<MSGNAME>.prototype.Set%s = function(value)
 {
     Set%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
-}''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), paramType, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -289,3 +289,9 @@ def fieldInfos(msg):
     
 def declarations(msg):
     return []
+
+def getMsgID(msg):
+    return baseGetMsgID("", "", 1, 0, msg)
+    
+def setMsgID(msg):
+    return baseSetMsgID("", "", 1, 0, msg)
