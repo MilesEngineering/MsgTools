@@ -24,20 +24,15 @@ def typeForScaledInt(field):
     return "float"
 
 def enumLookup(field):
-    lookup  = "defaultValue = 0\n"
-    lookup += "    try:\n"
-    lookup += "        value = int(float(value))\n"
-    lookup += "    except ValueError:\n"
-    lookup += "        pass\n"
-    lookup += "    if isinstance(value, int) or value.isdigit():\n"
-    lookup += "        defaultValue = int(value)\n"
-    lookup += "    value = <MSGNAME>." + str(field["Enum"]) + ".get(value, defaultValue)\n"
+    lookup  = "if(value in <MSGNAME>."+ str(field["Enum"])+")\n"
+    lookup += "        value = <MSGNAME>."+ str(field["Enum"])+"[value];\n"
     lookup += "    "
     return lookup
 
 def reverseEnumLookup(field):
-    lookup = "if not enumAsInt:\n"
-    lookup += "        value = <MSGNAME>.Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
+    lookup = "if(!enumAsInt)\n"
+    lookup += "    if(value in <MSGNAME>.Reverse"+ str(field["Enum"])+")\n"
+    lookup += "        value = <MSGNAME>.Reverse" + str(field["Enum"]) + "[value];\n    "
     return lookup
 
 def getFn(field, offset):
@@ -49,17 +44,19 @@ def getFn(field, offset):
     if "Enum" in field:
         if param != "":
             param += ", "
-        param += "enumAsInt=0"
+        param += "enumAsInt=false"
     access = "(this.m_data.get%s(%s, false))" % (fieldType(field), loc)
     access = getMath(access, field, "")
+    cleanup = ""
     if "Enum" in field:
         cleanup = reverseEnumLookup(field)
     ret = '''\
 %s
 <MSGNAME>.prototype.Get%s = function(%s)
 {
-    return %s;
-};''' % (fnHdr(field), field["Name"], param, access)
+    value = %s;
+    %sreturn value;
+};''' % (fnHdr(field), field["Name"], param, access, cleanup)
     return ret
 
 def setFn(field, offset):
@@ -77,8 +74,8 @@ def setFn(field, offset):
 %s
 <MSGNAME>.prototype.Set%s = function(%s)
 {
-    this.m_data.set%s(%s, %s, false);
-};''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString)
+    %sthis.m_data.set%s(%s, %s, false);
+};''' % (fnHdr(field), field["Name"], param, lookup, fieldType(field), loc, valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
@@ -86,15 +83,17 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
     access = getMath(access, bits, "")
     param = ""
     if "Enum" in bits:
-        param += "enumAsInt=0"
+        param += "enumAsInt=false"
+    cleanup = ""
     if "Enum" in bits:
         cleanup = reverseEnumLookup(bits)
     ret = '''\
 %s
 <MSGNAME>.prototype.Get%s = function(%s)
 {
-    return %s;
-};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, access)
+    value = %s;
+    %sreturn value;
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, access, cleanup)
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
@@ -107,8 +106,8 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
 %s
 <MSGNAME>.prototype.Set%s = function(value)
 {
-    this.Set%s((this.Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
-};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
+    %sthis.Set%s((this.Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), lookup, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -167,14 +166,14 @@ def enums(e):
     ret = ""
     for enum in e:
         # forward enum
-        fwd = "var " + enum["Name"]+" = {};\n"
+        fwd = "<MSGNAME>." + enum["Name"]+" = {};\n"
         for option in enum["Options"]:
-            fwd += enum["Name"] + "[\"" + str(option["Name"]) + "\"] = "+str(option["Value"])+";\n"
+            fwd += "<MSGNAME>."+enum["Name"] + "[\"" + str(option["Name"]) + "\"] = "+str(option["Value"])+";\n"
 
         # Reverse enum
-        back = "var Reverse" + enum["Name"]+" = {};\n"
-        back += "for(key in "+enum["Name"]+") {\n"
-        back += "    Reverse" + enum["Name"] + "["+enum["Name"]+"[key]" +"] = key;\n"
+        back = "<MSGNAME>.Reverse" + enum["Name"]+" = {};\n"
+        back += "for(key in <MSGNAME>."+enum["Name"]+") {\n"
+        back += "    <MSGNAME>.Reverse" + enum["Name"] + "[<MSGNAME>."+enum["Name"]+"[key]" +"] = key;\n"
         back += "}\n"
 
         ret += fwd + back
