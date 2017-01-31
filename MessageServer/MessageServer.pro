@@ -6,12 +6,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     MessageServer.cpp \
-    Client.cpp
+    Client.cpp \
+    WebSocketServer.cpp \
+    ServerPort.cpp
 
 HEADERS += MessageServer.h \
     Client.h \
     ServerPort.h \
     ../MsgApp/Message.h \
-    ServerInterface.h
+    ServerInterface.h \
+    WebSocketServer.h
 
-QT += network xml widgets core gui
+QT += network xml widgets core gui websockets

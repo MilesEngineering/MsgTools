@@ -12,6 +12,8 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QPlainTextEdit>
 
+#include "WebSocketServer.h"
+
 class QTcpServer;
 class ServerPort;
 
@@ -23,12 +25,12 @@ class MessageServer : public QMainWindow
 
     public:
         static MessageServer* Instance(int argc =0, char** argv = 0);
+        void AddNewClient(ServerPort* serverPort);
 
     private:
         MessageServer(int argc, char *argv[]);
 
         void GotANewClient();
-        void AddNewClient(ServerPort* serverPort);
 
         void LoadPlugin(QString fileName);
         void LoadPluginButton();
@@ -46,6 +48,7 @@ class MessageServer : public QMainWindow
         QTcpServer* _tcpServer;
         QList<ServerPort*> _clients;
         QSettings _settings;
+        WebSocketServer* _webSocketServer;
     private:
         static void redirectDebugOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 };

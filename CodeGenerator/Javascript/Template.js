@@ -11,25 +11,31 @@
 var <MSGNAME> = function(buffer) {
     // have baseclass construct the buffer?
     //Message.call(this, MSG_SIZE);
-    
-    // how to make constants?
-    this.MSG_ID = <MSGID>;
-    this.MSG_SIZE = <MSGSIZE>;
-    
+        
     if (buffer==undefined)
     {
-        var buffer = new ArrayBuffer(this.MSG_SIZE);
-        this.m_data = new DataView(buffer);
+        buffer = new ArrayBuffer(NetworkHeader.prototype.MSG_SIZE+<MSGNAME>.prototype.MSG_SIZE);
     }
-    else
-    {
-        this.m_data = new DataView(buffer);
-    }
+    this.m_data = new DataView(buffer, NetworkHeader.prototype.MSG_SIZE);
 
-    this.SetMessageID(MSG_ID);
+    // need to access the message header!
+    // should we use inheritance for this?
+    this.hdr = new NetworkHeader(buffer);
+    this.hdr.SetMessageID(<MSGNAME>.prototype.MSG_ID);
+    this.hdr.SetDataLength(buffer.byteLength - NetworkHeader.prototype.MSG_SIZE);
     //this.InitializeTime();
     this.Init();
+    
 };
+
+// add our class to the dictionary
+MessageDictionary[<MSGID>] = <MSGNAME>
+
+// how to make constants?
+<MSGNAME>.prototype.MSG_ID = <MSGID>;
+<MSGNAME>.prototype.MSG_SIZE = <MSGSIZE>;
+<MSGNAME>.prototype.MSG_NAME = "<MSGNAME>";
+
 
 <MSGNAME>.prototype.Init = function(){
     <INIT_CODE>

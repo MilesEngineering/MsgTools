@@ -31,13 +31,13 @@ def enumLookup(field):
     lookup += "        pass\n"
     lookup += "    if isinstance(value, int) or value.isdigit():\n"
     lookup += "        defaultValue = int(value)\n"
-    lookup += "    value = <MSG_NAME>." + str(field["Enum"]) + ".get(value, defaultValue)\n"
+    lookup += "    value = <MSGNAME>." + str(field["Enum"]) + ".get(value, defaultValue)\n"
     lookup += "    "
     return lookup
 
 def reverseEnumLookup(field):
     lookup = "if not enumAsInt:\n"
-    lookup += "        value = <MSG_NAME>.Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
+    lookup += "        value = <MSGNAME>.Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
     return lookup
 
 def getFn(field, offset):
@@ -50,7 +50,7 @@ def getFn(field, offset):
         if param != "":
             param += ", "
         param += "enumAsInt=0"
-    access = "(this.m_data.get%s(%s))" % (fieldType(field), loc)
+    access = "(this.m_data.get%s(%s, false))" % (fieldType(field), loc)
     access = getMath(access, field, "")
     if "Enum" in field:
         cleanup = reverseEnumLookup(field)
@@ -77,7 +77,7 @@ def setFn(field, offset):
 %s
 <MSGNAME>.prototype.Set%s = function(%s)
 {
-    this.m_data.set%s(%s, %s);
+    this.m_data.set%s(%s, %s, false);
 };''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString)
     return ret
 
@@ -107,7 +107,7 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
 %s
 <MSGNAME>.prototype.Set%s = function(value)
 {
-    Set%s((this.Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
+    this.Set%s((this.Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
 };''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 

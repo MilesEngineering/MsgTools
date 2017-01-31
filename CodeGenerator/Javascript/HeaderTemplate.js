@@ -11,23 +11,20 @@
 var <MSGNAME> = function(buffer) {
     // have baseclass construct the buffer?
     //Message.call(this, MSG_SIZE);
-    
-    // how to make constants?
-    this.MSG_SIZE = <MSGSIZE>;
-    
+        
     if (buffer==undefined)
     {
-        var buffer = new ArrayBuffer(this.MSG_SIZE);
-        this.m_data = new DataView(buffer);
+        buffer = new ArrayBuffer(<MSGNAME>.prototype.MSG_SIZE);
     }
-    else
-    {
-        this.m_data = new DataView(buffer);
-    }
+    this.m_data = new DataView(buffer);
 
     //this.InitializeTime();
     this.Init();
 };
+
+// how to make constants?
+<MSGNAME>.prototype.MSG_SIZE = <MSGSIZE>;
+<MSGNAME>.prototype.MSG_NAME = "<MSGNAME>";
 
 <MSGNAME>.prototype.Init = function(){
     <INIT_CODE>
@@ -37,7 +34,7 @@ var <MSGNAME> = function(buffer) {
 // http://stackoverflow.com/a/130572
 <ENUMERATIONS>
 <ACCESSORS>
-<MSGNAME>.prototype.SetMessageID = function(value){
+<MSGNAME>.prototype.SetMessageID = function(id){
     <SETMSGID>;
 };
 <MSGNAME>.prototype.GetMessageID = function(){

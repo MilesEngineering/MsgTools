@@ -45,6 +45,8 @@ class ServerPort : public QObject
         QHash<uint32_t, bool> subscriptions;
         uint32_t subscriptionMask;
         uint32_t subscriptionValue;
+        // this handles messages received from our own client connection
+        void HandleClientMessage(QSharedPointer<Message> msg);
 };
 
 #endif

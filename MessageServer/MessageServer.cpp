@@ -12,6 +12,8 @@
 #include "Client.h"
 #include "ServerInterface.h"
 
+#define TCP_PORT 5678
+#define WEB_SOCKET_PORT (TCP_PORT+1)
 MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
 : QMainWindow(),
   _logFile(0),
@@ -22,7 +24,7 @@ MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
     qInstallMessageHandler(MessageServer::redirectDebugOutput);
 
     _tcpServer = new QTcpServer(this);
-    if (!_tcpServer->listen(QHostAddress::Any, 5678))
+    if (!_tcpServer->listen(QHostAddress::Any, TCP_PORT))
     {
         qWarning() << "Unable to start the server: " << _tcpServer->errorString() << endl;
         exit(1);
@@ -65,6 +67,9 @@ MessageServer::MessageServer(int /*argc*/, char */*argv*/[])
 
     vbox->addLayout(_layout);
     vbox->addWidget(_statusBox);
+
+    _webSocketServer = new WebSocketServer(WEB_SOCKET_PORT, this);
+    connect(_webSocketServer, &WebSocketServer::NewClient, this, &MessageServer::AddNewClient);
 }
 void MessageServer::LogButtonClicked()
 {
