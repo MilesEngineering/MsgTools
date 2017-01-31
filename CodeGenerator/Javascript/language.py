@@ -134,7 +134,7 @@ def accessors(msg):
 def initField(field):
     if "Default" in field:
         if MsgParser.fieldCount(field) > 1:
-            ret = "for (int i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
+            ret = "for (i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
             ret += "    Set" + field["Name"] + "(" + str(field["Default"]) + ", i);" 
             return ret;
         else:
@@ -281,3 +281,31 @@ def getMsgID(msg):
     
 def setMsgID(msg):
     return baseSetMsgID("this.", "", 0, 1, msg)
+
+def structUnpacking(msg):
+    ret = []
+
+    if "Fields" in msg:    
+        for field in msg["Fields"]:
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    ret.append('ret["'+bits["Name"] + '"] = msg.Get' + bits["Name"] + "();")
+            else:
+                if MsgParser.fieldCount(field) == 1:
+                    ret.append('ret["'+field["Name"] + '"] = msg.Get' + field["Name"] + "();")
+                else:
+                    if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+                        ret.append('ret["'+field["Name"] + '"] = "";')
+                        ret.append("for(i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
+                        ret.append("{");
+                        ret.append('    nextChar = String.fromCharCode(msg.Get' + field["Name"] + "(i));")
+                        ret.append("    if(nextChar == '\0')");
+                        ret.append("        break;");
+                        ret.append('    ret["'+field["Name"] + '"] += nextChar;');
+                        ret.append("}");
+                    else:
+                        ret.append('ret["'+field["Name"] + '"] = [];')
+                        ret.append("for(i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
+                        ret.append('    ret["'+field["Name"] + '"][i] = msg.Get' + field["Name"] + "(i);")
+            
+    return "\n".join(ret)

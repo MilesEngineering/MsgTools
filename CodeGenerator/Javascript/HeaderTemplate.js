@@ -40,3 +40,10 @@ var <MSGNAME> = function(buffer) {
 <MSGNAME>.prototype.GetMessageID = function(){
     return <GETMSGID>;
 };
+
+// Convert to a javascript object
+<MSGNAME>.prototype.toObject = function(){
+    ret = {};
+    <STRUCTUNPACKING>
+    return ret;
+}

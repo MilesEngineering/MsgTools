@@ -45,3 +45,10 @@ MessageDictionary[<MSGID>] = <MSGNAME>
 // http://stackoverflow.com/a/130572
 <ENUMERATIONS>
 <ACCESSORS>
+
+// Convert to a javascript object
+<MSGNAME>.prototype.toObject = function(){
+    ret = {};
+    <STRUCTUNPACKING>
+    return ret;
+}

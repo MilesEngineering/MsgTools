@@ -1,17 +1,7 @@
 function toJSON(obj) {
     console.log("JSON for " + obj.MSG_NAME + ", ID=",+obj.MSG_ID+", "+obj.MSG_SIZE+" bytes")
-    var jsonStr = '"'+obj.MSG_NAME+'": {\n';
-    for (var property in obj.constructor.prototype) {
-        if(typeof(obj[property]) == "function" && property.startsWith("Get"))
-        {
-            var fieldName = property.replace(/^Get/, '')
-            var fieldValue = obj[property]();
-            var line = '    "'+fieldName+'": ' + fieldValue;
-            jsonStr += line+", \n";
-        }
-    }
-    jsonStr = jsonStr.replace(/, \n$/g, '\n');
-    jsonStr += '}\n';
+    var jsonStr = '"'+obj.MSG_NAME+'": ';
+    jsonStr += JSON.stringify(obj.toObject());
     return jsonStr;
 }
 
@@ -46,11 +36,17 @@ MessagingClient.prototype.onopen = function (event) {
     cm.SetName('p'.charCodeAt(0), 8);
     cm.SetName('t'.charCodeAt(0), 9);
     cm.SetName('\0'.charCodeAt(0), 10);
-    this.webSocket.send(cm.m_data.buffer);
+    this.send(cm);
 
     // default values will make us receive all messages
     sm = new MaskedSubscription();
-    this.webSocket.send(sm.m_data.buffer);
+    this.send(sm);
+
+    if(typeof this.onconnect === "function")
+    {
+        this.onconnect();
+    }
+
 };
 
 MessagingClient.prototype.onclose = function(event) {
@@ -74,4 +70,8 @@ MessagingClient.prototype.onmessage = function (event) {
     {
         console.log("ERROR! Msg ID " + id + " not defined!");
     }
+};
+
+MessagingClient.prototype.send = function (msg) {
+    this.webSocket.send(msg.m_data.buffer);
 };
