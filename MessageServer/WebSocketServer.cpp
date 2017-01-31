@@ -45,7 +45,6 @@ WebSocketClient::~WebSocketClient()
 
 void WebSocketClient::processBinaryMessage(QByteArray message)
 {
-    qDebug() << "Binary Message received on websocket";
     QSharedPointer<Message> msg (Message::New(message.size()));
 
     memcpy(msg->RawBuffer(), message.data(), Message::HeaderSize());
