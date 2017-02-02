@@ -53,6 +53,9 @@ $(MSGDIR)/Java/%.java : messages/%.yaml ../Java/language.py  ../Java/JavaTemplat
 $(MSGDIR)/Javascript/%.js : messages/%.yaml ../Javascript/language.py  ../Javascript/Template.js ../MsgParser.py ../MsgUtils.py Makefile
 	$(PARSER) $< $@ ../Javascript/language.py  ../Javascript/Template.js
 
+$(MSGDIR)/Javascript/headers/%.js : messages/headers/%.yaml ../Javascript/language.py  ../Javascript/HeaderTemplate.js ../MsgParser.py ../MsgUtils.py Makefile
+	$(PARSER) $< $@ ../Javascript/language.py  ../Javascript/HeaderTemplate.js
+
 $(MSGDIR)/Python/%.py : messages/%.yaml ../Python/language.py  ../Python/Template.py ../MsgParser.py ../MsgUtils.py Makefile
 	$(PARSER) $< $@ ../Python/language.py  ../Python/Template.py
 
