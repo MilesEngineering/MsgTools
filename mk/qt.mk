@@ -38,7 +38,7 @@ run: $(TARGET)
 
 else
 
-QMAKE := qmake -qt=qt5
+QMAKE := qmake
 MAKE_FOR_QT := make
 QSPEC := -spec  linux-g++
 
