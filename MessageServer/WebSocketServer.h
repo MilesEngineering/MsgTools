@@ -4,8 +4,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QByteArray>
 
-#include <QtWebSockets/QWebSocketServer.h>
-#include <QtWebSockets/QWebSocket.h>
+#include <QtWebSockets/QWebSocketServer>
+#include <QtWebSockets/QWebSocket>
 
 #include "ServerPort.h"
 
