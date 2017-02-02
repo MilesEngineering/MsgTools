@@ -21,21 +21,7 @@ var MessagingClient = function() {
 
 MessagingClient.prototype.onopen = function (event) {
     cm = new Connect();
-    // messy, need a way to set arrays of uint8s with type=ASCII as a string.
-    // update javascript code generator plugin for this, and then we can do:
-    //cm.SetName("javascript");
-    // see how python does it for an example
-    cm.SetName('j'.charCodeAt(0), 0);
-    cm.SetName('a'.charCodeAt(0), 1);
-    cm.SetName('v'.charCodeAt(0), 2);
-    cm.SetName('a'.charCodeAt(0), 3);
-    cm.SetName('s'.charCodeAt(0), 4);
-    cm.SetName('c'.charCodeAt(0), 5);
-    cm.SetName('r'.charCodeAt(0), 6);
-    cm.SetName('i'.charCodeAt(0), 7);
-    cm.SetName('p'.charCodeAt(0), 8);
-    cm.SetName('t'.charCodeAt(0), 9);
-    cm.SetName('\0'.charCodeAt(0), 10);
+    cm.SetNameString("javascript");
     this.send(cm);
 
     // default values will make us receive all messages

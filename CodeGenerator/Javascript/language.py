@@ -54,9 +54,24 @@ def getFn(field, offset):
 %s
 <MSGNAME>.prototype.Get%s = function(%s)
 {
-    value = %s;
+    var value = %s;
     %sreturn value;
 };''' % (fnHdr(field), field["Name"], param, access, cleanup)
+    if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+        ret += '''
+%s
+<MSGNAME>.prototype.Get%sString = function()
+{
+    var value = '';
+    for(i=0; i<%s; i++)
+    {
+        nextChar = String.fromCharCode(this.Get%s(i));
+        if(nextChar == '\0')
+            break;
+        value += nextChar;
+    }
+    return value;
+};''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), field["Name"])
     return ret
 
 def setFn(field, offset):
@@ -76,6 +91,17 @@ def setFn(field, offset):
 {
     %sthis.m_data.set%s(%s, %s, false);
 };''' % (fnHdr(field), field["Name"], param, lookup, fieldType(field), loc, valueString)
+    if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+        ret += '''
+%s
+<MSGNAME>.prototype.Set%sString = function(value)
+{
+    for(i=0; i<%s && i<value.length; i++)
+    {
+        this.Set%s(value[i].charCodeAt(0), i);
+    }
+    return value;
+};''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), field["Name"])
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
@@ -294,14 +320,7 @@ def structUnpacking(msg):
                     ret.append('ret["'+field["Name"] + '"] = msg.Get' + field["Name"] + "();")
                 else:
                     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
-                        ret.append('ret["'+field["Name"] + '"] = "";')
-                        ret.append("for(i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
-                        ret.append("{");
-                        ret.append('    nextChar = String.fromCharCode(msg.Get' + field["Name"] + "(i));")
-                        ret.append("    if(nextChar == '\0')");
-                        ret.append("        break;");
-                        ret.append('    ret["'+field["Name"] + '"] += nextChar;');
-                        ret.append("}");
+                        ret.append('ret["'+field["Name"] + '"] = msg.Get' + field["Name"] + "String();")
                     else:
                         ret.append('ret["'+field["Name"] + '"] = [];')
                         ret.append("for(i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
