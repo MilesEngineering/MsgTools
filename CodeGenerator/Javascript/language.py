@@ -117,7 +117,7 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
 %s
 <MSGNAME>.prototype.Get%s = function(%s)
 {
-    value = %s;
+    var value = %s;
     %sreturn value;
 };''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, access, cleanup)
     return ret
@@ -160,15 +160,15 @@ def initField(field):
     if "Default" in field:
         if MsgParser.fieldCount(field) > 1:
             ret = "for (i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
-            ret += "    Set" + field["Name"] + "(" + str(field["Default"]) + ", i);" 
+            ret += "    this.Set" + field["Name"] + "(" + str(field["Default"]) + ", i);" 
             return ret;
         else:
-            return  "Set" + field["Name"] + "(" + str(field["Default"]) + ");"
+            return  "this.Set" + field["Name"] + "(" + str(field["Default"]) + ");"
     return ""
 
 def initBitfield(field, bits):
     if "Default" in bits:
-        return  "Set" + MsgParser.BitfieldName(field, bits) + "(" +str(bits["Default"]) + ");"
+        return  "this.Set" + MsgParser.BitfieldName(field, bits) + "(" +str(bits["Default"]) + ");"
     return ""
 
 def initCode(msg):
@@ -314,16 +314,16 @@ def structUnpacking(msg):
         for field in msg["Fields"]:
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
-                    ret.append('ret["'+bits["Name"] + '"] = msg.Get' + bits["Name"] + "();")
+                    ret.append('ret["'+bits["Name"] + '"] = this.Get' + bits["Name"] + "();")
             else:
                 if MsgParser.fieldCount(field) == 1:
-                    ret.append('ret["'+field["Name"] + '"] = msg.Get' + field["Name"] + "();")
+                    ret.append('ret["'+field["Name"] + '"] = this.Get' + field["Name"] + "();")
                 else:
                     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
-                        ret.append('ret["'+field["Name"] + '"] = msg.Get' + field["Name"] + "String();")
+                        ret.append('ret["'+field["Name"] + '"] = this.Get' + field["Name"] + "String();")
                     else:
                         ret.append('ret["'+field["Name"] + '"] = [];')
                         ret.append("for(i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
-                        ret.append('    ret["'+field["Name"] + '"][i] = msg.Get' + field["Name"] + "(i);")
+                        ret.append('    ret["'+field["Name"] + '"][i] = this.Get' + field["Name"] + "(i);")
             
     return "\n".join(ret)

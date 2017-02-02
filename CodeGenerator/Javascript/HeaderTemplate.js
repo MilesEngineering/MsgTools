@@ -15,11 +15,13 @@ var <MSGNAME> = function(buffer) {
     if (buffer==undefined)
     {
         buffer = new ArrayBuffer(<MSGNAME>.prototype.MSG_SIZE);
+        this.m_data = new DataView(buffer);
+        this.Init();
     }
-    this.m_data = new DataView(buffer);
-
-    //this.InitializeTime();
-    this.Init();
+    else
+    {
+        this.m_data = new DataView(buffer);
+    }
 };
 
 // how to make constants?

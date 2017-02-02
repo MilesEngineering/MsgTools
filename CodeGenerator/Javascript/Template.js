@@ -15,17 +15,17 @@ var <MSGNAME> = function(buffer) {
     if (buffer==undefined)
     {
         buffer = new ArrayBuffer(NetworkHeader.prototype.MSG_SIZE+<MSGNAME>.prototype.MSG_SIZE);
+        this.m_data = new DataView(buffer, NetworkHeader.prototype.MSG_SIZE);
+        this.hdr = new NetworkHeader(buffer);
+        this.hdr.SetMessageID(<MSGNAME>.prototype.MSG_ID);
+        this.hdr.SetDataLength(buffer.byteLength - NetworkHeader.prototype.MSG_SIZE);
+        //this.InitializeTime();
+        this.Init();
     }
-    this.m_data = new DataView(buffer, NetworkHeader.prototype.MSG_SIZE);
-
-    // need to access the message header!
-    // should we use inheritance for this?
-    this.hdr = new NetworkHeader(buffer);
-    this.hdr.SetMessageID(<MSGNAME>.prototype.MSG_ID);
-    this.hdr.SetDataLength(buffer.byteLength - NetworkHeader.prototype.MSG_SIZE);
-    //this.InitializeTime();
-    this.Init();
-    
+    else
+    {
+        this.m_data = new DataView(buffer, NetworkHeader.prototype.MSG_SIZE);
+    }
 };
 
 // add our class to the dictionary
