@@ -120,10 +120,13 @@ class Messaging:
 
     @staticmethod
     def get(message_buffer, fieldInfo, index=0):
-        if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
-            value = fieldInfo.get.__func__(message_buffer)
-        else:
-            value = fieldInfo.get.__func__(message_buffer, index)
+        try:
+            if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
+                value = fieldInfo.get.__func__(message_buffer)
+            else:
+                value = fieldInfo.get.__func__(message_buffer, index)
+        except struct.error:
+            value = "UNALLOCATED"
         return str(value)
 
     @staticmethod
