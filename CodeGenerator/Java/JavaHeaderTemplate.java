@@ -9,6 +9,8 @@
 
 */
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 class <MSGNAME>
 {
@@ -28,6 +30,14 @@ class <MSGNAME>
     }
     <ENUMERATIONS>
     <FIELDINFOS>
+    void SetMessageID(int id)
+    {
+        <SETMSGID>;
+    }
+    int GetMessageID()
+    {
+        return <GETMSGID>;
+    }
     <ACCESSORS>
     private ByteBuffer m_data;
 };
