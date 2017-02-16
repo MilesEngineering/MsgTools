@@ -17,7 +17,7 @@ import MsgApp.*;
 
 public class <MSGNAME> extends Message
 {
-    public static final int MSG_ID = <MSGID>;
+    public static final int MSG_ID = (int)<MSGID>;
     public static final int MSG_SIZE = <MSGSIZE>;
     public <MSGNAME>()
     {
