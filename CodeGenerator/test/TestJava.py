@@ -18,121 +18,121 @@ class TestJava(unittest.TestCase):
         expected = []
         expected.append("""\
 //  m/s, (0 to 4294967295)
-long GetFieldA()
+public long GetFieldA()
 {
     return (long)m_data.getInt(0);
 }""")
         expected.append("""\
 //  , (0 to 2147483647)
-long GetFABitsA()
+public long GetFABitsA()
 {
-    return (GetFieldA() >> 0) & 0x7fffffff;
+    return (long)((GetFieldA() >> 0) & 0x7fffffff);
 }""")
         expected.append("""\
 //  , (0 to 65535)
-int GetFieldB()
+public int GetFieldB()
 {
     return (int)m_data.getShort(4);
 }""")
         expected.append("""\
 //  , (0 to 255)
-short GetFieldC(int idx)
+public short GetFieldC(int idx)
 {
     return (short)m_data.getChar(6+idx*1);
 }""")
         expected.append("""\
 //  , (0 to 255)
-short GetFieldD()
+public short GetFieldD()
 {
     return (short)m_data.getChar(11);
 }""")
         expected.append("""\
 //  , (0.0 to 215.355)
-float GetBitsA()
+public float GetBitsA()
 {
-    return (float((GetFieldD() >> 0) & 0xf) * 14.357f);
+    return ((float)((GetFieldD() >> 0) & 0xf) * 14.357f);
 }""")
         expected.append("""\
 //  , (0 to 7)
-EnumA GetBitsB()
+public EnumA GetBitsB()
 {
-    return EnumA((GetFieldD() >> 4) & 0x7);
+    return EnumA.construct((GetFieldD() >> 4) & 0x7);
 }""")
         expected.append("""\
 //  , (0 to 1)
-short GetBitsC()
+public short GetBitsC()
 {
-    return (GetFieldD() >> 7) & 0x1;
+    return (short)((GetFieldD() >> 7) & 0x1);
 }""")
         expected.append("""\
 //  , (0.0 to 10.0)
-float GetFieldE()
+public float GetFieldE()
 {
     return (float)m_data.getFloat(12);
 }""")
         expected.append("""\
 //  , (1.828 to 176946.328)
-float GetFieldF()
+public float GetFieldF()
 {
-    return ((float((int)m_data.getShort(16)) * 2.7f) + 1.828f);
+    return (((float)((int)m_data.getShort(16)) * 2.7f) + 1.828f);
 }""")
         expected.append("""\
 //  m/s, (0 to 4294967295)
-void SetFieldA(long value)
+public void SetFieldA(long value)
 {
     m_data.putInt(0, (int)value);
 }""")
         expected.append("""\
 //  , (0 to 2147483647)
-void SetFABitsA(long value)
+public void SetFABitsA(long value)
 {
-    SetFieldA((GetFieldA() & ~(0x7fffffff << 0)) | ((value & 0x7fffffff) << 0));
+    SetFieldA((long)((GetFieldA() & ~(0x7fffffff << 0)) | ((value & 0x7fffffff) << 0)));
 }""")
         expected.append("""\
 //  , (0 to 65535)
-void SetFieldB(int value)
+public void SetFieldB(int value)
 {
     m_data.putShort(4, (short)value);
 }""")
         expected.append("""\
 //  , (0 to 255)
-void SetFieldC(short value, int idx)
+public void SetFieldC(short value, int idx)
 {
     m_data.putChar(6+idx*1, (char)value);
 }""")
         expected.append("""\
 //  , (0 to 255)
-void SetFieldD(short value)
+public void SetFieldD(short value)
 {
     m_data.putChar(11, (char)value);
 }""")
         expected.append("""\
 //  , (0.0 to 215.355)
-void SetBitsA(float value)
+public void SetBitsA(float value)
 {
-    SetFieldD((GetFieldD() & ~(0xf << 0)) | ((short(value / 14.357f) & 0xf) << 0));
+    SetFieldD((short)((GetFieldD() & ~(0xf << 0)) | ((short(value / 14.357f) & 0xf) << 0)));
 }""")
         expected.append("""\
 //  , (0 to 7)
-void SetBitsB(EnumA value)
+public void SetBitsB(EnumA value)
 {
-    SetFieldD((GetFieldD() & ~(0x7 << 4)) | ((short(value) & 0x7) << 4));
+    SetFieldD((short)((GetFieldD() & ~(0x7 << 4)) | ((value.intValue() & 0x7) << 4)));
 }""")
         expected.append("""\
 //  , (0 to 1)
-void SetBitsC(short value)
+public void SetBitsC(short value)
 {
-    SetFieldD((GetFieldD() & ~(0x1 << 7)) | ((value & 0x1) << 7));
+    SetFieldD((short)((GetFieldD() & ~(0x1 << 7)) | ((value & 0x1) << 7)));
 }""")
         expected.append("""\
 //  , (0.0 to 10.0)
-void SetFieldE(float value)
+public void SetFieldE(float value)
 {
     m_data.putFloat(12, (float)value);
 }""")
         expected.append("""\
 //  , (1.828 to 176946.328)
-void SetFieldF(float value)
+public void SetFieldF(float value)
 {
     m_data.putShort(16, (short)int((value - 1.828f) / 2.7f));
 }""")
@@ -154,7 +154,20 @@ void SetFieldF(float value)
             MsgParser.msgName(MsgParser.Messages(self.msgDict)[1])
     
     def test_enums(self):
-        expected = 'enum EnumA {OptionA = 1, OptionB = 2, OptionC = 4, OptionD = 5};\n'
+        expected = '''public enum EnumA {
+    OptionA(1), OptionB(2), OptionC(4), OptionD(5);
+    private final int id;
+    EnumA(int id) { this.id = id; }
+    static Map<Integer, EnumA> map = new HashMap<>();
+    static {
+        for (EnumA key : EnumA.values()) {
+            map.put(key.id, key);
+        }
+    }
+    public int intValue() { return id; }
+    public static EnumA construct(int value) { return map.get(value); }
+}
+'''
         observed = language.enums(MsgParser.Enums(self.msgDict))
         self.assertMultiLineEqual(expected, observed)
     
