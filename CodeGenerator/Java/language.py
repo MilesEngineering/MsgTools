@@ -130,15 +130,16 @@ def accessors(msg):
 def languageConst(value):
     try:
         ret = value
-        try:
+        if isinstance(ret, str) and ret.isdigit():
+            ret = int(ret)
+        if isinstance(ret, int):
             if(ret > 2**31):
                 ret = str(ret)+"L"
             else:
                 ret = str(ret)
-        except TypeError:
-            pass
         return ret
     except ValueError:
+        print("ValueError on " + str(value))
         return value
 
 def initField(field):
