@@ -12,9 +12,10 @@ def Messages(inputData):
 def replace(line, pattern, replacement):
     if pattern in line:
         ret = ""
-        #print("replacing ", pattern, " with ", replacement)
-        for newLine in replacement.split('\n'):
-            ret += line.replace(pattern, newLine)
+        if replacement != "":
+            #print("replacing ", pattern, " with ", replacement)
+            for newLine in replacement.split('\n'):
+                ret += line.replace(pattern, newLine)
     else:
         #print("NOT replacing ", pattern, " with ", replacement, " in ", line)
         ret = line
@@ -101,7 +102,10 @@ def ProcessFile(inputFilename, outputFilename, languageFilename, templateFilenam
                         undefinedMsgId = language.undefinedMsgId()
                     except AttributeError:
                         pass
-                    replacements["<MSGID>"] = str(msgID(msg, enums, undefinedMsgId))
+                    try:
+                        replacements["<MSGID>"] = language.languageConst(msgID(msg, enums, undefinedMsgId))
+                    except AttributeError:
+                        replacements["<MSGID>"] = str(msgID(msg, enums, undefinedMsgId))
                     replacements["<MSGSIZE>"] = str(msgSize(msg))
                     replacements["<MSGDESCRIPTION>"] = str(msg["Description"])
                     replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))

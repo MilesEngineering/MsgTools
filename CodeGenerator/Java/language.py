@@ -35,7 +35,7 @@ def getFn(field, offset):
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "int idx"
     access = "(%s)m_data.get%s(%s)" % (fieldType(field), fieldAccessorType(field), loc)
-    access = getMath(access, field, typeForScaledInt(field), 'f')
+    access = getMath(access, field, "("+typeForScaledInt(field)+")", 'f')
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
@@ -44,7 +44,7 @@ def getFn(field, offset):
         access = retType + ".construct(" + access + ")"
     ret = '''\
 %s
-%s Get%s(%s)
+public %s Get%s(%s)
 {
     return %s;
 }''' % (fnHdr(field), retType, field["Name"], param, access)
@@ -65,7 +65,7 @@ def setFn(field, offset):
         param += ", int idx"
     ret = '''\
 %s
-void Set%s(%s)
+public void Set%s(%s)
 {
     m_data.put%s(%s, (%s)%s);
 }''' % (fnHdr(field), field["Name"], param, fieldAccessorType(field), loc, fieldAccessorType(field).lower(), valueString)
@@ -73,7 +73,7 @@ void Set%s(%s)
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
     access = "(Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
-    access = getMath(access, bits, typeForScaledInt(bits), 'f')
+    access = getMath(access, bits, "("+typeForScaledInt(bits)+")", 'f')
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
@@ -84,7 +84,7 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
         access = "("+retType+")" + "(" + access + ")"
     ret = '''\
 %s
-%s Get%s()
+public %s Get%s()
 {
     return %s;
 }''' % (fnHdr(bits), retType, MsgParser.BitfieldName(field, bits), access)
@@ -101,7 +101,7 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
         paramType = bits["Enum"]
     ret = '''\
 %s
-void Set%s(%s value)
+public void Set%s(%s value)
 {
     Set%s((%s)((Get%s() & ~(%s << %s)) | ((%s & %s) << %s)));
 }''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), paramType, field["Name"], intType, field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
@@ -127,14 +127,28 @@ def accessors(msg):
 
     return gets+sets
 
+def languageConst(value):
+    try:
+        ret = value
+        try:
+            if(ret > 2**31):
+                ret = str(ret)+"L"
+            else:
+                ret = str(ret)
+        except TypeError:
+            pass
+        return ret
+    except ValueError:
+        return value
+
 def initField(field):
     if "Default" in field:
         if MsgParser.fieldCount(field) > 1:
             ret = "for (int i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
-            ret += "    Set" + field["Name"] + "(" + str(field["Default"]) + ", i);" 
+            ret += "    Set" + field["Name"] + "(" + languageConst(field["Default"]) + ", i);" 
             return ret;
         else:
-            return  "Set" + field["Name"] + "(" + str(field["Default"]) + ");"
+            return  "Set" + field["Name"] + "(" + languageConst(field["Default"]) + ");"
     return ""
 
 def initBitfield(field, bits):
@@ -255,7 +269,7 @@ def genericInfo(field, type, offset):
     params += '    static final String units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
     params += '    static final int count = ' + str(MsgParser.fieldCount(field)) + ';\n'
     if "Default" in field:
-        params += '    static final '+type+' defaultValue = ' + str(field["Default"]) + ";\n" 
+        params += '    static final '+type+' defaultValue = ' + languageConst(field["Default"]) + ";\n" 
     if "Scale" in field:
         params += '    static final int scale = ' + str(field["Scale"]) + ';\n'
     if "Offset" in field:

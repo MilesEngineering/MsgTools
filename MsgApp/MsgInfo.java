@@ -1,9 +1,11 @@
-class MsgInfo
+package MsgApp;
+
+public class MsgInfo
 {
-    MsgInfo(long id, String name, String comment, int size)
+    public MsgInfo(long id, String name, String comment, int size)
     {
     }
-    void AddField(FieldInfo f)
+    public void AddField(FieldInfo f)
     {
     }
 };
