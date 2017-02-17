@@ -68,6 +68,14 @@ def CommonSubdir(f1, f2):
     return subdirComponent.strip("/")
 
 def ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename):
+    # read the input file
+    inputData = readFile(inputFilename)
+    # if there's no input, return without creating output
+    if inputData == 0:
+        return
+
+    print("Creating " + outputFilename)
+
     commonSubdir = CommonSubdir(inputFilename, outputFilename)
     
     currentDateTime = strftime("%d/%m/%Y at %H:%M:%S")
@@ -76,8 +84,6 @@ def ProcessFile(inputFilename, outputFilename, languageFilename, templateFilenam
     with open(templateFilename, 'r') as templateFile:
         template = templateFile.read().splitlines() 
     
-    # read the input file
-    inputData = readFile(inputFilename)
     try:
         os.makedirs(os.path.dirname(outputFilename))
     except FileExistsError:
@@ -155,7 +161,6 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename):
             templateFileTime = os.path.getmtime(templateFilename)
             languageFileTime = os.path.getmtime(languageFilename)
             if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
-                print("Creating " + outputFilename)
                 ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename)
 
 # main starts here
