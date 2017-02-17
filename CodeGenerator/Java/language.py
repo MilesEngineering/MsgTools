@@ -3,20 +3,35 @@ from MsgUtils import *
 
 def fieldType(field):
     fieldTypeDict = \
-    {"uint64":"long", "uint32":"long","uint16": "int",   "uint8": "short",
-     "int64":"long",   "int32":"int",  "int16": "short",  "int8": "char",
+    {"uint64":"error", "uint32":"long","uint16": "int",   "uint8": "short",
+     "int64":"long",   "int32":"int",  "int16": "short",  "int8": "byte",
       "float64":"double", "float32":"float"}
     typeStr = str.lower(field["Type"])
     return fieldTypeDict[typeStr]
 
 def fieldAccessorType(field):
     fieldTypeDict = \
-    {"uint64":"long", "uint32":"int", "uint16": "short", "uint8": "char",
-     "int64":"long",   "int32":"int",  "int16": "short",  "int8": "char",
+    {"uint64":"long", "uint32":"int", "uint16": "short", "uint8": "",
+     "int64":"long",   "int32":"int",  "int16": "short",  "int8": "",
       "float64":"double", "float32":"float"}
     typeStr = str.lower(field["Type"])
     type = fieldTypeDict[typeStr]
     return type.capitalize()
+
+def fieldCastType(field):
+    fieldTypeDict = \
+    {"uint64":"long", "uint32":"int", "uint16": "short", "uint8": "byte",
+     "int64":"long",   "int32":"int",  "int16": "short",  "int8": "byte",
+      "float64":"double", "float32":"float"}
+    typeStr = str.lower(field["Type"])
+    type = fieldTypeDict[typeStr]
+    return type.capitalize()
+
+def fieldPromotionFn(field):
+    fieldTypeDict = \
+    {"uint64":"error", "uint32":"Integer.toUnsignedLong", "uint16": "Short.toUnsignedInt", "uint8": "Byte.toUnsignedInt"}
+    typeStr = str.lower(field["Type"])
+    return fieldTypeDict[typeStr]
 
 def fnHdr(field):
     ret = "// %s %s, (%s to %s)" % (MsgParser.fieldDescription(field), MsgParser.fieldUnits(field), MsgParser.fieldMin(field), MsgParser.fieldMax(field))
@@ -34,14 +49,17 @@ def getFn(field, offset):
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "int idx"
-    access = "(%s)m_data.get%s(%s)" % (fieldType(field), fieldAccessorType(field), loc)
+    access = "m_data.get%s(%s)" % (fieldAccessorType(field), loc)
+    if field["Type"].startswith("u"):
+        access = fieldPromotionFn(field)+"("+access+")"
+    access = "("+fieldType(field)+")"+access
     access = getMath(access, field, "("+typeForScaledInt(field)+")", 'f')
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
-    elif "Enum" in field:
-        retType = field["Enum"]
-        access = retType + ".construct(" + access + ")"
+    #elif "Enum" in field:
+    #    retType = field["Enum"]
+    #    access = retType + ".construct(" + access + ")"
     ret = '''\
 %s
 public %s Get%s(%s)
@@ -55,9 +73,9 @@ def setFn(field, offset):
     valueString = setMath("value", field, fieldType(field), 'f')
     if "Offset" in field or "Scale" in field:
         paramType = typeForScaledInt(field)
-    elif "Enum" in field:
-        valueString = valueString + ".intValue()"
-        paramType = field["Enum"]
+    #elif "Enum" in field:
+    #    valueString = valueString + ".intValue()"
+    #    paramType = field["Enum"]
     param = paramType + " value"
     loc = str(offset)
     if MsgParser.fieldCount(field) > 1:
@@ -68,7 +86,7 @@ def setFn(field, offset):
 public void Set%s(%s)
 {
     m_data.put%s(%s, (%s)%s);
-}''' % (fnHdr(field), field["Name"], param, fieldAccessorType(field), loc, fieldAccessorType(field).lower(), valueString)
+}''' % (fnHdr(field), field["Name"], param, fieldAccessorType(field), loc, fieldCastType(field).lower(), valueString)
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
@@ -77,9 +95,9 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
-    elif "Enum" in bits:
-        retType = bits["Enum"]
-        access = retType + ".construct(" + access + ")"
+    #elif "Enum" in bits:
+    #    retType = bits["Enum"]
+    #    access = retType + ".construct(" + access + ")"
     else:
         access = "("+retType+")" + "(" + access + ")"
     ret = '''\
@@ -96,9 +114,9 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
     valueString = setMath("value", bits, fieldType(field), 'f')
     if "Offset" in bits or "Scale" in bits:
         paramType = typeForScaledInt(bits)
-    elif "Enum" in bits:
-        valueString = valueString + ".intValue()"
-        paramType = bits["Enum"]
+    #elif "Enum" in bits:
+    #    valueString = valueString + ".intValue()"
+    #    paramType = bits["Enum"]
     ret = '''\
 %s
 public void Set%s(%s value)
@@ -318,29 +336,24 @@ def declarations(msg):
     return []
 
 def getMsgID(msg):
-    enumAsIntParam=0
     ret = ""
     if "Fields" in msg:
         for field in msg["Fields"]:
             if "IDBits" in field:
                 numBits = field["IDBits"]
                 param = ""
-                if "Enum" in field and enumAsIntParam:
-                    param += "1"
                 getStr = "Get"+field["Name"]+"("+param+")"
-                if "Enum" in field:
-                    getStr = getStr+".intValue()"
+                #if "Enum" in field:
+                #    getStr = getStr+".intValue()"
                 ret =  addShift(ret, getStr, numBits)
             if "Bitfields" in field:
                 for bitfield in field["Bitfields"]:
                     if "IDBits" in bitfield:
                         numBits = bitfield["IDBits"]
                         param = ""
-                        if "Enum" in bitfield and enumAsIntParam:
-                            param += "1"
                         getStr = "Get"+BitfieldName(field, bitfield)+"("+param+")"
-                        if "Enum" in bitfield:
-                            getStr = getStr+".intValue()"
+                        #if "Enum" in bitfield:
+                        #    getStr = getStr+".intValue()"
                         ret =  addShift(ret, getStr, numBits)
     return ret
     
@@ -355,10 +368,10 @@ def setMsgID(msg):
                     ret += "\nid = id >> " + str(numBits)+"\n"
                 numBits = field["IDBits"]
                 setStr = "id & "+Mask(numBits)
-                if "Enum" in field:
-                    setStr = field["Enum"]+".construct("+setStr+")"
-                else:
-                    setStr = "("+type+")("+setStr+")"
+                #if "Enum" in field:
+                #    setStr = field["Enum"]+".construct("+setStr+")"
+                #else:
+                setStr = "("+type+")("+setStr+")"
                 ret +=  "Set"+field["Name"]+"("+setStr+")"
             if "Bitfields" in field:
                 for bitfield in reversed(field["Bitfields"]):
@@ -367,9 +380,9 @@ def setMsgID(msg):
                             ret += "\nid = id >> " + str(numBits)+"\n"
                         numBits = bitfield["IDBits"]
                         setStr = "id & "+Mask(numBits)
-                        if "Enum" in bitfield:
-                            setStr = bitfield["Enum"]+".construct("+setStr+")"
-                        else:
-                            setStr = "("+type+")("+setStr+")"
+                        #if "Enum" in bitfield:
+                        #    setStr = bitfield["Enum"]+".construct("+setStr+")"
+                        #else:
+                        setStr = "("+type+")("+setStr+")"
                         ret +=  "Set"+bitfield["Name"]+"("+setStr+")"
     return ret
