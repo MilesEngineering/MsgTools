@@ -234,11 +234,13 @@ def msgID(msg, enums, undefinedMsgId):
                 value = int(value)
             except ValueError:
                 raise MessageException("ERROR! Can't find value for " + str(value))
-            ret = (ret << shiftValue) + value
             shiftValue = id["Bits"]
+            #print("ID " + id["Name"] + " is " + str(value) + ", " + str(id["Bits"]) + " bits")
+            ret = (ret << shiftValue) + value
         ret = ret
     if "ID" in msg:
         ret = msg["ID"]
+    #print("message " + msg["Name"] + " has ID " + hex(ret))
     return str(ret)
 
 def addShift(base, value, shiftValue):
