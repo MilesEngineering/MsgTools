@@ -136,15 +136,19 @@ def reverseEnumLookup(msg, field):
 
 def getFn(msg, field, offset):
     loc = msg["Name"] + ".MSG_OFFSET + " + str(offset)
-    type = fieldType(field)
+    type = "'"+fieldType(field)+"'"
     count = MsgParser.fieldCount(field)
     cleanup = ""
+    preface = ""
     if "Enum" in field:
         # find index that corresponds to string input param
         cleanup = reverseEnumLookup(msg, field)
     if  count > 1:
         if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
-            type = str(count) + "s"
+            preface += "\n    count = " + str(count)+"\n"
+            preface += "    if count > len(message_buffer)-("+loc+"):\n"
+            preface += "        count = len(message_buffer)-(Printf.MSG_OFFSET + 1)\n"
+            type = "str(count)+'s'"
             count = 1
             cleanup = '''ascii_len = str(value).find("\\\\x00")
     value = str(value)[2:ascii_len]
@@ -154,10 +158,10 @@ def getFn(msg, field, offset):
     if "Offset" in field or "Scale" in field:
         cleanup = "value = " + MsgParser.getMath("value", field, "")+"\n    "
     ret = '''\
-%s
-    value = struct.unpack_from('%s', message_buffer, %s)[0]
+%s%s
+    value = struct.unpack_from(%s, message_buffer, %s)[0]
     %sreturn value
-''' % (fnHdr(field,count, "Get"+field["Name"]), type, loc, cleanup)
+''' % (fnHdr(field,count, "Get"+field["Name"]), preface, type, loc, cleanup)
     return ret
 
 def setFn(msg, field, offset):
