@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import struct
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -61,13 +62,20 @@ class MsgInspector(MsgGui.MsgGui):
             header.setSortIndicator(0, QtCore.Qt.AscendingOrder)
 
     def ShowMessage(self, msg):
+        # default to NOT printing body as hex
+        printBodyAsHex = 0
         # read the ID, and get the message name, so we can print stuff about the body
         id       = hex(Messaging.hdr.GetMessageID(msg))
         if not id in Messaging.MsgNameFromID:
-            print("WARNING! No definition for ", id, "!\n")
-            return
-        msgName = Messaging.MsgNameFromID[id]
-        msgClass = Messaging.MsgClassFromName[msgName]
+            printBodyAsHex = 1
+            if(not(id in self.msgWidgets)):
+                print("WARNING! No definition for ", id, ", only displaying header!\n")
+            #return
+            msgName = "unknown "+id
+            msgClass = Messaging.hdr
+        else:
+            msgName = Messaging.MsgNameFromID[id]
+            msgClass = Messaging.MsgClassFromName[msgName]
 
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
@@ -105,6 +113,8 @@ class MsgInspector(MsgGui.MsgGui):
                 tableHeader.append(fieldInfo.name)
                 for bitInfo in fieldInfo.bitfieldInfo:
                     tableHeader.append(bitInfo.name)
+            if printBodyAsHex:
+                tableHeader.append("Body")
             
             msgWidget.setHeaderLabels(tableHeader)
             
@@ -150,6 +160,12 @@ class MsgInspector(MsgGui.MsgGui):
                 msgStringList.append(columnText)
                 columnAlerts.append(alert)
                 columnCounter += 1
+        if printBodyAsHex:
+            value = "0x"
+            for i in range(Messaging.hdrSize, len(msg)):
+                value += " " + format(struct.unpack_from('B', msg, i)[0], '02x')
+            msgStringList.append(value)
+
         msgItem = TreeWidgetItem(None,msgStringList)
         for column in range(0, len(columnAlerts)):
             if columnAlerts[column]:
