@@ -27,7 +27,7 @@ def fieldType(field):
     return "?"
     
 def fnHdr(field):
-    ret = "// %s %s, (%s to %s)" % (MsgParser.fieldDescription(field), MsgParser.fieldUnits(field), MsgParser.fieldMin(field), MsgParser.fieldMax(field))
+    ret = "/* %s %s, (%s to %s)*/" % (MsgParser.fieldDescription(field), MsgParser.fieldUnits(field), MsgParser.fieldMin(field), MsgParser.fieldMax(field))
     return ret
 
 def arrayAccessor(field, offset):
