@@ -49,3 +49,7 @@ var <MSGNAME> = function(buffer) {
     <STRUCTUNPACKING>
     return ret;
 }
+
+// for react-native and node.js, we should set module.exports so our class can be accessed externally
+if(typeof module != 'undefined' && typeof module.exports != 'undefined')
+    module.exports = <MSGNAME>;
