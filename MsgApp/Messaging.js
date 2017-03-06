@@ -1,7 +1,8 @@
 function toJSON(obj) {
-    //console.log("JSON for " + obj.MSG_NAME + ", ID=",+obj.MSG_ID+", "+obj.MSG_SIZE+" bytes")
-    var jsonStr = '"'+obj.MSG_NAME+'": ';
+    console.log("JSON for " + obj.MSG_NAME + ", ID=",+obj.MSG_ID+", "+obj.MSG_SIZE+" bytes")
+    var jsonStr = '"'+obj.MsgName()+'": ';
     jsonStr += JSON.stringify(obj.toObject());
+    
     return jsonStr;
 }
 
@@ -54,7 +55,10 @@ MessagingClient.prototype.onmessage = function (event) {
     }
     else
     {
-        console.log("ERROR! Msg ID " + id + " not defined!");
+        // construct a Unknown message
+        console.log("ERROR! Msg ID 0x" + id.toString(16) + " not defined!");
+        msg = new UnknownMsg(event.data);
+        this.onmsg(msg);
     }
 };
 

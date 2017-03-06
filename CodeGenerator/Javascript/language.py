@@ -205,44 +205,82 @@ def enums(e):
         ret += fwd + back
     return ret
 
-def fieldReflection(field, offset):
-    loc = str(offset)
-    params = "FieldInfo";
-    params += "("
-    params += '"'+field["Name"] + '"'
-    params += ', "' + MsgParser.fieldDescription(field) + '"'
-    params += ', "' + MsgParser.fieldUnits(field) + '"'
-    params += ", " + str(MsgParser.fieldCount(field))
-    params += ")"
-    return params
+def reflectionInterfaceType(field):
+    type = field["Type"]
+    if "float" in type or "Offset" in field or "Scale" in field:
+        type = "float"
+    elif MsgParser.fieldUnits(field) == "ASCII":
+        type = "string"
+    elif "Enum" in field:
+        type = "enumeration"
+    else:
+        type = "int"
+    return type
 
-def fieldBitsReflection(field, bits, offset, bitOffset, numBits):
-    loc = str(offset)
-    params = "FieldInfo";
-    params += "("
-    params += '"'+bits["Name"] + '"'
-    params += ', "' + MsgParser.fieldDescription(bits) + '"'
-    params += ', "' + MsgParser.fieldUnits(bits) + '"'
-    params += ", " + str(MsgParser.fieldCount(bits))
-    params += ")"
-    return params
+def bitsReflectionInterfaceType(field):
+    type = "int"
+    if "Offset" in field or "Scale" in field:
+        type = "float"
+    elif MsgParser.fieldUnits(field) == "ASCII":
+        type = "string"
+    elif "Enum" in field:
+        type = "enumeration"
+    else:
+        type = "int"
+    return type
+
+def bitfieldReflection(msg, field, bits):
+    name = bits["Name"]
+    ret = "{"+\
+              'name:"'+name + '",'+\
+              'type:"'+bitsReflectionInterfaceType(bits) + '",'+\
+              'units:"'+MsgParser.fieldUnits(bits) + '",'+\
+              'minVal:"'+str(MsgParser.fieldMin(bits)) + '",'+\
+              'maxVal:"'+str(MsgParser.fieldMax(bits)) + '",'+\
+              'description:"'+MsgParser.fieldDescription(bits) + '",'+\
+              'get:"Get' + name + '",'+\
+              'set:"Set' + name  + '", '
+    if "Enum" in bits:
+        ret += "enumLookup : [<MSGNAME>."+  bits["Enum"]+", " + "<MSGNAME>.Reverse" + bits["Enum"]+"]}"
+    else:
+        ret += "enumLookup : []}"
+    return ret
+
+def fieldReflection(msg, field):
+    fieldFnName = field["Name"]
+    fieldCount = MsgParser.fieldCount(field)
+    if MsgParser.fieldCount(field) != 1 and MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+        fieldFnName = field["Name"]+"String"
+        fieldCount = 1
+    fieldInfo = "{"+\
+                  'name:"'+field["Name"] + '",'+\
+                  'type:"'+reflectionInterfaceType(field) + '",'+\
+                  'units:"'+MsgParser.fieldUnits(field) + '",'+\
+                  'minVal:"'+str(MsgParser.fieldMin(field)) + '",'+\
+                  'maxVal:"'+str(MsgParser.fieldMax(field)) + '",'+\
+                  'description:"'+MsgParser.fieldDescription(field) + '",'+\
+                  'get:"Get' + fieldFnName + '",'+\
+                  'set:"Set' + fieldFnName  + '",'+\
+                  'count:'+str(fieldCount) + ', '
+    if "Bitfields" in field:
+        bitfieldInfo = []
+        for bits in field["Bitfields"]:
+            bitfieldInfo.append("    " + bitfieldReflection(msg, field, bits))
+        fieldInfo += "bitfieldInfo : [\n" + ",\n".join(bitfieldInfo) + "], "
+    else:
+        fieldInfo += "bitfieldInfo : [], "
+    if "Enum" in field:
+        fieldInfo += "enumLookup : [<MSGNAME>." + field["Enum"]+", " + "<MSGNAME>.Reverse" + field["Enum"]+"]}"
+    else:
+        fieldInfo += "enumLookup : []}"
+    return fieldInfo
 
 def reflection(msg):
-    ret = []
-    
-    offset = 0
+    fieldInfos = []
     if "Fields" in msg:
         for field in msg["Fields"]:
-            ret.append(fieldReflection(field, offset))
-            bitOffset = 0
-            if "Bitfields" in field:
-                for bits in field["Bitfields"]:
-                    numBits = bits["NumBits"]
-                    ret.append(fieldBitsReflection(field, bits, offset, bitOffset, numBits))
-                    bitOffset += numBits
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
-
-    return "\n".join(ret)
+            fieldInfos.append(fieldReflection(msg, field))
+    return ",\n".join(fieldInfos)
 
 def genericInfo(field, type, offset):
     loc = str(offset)

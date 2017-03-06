@@ -25,6 +25,7 @@ var <MSGNAME> = function(buffer) {
     else
     {
         this.m_data = new DataView(buffer, NetworkHeader.prototype.MSG_SIZE);
+        this.hdr = new NetworkHeader(buffer);
     }
 };
 
@@ -36,6 +37,9 @@ MessageDictionary[<MSGID>] = <MSGNAME>
 <MSGNAME>.prototype.MSG_SIZE = <MSGSIZE>;
 <MSGNAME>.prototype.MSG_NAME = "<MSGNAME>";
 
+<MSGNAME>.prototype.MsgName = function(){
+    return "<MSGNAME>";
+}
 
 <MSGNAME>.prototype.Init = function(){
     <INIT_CODE>
@@ -52,3 +56,8 @@ MessageDictionary[<MSGID>] = <MSGNAME>
     <STRUCTUNPACKING>
     return ret;
 }
+
+// Reflection information
+<MSGNAME>.prototype.fields = [
+    <REFLECTION>
+]

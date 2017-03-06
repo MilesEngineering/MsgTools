@@ -39,6 +39,7 @@ if __name__ == '__main__':
 <head>
 <meta charset="utf-8"/>
 <!-- Load messaging library -->
+<script type="text/javascript" src="../MsgApp/UnknownMsg.js" ></script>
 <script type="text/javascript" src="../MsgApp/Messaging.js" ></script>
 <!-- Load auto-generated message files. -->
 '''
