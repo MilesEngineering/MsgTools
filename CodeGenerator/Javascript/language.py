@@ -45,7 +45,7 @@ def getFn(field, offset):
         if param != "":
             param += ", "
         param += "enumAsInt=false"
-    access = "(this.m_data.get%s(%s, false))" % (fieldType(field), loc)
+    access = "(this.m_data.get%s(%s))" % (fieldType(field), loc)
     access = getMath(access, field, "")
     cleanup = ""
     if "Enum" in field:
@@ -89,7 +89,7 @@ def setFn(field, offset):
 %s
 <MSGNAME>.prototype.Set%s = function(%s)
 {
-    %sthis.m_data.set%s(%s, %s, false);
+    %sthis.m_data.set%s(%s, %s);
 };''' % (fnHdr(field), field["Name"], param, lookup, fieldType(field), loc, valueString)
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
