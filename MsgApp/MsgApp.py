@@ -11,6 +11,7 @@ NOT
     python path/to/script/ScriptName.py\n''')
 
 from PyQt5 import QtGui, QtWidgets, QtCore, QtNetwork
+from PyQt5.QtWidgets import QInputDialog, QLineEdit
 
 from Messaging import Messaging
 
