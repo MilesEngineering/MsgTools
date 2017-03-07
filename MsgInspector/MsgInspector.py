@@ -24,6 +24,33 @@ class TreeWidgetItem(QtWidgets.QTreeWidgetItem):
         except ValueError:
             return self.text(column) < otherItem.text(column)
 
+class TreeWidget(QtWidgets.QTreeWidget):
+    def keyPressEvent(self, keyEvent):
+        if keyEvent.matches(QtGui.QKeySequence.Copy):
+            self.copySelection()
+        else:
+            super(TreeWidget, self).keyPressEvent(keyEvent)
+
+    def copySelection(self):
+        selectedItems = self.selectedItems()
+        copiedText = ""
+        h = self.headerItem()
+        for col in range(h.columnCount()):
+            if col != 0:
+                copiedText += ", "
+            copiedText += h.text(col)
+        copiedText += "\n"
+        
+        for itemNumber in range(len(selectedItems)):
+            w = selectedItems[itemNumber]
+            for col in range(w.columnCount()):
+                if col != 0:
+                    copiedText += ", "
+                copiedText += w.text(col)
+            copiedText += "\n"
+        clipboard = QtWidgets.QApplication.clipboard()
+        clipboard.setText(copiedText)
+
 class MsgInspector(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", argv, [], parent)
@@ -126,9 +153,11 @@ class MsgInspector(MsgGui.MsgGui):
         if(not(id in self.msgWidgets)):
             firstTime = 1
             # create a new tree widget
-            msgWidget = QtWidgets.QTreeWidget()
+            msgWidget = TreeWidget()
             msgWidget.itemDoubleClicked.connect(self.tableDataDoubleClicked)
             msgWidget.msgName = msgName
+            msgWidget.setSelectionMode(msgWidget.ContiguousSelection)
+            msgWidget.setSelectionBehavior(msgWidget.SelectRows)
             # configure the header so we can click on it to sort
             header = msgWidget.header()
             header.setSectionsClickable(1)
