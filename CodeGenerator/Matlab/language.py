@@ -27,7 +27,13 @@ def typeForScaledInt(field):
         return "double"
     return "single"
 
-def getFn(field, offset):
+def matlabFieldName(msg, field):
+    fieldName = field["Name"]
+    if fieldName == msgName(msg):
+        fieldName = fieldName + "_"
+    return fieldName
+
+def getFn(msg, field, offset):
     loc = str(offset)
     end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     param = "obj"
@@ -44,20 +50,20 @@ def getFn(field, offset):
 function ret = get.%s%s(%s)
     ret = %s;
 end
-''' % (fnHdr(field), field["Name"], asInt, param, access)
+''' % (fnHdr(field), matlabFieldName(msg,field), asInt, param, access)
     if "Enum" in field:
         ret += '''\
 %s
 function ret = get.%s(%s)
     ret = obj.%sAsInt;
-''' % (fnHdr(field), field["Name"], param, field["Name"])
+''' % (fnHdr(field), matlabFieldName(msg,field), param, matlabFieldName(msg,field))
         ret += "    if isKey(obj."+field["Enum"]+", ret)\n"
         ret += "        ret = obj."+field["Enum"]+"(ret);\n"
         ret += "    end\n"
         ret += "end\n"
     return ret
 
-def setFn(field, offset):
+def setFn(msg, field, offset):
     valueString = setMath("value", field, fieldType(field))
     loc = str(offset)
     end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
@@ -67,7 +73,7 @@ def setFn(field, offset):
     ret = '''\
 %s
 function obj = set.%s%s(obj, value)
-''' % (fnHdr(field), field["Name"], asInt)
+''' % (fnHdr(field), matlabFieldName(msg,field), asInt)
     ret += '''\
     obj.m_data(%s:%s) = typecast(swapbytes(%s(%s)), 'uint8');
 end
@@ -76,16 +82,16 @@ end
         ret += '''\
 %s
 function obj = set.%s(obj, value)
-''' % (fnHdr(field), field["Name"])
+''' % (fnHdr(field), matlabFieldName(msg,field))
         ret += "    if isKey(obj.Reverse"+field["Enum"]+", value)\n"
         ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
         ret += "    end\n"
-        ret += "    obj."+field["Name"]+"AsInt = value;\n"
+        ret += "    obj."+matlabFieldName(msg,field)+"AsInt = value;\n"
         ret += "end\n"
     return ret
 
-def getBitsFn(field, bits, offset, bitOffset, numBits):
-    access = "bitand(bitshift(obj.%s, -%s), %s)" % (field["Name"], str(bitOffset), Mask(numBits))
+def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
+    access = "bitand(bitshift(obj.%s, -%s), %s)" % (matlabFieldName(msg,field), str(bitOffset), Mask(numBits))
     access = getMath(access, bits, typeForScaledInt(bits))
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
@@ -111,7 +117,7 @@ function ret = get.%s(obj)
         ret += "end\n"
     return ret
 
-def setBitsFn(field, bits, offset, bitOffset, numBits):
+def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
     paramType = fieldType(field)
     valueString = setMath("value", bits, fieldType(field))
     if "Offset" in bits or "Scale" in bits:
@@ -125,7 +131,7 @@ function obj = set.%s%s(obj, value)
 ''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), asInt)
     ret += '''\
     obj.%s = bitor(bitand(obj.%s, bitcmp(bitshift(%s(%s),%s))), (bitshift((bitand(%s, %s)), %s)));
-end''' % (field["Name"], field["Name"], fieldType(field), Mask(numBits), str(bitOffset), valueString, Mask(numBits), str(bitOffset))
+end''' % (matlabFieldName(msg,field), matlabFieldName(msg,field), fieldType(field), Mask(numBits), str(bitOffset), valueString, Mask(numBits), str(bitOffset))
     if "Enum" in bits:
         ret += '''\
 %s
@@ -145,14 +151,14 @@ def accessors(msg):
     offset = 1
     if "Fields" in msg:
         for field in msg["Fields"]:
-            gets.append(getFn(field, offset))
-            sets.append(setFn(field, offset))
+            gets.append(getFn(msg,field, offset))
+            sets.append(setFn(msg,field, offset))
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    gets.append(getBitsFn(field, bits, offset, bitOffset, numBits))
-                    sets.append(setBitsFn(field, bits, offset, bitOffset, numBits))
+                    gets.append(getBitsFn(msg, field, bits, offset, bitOffset, numBits))
+                    sets.append(setBitsFn(msg, field, bits, offset, bitOffset, numBits))
                     bitOffset += numBits
             offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
@@ -190,9 +196,9 @@ def declarations(msg):
     ret = []
     if "Fields" in msg:
         for field in msg["Fields"]:
-            ret.append(field["Name"] + ";")
+            ret.append(matlabFieldName(msg,field) + ";")
             if "Enum" in field:
-                ret.append(field["Name"] + "AsInt;")
+                ret.append(matlabFieldName(msg,field) + "AsInt;")
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     ret.append(bits["Name"] + ";")
@@ -206,15 +212,15 @@ def fieldDefault(field):
     # should be based on type
     return "0"
 
-def initField(field):
+def initField(msg, field):
     defaultValue = fieldType(field) + "("+ fieldDefault(field) +")"
     if MsgParser.fieldCount(field) > 1:
         ret =  "for index="+str(MsgParser.fieldCount(field))+": -1: 1\n"
-        ret += "    obj." + field["Name"] + "(index) = " + defaultValue + ";\n"
+        ret += "    obj." + matlabFieldName(msg,field) + "(index) = " + defaultValue + ";\n"
         ret += "end"
         return ret
     else:
-        return  "obj." + field["Name"] + " = " + defaultValue + ";"
+        return  "obj." + matlabFieldName(msg,field) + " = " + defaultValue + ";"
 
 def initBitfield(field, bits):
     paramType = fieldType(field)
@@ -229,7 +235,7 @@ def initCode(msg):
     offset = 1
     if "Fields" in msg:
         for field in msg["Fields"]:
-            fieldInit = initField(field)
+            fieldInit = initField(msg, field)
             if fieldInit:
                 ret.append(fieldInit)
             if "Bitfields" in field:
@@ -257,7 +263,7 @@ def getMsgID(msg):
                 numBits = field["IDBits"]
                 if "Enum" in field:
                     pass
-                getStr = "obj."+field["Name"]
+                getStr = "obj."+matlabFieldName(msg,field)
                 if "Enum" in field:
                     getStr += "AsInt"
                 getStr = "uint32("+getStr+")"
@@ -287,7 +293,7 @@ def setMsgID(msg):
                 setStr = "bitand(id, "+Mask(numBits)+")"
                 #if "Enum" in field:
                 #    setStr = field["Enum"]+"("+setStr+")"
-                ret +=  "obj."+field["Name"]+" = "+setStr
+                ret +=  "obj."+matlabFieldName(msg,field)+" = "+setStr
             if "Bitfields" in field:
                 for bitfield in reversed(field["Bitfields"]):
                     if "IDBits" in bitfield:
