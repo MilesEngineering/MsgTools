@@ -193,7 +193,15 @@ class MessageScopeGui(MsgGui.MsgGui):
             messageTreeWidgetItem.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, messageBuffer):
-        self.sendFn(messageBuffer.raw)
+        bufferSize = len(messageBuffer.raw)
+        computedSize = Messaging.hdrSize + Messaging.hdr.GetDataLength(messageBuffer)
+        if(computedSize > bufferSize):
+            Messaging.hdr.SetDataLength(messageBuffer, bufferSize - Messaging.hdrSize)
+            print("Truncating message to "+str(computedSize)+" bytes")
+        if(computedSize < bufferSize):
+            self.sendFn(messageBuffer.raw[0:computedSize])
+        else:
+            self.sendFn(messageBuffer.raw)
     
     def onRxMessageFieldSelected(self, rxWidgetItem):
         try:
