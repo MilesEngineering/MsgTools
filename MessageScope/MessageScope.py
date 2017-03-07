@@ -71,6 +71,8 @@ class RxRateCalculatorThread(QObject):
 class MessageScopeGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Scope 0.1", argv, [], parent)
+        from UnknownMsg import UnknownMsg
+        self.unknownMsg = UnknownMsg
 
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -234,7 +236,8 @@ class MessageScopeGui(MsgGui.MsgGui):
                         self.addDockWidget(Qt.RightDockWidgetArea, dock)
                         plotListForID.append(msgPlot)
         except AttributeError:
-            print("caught exception AttributeError")
+            #print("caught exception AttributeError")
+            pass
     
     def MsgRoute(self, msg_buffer):
         msg_route = []
@@ -256,12 +259,12 @@ class MessageScopeGui(MsgGui.MsgGui):
         msg_id = hex(Messaging.hdr.GetMessageID(msg_buffer))
 
         if not msg_id in Messaging.MsgNameFromID:
-            print("WARNING! No definition for ", msg_id, "!\n")
-            return
-
-        msg_name = Messaging.MsgNameFromID[msg_id]
-        msg_class = Messaging.MsgClassFromName[msg_name]
-        msg_fields = msg_class.fields
+            #print("WARNING! No definition for ", msg_id, "!\n")
+            msg_name = "unknown "+msg_id
+            msg_class = self.unknownMsg
+        else:
+            msg_name = Messaging.MsgNameFromID[msg_id]
+            msg_class = Messaging.MsgClassFromName[msg_name]
 
         msg_key = ",".join(self.MsgRoute(msg_buffer)) + "," + msg_id
         
@@ -273,7 +276,10 @@ class MessageScopeGui(MsgGui.MsgGui):
         msg_key = rxListItem.msg_key
         msg_name = rxListItem.msg_name
         msg_buffer = rxListItem.msg_buffer
-        msg_class = Messaging.MsgClassFromName[msg_name]
+        try:
+            msg_class = Messaging.MsgClassFromName[msg_name]
+        except KeyError:
+            msg_class = self.unknownMsg
         self.add_message_to_rx_tree(msg_key, msg_name, msg_class, msg_buffer)
 
     def display_message_in_rx_list(self, msg_key, msg_name, msg_buffer):
@@ -328,13 +334,16 @@ class MessageScopeGui(MsgGui.MsgGui):
             self.rx_msg_widgets[msg_key].set_msg_buffer(msg_buffer)
     
     def display_message_in_plots(self, msg_class, msg_buffer):
-        #print("checking for plots of " + str(msg_class.ID))
-        if msg_class.ID in self.msgPlots:
-            #print("found list of plots for " + str(msg_class.ID))
-            plotListForID = self.msgPlots[msg_class.ID]
-            for plot in plotListForID:
-                #print("found plot of " + msg_class.MsgName() + "." + plot.fieldInfo.name + "[" + str(plot.fieldSubindex) + "]")
-                plot.addData(msg_buffer)
+        try:
+            #print("checking for plots of " + str(msg_class.ID))
+            if msg_class.ID in self.msgPlots:
+                #print("found list of plots for " + str(msg_class.ID))
+                plotListForID = self.msgPlots[msg_class.ID]
+                for plot in plotListForID:
+                    #print("found plot of " + msg_class.MsgName() + "." + plot.fieldInfo.name + "[" + str(plot.fieldSubindex) + "]")
+                    plot.addData(msg_buffer)
+        except AttributeError:
+            pass
 
 # main starts here
 if __name__ == '__main__':
