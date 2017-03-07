@@ -20,7 +20,7 @@ class TestJava(unittest.TestCase):
 //  m/s, (0 to 4294967295)
 public long GetFieldA()
 {
-    return (long)m_data.getInt(0);
+    return (long)Integer.toUnsignedLong(m_data.getInt(0));
 }""")
         expected.append("""\
 //  , (0 to 2147483647)
@@ -32,19 +32,19 @@ public long GetFABitsA()
 //  , (0 to 65535)
 public int GetFieldB()
 {
-    return (int)m_data.getShort(4);
+    return (int)Short.toUnsignedInt(m_data.getShort(4));
 }""")
         expected.append("""\
 //  , (0 to 255)
 public short GetFieldC(int idx)
 {
-    return (short)m_data.getChar(6+idx*1);
+    return (short)Byte.toUnsignedInt(m_data.get(6+idx*1));
 }""")
         expected.append("""\
 //  , (0 to 255)
 public short GetFieldD()
 {
-    return (short)m_data.getChar(11);
+    return (short)Byte.toUnsignedInt(m_data.get(11));
 }""")
         expected.append("""\
 //  , (0.0 to 215.355)
@@ -54,9 +54,9 @@ public float GetBitsA()
 }""")
         expected.append("""\
 //  , (0 to 7)
-public EnumA GetBitsB()
+public short GetBitsB()
 {
-    return EnumA.construct((GetFieldD() >> 4) & 0x7);
+    return (short)((GetFieldD() >> 4) & 0x7);
 }""")
         expected.append("""\
 //  , (0 to 1)
@@ -74,7 +74,7 @@ public float GetFieldE()
 //  , (1.828 to 176946.328)
 public float GetFieldF()
 {
-    return (((float)((int)m_data.getShort(16)) * 2.7f) + 1.828f);
+    return (((float)((int)Short.toUnsignedInt(m_data.getShort(16))) * 2.7f) + 1.828f);
 }""")
         expected.append("""\
 //  m/s, (0 to 4294967295)
@@ -98,13 +98,13 @@ public void SetFieldB(int value)
 //  , (0 to 255)
 public void SetFieldC(short value, int idx)
 {
-    m_data.putChar(6+idx*1, (char)value);
+    m_data.put(6+idx*1, (byte)value);
 }""")
         expected.append("""\
 //  , (0 to 255)
 public void SetFieldD(short value)
 {
-    m_data.putChar(11, (char)value);
+    m_data.put(11, (byte)value);
 }""")
         expected.append("""\
 //  , (0.0 to 215.355)
@@ -114,9 +114,9 @@ public void SetBitsA(float value)
 }""")
         expected.append("""\
 //  , (0 to 7)
-public void SetBitsB(EnumA value)
+public void SetBitsB(short value)
 {
-    SetFieldD((short)((GetFieldD() & ~(0x7 << 4)) | ((value.intValue() & 0x7) << 4)));
+    SetFieldD((short)((GetFieldD() & ~(0x7 << 4)) | ((value & 0x7) << 4)));
 }""")
         expected.append("""\
 //  , (0 to 1)
