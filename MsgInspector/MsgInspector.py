@@ -38,7 +38,38 @@ class MsgInspector(MsgGui.MsgGui):
         
         # hash table to lookup the widget for a message, by message ID
         self.msgWidgets = {}
+        
+        # whether we should autoscroll as data is added
+        self.autoscroll = 1
+        
+        # menu items to change view
+        clearAction = QtWidgets.QAction('&Clear', self)
+        clearAllAction = QtWidgets.QAction('Clear &All', self)
+        self.scrollAction = QtWidgets.QAction('&Scroll', self)
+        self.scrollAction.setCheckable(1)
+        self.scrollAction.setChecked(self.autoscroll)
+
+        menubar = self.menuBar()
+        viewMenu = menubar.addMenu('&View')
+        viewMenu.addAction(clearAction)
+        viewMenu.addAction(clearAllAction)
+        viewMenu.addAction(self.scrollAction)
+
+        clearAction.triggered.connect(self.clearTab)
+        clearAllAction.triggered.connect(self.clearAllTabs)
+        self.scrollAction.triggered.connect(self.switchScroll)
     
+    def clearTab(self):
+        self.tabWidget.currentWidget().clear()
+    
+    def clearAllTabs(self):
+        for id, widget in self.msgWidgets.items():
+            widget.clear()
+        
+    def switchScroll(self):
+        self.autoscroll = not self.autoscroll
+        self.scrollAction.setChecked(self.autoscroll)
+            
     def tableHeaderClicked(self, column):
         header = self.sender()
         tree = header.myTreeWidget
@@ -60,6 +91,9 @@ class MsgInspector(MsgGui.MsgGui):
             print("not sorting " + msgName)
             del self.keyFields[msgName]
             header.setSortIndicator(0, QtCore.Qt.AscendingOrder)
+
+    def tableDataDoubleClicked(self, treeWidgetItem, column):
+        self.autoscroll = not self.autoscroll
 
     def ShowMessage(self, msg):
         # default to NOT printing body as hex
@@ -93,6 +127,7 @@ class MsgInspector(MsgGui.MsgGui):
             firstTime = 1
             # create a new tree widget
             msgWidget = QtWidgets.QTreeWidget()
+            msgWidget.itemDoubleClicked.connect(self.tableDataDoubleClicked)
             msgWidget.msgName = msgName
             # configure the header so we can click on it to sort
             header = msgWidget.header()
@@ -190,6 +225,8 @@ class MsgInspector(MsgGui.MsgGui):
                 self.msgWidgets[id].sortItems(keyColumn, QtCore.Qt.AscendingOrder)
         else:
             self.msgWidgets[id].addTopLevelItem(msgItem)
+            if(self.autoscroll):
+                self.msgWidgets[id].scrollToItem(msgItem)
         if firstTime:
             count = 0
             for fieldInfo in msgClass.fields:
