@@ -1,6 +1,9 @@
 include ../makefile.inc
 
 mdir:=../messages
+ifeq ("$(wildcard $(mdir))","")
+mdir := ../../messages
+endif
 
 CG_DIR := 
 
