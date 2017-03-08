@@ -8,7 +8,7 @@ DIGEST:=$(MSGDIR)/MsgDigest.txt
 
 mdir:=messages
 
-MSG_FILES := $(shell cd $(mdir) && find . -iname \*.yaml -printf '%P\n')
+MSG_FILES := $(shell cd $(mdir) && find * -iname \*.yaml)
 
 CPP_MSG_FILES := $(addprefix $(MSGDIR)/Cpp/,$(MSG_FILES:.yaml=.h))
 C_MSG_FILES := $(addprefix $(MSGDIR)/C/,$(MSG_FILES:.yaml=.h))
@@ -44,27 +44,27 @@ $(MSGDIR)/Cpp/headers/%.h : $(mdir)/headers/%.yaml ../Cpp/language.py  ../Cpp/Cp
 $(MSGDIR)/Cpp/%.h : $(mdir)/%.yaml ../Cpp/language.py  ../Cpp/CppTemplate.h ../MsgParser.py ../MsgUtils.py Makefile
 	$(PARSER) $< $@ ../Cpp/language.py  ../Cpp/CppTemplate.h
 
-$(MSGDIR)/C/%.h : messages/%.yaml ../Cpp/Clanguage.py  ../Cpp/language.py  ../Cpp/CTemplate.h ../MsgParser.py ../MsgUtils.py Makefile
+$(MSGDIR)/C/%.h : $(mdir)/%.yaml ../Cpp/Clanguage.py  ../Cpp/language.py  ../Cpp/CTemplate.h ../MsgParser.py ../MsgUtils.py Makefile
 	$(PARSER) $< $@ ../Cpp/Clanguage.py  ../Cpp/CTemplate.h
 
-$(MSGDIR)/Java/%.java : messages/%.yaml ../Java/language.py  ../Java/JavaTemplate.java ../MsgParser.py ../MsgUtils.py Makefile
+$(MSGDIR)/Java/%.java : $(mdir)/%.yaml ../Java/language.py  ../Java/JavaTemplate.java ../MsgParser.py ../MsgUtils.py Makefile
 	$(PARSER) $< $@ ../Java/language.py  ../Java/JavaTemplate.java
 
-$(MSGDIR)/Javascript/%.js : messages/%.yaml ../Javascript/language.py  ../Javascript/Template.js ../MsgParser.py ../MsgUtils.py Makefile
-	$(PARSER) $< $@ ../Javascript/language.py  ../Javascript/Template.js
-
-$(MSGDIR)/Javascript/headers/%.js : messages/headers/%.yaml ../Javascript/language.py  ../Javascript/HeaderTemplate.js ../MsgParser.py ../MsgUtils.py Makefile
+$(MSGDIR)/Javascript/headers/%.js : $(mdir)/headers/%.yaml ../Javascript/language.py  ../Javascript/HeaderTemplate.js ../MsgParser.py ../MsgUtils.py Makefile
 	$(PARSER) $< $@ ../Javascript/language.py  ../Javascript/HeaderTemplate.js
 
-$(MSGDIR)/Python/%.py : messages/%.yaml ../Python/language.py  ../Python/Template.py ../MsgParser.py ../MsgUtils.py Makefile
-	$(PARSER) $< $@ ../Python/language.py  ../Python/Template.py
+$(MSGDIR)/Javascript/%.js : $(mdir)/%.yaml ../Javascript/language.py  ../Javascript/Template.js ../MsgParser.py ../MsgUtils.py Makefile
+	$(PARSER) $< $@ ../Javascript/language.py  ../Javascript/Template.js
 
 $(MSGDIR)/Python/headers/%.py : $(mdir)/headers/%.yaml ../Python/language.py  ../Python/HeaderTemplate.py ../MsgParser.py ../MsgUtils.py Makefile
 	$(PARSER) $< $@ ../Python/language.py  ../Python/HeaderTemplate.py
 
-$(MSGDIR)/Html/%.html : messages/%.yaml ../HTML/language.py  ../HTML/Template.html ../MsgParser.py ../MsgUtils.py Makefile
+$(MSGDIR)/Python/%.py : $(mdir)/%.yaml ../Python/language.py  ../Python/Template.py ../MsgParser.py ../MsgUtils.py Makefile
+	$(PARSER) $< $@ ../Python/language.py  ../Python/Template.py
+
+$(MSGDIR)/Html/%.html : $(mdir)/%.yaml ../HTML/language.py  ../HTML/Template.html ../MsgParser.py ../MsgUtils.py Makefile
 	$(PARSER) $< $@ ../HTML/language.py  ../HTML/Template.html
-	@if [ ! -f $(dir $@)/bootstrap.min.css ]; then cp ../HTML/bootstrap.min.css $(dir $@); fi; 
+	@if [ ! -f $(dir $@)/bootstrap.min.css ]; then cp ../HTML/bootstrap.min.css $(dir $@); fi;
 
 $(DIGEST): $(addprefix messages/,$(MSG_FILES))
 	$(call colorecho,Checking message validity)
