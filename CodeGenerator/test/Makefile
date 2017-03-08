@@ -4,6 +4,8 @@ include ../../makefile.inc
 
 mdir:=messages
 
+CG_DIR := ../
+
 install all:: testCpp testPython testJava
 
 testCpp:

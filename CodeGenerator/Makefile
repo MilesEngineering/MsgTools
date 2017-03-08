@@ -2,6 +2,8 @@ include ../makefile.inc
 
 mdir:=../messages
 
+CG_DIR := 
+
 test:
 	cd test && make
 
