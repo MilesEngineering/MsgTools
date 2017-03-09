@@ -55,8 +55,8 @@ SerialConnection::SerialConnection()
     QString lastconnection = _settings.value("LastSerialPortUsed", "").toString();
 #ifndef WIN32
     layout1->addWidget(new QLabel("/dev/"));
-    qDebug() << "Looking for /dev/ttyUSB*, ttyS*, ttyACM0, COM *ONLY*!";
-    const QStringList acceptableNames = QStringList() << "USB" << "ttyS" << "ACM0" << "COM";
+    const QStringList acceptableNames = QStringList() << "USB" << /*"ttyS" <<*/ "ACM0" << "COM";
+    qDebug() << "Looking for /dev/" << acceptableNames.join(", ") << " ONLY!";
 #endif
     foreach (QextPortInfo info, QextSerialEnumerator::getPorts())
     {
