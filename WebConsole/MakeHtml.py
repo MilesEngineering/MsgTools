@@ -14,6 +14,7 @@ def ProcessDir(outFile, msgDir):
             ProcessDir(outFile, inputFilename)
         else:
             script = '<script type="text/javascript" src="%s" ></script>\n' % inputFilename
+            os.system("sed -i -e 's/^import.*//' "+inputFilename)
             outFile.write(script)
 
 # main starts here
