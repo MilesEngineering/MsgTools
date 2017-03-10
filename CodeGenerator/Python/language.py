@@ -147,7 +147,7 @@ def getFn(msg, field, offset):
         if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
             preface += "\n    count = " + str(count)+"\n"
             preface += "    if count > len(message_buffer)-("+loc+"):\n"
-            preface += "        count = len(message_buffer)-(Printf.MSG_OFFSET + 1)\n"
+            preface += "        count = len(message_buffer)-(<MSGNAME>.MSG_OFFSET + 1)\n"
             type = "str(count)+'s'"
             count = 1
             cleanup = '''ascii_len = str(value).find("\\\\x00")
