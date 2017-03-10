@@ -63,7 +63,7 @@ def getFn(field, offset):
 <MSGNAME>.prototype.Get%sString = function()
 {
     var value = '';
-    for(i=0; i<%s; i++)
+    for(i=0; i<%s && i<this.hdr.GetDataLength()-%s; i++)
     {
         nextChar = String.fromCharCode(this.Get%s(i));
         if(nextChar == '\0')
@@ -71,7 +71,7 @@ def getFn(field, offset):
         value += nextChar;
     }
     return value;
-};''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), field["Name"])
+};''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), offset, field["Name"])
     return ret
 
 def setFn(field, offset):
