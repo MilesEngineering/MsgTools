@@ -3,15 +3,22 @@
 Messages are writen in <a href="https://en.wikipedia.org/wiki/YAML">YAML</a>. 
 
 <h2>Messages</h2>
-Each YAML file should contain exactly one message.  Each message must have a Name, and ID, a Description, and generally a list of Fields which contain the data of the message.  Fields contain the data of a message.  Certain fields may contain subfields.  The Message ID must be globally unique for all Messages within the system.  The Message Name must be unique within all Messages in the same directory (however, when using Matlab, it may be necessary for Message Names to be globally unique regardless of YAML file location).
+Each YAML file should contain exactly one message.  Each message must have a Name, an ID, a Description, and generally a list of Fields which contain the data of the message.  Fields contain the data of a message.  Certain fields may contain subfields.  Headers are a special class of message, to define the body of a header field.  Rather than being associated with an ID, a Header will have a field that at runtime contains the ID of the message.
+
 <p>
 
+<h2>Message ID</h2>
+The Message ID must be globally unique for each Message within the system.  All message headers defined in YAML must have either a single field named MessageID, or one or more unsigned integer fields that have IDBits specified.  The IDBits are used to combine multiple header Fields to form a single unsigned integer ID.  All Messages must specify the unique integer ID that identifies them.  They may do so with either a single ID, or a list of IDs that each have Name, Value, and Bits.  Generally in a single system, all headers should have the same list of fields with IDBits that all messages have as a list of IDs, with an exact correspondance between elements of each in terms of name and size in bits.
+
+<h2>Message Name</h2>
+The Message Name must be unique within all Messages in the same directory.  For many languages, that is the only uniqueness that is required.  Depending on how namespaces work in your particular languages, it may be necessary for Message Names to be globally unique regardless of YAML file location.
+
 <h2>Fields</h2>
-Fields must contain a <a href="#Name">Name</a>, <a href="#Type">Type</a>, <a href="#Description">Description</a>.  Optionally, Fields may contian <a href="#Units">Units</a>, <a href="#Default">Default</a>, <a href="#Count">Count</a>, <a href="#Min">Min</a>, <a href="#Max">Max</a>, <a href="#Enum">Enum</a> (if appropriate), <a href="#Scale">Scale</a>, and <a href="#Offset">Offset</a>.
+Fields must contain a <a href="#Name">Name</a>, <a href="#Type">Type</a>, <a href="#Description">Description</a>.  Optionally, Fields may contain <a href="#Units">Units</a>, <a href="#Default">Default</a>, <a href="#Count">Count</a>, <a href="#Min">Min</a>, <a href="#Max">Max</a>, <a href="#Enum">Enum</a> (if appropriate), <a href="#Scale">Scale</a>, and <a href="#Offset">Offset</a>.
 
 <h2>Bitfields</h2>
 Unsigned integer fields may contain bitfields.
-Bitfields must contain a <a href="#Name">Name</a> <a href="#NumBits">NumBits</a> and <a href="#Description">Description</a>.  Optionally, Bitfields may contian <a href="#Units">Units</a>, <a href="#Default">Default</a>, <a href="#Min">Min</a>, <a href="#Max">Max</a>, <a href="#Enum">Enum</a> (if appropriate), <a href="#Scale">Scale</a>, and <a href="#Offset">Offset</a>.
+Bitfields must contain a <a href="#Name">Name</a> <a href="#NumBits">NumBits</a> and <a href="#Description">Description</a>.  Optionally, Bitfields may contain <a href="#Units">Units</a>, <a href="#Default">Default</a>, <a href="#Min">Min</a>, <a href="#Max">Max</a>, <a href="#Enum">Enum</a> (if appropriate), <a href="#Scale">Scale</a>, and <a href="#Offset">Offset</a>.
 
 <h2>Field and Bitfield elements</h2>
 
@@ -42,13 +49,13 @@ Each field must use one of the following Types:
 NumBits specifies the number of bits used by a Bitfield.  The total bit count for all Bitfields within a Field must be less than or equal to the size of the field in bits.
 
 <a name="Units"><h3>Units</h3></a>
-Units are plain ASCII text strings.  Generally they can be whatever you like, but you'll be happier if you are consistent (ie: always "m/s" or "mps", but choose one and stick with it).   Depending on the language plugin and template they may be placed in the output of the code generator.  In C++, they are not only added as comments in the generated code, but also available as constexprs, so they can be validated at compile time.
+Units are plain ASCII text strings.  Generally they can be whatever you like, but you'll be happier if you are consistent (ie: always "m/s" or "mps", but choose one and stick with it).   Depending on the language plugin and template they may be placed in the output of the code generator.  In C++, they are not only added as comments in the generated code, but also available as constexprs, so they can be validated at compile time.  Some PC tools and CodeGenerator plugins have special logic to treat arrays of uint8 with Units="ASCII" as text strings, rather than just arrays of integers.
 
 <a name="Default"><h3>Default</h3></a>
 Default value.  The value you enter should make sense for the Field (like '3.72' for a float field, '3' for an integer field)
 
 <a name="Count"><h3>Count</h3></a>
-This is the number of repeated entries there should be for a Field.  The code generator will try to make them accessible in a language specific way.
+This is the number of repeated entries there should be for a Field.  The code generator will try to make them accessible in a language specific way.  Most code generator plugins (Python, Matlab, Javascript) create code that tries to be smart about handling messages that have been truncated so that not all array elements are present (especially for arrays of uint8 with Units=ASCII, which are often displayed as text strings).  It's up to the programmer using the generated code to decide on a policy for messages shorter than the length specified in YAML, and hanlde it at runtime if desirable.
 
 <h3><a name="Min">Min</a>/<a name="Max">Max</a></h3>
 Minimum and Maximum values for the field.  Like <a href="Default">Default</a>, these need to make sense in the context of what the Field <a href="#Type">Type</a> is.  If you do not specify a min or max, the code generator will calculate one based on the Type of field.  The calculated value is the min and max representable value, with appropriate Scale and Offset applied.
@@ -62,7 +69,10 @@ Floating point number used to scale the field.  Can convert from an int to a flo
 <a name="Offset"><h3>Offset</h3></a>
 Floating point number used to offset the field.  Can convert from an int to a float.
 
-<h2>Example</h2>
+<h2>MsgCheck</h2>
+There is a application called MsgCheck.py that reads through all messages, and does some rudimentary error checking.  If you'd like more rigorous (or more specific) error checking, you could create a copy of MsgCheck.py that implements the checks you would like to occur, and hook it up to your build system.
+
+<h2>YAML Message Definition Example</h2>
 <!--http://markup.su/highlighter/, language: YAML, Style: Active4D-->
 
 <pre style="background:#fff;color:#3b3b3b"><span style="color:#7a7a7a"><span style="color:#016cff">Enums</span>:</span>
