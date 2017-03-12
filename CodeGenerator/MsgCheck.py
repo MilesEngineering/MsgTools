@@ -91,7 +91,7 @@ def ProcessMsg(msg, subdirComponent, enums):
     if offset > 128:
         raise MessageException('message ' + msg["Name"] + ' too big\n')
 
-    return (subdirComponent+'/'+msg['Name']).ljust(32) + str(id).rjust(5)+'\n'
+    return (subdirComponent+'/'+msg['Name']).ljust(32) +" "+ str(id).rjust(10)+'\n'
 
 def ProcessFile(outFile, inputData, subdirComponent):
     enums = Enums(inputData)
