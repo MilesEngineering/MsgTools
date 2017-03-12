@@ -225,7 +225,7 @@ def msgID(msg, enums, undefinedMsgId):
                 for enum in enums:
                     enumType = enum["Name"]
                     for option in enum["Options"]:
-                        if value == enumType + "." + option["Name"]:
+                        if value == enumType + "." + option["Name"] or (enum["Name"] == id["Name"]+"s" and value == option["Name"]):
                             enumName = value
                             value = int(option["Value"])
                             #print("found value " + str(value) + " for " + enumType + "." + str(enumName))
@@ -303,7 +303,8 @@ def baseSetMsgID(prefix, param, castEnums, enumAsIntParam, msg):
                             setStr = bitfield["Enum"]+"("+setStr+")"
                         ret +=  prefix+"Set"+bitfield["Name"]+"("+param+setStr+")"
     return ret
-    
+
+# return a list of all enumerations in this input file, or anything it includes
 def Enums(inputData):
     enumList = []
     if "Enums" in inputData:
@@ -312,6 +313,37 @@ def Enums(inputData):
         for data in inputData["includes"]:
             enumList = enumList + Enums(data)
     return enumList
+
+# return a list of just the enums that are used by a message's fields/bitfields
+# this is useful for languages that put enum info into their output file, because
+# it will be a list of only the enums that are relevant.  often there can be many
+# enums defiined in a common include file, and they aren't all used by a particular
+# message
+def UsedEnums(inputData, enums):
+    usedEnums = []
+    if "Messages" in inputData:
+        for enum in enums:
+            for msg in inputData["Messages"]:
+                foundEnum = 0
+                if "Fields" in msg:
+                    for field in msg["Fields"]:
+                        if "Enum" in field:
+                            if field["Enum"] == enum["Name"]:
+                                usedEnums.append(enum)
+                                foundEnum = 1
+                                break
+                        if "Bitfields" in field:
+                            for bits in field["Bitfields"]:
+                                if "Enum" in bits:
+                                    if bits["Enum"] == enum["Name"]:
+                                        usedEnums.append(enum)
+                                        foundEnum = 1
+                                        break
+                        if foundEnum:
+                            break
+                if foundEnum:
+                    break
+    return usedEnums
 
 def typeForScaledInt(field):
     numBits = fieldNumBits(field)

@@ -32,7 +32,7 @@ def optionalReplace(line, pattern, fn, param):
 # all tags in the hash table), and saw no performance improvement.
 # In fact, application timing doesn't change even if *no* replacements
 # are made.  Perhaps timing is dominated by YAML parsing?
-def DoReplacements(line, msg, enums, replacements):
+def DoReplacements(line, msg, replacements):
     ret = line + '\n'
     for tag in replacements:
         ret = replace(ret, tag, replacements[tag])
@@ -97,7 +97,7 @@ def ProcessFile(inputFilename, outputFilename, languageFilename, templateFilenam
         try:
             replacements = {}
             enums = Enums(inputData)
-            replacements["<ENUMERATIONS>"] = language.enums(enums)
+            replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(inputData, enums))
             if "Messages" in inputData:
                 for msg in Messages(inputData):
                     replacements["<MSGNAME>"] = msgName(msg)
@@ -124,7 +124,7 @@ def ProcessFile(inputFilename, outputFilename, languageFilename, templateFilenam
                     replacements["<MESSAGE_SUBDIR>"] = commonSubdir
                     replacements["<DATE>"] = currentDateTime
                     for line in template:
-                        line = DoReplacements(line, msg, enums, replacements)
+                        line = DoReplacements(line, msg, replacements)
                         outFile.write(line)
         except MessageException as e:
             sys.stderr.write(str(e)+'\n')
