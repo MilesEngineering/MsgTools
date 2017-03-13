@@ -1,5 +1,5 @@
 #include "SerialConnection.h"
-#include <QSerialPortInfo>
+#include <QtSerialPort/QSerialPortInfo>
 #include <QDebug>
 #include <QRadioButton>
 #include <QHBoxLayout>
@@ -64,7 +64,7 @@ SerialConnection::SerialConnection()
         bool found = false;
         foreach(QString acceptableName, acceptableNames)
         {
-            if(info.portName.contains(acceptableName))
+            if(info.portName().contains(acceptableName))
             {
                 found = true;
             }
