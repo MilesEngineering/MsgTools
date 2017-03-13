@@ -4,7 +4,7 @@
 #include <QSettings>
 #include "MessageServer/ServerPort.h"
 #include "SerialMessage.h"
-#include "qextserialport/src/qextserialport.h"
+#include <QSerialPort>
 #include <QGroupBox>
 #include <QDateTime>
 
@@ -24,7 +24,7 @@ class SerialConnection : public ServerPort
     private:
         SerialHeaderWrapper tmpRxHdr;
         bool gotHeader;
-        QextSerialPort serialPort;
+        QSerialPort serialPort;
         QGroupBox _buttonGroup;
         QSettings _settings;
         QLabel _statusLabel;

@@ -1,5 +1,5 @@
 #include "SerialConnection.h"
-#include "qextserialport/src/qextserialenumerator.h"
+#include <QSerialPortInfo>
 #include <QDebug>
 #include <QRadioButton>
 #include <QHBoxLayout>
@@ -39,12 +39,11 @@ SerialConnection::SerialConnection()
     /** \note Set subscription mask to accept all messages. */
     subscriptionMask = 0;
 
-    /** \note Needs to be 57600, 8N1 for 3dr radio. */
-    serialPort.setBaudRate(BAUD115200);
-    serialPort.setFlowControl(FLOW_OFF);
-    serialPort.setParity(PAR_NONE);
-    serialPort.setDataBits(DATA_8);
-    serialPort.setStopBits(STOP_1);
+    serialPort.setBaudRate(QSerialPort::Baud115200);
+    serialPort.setFlowControl(QSerialPort::NoFlowControl);
+    serialPort.setParity(QSerialPort::NoParity);
+    serialPort.setDataBits(QSerialPort::Data8);
+    serialPort.setStopBits(QSerialPort::OneStop);
 
     _buttonGroup.setStyleSheet("border:0;");
 
@@ -58,7 +57,7 @@ SerialConnection::SerialConnection()
     const QStringList acceptableNames = QStringList() << "USB" << /*"ttyS" <<*/ "ACM0" << "COM";
     qDebug() << "Looking for /dev/" << acceptableNames.join(", ") << " ONLY!";
 #endif
-    foreach (QextPortInfo info, QextSerialEnumerator::getPorts())
+    foreach (QSerialPortInfo info, QSerialPortInfo::availablePorts())
     {
 #ifndef WIN32
         /** \todo Restrict list of UARTs to the below selection */
@@ -73,12 +72,12 @@ SerialConnection::SerialConnection()
         if(found)
 #endif
         {
-            QString name = info.portName;
-            qDebug() << "Found port " << info.portName << " at " << info.physName;
+            QString name = info.portName();
+            qDebug() << "Found port " << name << " at " << info.systemLocation();
             QRadioButton* rb = new QRadioButton(name);
             connect(rb, &QRadioButton::toggled, this, &SerialConnection::radioButtonToggled);
             layout1->addWidget(rb);
-            if(lastconnection == info.portName)
+            if(lastconnection == name)
                 rb->click();
         }
     }
@@ -110,7 +109,7 @@ SerialConnection::SerialConnection()
     connect(timer, &QTimer::timeout, this, &SerialConnection::PrintDebugInfo);
     timer->start(500);
 
-    connect(&serialPort, &QextSerialPort::readyRead, this, &SerialConnection::SerialDataReady);
+    connect(&serialPort, &QSerialPort::readyRead, this, &SerialConnection::SerialDataReady);
 
     // Make a list of fields in the serial header and network header that have matching names.
     foreach(const FieldInfo* serialFieldInfo, SerialHeaderWrapper::ReflectionInfo()->GetFields())
@@ -132,12 +131,12 @@ void SerialConnection::BaudrateChanged(bool pressed)
         QRadioButton* button = dynamic_cast<QRadioButton*>(sender());
         if(button->text() == "57.6")
         {
-            serialPort.setBaudRate(BAUD57600);
+            serialPort.setBaudRate(QSerialPort::Baud57600);
             qDebug() << "Setting baudrate " << button->text();
         }
         else if(button->text() == "115.2")
         {
-            serialPort.setBaudRate(BAUD115200);
+            serialPort.setBaudRate(QSerialPort::Baud115200);
             qDebug() << "Setting baudrate " << button->text();
         }
         else
@@ -336,7 +335,7 @@ void SerialConnection::radioButtonToggled(bool pressed)
         const QString portName(QString("/dev/") + rb->text());
 #endif
         serialPort.setPortName(portName);
-        if(serialPort.open(QextSerialPort::ReadWrite))
+        if(serialPort.open(QSerialPort::ReadWrite))
         {
             qDebug() << "Opened " << portName << endl;
             _settings.setValue("LastSerialPortUsed", portName);

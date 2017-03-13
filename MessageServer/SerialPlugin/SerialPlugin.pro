@@ -1,7 +1,5 @@
 include(../../mk/qtcommon.pri)
 
-include($$MSGTOOLSROOT/ThirdParty/qextserialport/src/qextserialport.pri)
-
 TARGET = SerialPlugin
 TEMPLATE = lib
 CONFIG += plugin
@@ -17,7 +15,7 @@ HEADERS += \
     ../ServerInterface.h \
     SerialMessage.h
 
-QT += network xml widgets core gui
+QT += network xml widgets core gui serialport
 
 MY_TARGET = $$TARGET
 MY_TARGET = $$replace(MY_TARGET, ^lib, ).plugin
