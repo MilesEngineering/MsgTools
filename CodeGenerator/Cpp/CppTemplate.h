@@ -45,6 +45,7 @@ class <MSGNAME>Message : public Message
             static MsgInfo msgInfo(MSG_ID, "<MSGNAME>", "<MSGDESCRIPTION>", MSG_SIZE);
             if(firstTime)
             {
+                firstTime = false;
                 msgInfo.AddField(new <REFLECTION>);
             }
             return &msgInfo;
