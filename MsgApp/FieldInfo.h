@@ -2,6 +2,7 @@
 #define FIELD_INFO_H
 
 #include <QHash>
+#include "FieldAccess.h"
 
 class FieldInfo
 {
@@ -16,6 +17,7 @@ class FieldInfo
         int Count() const { return _count; }
         virtual void SetValue(QString value, uint8_t* data, int index = 0) const = 0;
         virtual const QString Value(uint8_t* data, int index = 0) const = 0;
+        int Size() const { return _fieldSize; }
     protected:
         QString _name;
         QString _description;
@@ -71,16 +73,16 @@ class UIntFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 1:
-                    *ptr = value;
+                    Set_uint8_t(ptr, value);
                     break;
                 case 2:
-                    *(uint16_t*)ptr = value;
+                    Set_uint16_t(ptr, value);
                     break;
                 case 4:
-                    *(uint32_t*)ptr = value;
+                    Set_uint32_t(ptr, value);
                     break;
                 case 8:
-                    *(uint64_t*)ptr = value;
+                    Set_uint64_t(ptr, value);
                     break;
             }
         }
@@ -91,16 +93,16 @@ class UIntFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 1:
-                    value = *ptr;
+                    value = Get_uint8_t(ptr);
                     break;
                 case 2:
-                    value = *(uint16_t*)ptr;
+                    value = Get_uint16_t(ptr);
                     break;
                 case 4:
-                    value = *(uint32_t*)ptr;
+                    value = Get_uint32_t(ptr);
                     break;
                 case 8:
-                    value = *(uint64_t*)ptr;
+                    value = Get_uint64_t(ptr);
                     break;
             }
             return value;
@@ -120,10 +122,10 @@ class FloatFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 4:
-                    *(float*)ptr = value.toFloat();
+                    Set_float(ptr, value.toFloat());
                     break;
                 case 8:
-                    *(double*)ptr = value.toDouble();
+                    Set_double(ptr, value.toDouble());
                     break;
             }
         }
@@ -134,10 +136,10 @@ class FloatFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 4:
-                    value = QString("%1").arg(*(float*)ptr);
+                    value = QString("%1").arg(Get_float(ptr));
                     break;
                 case 8:
-                    value = QString("%1").arg(*(double*)ptr);
+                    value = QString("%1").arg(Get_double(ptr));
                     break;
             }
             return value;
