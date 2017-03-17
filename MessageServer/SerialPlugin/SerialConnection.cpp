@@ -286,24 +286,35 @@ void SerialConnection::SerialMsgSlot(QSharedPointer<SerialMessage> msg)
         const FieldInfo* netInfo = pair.second;
         netInfo->SetValue(serInfo->Value(msg->hdr.m_data), dbmsg->hdr.m_data);
     }
-    
-    /** \todo Detect time rolling */
-    uint16_t thisTimestamp = msg->hdr.GetTime();
-    QDateTime thisTime = QDateTime::currentDateTime();
-    uint16_t timestampOffset = _timestampOffset;
-    if(thisTimestamp < _lastTimestamp)
+
+    const FieldInfo* serialTimeField = SerialHeaderWrapper::ReflectionInfo()->GetField("Time");
+    const FieldInfo* networkTimeField = NetworkHeaderWrapper::ReflectionInfo()->GetField("Time");
+    if(serialTimeField && networkTimeField && serialTimeField->Size() < networkTimeField->Size())
     {
-        /** \note If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
-             and do not wrap again. */
-        if(thisTime > _lastWrapTime.addSecs(30))
+        /** \todo Detect time rolling */
+        uint16_t thisTimestamp = msg->hdr.GetTime();
+        QDateTime thisTime = QDateTime::currentDateTime();
+        uint16_t timestampOffset = _timestampOffset;
+        if(thisTimestamp < _lastTimestamp)
         {
-            _lastWrapTime = thisTime;
-            _timestampOffset++;
-            timestampOffset = _timestampOffset;
+            /** \note If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
+                 and do not wrap again. */
+            if(thisTime > _lastWrapTime.addSecs(30))
+            {
+                _lastWrapTime = thisTime;
+                _timestampOffset++;
+                timestampOffset = _timestampOffset;
+            }
         }
+        _lastTimestamp = thisTimestamp;
+        dbmsg->hdr.SetTime((timestampOffset << 16) + thisTimestamp);
     }
-    _lastTimestamp = thisTimestamp;
-    dbmsg->hdr.SetTime((timestampOffset << 16) + thisTimestamp);
+    else if(networkTimeField && !serialTimeField)
+    {
+        static QDateTime startTime = QDateTime::currentDateTime();
+        QDateTime thisTime = QDateTime::currentDateTime();
+        dbmsg->hdr.SetTime(startTime.msecsTo(thisTime));
+    }
 
     memcpy(dbmsg->GetDataPtr(), msg->GetDataPtr(), msg->hdr.GetDataLength());
     emit MsgSignal(dbmsg);
