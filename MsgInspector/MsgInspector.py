@@ -51,6 +51,28 @@ class TreeWidget(QtWidgets.QTreeWidget):
         clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(copiedText)
 
+    def tableHeaderClicked(self, column):
+        tree = self
+        header = tree.header()
+        fieldName = tree.headerItem().text(column)
+        msgName = tree.msgName
+        if not msgName in self.inspector.keyFields or self.inspector.keyFields[msgName] != fieldName:
+            print("sorting " + msgName + " on " + fieldName)
+            header.setSortIndicator(column, QtCore.Qt.AscendingOrder)
+            self.inspector.keyFields[msgName] = fieldName
+            tree.sortItems(column, QtCore.Qt.AscendingOrder)
+            valueToRemove = None
+            for i in range(tree.topLevelItemCount()-1, -1 ,-1):
+                item = tree.topLevelItem(i)
+                if not valueToRemove == None and item.text(column) == valueToRemove:
+                    tree.takeTopLevelItem(i)
+                else:
+                    valueToRemove = item.text(column)
+        else:
+            print("not sorting " + msgName)
+            del self.inspector.keyFields[msgName]
+            header.setSortIndicator(0, QtCore.Qt.AscendingOrder)
+
 class MsgInspector(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", argv, [], parent)
@@ -96,28 +118,6 @@ class MsgInspector(MsgGui.MsgGui):
     def switchScroll(self):
         self.autoscroll = not self.autoscroll
         self.scrollAction.setChecked(self.autoscroll)
-            
-    def tableHeaderClicked(self, column):
-        header = self.sender()
-        tree = header.myTreeWidget
-        fieldName = tree.headerItem().text(column)
-        msgName = tree.msgName
-        if not msgName in self.keyFields or self.keyFields[msgName] != fieldName:
-            print("sorting " + msgName + " on " + fieldName)
-            header.setSortIndicator(column, QtCore.Qt.AscendingOrder)
-            self.keyFields[msgName] = fieldName
-            tree.sortItems(column, QtCore.Qt.AscendingOrder)
-            valueToRemove = None
-            for i in range(tree.topLevelItemCount()-1, -1 ,-1):
-                item = tree.topLevelItem(i)
-                if not valueToRemove == None and item.text(column) == valueToRemove:
-                    tree.takeTopLevelItem(i)
-                else:
-                    valueToRemove = item.text(column)
-        else:
-            print("not sorting " + msgName)
-            del self.keyFields[msgName]
-            header.setSortIndicator(0, QtCore.Qt.AscendingOrder)
 
     def tableDataDoubleClicked(self, treeWidgetItem, column):
         self.autoscroll = not self.autoscroll
@@ -154,6 +154,7 @@ class MsgInspector(MsgGui.MsgGui):
             firstTime = 1
             # create a new tree widget
             msgWidget = TreeWidget()
+            msgWidget.inspector = self
             msgWidget.itemDoubleClicked.connect(self.tableDataDoubleClicked)
             msgWidget.msgName = msgName
             msgWidget.setSelectionMode(msgWidget.ContiguousSelection)
@@ -165,7 +166,7 @@ class MsgInspector(MsgGui.MsgGui):
             # show sort indicator ascending on Time, if not sorting, because we append incoming messages
             header.setSortIndicator(0, QtCore.Qt.AscendingOrder)
             header.myTreeWidget = msgWidget
-            header.sectionClicked.connect(self.tableHeaderClicked)
+            header.sectionClicked.connect(msgWidget.tableHeaderClicked)
             
             # add it to the tab widget, so the user can see it
             self.tabWidget.addTab(msgWidget, msgName)
