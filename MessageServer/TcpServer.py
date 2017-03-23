@@ -10,7 +10,7 @@ from Messaging import *
 
 class TcpClientConnection(QObject):
     disconnected = QtCore.pyqtSignal(object)
-    messagereceived = QtCore.pyqtSignal(object, object)
+    messagereceived = QtCore.pyqtSignal(object)
 
     def __init__(self, tcpSocket):
         super(TcpClientConnection, self).__init__(None)
@@ -47,7 +47,7 @@ class TcpClientConnection(QObject):
                 return
             
             # if we got this far, we have a whole message! So, emit the signal
-            self.messagereceived.emit(self.rxBuffer, self)
+            self.messagereceived.emit(self.rxBuffer)
 
             # then clear the buffer, so we start over on the next message
             self.rxBuffer = bytearray()

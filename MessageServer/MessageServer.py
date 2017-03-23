@@ -6,6 +6,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
 from TcpServer import *
 from ConnectionsTableModel import *
+from WebSocketServer import *
 
 from Messaging import Messaging
 
@@ -20,13 +21,18 @@ class MessageServer(QtWidgets.QMainWindow):
         self.clients = {}
 
         self.tcpServer = TcpServer()
-        
         self.tcpServer.statusUpdate.connect(self.onStatusUpdate)
         self.tcpServer.newConnection.connect(self.onNewConnection)
         self.tcpServer.connectionDisconnected.connect(self.onConnectionDied)
 
+        self.wsServer = WebSocketServer()
+        self.wsServer.statusUpdate.connect(self.onStatusUpdate)
+        self.wsServer.newConnection.connect(self.onNewConnection)
+        self.wsServer.connectionDisconnected.connect(self.onConnectionDied)
+
         self.initializeGui()
         self.tcpServer.start()
+        self.wsServer.start()
 
     def initializeGui(self):
 
