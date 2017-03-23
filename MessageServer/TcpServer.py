@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import sys
-import uuid
+import os
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 from PyQt5.QtCore import QObject
 
-sys.path.append("../MsgApp")
+srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
+sys.path.append(srcroot+"/MsgApp")
 from Messaging import *
 
 class TcpClientConnection(QObject):

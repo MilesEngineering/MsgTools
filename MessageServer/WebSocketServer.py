@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import sys
-import uuid
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork, QtWebSockets
 from PyQt5.QtCore import QObject
