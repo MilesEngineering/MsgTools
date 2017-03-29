@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 import sys
+import os
+import getopt
+
+srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
+sys.path.append(srcroot+"/MsgApp")
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
@@ -19,6 +24,8 @@ class MessageServer(QtWidgets.QMainWindow):
 
         self.clients = {}
 
+        self.initializeGui()
+
         self.tcpServer = TcpServer()
         self.tcpServer.statusUpdate.connect(self.onStatusUpdate)
         self.tcpServer.newConnection.connect(self.onNewConnection)
@@ -29,7 +36,24 @@ class MessageServer(QtWidgets.QMainWindow):
         self.wsServer.newConnection.connect(self.onNewConnection)
         self.wsServer.connectionDisconnected.connect(self.onConnectionDied)
 
-        self.initializeGui()
+        options = ['serial=', 'bluetooth=']
+        self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
+        for opt in self.optlist:
+            if opt[0] == '--serial':
+                from SerialPlugin import SerialConnection
+                serialPortName = opt[1]
+                self.serialPort = SerialConnection(serialPortName)
+                self.serialPort.statusUpdate.connect(self.onStatusUpdate)
+                self.onNewConnection(self.serialPort)
+                self.serialPort.start()
+            elif opt[0] == '--bluetooth':
+                from BluetoothPlugin import BluetoothConnection
+                bluetoothPortName = opt[1]
+                self.bluetoothPort = BluetoothConnection(bluetoothPortName)
+                self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
+                self.onNewConnection(self.bluetoothPort)
+                self.bluetoothPort.start()
+
         self.tcpServer.start()
         self.wsServer.start()
 
