@@ -1,12 +1,8 @@
-#!/usr/bin/env python3
-import sys
-
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork, QtWebSockets
 from PyQt5.QtCore import QObject
 from PyQt5.QtWebSockets import QWebSocket
 from PyQt5.QtWebSockets import QWebSocketServer
 
-sys.path.append("../MsgApp")
 from Messaging import *
 
 class WebSocketClientConnection(QObject):
