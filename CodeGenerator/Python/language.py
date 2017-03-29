@@ -93,7 +93,7 @@ def reflection(msg):
 def fieldInfos(msg):
     pass
 
-def fnHdr(field, count, name):
+def fnHdr(field, offset, count, name):
     param = "message_buffer"
     if str.find(name, "Set") == 0:
         param += ", value"
@@ -105,6 +105,11 @@ def fnHdr(field, count, name):
         
     min = MsgParser.fieldMin(field)
     max = MsgParser.fieldMax(field)
+    
+    try:
+        fieldSize = MsgParser.fieldSize(field)
+    except KeyError:
+        fieldSize = 0
         
     ret = '''\
 @staticmethod
@@ -112,9 +117,11 @@ def fnHdr(field, count, name):
 @msg.default('%s')
 @msg.minVal('%s')
 @msg.maxVal('%s')
+@msg.offset('%s')
+@msg.size('%s')
 @msg.count(%s)
 def %s(%s):
-    """%s"""''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(min), str(max), str(count), name, param, MsgParser.fieldDescription(field))
+    """%s"""''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(min), str(max), str(offset), str(fieldSize), str(count), name, param, MsgParser.fieldDescription(field))
     return ret
 
 def enumLookup(msg, field):
@@ -161,7 +168,7 @@ def getFn(msg, field, offset):
 %s%s
     value = struct.unpack_from(%s, message_buffer, %s)[0]
     %sreturn value
-''' % (fnHdr(field,count, "Get"+field["Name"]), preface, type, loc, cleanup)
+''' % (fnHdr(field,offset,count, "Get"+field["Name"]), preface, type, loc, cleanup)
     return ret
 
 def setFn(msg, field, offset):
@@ -188,7 +195,7 @@ def setFn(msg, field, offset):
 %s
     %s
     struct.pack_into('%s', message_buffer, %s, tmp)
-''' % (fnHdr(field,count, "Set"+field["Name"]), math, type, loc)
+''' % (fnHdr(field,offset,count, "Set"+field["Name"]), math, type, loc)
     return ret
 
 def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
@@ -202,7 +209,7 @@ def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
 %s
     value = %s
     %sreturn value
-''' % (fnHdr(bits,1,"Get"+MsgParser.BitfieldName(field, bits)), access, cleanup)
+''' % (fnHdr(bits,offset,1,"Get"+MsgParser.BitfieldName(field, bits)), access, cleanup)
     return ret
 
 def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
@@ -216,7 +223,7 @@ def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
 %s
     %s
     %s.Set%s(message_buffer, (%s.Get%s(message_buffer) & ~(%s << %s)) | ((%s & %s) << %s))
-''' % (fnHdr(bits,1,"Set"+MsgParser.BitfieldName(field, bits)), math, msg["Name"], field["Name"], msg["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
+''' % (fnHdr(bits,offset,1,"Set"+MsgParser.BitfieldName(field, bits)), math, msg["Name"], field["Name"], msg["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
