@@ -28,6 +28,20 @@ def count(arg):
         return fcn
     return _count
 
+# A decorator to specify a byte offset for fields
+def offset(arg):
+    def _offset(fcn):
+        fcn.offset = arg
+        return fcn
+    return _offset
+
+# A decorator to specify a size in bytes for fields
+def size(arg):
+    def _size(fcn):
+        fcn.size = arg
+        return fcn
+    return _size
+
 # A decorator to specify a min for fields
 def minVal(arg):
     def _minVal(fcn):
