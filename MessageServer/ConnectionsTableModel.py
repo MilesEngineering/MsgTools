@@ -1,5 +1,3 @@
-import sys
-
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 from PyQt5.QtCore import Qt
 
