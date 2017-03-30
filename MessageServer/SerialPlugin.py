@@ -38,13 +38,14 @@ def findFieldInfo(fieldInfos, name):
 class SerialConnection(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     messagereceived = QtCore.pyqtSignal(object)
+    disconnected = QtCore.pyqtSignal(object)
     startTime = QDateTime.currentDateTime()
 
     def __init__(self, portName):
         super(SerialConnection, self).__init__(None)
 
-        self.removeClient = QtWidgets.QPushButton("Remove")
-        self.removeClient.pressed.connect(self.onDisconnected)
+        self.pushButton = QtWidgets.QPushButton("button")
+        self.pushButton.pressed.connect(self.onButtonPress)
         self.statusLabel = QtWidgets.QLabel()
 
         self.portName = portName
@@ -85,19 +86,32 @@ class SerialConnection(QObject):
 
     def widget(self, index):
         if index == 0:
-            return self.removeClient
+            return self.pushButton
         if index == 1:
             return self.statusLabel
         return None
 
-    def onDisconnected(self):
-        self.disconnected.emit(self)
+    def onButtonPress(self):
+        # open or close the port
+        if self.serialPort.isOpen():
+            self.statusUpdate.emit("Closed SerialPort on port "+str(self.portName))
+            self.serialPort.close()
+            self.pushButton.setText("Open")
+        else:
+            if self.serialPort.open(QSerialPort.ReadWrite):
+                self.statusUpdate.emit("Opened SerialPort on port "+str(self.portName))
+                self.pushButton.setText("Close")
+            else:
+                self.statusUpdate.emit("Con't open SerialPort on port "+str(self.portName)+"!")
+                self.pushButton.setText("Open")
 
     def start(self):
         if self.serialPort.open(QSerialPort.ReadWrite):
-            pass
+            self.statusUpdate.emit("Opened SerialPort on port "+str(self.portName))
+            self.pushButton.setText("Close")
         else:
             self.statusUpdate.emit("Con't open SerialPort on port "+str(self.portName)+"!")
+            self.pushButton.setText("Open")
 
     def gotRxError(self, errType):
         print("Got rx error " + errType)
