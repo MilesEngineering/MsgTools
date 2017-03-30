@@ -9,7 +9,6 @@ sys.path.append(srcroot+"/MsgApp")
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
 from TcpServer import *
-from ConnectionsTableModel import *
 from WebSocketServer import *
 
 from Messaging import Messaging
@@ -21,6 +20,9 @@ class MessageServer(QtWidgets.QMainWindow):
         srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
         msgdir = srcroot+"/../obj/CodeGenerator/Python/"
         self.msgLib = Messaging(msgdir, 0, "NetworkHeader")
+        self.connectClass = Messaging.MsgClassFromName["Network.Connect"]
+        self.subscriptionListClass = Messaging.MsgClassFromName["Network.SubscriptionList"]
+        self.maskedSubscriptionClass = Messaging.MsgClassFromName["Network.MaskedSubscription"]
 
         self.clients = {}
 
@@ -29,12 +31,10 @@ class MessageServer(QtWidgets.QMainWindow):
         self.tcpServer = TcpServer()
         self.tcpServer.statusUpdate.connect(self.onStatusUpdate)
         self.tcpServer.newConnection.connect(self.onNewConnection)
-        self.tcpServer.connectionDisconnected.connect(self.onConnectionDied)
 
         self.wsServer = WebSocketServer()
         self.wsServer.statusUpdate.connect(self.onStatusUpdate)
         self.wsServer.newConnection.connect(self.onNewConnection)
-        self.wsServer.connectionDisconnected.connect(self.onConnectionDied)
 
         options = ['serial=', 'bluetooth=']
         self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
@@ -56,21 +56,23 @@ class MessageServer(QtWidgets.QMainWindow):
 
         self.tcpServer.start()
         self.wsServer.start()
+        name = self.tcpServer.serverInfo() + "(TCP) and " + str(self.wsServer.portNumber) + "(WebSocket)"
+        self.statusBar().addPermanentWidget(QtWidgets.QLabel(name))
 
     def initializeGui(self):
 
         # Components
-        self.connectionsModel = ConnectionsTableModel(self.clients)
-        self.connectionsTable = QtWidgets.QTableView()
-        self.connectionsTable.setModel(self.connectionsModel)
+        self.statusBox = QtWidgets.QPlainTextEdit()
 
         # Layout
-        grid = QtWidgets.QGridLayout()
-        grid.addWidget(self.connectionsTable, 0, 0)
+        vbox = QtWidgets.QVBoxLayout()
+        self.grid = QtWidgets.QGridLayout()
+        vbox.addLayout(self.grid)
+        vbox.addWidget(self.statusBox)
 
         # Central Widget (QMainWindow limitation)
         centralWidget = QtWidgets.QWidget()
-        centralWidget.setLayout(grid)
+        centralWidget.setLayout(vbox)
         self.setCentralWidget(centralWidget)
 
         # Main Window Stuff
@@ -79,20 +81,49 @@ class MessageServer(QtWidgets.QMainWindow):
         self.statusBar()
 
     def onStatusUpdate(self, message):
-        self.statusBar().showMessage(message)
+        #self.statusBar().showMessage(message)
+        self.statusBox.appendPlainText(message)
 
     def onNewConnection(self, newConnection):
+        self.onStatusUpdate("adding connection[" + newConnection.name+"]")
         self.clients[newConnection] = newConnection
         newConnection.messagereceived.connect(self.onMessageReceived)
-        # Just let the AbstractTableModel know data has changed so that the table view will re-render
-        self.connectionsModel.refresh()
+        newConnection.disconnected.connect(self.onConnectionDied)
+        clientRow = self.grid.rowCount()
+        i = 0
+        while(1):
+            widget = newConnection.widget(i)
+            if widget == None:
+                break
+            self.grid.addWidget(widget, clientRow, i)
+            i+=1
 
     def onConnectionDied(self, connection):
-        del self.clients[connection]
-        self.connectionsModel.refresh()
+        self.onStatusUpdate("removing connection[" + connection.name+"]")
+        i = 0
+        while(1):
+            widget = connection.widget(i)
+            if widget == None:
+                break
+            self.grid.removeWidget(widget)
+            widget.deleteLater()
+            i+=1
+        if connection in self.clients:
+            connection.deleteLater()
+            del self.clients[connection]
+        else:
+            self.onStatusUpdate("cnx not in list!")
 
     def onMessageReceived(self, message):
         clientThatReceivedMsg = self.sender()
+        # check for name, subscription, etc.
+        if Messaging.hdr.GetMessageID(message) == self.connectClass.ID:
+            clientThatReceivedMsg.name = self.connectClass.GetName(message)
+            clientThatReceivedMsg.statusLabel.setText(clientThatReceivedMsg.name)
+        elif Messaging.hdr.GetMessageID(message) == self.subscriptionListClass.ID:
+            pass
+        elif Messaging.hdr.GetMessageID(message) == self.maskedSubscriptionClass.ID:
+            pass
         for client in self.clients.values():
             if client != clientThatReceivedMsg:
                 client.sendMsg(message)

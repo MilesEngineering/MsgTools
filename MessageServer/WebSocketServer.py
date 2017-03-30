@@ -12,12 +12,24 @@ class WebSocketClientConnection(QObject):
     def __init__(self, webSocket):
         super(WebSocketClientConnection, self).__init__(None)
 
+        self.removeClient = QtWidgets.QPushButton("Remove")
+        self.removeClient.pressed.connect(lambda: self.webSocket.close())
+        self.statusLabel = QtWidgets.QLabel()
+
         self.webSocket = webSocket
         self.webSocket.binaryMessageReceived.connect(self.processBinaryMessage)
         self.webSocket.disconnected.connect(self.onDisconnected)
 
-        self.name = "Web Client " + self.webSocket.peerAddress().toString()
+        self.name("Web Client " + self.webSocket.peerAddress().toString())
+        self.statusLabel.setText(self.name)
 
+    def widget(self, index):
+        if index == 0:
+            return self.removeClient
+        if index == 1:
+            return self.statusLabel
+        return None
+            
     def processBinaryMessage(self, message):
         self.messagereceived.emit(message)
 
@@ -30,7 +42,6 @@ class WebSocketClientConnection(QObject):
 class WebSocketServer(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     newConnection = QtCore.pyqtSignal(object)
-    connectionDisconnected = QtCore.pyqtSignal(object)
 
     def __init__(self):
         super(WebSocketServer, self).__init__(None)
@@ -45,11 +56,4 @@ class WebSocketServer(QObject):
 
     def onNewConnection(self):
         connection = WebSocketClientConnection(self.webSocketServer.nextPendingConnection())
-
-        connection.disconnected.connect(self.onConnectionDisconnected)
-
         self.newConnection.emit(connection)
-
-    def onConnectionDisconnected(self, connection):
-        self.connectionDisconnected.emit(connection)
-

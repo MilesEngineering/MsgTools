@@ -10,6 +10,10 @@ class TcpClientConnection(QObject):
     def __init__(self, tcpSocket):
         super(TcpClientConnection, self).__init__(None)
 
+        self.removeClient = QtWidgets.QPushButton("Remove")
+        self.removeClient.pressed.connect(lambda: self.tcpSocket.close())
+        self.statusLabel = QtWidgets.QLabel()
+        
         self.tcpSocket = tcpSocket
         self.tcpSocket.readyRead.connect(self.onReadyRead)
         self.tcpSocket.disconnected.connect(self.onDisconnected)
@@ -17,7 +21,15 @@ class TcpClientConnection(QObject):
         self.rxBuffer = bytearray()
 
         self.name = "TCP Client " + self.tcpSocket.peerAddress().toString()
+        self.statusLabel.setText(self.name)
 
+    def widget(self, index):
+        if index == 0:
+            return self.removeClient
+        if index == 1:
+            return self.statusLabel
+        return None
+            
     def onReadyRead(self):
         inputStream = QtCore.QDataStream(self.tcpSocket)
 
@@ -56,7 +68,6 @@ class TcpClientConnection(QObject):
 class TcpServer(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     newConnection = QtCore.pyqtSignal(object)
-    connectionDisconnected = QtCore.pyqtSignal(object)
 
     def __init__(self):
         super(TcpServer, self).__init__(None)
@@ -71,11 +82,17 @@ class TcpServer(QObject):
 
     def onNewTcpConnection(self):
         connection = TcpClientConnection(self.tcpServer.nextPendingConnection())
-
-        connection.disconnected.connect(self.onConnectionDisconnected)
-
         self.newConnection.emit(connection)
 
-    def onConnectionDisconnected(self, connection):
-        self.connectionDisconnected.emit(connection)
-
+    def serverInfo(self):
+        # Show IP address and port number in status bar
+        name = ""
+        for address in QtNetwork.QNetworkInterface.allAddresses():
+            if address.protocol() == QtNetwork.QAbstractSocket.IPv4Protocol and address != QtNetwork.QHostAddress.LocalHost:
+                addrStr = address.toString()
+                # ignore VM/VPN stuff (special ubuntu address, and anything that ends in 1)
+                if ".".split(addrStr)[-1] != "1" and addrStr != "192.168.122.1":
+                    name += address.toString() + "/"
+        name = name[:-1]
+        name += " : " + str(self.portNumber)
+        return name

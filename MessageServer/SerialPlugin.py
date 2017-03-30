@@ -43,6 +43,10 @@ class SerialConnection(QObject):
     def __init__(self, portName):
         super(SerialConnection, self).__init__(None)
 
+        self.removeClient = QtWidgets.QPushButton("Remove")
+        self.removeClient.pressed.connect(self.onDisconnected)
+        self.statusLabel = QtWidgets.QLabel()
+
         self.portName = portName
         self.serialPort = QSerialPort(portName)
         self.serialPort.setBaudRate(QSerialPort.Baud115200);
@@ -56,6 +60,7 @@ class SerialConnection(QObject):
 
         self.serialPort.readyRead.connect(self.onReadyRead)
         self.name = "Serial " + self.portName
+        self.statusLabel.setText(self.name)
 
         # Make a list of fields in the serial header and network header that have matching names.
         self.correspondingFields = []
@@ -77,6 +82,16 @@ class SerialConnection(QObject):
         self.serialTimeField = findFieldInfo(SerialHeader.fields, "Time")
         self.networkTimeField = findFieldInfo(NetworkHeader.fields, "Time")
         self.tmpRxHdr = ctypes.create_string_buffer(0)
+
+    def widget(self, index):
+        if index == 0:
+            return self.removeClient
+        if index == 1:
+            return self.statusLabel
+        return None
+
+    def onDisconnected(self):
+        self.disconnected.emit(self)
 
     def start(self):
         if self.serialPort.open(QSerialPort.ReadWrite):
