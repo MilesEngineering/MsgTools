@@ -60,12 +60,17 @@ class MsgPlot:
         self.timeArray = []
         self.curve = self.myPlot.plot(self.timeArray, self.dataArray)
         self.ptr1 = 0
+        self.useHeaderTime = 0
 
     def addData(self, message_buffer):
         # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
         newDataPoint = Messaging.getFloat(message_buffer, self.fieldInfo, self.fieldSubindex)
         try:
             newTime = float(Messaging.hdr.GetTime(message_buffer)/1000.0)
+            if newTime != 0:
+                self.useHeaderTime = 1
+            if not self.useHeaderTime:
+                newTime = elapsedSeconds()
         except AttributeError:
             # if header has no time, fallback to PC time.
             newTime = elapsedSeconds()
