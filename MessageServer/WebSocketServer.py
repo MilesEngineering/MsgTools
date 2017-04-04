@@ -20,7 +20,7 @@ class WebSocketClientConnection(QObject):
         self.webSocket.binaryMessageReceived.connect(self.processBinaryMessage)
         self.webSocket.disconnected.connect(self.onDisconnected)
 
-        self.name("Web Client " + self.webSocket.peerAddress().toString())
+        self.name = "Web Client " + self.webSocket.peerAddress().toString()
         self.statusLabel.setText(self.name)
 
     def widget(self, index):
