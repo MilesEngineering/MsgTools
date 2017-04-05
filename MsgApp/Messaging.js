@@ -1,8 +1,8 @@
 function toJSON(obj) {
     console.log("JSON for " + obj.MSG_NAME + ", ID=",+obj.MSG_ID+", "+obj.MSG_SIZE+" bytes")
-    var jsonStr = '"'+obj.MsgName()+'": ';
+    var jsonStr = '{"'+obj.MsgName()+'": ';
     jsonStr += JSON.stringify(obj.toObject());
-    
+    jsonStr += '}'
     return jsonStr;
 }
 
