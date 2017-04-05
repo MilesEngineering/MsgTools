@@ -27,6 +27,9 @@ classdef MessageClient
             % subMsg = Messages.Network.MaskedSubscription;
             % obj.SendMsg(subMsg);
         end
+        function delete(~)
+            clear obj.clientSocket;
+        end
         function ret = GetMsg(obj)
             %fprintf('Waiting for %d header bytes\n', obj.hdrObj.SIZE);
             hdrData = read(obj.clientSocket, obj.hdrObj.SIZE);
@@ -44,26 +47,32 @@ classdef MessageClient
                 ret = [];
             end
         end
-        function SendMsg(obj, msg)
+        function SendMsg(obj, msg, length)
             hdr = feval(obj.hdrClass.Name);
             hdr.MessageID = msg.MSG_ID;
-            hdr.DataLength = msg.MSG_SIZE;
+            if(nargin > 2)
+                hdr.DataLength = length;
+            else
+                hdr.DataLength = msg.MSG_SIZE;
+            end
             % hdr.DataLength = length(msg.m_data);
             write(obj.clientSocket, hdr.m_data);
-            write(obj.clientSocket, msg.m_data);
+            if(hdr.DataLength > 0)
+                write(obj.clientSocket, msg.m_data);
+            end
+        end
+        function SubscribeToMessage(obj,id,mask)
+            subMsg = Messages.Network.MaskedSubscription;
+            if(nargin > 2)
+                subMsg.Mask = mask;
+            elseif(nargin > 1)
+                subMsg.Mask = bitcmp(0);
+            end
+            subMsg.Value = id;
+            obj.SendMsg(subMsg);
         end
         function PrintMessages(obj, id, mask)
-            if(nargin > 2)
-                subMsg = Messages.Network.MaskedSubscription;
-                subMsg.Mask = mask;
-                subMsg.Value = id;
-                obj.SendMsg(subMsg);
-            elseif(nargin > 1)
-                subMsg = Messages.Network.MaskedSubscription;
-                subMsg.Value = id;
-                subMsg.Mask = bitcmp(0);
-                obj.SendMsg(subMsg);
-            end
+            obj.SubscribeToMessage(id,mask);
             while(1)
                 msg = obj.GetMsg()
                 if isempty(msg)
