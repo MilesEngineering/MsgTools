@@ -6,6 +6,7 @@ from Messaging import *
 class TcpClientConnection(QObject):
     disconnected = QtCore.pyqtSignal(object)
     messagereceived = QtCore.pyqtSignal(object)
+    statusUpdate = QtCore.pyqtSignal(str)
 
     def __init__(self, tcpSocket):
         super(TcpClientConnection, self).__init__(None)
@@ -33,31 +34,24 @@ class TcpClientConnection(QObject):
     def onReadyRead(self):
         inputStream = QtCore.QDataStream(self.tcpSocket)
 
-        while(self.tcpSocket.bytesAvailable() > 0):
-            # read the header, unless we have the header
-            if(len(self.rxBuffer) < Messaging.hdrSize):
+        while(1):
+            if len(self.rxBuffer) < Messaging.hdrSize:
+                if self.tcpSocket.bytesAvailable() < Messaging.hdrSize:
+                    return
                 self.rxBuffer += inputStream.readRawData(Messaging.hdrSize - len(self.rxBuffer))
-            
-            # if we still don't have the header, break
-            if(len(self.rxBuffer) < Messaging.hdrSize):
-                return
-            
-            # need to decode body len to read the body
-            bodyLen = Messaging.hdr.GetDataLength(self.rxBuffer)
-            
-            # read the body, unless we have the body
-            if(len(self.rxBuffer) < Messaging.hdrSize + bodyLen):
-                self.rxBuffer += inputStream.readRawData(Messaging.hdrSize + bodyLen - len(self.rxBuffer))
-            
-            # if we still don't have the body, break
-            if(len(self.rxBuffer) < Messaging.hdrSize + bodyLen):
-                return
-            
-            # if we got this far, we have a whole message! So, emit the signal
-            self.messagereceived.emit(self.rxBuffer)
 
-            # then clear the buffer, so we start over on the next message
-            self.rxBuffer = bytearray()
+            if len(self.rxBuffer) >= Messaging.hdrSize:
+                bodyLen = Messaging.hdr.GetDataLength(self.rxBuffer)
+                if len(self.rxBuffer)+self.tcpSocket.bytesAvailable() < Messaging.hdrSize + bodyLen:
+                    return
+
+                self.rxBuffer += inputStream.readRawData(Messaging.hdrSize + bodyLen - len(self.rxBuffer))
+
+                # if we got this far, we have a whole message! So, emit the signal
+                self.messagereceived.emit(self.rxBuffer)
+
+                # then clear the buffer, so we start over on the next message
+                self.rxBuffer = bytearray()
 
     def onDisconnected(self):
         self.disconnected.emit(self)
@@ -83,6 +77,7 @@ class TcpServer(QObject):
     def onNewTcpConnection(self):
         connection = TcpClientConnection(self.tcpServer.nextPendingConnection())
         self.newConnection.emit(connection)
+        connection.statusUpdate.connect(self.clientStatusUpdate)
 
     def serverInfo(self):
         # Show IP address and port number in status bar
@@ -96,3 +91,6 @@ class TcpServer(QObject):
         name = name[:-1]
         name += " : " + str(self.portNumber)
         return name
+
+    def clientStatusUpdate(self, msg):
+        self.statusUpdate.emit(msg)
