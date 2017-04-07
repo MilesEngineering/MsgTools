@@ -14,6 +14,9 @@ class TcpClientConnection(QObject):
         self.removeClient = QtWidgets.QPushButton("Remove")
         self.removeClient.pressed.connect(lambda: self.tcpSocket.close())
         self.statusLabel = QtWidgets.QLabel()
+        self.subscriptions = {}
+        self.subMask = ~0
+        self.subValue = 0
         
         self.tcpSocket = tcpSocket
         self.tcpSocket.readyRead.connect(self.onReadyRead)

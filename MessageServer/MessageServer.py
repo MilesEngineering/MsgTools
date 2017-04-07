@@ -115,18 +115,27 @@ class MessageServer(QtWidgets.QMainWindow):
             self.onStatusUpdate("cnx not in list!")
 
     def onMessageReceived(self, message):
-        clientThatReceivedMsg = self.sender()
+        c = self.sender()
         # check for name, subscription, etc.
         if Messaging.hdr.GetMessageID(message) == self.connectClass.ID:
-            clientThatReceivedMsg.name = self.connectClass.GetName(message)
-            clientThatReceivedMsg.statusLabel.setText(clientThatReceivedMsg.name)
+            c.name = self.connectClass.GetName(message)
+            c.statusLabel.setText(c.name)
         elif Messaging.hdr.GetMessageID(message) == self.subscriptionListClass.ID:
-            pass
+            c.subscriptions = {}
+            for idx in range(0,self.subscriptionListClass.GetIDs.count):
+                id = self.subscriptionListClass.GetIDs(message, idx)
+                if id != 0:
+                    c.subscriptions[id] = id
+            self.onStatusUpdate("updating subscription for "+c.name+" to " + ', '.join(hex(x) for x in c.subscriptions.keys()))
         elif Messaging.hdr.GetMessageID(message) == self.maskedSubscriptionClass.ID:
-            pass
+            c.subMask = self.maskedSubscriptionClass.GetMask(message)
+            c.subValue = self.maskedSubscriptionClass.GetValue(message)
+            self.onStatusUpdate("updating subscription for "+c.name+" to id & " + hex(c.subMask) + " == " + hex(c.subValue))
         for client in self.clients.values():
-            if client != clientThatReceivedMsg:
-                client.sendMsg(message)
+            if client != c:
+                id = Messaging.hdr.GetMessageID(message)
+                if id in c.subscriptions or (id & c.subMask == c.subValue):
+                    client.sendMsg(message)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

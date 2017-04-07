@@ -15,6 +15,9 @@ class WebSocketClientConnection(QObject):
         self.removeClient = QtWidgets.QPushButton("Remove")
         self.removeClient.pressed.connect(lambda: self.webSocket.close())
         self.statusLabel = QtWidgets.QLabel()
+        self.subscriptions = {}
+        self.subMask = ~0
+        self.subValue = 0
 
         self.webSocket = webSocket
         self.webSocket.binaryMessageReceived.connect(self.processBinaryMessage)

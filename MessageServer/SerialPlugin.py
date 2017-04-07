@@ -47,6 +47,9 @@ class SerialConnection(QObject):
         self.pushButton = QtWidgets.QPushButton("button")
         self.pushButton.pressed.connect(self.onButtonPress)
         self.statusLabel = QtWidgets.QLabel()
+        self.subscriptions = {}
+        self.subMask = 0
+        self.subValue = 0
 
         self.portName = portName
         self.serialPort = QSerialPort(portName)
