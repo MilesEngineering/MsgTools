@@ -14,7 +14,8 @@ import ctypes
 
 def Crc16(data):
     crc = 0;
-    for d in data:
+    for i in range(0,len(data)):
+        d = struct.unpack_from('B', data, i)[0]
         crc = (crc >> 8) | (crc << 8)
         crc ^= d
         crc ^= (crc & 0xff) >> 4
