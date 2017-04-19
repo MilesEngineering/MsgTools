@@ -36,20 +36,22 @@ class MessageServer(QtWidgets.QMainWindow):
         self.wsServer.statusUpdate.connect(self.onStatusUpdate)
         self.wsServer.newConnection.connect(self.onNewConnection)
 
-        options = ['serial=', 'bluetooth=']
+        options = ['serial=', 'bluetoothSPP=']
         self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
         for opt in self.optlist:
             if opt[0] == '--serial':
+                from SerialHeader import SerialHeader
                 from SerialPlugin import SerialConnection
                 serialPortName = opt[1]
-                self.serialPort = SerialConnection(serialPortName)
+                self.serialPort = SerialConnection(SerialHeader, serialPortName)
                 self.serialPort.statusUpdate.connect(self.onStatusUpdate)
                 self.onNewConnection(self.serialPort)
                 self.serialPort.start()
-            elif opt[0] == '--bluetooth':
-                from BluetoothPlugin import BluetoothConnection
+            elif opt[0] == '--bluetoothSPP':
+                from BluetoothHeader import BluetoothHeader
+                from SerialPlugin import SerialConnection
                 bluetoothPortName = opt[1]
-                self.bluetoothPort = BluetoothConnection(bluetoothPortName)
+                self.bluetoothPort = SerialConnection(BluetoothHeader, bluetoothPortName)
                 self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
                 self.onNewConnection(self.bluetoothPort)
                 self.bluetoothPort.start()
