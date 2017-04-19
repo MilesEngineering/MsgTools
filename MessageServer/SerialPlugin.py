@@ -230,6 +230,8 @@ class SerialConnection(QObject):
         self.messagereceived.emit(dbmsg.raw)
 
     def sendMsg(self, msg):
+        if Messaging.hdr.GetMessageID(msg) > 0xFFFFF:
+            return
         bodyLen = Messaging.hdr.GetDataLength(msg)
         serialHdr = self.hdr.Create()
         #set hdr fields that exist in network and serial
