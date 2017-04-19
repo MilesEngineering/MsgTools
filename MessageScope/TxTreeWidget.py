@@ -234,7 +234,10 @@ class MessageItem(QTreeWidgetItem):
         self.addChild(headerTreeItemParent)
 
         for headerFieldInfo in Messaging.hdr.fields:
-            headerFieldTreeItem = child_constructor(Messaging.hdr, self.msg_buffer_wrapper, headerFieldInfo)
+            if headerFieldInfo.bitfieldInfo != None:
+                headerFieldTreeItem = child_bitfield_constructor(tree_widget, Messaging.hdr, self.msg_buffer_wrapper, headerFieldInfo)
+            else:
+                headerFieldTreeItem = child_constructor(Messaging.hdr, self.msg_buffer_wrapper, headerFieldInfo)
             headerTreeItemParent.addChild(headerFieldTreeItem)
 
         for fieldInfo in self.msg_class.fields:
