@@ -136,7 +136,7 @@ class MessageServer(QtWidgets.QMainWindow):
         for client in self.clients.values():
             if client != c:
                 id = Messaging.hdr.GetMessageID(message)
-                if id in c.subscriptions or (id & c.subMask == c.subValue):
+                if id in client.subscriptions or (id & client.subMask == client.subValue):
                     client.sendMsg(message)
 
 if __name__ == "__main__":
