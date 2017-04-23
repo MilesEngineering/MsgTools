@@ -151,6 +151,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.rx_msg_widgets = {}
         rxMessagesTreeWidget = QTreeWidget(parent)
         rxMessagesTreeWidget.setColumnCount(4)
+        rxMessagesTreeWidget.setDragEnabled(1)
         rxMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
         rxMessagesTreeWidget.setHeaderItem(rxMsgsHeader)
         rxMessagesTreeWidget.itemDoubleClicked.connect(self.onRxMessageFieldSelected)
@@ -223,9 +224,7 @@ class MessageScopeGui(MsgGui.MsgGui):
                     if plot.fieldInfo == fieldInfo and plot.fieldSubindex == fieldIndex:
                         alreadyThere = True
                 if not alreadyThere:
-                    plotName = msg_class.MsgName() + "." + fieldInfo.name
-                    if fieldInfo.count != 1:
-                        plotName += "[" + str(fieldIndex) + "]"
+                    plotName = msg_class.MsgName()
                     if plottingLoaded:
                         msgPlot = MsgPlot(msg_class, fieldInfo, fieldIndex)
                         # add a tab for new plot
@@ -236,7 +235,6 @@ class MessageScopeGui(MsgGui.MsgGui):
                         self.addDockWidget(Qt.RightDockWidgetArea, dock)
                         plotListForID.append(msgPlot)
         except AttributeError:
-            #print("caught exception AttributeError")
             pass
     
     def MsgRoute(self, msg_buffer):
