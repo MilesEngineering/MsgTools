@@ -214,15 +214,18 @@ class MessageScopeGui(MsgGui.MsgGui):
                 if isinstance(rxWidgetItem, TxTreeWidget.FieldArrayItem):
                     fieldIndex = rxWidgetItem.index
                 msg_class = rxWidgetItem.msg_class
+                msg_id = hex(Messaging.hdr.GetMessageID(rxWidgetItem.msg_buffer_wrapper["msg_buffer"]))
                 plotListForID = []
-                if msg_class.ID in self.msgPlots:
-                    plotListForID = self.msgPlots[msg_class.ID]
+                msg_key = ",".join(self.MsgRoute(rxWidgetItem.msg_buffer_wrapper["msg_buffer"])) + "," + msg_id
+                if msg_key in self.msgPlots:
+                    plotListForID = self.msgPlots[msg_key]
                 else:
-                    self.msgPlots[msg_class.ID] = plotListForID
+                    self.msgPlots[msg_key] = plotListForID
                 alreadyThere = False
                 for plot in plotListForID:
-                    if plot.fieldInfo == fieldInfo and plot.fieldSubindex == fieldIndex:
-                        alreadyThere = True
+                    for line in plot.lines:
+                        if line.fieldInfo == fieldInfo and line.fieldSubindex == fieldIndex:
+                            alreadyThere = True
                 if not alreadyThere:
                     plotName = msg_class.MsgName()
                     if plottingLoaded:
@@ -268,7 +271,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         
         self.display_message_in_rx_list(msg_key, msg_name, msg_buffer)
         self.display_message_in_rx_tree(msg_key, msg_name, msg_class, msg_buffer)
-        self.display_message_in_plots(msg_class, msg_buffer)
+        self.display_message_in_plots(msg_key, msg_buffer)
 
     def onRxListDoubleClicked(self, rxListItem):
         msg_key = rxListItem.msg_key
@@ -331,14 +334,11 @@ class MessageScopeGui(MsgGui.MsgGui):
         if msg_key in self.rx_msg_widgets:
             self.rx_msg_widgets[msg_key].set_msg_buffer(msg_buffer)
     
-    def display_message_in_plots(self, msg_class, msg_buffer):
+    def display_message_in_plots(self, msg_key, msg_buffer):
         try:
-            #print("checking for plots of " + str(msg_class.ID))
-            if msg_class.ID in self.msgPlots:
-                #print("found list of plots for " + str(msg_class.ID))
-                plotListForID = self.msgPlots[msg_class.ID]
+            if msg_key in self.msgPlots:
+                plotListForID = self.msgPlots[msg_key]
                 for plot in plotListForID:
-                    #print("found plot of " + msg_class.MsgName() + "." + plot.fieldInfo.name + "[" + str(plot.fieldSubindex) + "]")
                     plot.addData(msg_buffer)
         except AttributeError:
             pass
