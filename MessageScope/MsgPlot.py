@@ -3,6 +3,10 @@
 Plot message data in scrolling window
 """
 
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
@@ -12,7 +16,7 @@ srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
 
 import sys
 # import the MsgApp baseclass, for messages, and network I/O
-sys.path.append(srcroot+"/../MsgApp")
+sys.path.append(srcroot+"/MsgApp")
 from Messaging import Messaging
 
 from datetime import datetime
@@ -131,29 +135,80 @@ class MsgPlot:
                 line.curve.setData(line.timeArray, line.dataArray)
                 line.curve.setPos(line.ptr1, 0)
 
-try:
-    sys.path.append(srcroot+"/../obj/CodeGenerator/Python/Test")
-    from TestMsg1 import TestMsg1
-except:
-    pass
+import MsgGui
 
-def onTimeout():
-    messageBuffer = TestMessage1.Create()
-    newDataPoint =  np.random.normal()
-    Messaging.set(messageBuffer, TestMessage1.fields[1], newDataPoint, 0)
-    msgPlot.addData(messageBuffer)
+def findFieldInfo(fieldInfos, name):
+    for fi in fieldInfos:
+        if len(fi.bitfieldInfo) == 0:
+            if name == fi.name:
+                return fi
+        else:
+            for bfi in fi.bitfieldInfo:
+                if name == bfi.name:
+                    return bfi
+    return None
 
-## Start Qt event loop unless running in interactive mode or using pyside.
+class MessagePlotGui(MsgGui.MsgGui):
+    def __init__(self, argv, parent=None):
+        MsgGui.MsgGui.__init__(self, "Message Plot 0.1", argv, [], parent)
+        from UnknownMsg import UnknownMsg
+        self.unknownMsg = UnknownMsg
+
+        vbox = QVBoxLayout()
+        centralWidget = QWidget()
+        centralWidget.setLayout(vbox)
+        self.setCentralWidget(centralWidget)
+        self.msgPlots = {}
+        self.RxMsg.connect(self.ProcessMessage)
+
+        if len(sys.argv) < 1:
+            sys.stderr.write('Usage: ' + sys.argv[0] + ' msg1=field1[,field2] [msg2=field1,field2,field3]\n')
+            sys.exit(1)
+        
+        for arg in argv[1:]:
+            argComponentList = arg.split("=")
+            msgName = argComponentList[0]
+            fieldNameList = argComponentList[1]
+
+            msgClass = Messaging.MsgClassFromName[msgName]
+            
+            fieldNames = fieldNameList.split(",")
+            firstField = 1
+            for fieldName in fieldNames:
+                fieldInfo = findFieldInfo(msgClass.fields, fieldName)
+                if fieldInfo != None:
+                    if firstField:
+                        plot = MsgPlot(msgClass, fieldInfo, 0)
+                        vbox.addWidget(plot.plotWidget)
+                        firstField = 0
+                        plotListForID = []
+                        if msgClass.ID in self.msgPlots:
+                            plotListForID = self.msgPlots[msgClass.ID]
+                        else:
+                            self.msgPlots[msgClass.ID] = plotListForID
+                        plotListForID.append(plot)
+                    else:
+                        plot.addPlot(msgClass, fieldInfo, 0)
+
+    def ProcessMessage(self, msg_buffer):
+        msg_id = hex(Messaging.hdr.GetMessageID(msg_buffer))
+
+        if msg_id in Messaging.MsgNameFromID:
+            msg_name = Messaging.MsgNameFromID[msg_id]
+            msgClass = Messaging.MsgClassFromName[msg_name]
+
+        #msg_key = ",".join(self.MsgRoute(msg_buffer)) + "," + msg_id
+        try:
+            if msgClass.ID in self.msgPlots:
+                plotListForID = self.msgPlots[msgClass.ID]
+                for plot in plotListForID:
+                    plot.addData(msg_buffer)
+        except AttributeError:
+            pass
+
+# main starts here
 if __name__ == '__main__':
-    
-    msgdir = srcroot+"/../obj/CodeGenerator/Python/"
-    msgLib = Messaging(msgdir, 0)
-    
-    msgPlot = MsgPlot(TestMessage1, TestMessage1.fields[1], 0)
-    
-    timer = pg.QtCore.QTimer()
-    timer.timeout.connect(onTimeout)
-    timer.start(50)
-    
-    if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-        QtGui.QApplication.instance().exec_()
+    app = QApplication(sys.argv)
+    gui = MessagePlotGui(sys.argv)
+    gui.show()    
+    sys.exit(app.exec_())
