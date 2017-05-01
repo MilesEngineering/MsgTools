@@ -121,6 +121,7 @@ class MsgInspector(MsgGui.MsgGui):
 
     def tableDataDoubleClicked(self, treeWidgetItem, column):
         self.autoscroll = not self.autoscroll
+        self.scrollAction.setChecked(self.autoscroll)
 
     def ShowMessage(self, msg):
         # default to NOT printing body as hex
