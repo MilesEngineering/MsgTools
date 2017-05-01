@@ -18,11 +18,11 @@ class <MSGNAME> :
     <ENUMERATIONS>
     
     @staticmethod
-    def Create() :
-        message_buffer = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + <MSGNAME>.SIZE)
+    def Create(packetLen=<MSGSIZE>):
+        message_buffer = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + packetLen)
 
         Messaging.hdr.SetMessageID(message_buffer, <MSGNAME>.ID)
-        Messaging.hdr.SetDataLength(message_buffer, <MSGNAME>.SIZE)
+        Messaging.hdr.SetDataLength(message_buffer, packetLen)
 
         <INIT_CODE>
         return message_buffer
