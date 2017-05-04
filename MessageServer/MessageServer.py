@@ -36,7 +36,7 @@ class MessageServer(QtWidgets.QMainWindow):
         self.wsServer.statusUpdate.connect(self.onStatusUpdate)
         self.wsServer.newConnection.connect(self.onNewConnection)
 
-        options = ['serial=', 'bluetoothSPP=']
+        options = ['serial=', 'bluetoothSPP=', 'plugin=']
         self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
         for opt in self.optlist:
             if opt[0] == '--serial':
@@ -55,6 +55,17 @@ class MessageServer(QtWidgets.QMainWindow):
                 self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
                 self.onNewConnection(self.bluetoothPort)
                 self.bluetoothPort.start()
+            elif opt[0] == '--plugin':
+                filename = opt[1]
+                moduleName = os.path.splitext(os.path.basename(filename))[0]
+                if Messaging.debug:
+                    print("loading module ", filename, "as",moduleName)
+                self.plugin = imp.load_source(filename.replace("/", "_"), filename)
+
+                self.pluginPort = self.plugin.PluginConnection()
+                self.pluginPort.statusUpdate.connect(self.onStatusUpdate)
+                self.pluginPort.newConnection.connect(self.onNewConnection)
+                self.pluginPort.start()
 
         self.tcpServer.start()
         self.wsServer.start()
