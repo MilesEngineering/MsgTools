@@ -65,7 +65,7 @@ def CommonSubdir(f1, f2):
             break
 
     # strip slashes at ends
-    return subdirComponent.strip("/")
+    return subdirComponent.strip("/").strip("\\")
 
 def ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename):
     # read the input file
