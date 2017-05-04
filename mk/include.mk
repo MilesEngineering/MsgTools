@@ -23,11 +23,13 @@ UNAME:=Cygwin
 endif
 
 ifeq ($(UNAME),Cygwin)
+CYGPATH = $(shell cygpath -m "$1")
 WINBUILDROOT:=$(shell cygpath -m $(BUILDROOT))
 ESCWINBUILDROOT:=$(subst \,\\,$(WINBUILDROOT))
 WINCURDIR:=$(subst /,\\,$(shell cygpath -m $(CURDIR)))
 WINCURDIR:=$(subst /,\\,$(WINCURDIR))
 else
+CYGPATH = $1
 WINBUILDROOT:=$(BUILDROOT)
 ESCWINBUILDROOT:=$(BUILDROOT)
 WINCURDIR:=$(CURDIR)
