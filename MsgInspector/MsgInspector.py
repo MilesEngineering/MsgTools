@@ -218,6 +218,9 @@ class MsgInspector(MsgGui.MsgGui):
                 alert = 0
                 for i in range(0,fieldInfo.count):
                     fieldValue = Messaging.get(msg, fieldInfo, i)
+                    # if the value is what is given when we go off the end of an array, break.
+                    if fieldInfo.type == "int" and fieldValue == "UNALLOCATED":
+                        break
                     columnText += str(fieldValue)
                     if Messaging.getAlert(msg, fieldInfo, i):
                         alert = 1
