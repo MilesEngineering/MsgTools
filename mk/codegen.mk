@@ -4,7 +4,7 @@ debug:
 ifeq ($(UNAME),Cygwin)
 PYTHON=python.exe
 else
-PYTHON=python
+PYTHON=python3
 endif
 
 PARSER=$(PYTHON) $(CG_DIR)MsgParser.py
