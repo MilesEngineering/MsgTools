@@ -137,17 +137,6 @@ class MsgPlot:
 
 import MsgGui
 
-def findFieldInfo(fieldInfos, name):
-    for fi in fieldInfos:
-        if len(fi.bitfieldInfo) == 0:
-            if name == fi.name:
-                return fi
-        else:
-            for bfi in fi.bitfieldInfo:
-                if name == bfi.name:
-                    return bfi
-    return None
-
 class MessagePlotGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Plot 0.1", argv, [], parent)
@@ -175,7 +164,7 @@ class MessagePlotGui(MsgGui.MsgGui):
             fieldNames = fieldNameList.split(",")
             firstField = 1
             for fieldName in fieldNames:
-                fieldInfo = findFieldInfo(msgClass.fields, fieldName)
+                fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
                 if fieldInfo != None:
                     if firstField:
                         plot = MsgPlot(msgClass, fieldInfo, 0)

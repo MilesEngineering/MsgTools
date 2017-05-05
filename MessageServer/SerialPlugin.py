@@ -24,17 +24,6 @@ def Crc16(data):
         crc = 0xFFFF & crc
     return crc
 
-def findFieldInfo(fieldInfos, name):
-    for fi in fieldInfos:
-        if len(fi.bitfieldInfo) == 0:
-            if name == fi.name:
-                return fi
-        else:
-            for bfi in fi.bitfieldInfo:
-                if name == bfi.name:
-                    return bfi
-    return None
-    
 class SerialConnection(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     messagereceived = QtCore.pyqtSignal(object)
@@ -72,16 +61,16 @@ class SerialConnection(QObject):
         self.correspondingFields = []
         for serialFieldInfo in hdr.fields:
             if len(serialFieldInfo.bitfieldInfo) == 0:
-                nfi = findFieldInfo(NetworkHeader.fields, serialFieldInfo.name)
+                nfi = Messaging.findFieldInfo(NetworkHeader.fields, serialFieldInfo.name)
                 if nfi != None:
                     self.correspondingFields.append([serialFieldInfo, nfi])
             else:
                 for serialBitfieldInfo in serialFieldInfo.bitfieldInfo:
-                    nfi = findFieldInfo(NetworkHeader.fields, serialBitfieldInfo.name)
+                    nfi = Messaging.findFieldInfo(NetworkHeader.fields, serialBitfieldInfo.name)
                     if nfi != None:
                         self.correspondingFields.append([serialBitfieldInfo, nfi])
 
-        self.serialStartSeqField = findFieldInfo(hdr.fields, "StartSequence")
+        self.serialStartSeqField = Messaging.findFieldInfo(hdr.fields, "StartSequence")
         if self.serialStartSeqField != None:
             self.startSequence = int(hdr.GetStartSequence.default)
             self.startSeqSize = int(hdr.GetStartSequence.size)
@@ -89,8 +78,8 @@ class SerialConnection(QObject):
             self.hdrCrcRegion = int(hdr.GetHeaderChecksum.offset)
         except AttributeError:
             self.hdrCrcRegion = None
-        self.serialTimeField = findFieldInfo(hdr.fields, "Time")
-        self.networkTimeField = findFieldInfo(NetworkHeader.fields, "Time")
+        self.serialTimeField = Messaging.findFieldInfo(hdr.fields, "Time")
+        self.networkTimeField = Messaging.findFieldInfo(NetworkHeader.fields, "Time")
         self.tmpRxHdr = ctypes.create_string_buffer(0)
 
     def widget(self, index):

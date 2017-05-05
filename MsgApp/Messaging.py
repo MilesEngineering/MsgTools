@@ -164,6 +164,18 @@ class Messaging:
             pass
         return alert
 
+    @staticmethod
+    def findFieldInfo(fieldInfos, name):
+        for fi in fieldInfos:
+            if len(fi.bitfieldInfo) == 0:
+                if name == fi.name:
+                    return fi
+            else:
+                for bfi in fi.bitfieldInfo:
+                    if name == bfi.name:
+                        return bfi
+        return None
+
 class BitFieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum):
         self.name=name
