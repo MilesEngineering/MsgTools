@@ -94,7 +94,6 @@ class MessageServer(QtWidgets.QMainWindow):
         self.statusBar()
 
     def onStatusUpdate(self, message):
-        #self.statusBar().showMessage(message)
         self.statusBox.appendPlainText(message)
 
     def onNewConnection(self, newConnection):

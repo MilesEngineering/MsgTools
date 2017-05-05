@@ -20,12 +20,12 @@ Invoke like this
     
 where FILENAME is the name of the log file you'd like to split into CSV.
 
-If the file extension is .bin it will be assumed to be a og file created by MessageServer,
+If the file extension is .log it will be assumed to be a log file created by MessageServer,
 if the file extension is .txt it will be assumed to be a log file created by the SparkFun serial SD logger.
 Lumberjack will create a directory named after the input file, and put multiple .csv files (one per message)
 in that directory.''')
         
-        MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", [argv[0],"file"]+argv[1:], [], parent)
+        MsgGui.MsgGui.__init__(self, "Lumberjack 0.1", [argv[0],"file"]+argv[1:], [], parent)
         
         self.outputName = self.connectionName.replace('.log', '')
         self.outputName = self.outputName.replace('.txt', '')
@@ -82,6 +82,7 @@ in that directory.''')
 
             self._lastTimestamp = thisTimestamp
 
+            # instead of left shifting by 16, we should use the actual size in bits of the timestamp field!
             text = str((self._timestampOffset << 16) + thisTimestamp) + ", "
         except AttributeError:
             text = "unknown, "

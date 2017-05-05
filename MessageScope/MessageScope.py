@@ -158,7 +158,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         return rxMessagesTreeWidget
 
     def ReadTxDictionary(self):
-        print("Tx Dictionary:")
+        #print("Tx Dictionary:")
         for id in Messaging.MsgNameFromID:
             #print(Messaging.MsgNameFromID[id], "=", id)
             name = Messaging.MsgNameFromID[id]
