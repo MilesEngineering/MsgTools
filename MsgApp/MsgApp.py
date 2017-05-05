@@ -17,6 +17,7 @@ from Messaging import Messaging
 
 class MsgApp(QtWidgets.QMainWindow):
     RxMsg = QtCore.pyqtSignal(bytearray)
+    statusUpdate = QtCore.pyqtSignal(str)
     
     def __init__(self, name, headerName, argv, options):
         self.name = name
@@ -61,25 +62,13 @@ class MsgApp(QtWidgets.QMainWindow):
         msgdir = srcroot+"/../obj/CodeGenerator/Python/"
         self.msgLib = Messaging(msgdir, 0, headerName)
         
-        self.status = QtWidgets.QLabel("Initializing")
-        self.statusBar().addPermanentWidget(self.status)
-
         self.OpenConnection()
-        print("end of MsgApp.__init__")
 
     # this function opens a connection, and returns the connection object.
     def OpenConnection(self):
-        print("\n\ndone reading message definitions, opening the connection ", self.connectionType, " ", self.connectionName)
+        #print("\n\ndone reading message definitions, opening the connection ", self.connectionType, " ", self.connectionName)
 
         if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
-            connectAction = QtWidgets.QAction('&Connect', self)
-            disconnectAction = QtWidgets.QAction('&Disconnect', self)
-
-            menubar = self.menuBar()
-            connectMenu = menubar.addMenu('&Connect')
-            connectMenu.addAction(connectAction)
-            connectMenu.addAction(disconnectAction)
-
             (ip, port) = self.connectionName.split(":")
             if(ip == None):
                 ip = "127.0.0.1"
@@ -89,32 +78,16 @@ class MsgApp(QtWidgets.QMainWindow):
             
             port = int(port)
 
-            print("ip is ", ip, ", port is ", port)
-            if(self.connectionType.lower() == "socket"):
-                self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.connection.connected.connect(self.onConnected)
-                self.connection.disconnected.connect(self.onDisconnect)
-                self.readFn = self.connection.recv
-                self.sendFn = self.connection.write
-                self.connection.connect((ip, int(port)))
-                connectAction.triggered.connect(self.chooseHost)
-                disconnectAction.triggered.connect(self.connection.disconnect)
-                # die "Could not create socket: $!\n" unless $connection
-            elif(self.connectionType.lower() == "qtsocket"):
-                self.connection = QtNetwork.QTcpSocket(self)
-                self.connection.error.connect(self.displayError)
-                ret = self.connection.readyRead.connect(self.readRxBuffer)
-                self.connection.connectToHost(ip, port)
-                connectAction.triggered.connect(self.chooseHost)
-                disconnectAction.triggered.connect(self.connection. disconnectFromHost)
-                self.readFn = self.connection.read
-                self.sendFn = self.connection.write
-                #print("making connection returned", ret, "for socket", self.connection)
-                self.connection.connected.connect(self.onConnected)
-                self.connection.disconnected.connect(self.onDisconnect)
-            else:
-                print("\nERROR!\nneed to specify sockets of type 'socket' or 'qtsocket'")
-                sys.exit()
+            #print("ip is ", ip, ", port is ", port)
+            self.connection = QtNetwork.QTcpSocket(self)
+            self.connection.error.connect(self.displayConnectError)
+            ret = self.connection.readyRead.connect(self.readRxBuffer)
+            self.connection.connectToHost(ip, port)
+            self.readFn = self.connection.read
+            self.sendFn = self.connection.write
+            #print("making connection returned", ret, "for socket", self.connection)
+            self.connection.connected.connect(self.onConnected)
+            self.connection.disconnected.connect(self.onDisconnect)
             
         elif(self.connectionType.lower() == "file"):
             try:
@@ -129,22 +102,6 @@ class MsgApp(QtWidgets.QMainWindow):
 
         self.connection;
     
-    def chooseHost(self):
-        (hostIp, port) = self.connectionName.split(":")
-        if(hostIp == None):
-            hostIp = "127.0.0.1"
-
-        if(port == None):
-            port = "5678"
-        
-        port = int(port)
-
-        hostIp, ok = QInputDialog.getText(self, 'Connect',  'Server:', QLineEdit.Normal, hostIp)
-        if(self.connectionType.lower() == "socket"):
-            self.connection.connect(hostIp, int(port))
-        elif(self.connectionType.lower() == "qtsocket"):
-            self.connection.connectToHost(hostIp, port)
-    
     def onConnected(self):
         # send a connect message
         connectBuffer = self.msgLib.Connect.Connect.Create();
@@ -154,15 +111,13 @@ class MsgApp(QtWidgets.QMainWindow):
         # send a subscription message
         subscribeBuffer = self.msgLib.MaskedSubscription.MaskedSubscription.Create();
         self.sendFn(subscribeBuffer.raw);
-        self.status.setText('Connected')
+        self.statusUpdate.emit('Connected')
     
     def onDisconnect(self):
-        self.status.setText('*NOT* Connected')
+        self.statusUpdate.emit('*NOT* Connected')
     
-    #
-    def displayError(self, socketError):
-        self.status.setText('Not Connected('+str(socketError)+')')
-        print("Socket Error: " + str(socketError))
+    def displayConnectError(self, socketError):
+        self.statusUpdate.emit('Not Connected('+str(socketError)+')')
 
     # Qt signal/slot based reading of TCP socket
     def readRxBuffer(self):
@@ -197,10 +152,18 @@ class MsgApp(QtWidgets.QMainWindow):
             # then clear the buffer, so we start over on the next message
             self.rxBuf = bytearray()
 
-# this function reads messages, and calls the message handler.
+    # this function reads messages (perhaps from a file, like in LumberJack), and calls the message handler.
+    # unclear if it ever makes sense to use this in a application that talks to a socket or UART, because
+    # it exits when there's no more data.  Perhaps it does in a CLI that's very procedural, like an automated
+    # system test script?
     def MessageLoop(self):
         msgCount=0
-        startSequence=0xDEADBEEF
+        startSeqField = Messaging.findFieldInfo(Messaging.hdr.fields, "StartSequence")
+        if startSeqField == None:
+            print("header contains no StartSequence")
+        else:
+            startSequence = int(Messaging.hdr.GetStartSequence.default)
+            print("header contains StartSequence " + hex(startSequence))
         try:
             while (1):
                 msgCount+=1

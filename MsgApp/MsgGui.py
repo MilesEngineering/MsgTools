@@ -14,10 +14,38 @@ class MsgGui(MsgApp, QtWidgets.QMainWindow):
         QtWidgets.QMainWindow.__init__(self,parent)
         MsgApp.__init__(self, name, headerName, argv, options)
 
-        label = QtWidgets.QLabel("<font size=40></font>")
-        self.setCentralWidget(label)
-         
+        # make a status bar to print status messages
+        self.status = QtWidgets.QLabel("Initializing")
+        self.statusBar().addPermanentWidget(self.status)
+        # hook it up to our base class statusUpdate signal
+        self.statusUpdate.connect(self.status.setText)
+        
         self.resize(320, 240)
         self.setWindowTitle(self.name)
 
-        import Messaging
+        # create menu items, connect them to socket operations
+        if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
+            connectAction = QtWidgets.QAction('&Connect', self)
+            disconnectAction = QtWidgets.QAction('&Disconnect', self)
+
+            menubar = self.menuBar()
+            connectMenu = menubar.addMenu('&Connect')
+            connectMenu.addAction(connectAction)
+            connectMenu.addAction(disconnectAction)
+            connectAction.triggered.connect(self.chooseHost)
+            disconnectAction.triggered.connect(self.connection. disconnectFromHost)
+    
+    # open dialog box to choose host to connect to
+    def chooseHost(self):
+        (hostIp, port) = self.connectionName.split(":")
+        if(hostIp == None):
+            hostIp = "127.0.0.1"
+
+        if(port == None):
+            port = "5678"
+        
+        port = int(port)
+
+        hostIp, ok = QInputDialog.getText(self, 'Connect',  'Server:', QLineEdit.Normal, hostIp)
+        self.connection.connectToHost(hostIp, port)
+    
