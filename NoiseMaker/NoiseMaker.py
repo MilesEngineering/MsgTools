@@ -36,7 +36,7 @@ class NoiseMaker(MsgGui.MsgGui):
         self.msgPeriod = {}
         self.msgTxTime = {}
         for msgName in Messaging.MsgClassFromName:
-            print("found message " + msgName)
+            #print("found message " + msgName)
             self.msgPeriod[msgName] = period
             period = period + 200
             self.msgTxTime[msgName] = 0
