@@ -17,6 +17,9 @@ class MessageServer(QtWidgets.QMainWindow):
     def __init__(self, argv):
         QtWidgets.QMainWindow.__init__(self)
         
+        self.settings = QtCore.QSettings("MsgTools", "MessageServer")
+        self.logFile = None
+        
         srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
         msgdir = srcroot+"/../obj/CodeGenerator/Python/"
         self.msgLib = Messaging(msgdir, 0, "NetworkHeader")
@@ -73,14 +76,17 @@ class MessageServer(QtWidgets.QMainWindow):
         self.statusBar().addPermanentWidget(QtWidgets.QLabel(name))
 
     def initializeGui(self):
-
-        # Components
-        self.statusBox = QtWidgets.QPlainTextEdit()
-
         # Layout
         vbox = QtWidgets.QVBoxLayout()
         self.grid = QtWidgets.QGridLayout()
         vbox.addLayout(self.grid)
+
+        # Components
+        self.logButton = QtWidgets.QPushButton("Start Logging")
+        self.logButton.pressed.connect(self.onLogButtonClicked)
+        vbox.addWidget(self.logButton)
+
+        self.statusBox = QtWidgets.QPlainTextEdit()
         vbox.addWidget(self.statusBox)
 
         # Central Widget (QMainWindow limitation)
@@ -92,6 +98,24 @@ class MessageServer(QtWidgets.QMainWindow):
         self.setWindowTitle("MessageServer 0.1")
         self.setGeometry(300, 100, 800, 400)
         self.statusBar()
+    
+    def onLogButtonClicked(self):
+        if self.logFile != None:
+            self.logFile.close()
+            self.logFile = None
+            self.logButton.setText("Start Logging")
+        else:
+            currentDateTime = QtCore.QDateTime.currentDateTime()
+            defaultFilename = currentDateTime.toString("yyyyMMdd-hhmmss") + ".log"
+            logFileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save File", self.settings.value("logging/filename", ".")+"/"+defaultFilename, "Log Files (*.log)")
+            # if they hit cancel, don't do anything
+            if not logFileName:
+                return
+            self.logFile = QtCore.QFile(logFileName)
+            self.logFile.open(QtCore.QIODevice.Append)
+            fileInfo = QtCore.QFileInfo(logFileName)
+            self.settings.setValue("logging/filename", fileInfo.dir().absolutePath())
+            self.logButton.setText("Stop " + fileInfo.fileName())
 
     def onStatusUpdate(self, message):
         self.statusBox.appendPlainText(message)
@@ -143,6 +167,10 @@ class MessageServer(QtWidgets.QMainWindow):
             c.subMask = self.maskedSubscriptionClass.GetMask(message)
             c.subValue = self.maskedSubscriptionClass.GetValue(message)
             self.onStatusUpdate("updating subscription for "+c.name+" to id & " + hex(c.subMask) + " == " + hex(c.subValue))
+        else:
+            #write to log, if log is open
+            if self.logFile != None:
+                self.logFile.write(message)
         for client in self.clients.values():
             if client != c:
                 id = Messaging.hdr.GetMessageID(message)
