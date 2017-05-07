@@ -44,18 +44,8 @@ in that directory.''')
 
         self.messageCount = 0
 
-    def ProcessMessage(self, hdr):
+    def ProcessMessage(self, msg):
         self.messageCount += 1
-        # read the ID, and get the message name, so we can print stuff about the body
-        id       = hex(hdr.GetMessageID())
-        msgName = Messaging.MsgNameFromID[id]
-        msgClass = Messaging.MsgClassFromName[msgName]
-
-        if(msgClass == None):
-            print("WARNING!  No definition for ", id, "!\n")
-            return
-
-        msg = msgClass(hdr.rawBuffer())
 
         # if we write CSV to multiple files, we'd probably look up a hash table for this message id,
         # and open it and write a header
@@ -63,14 +53,14 @@ in that directory.''')
             outputFile = self.outputFiles[id]
         else:
             # create a new file
-            outputFile = open(self.outputName + "/" + msgName.replace("/","_") + ".csv", 'w')
+            outputFile = open(self.outputName + "/" + msg.MsgName().replace("/","_") + ".csv", 'w')
 
             # store a pointer to it, so we can find it next time (instead of creating it again)
             self.outputFiles[id] = outputFile
             
             # add table header, one column for each message field
             tableHeader = "Time (ms), "
-            for fieldInfo in msgClass.fields:
+            for fieldInfo in type(msg).fields:
                 tableHeader += fieldInfo.name + ", "
                 for bitInfo in fieldInfo.bitfieldInfo:
                     tableHeader += bitInfo.name + ", "
@@ -81,7 +71,7 @@ in that directory.''')
             # \todo Detect time rolling.  this only matters when we're processing a log file
             # with insufficient timestamp size, such that time rolls over from a large number
             # to a small one, during the log.
-            thisTimestamp = Messaging.hdr.GetTime(msg)
+            thisTimestamp = msg.hdr.GetTime(msg)
             if thisTimestamp < self._lastTimestamp:
                 self._timestampOffset+=1
 
@@ -92,7 +82,7 @@ in that directory.''')
         except AttributeError:
             text = "unknown, "
 
-        for fieldInfo in msgClass.fields:
+        for fieldInfo in type(msg).fields:
             if(fieldInfo.count == 1):
                 columnText = str(Messaging.get(msg, fieldInfo)) + ", "
                 for bitInfo in fieldInfo.bitfieldInfo:

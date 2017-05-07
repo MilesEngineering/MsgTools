@@ -73,13 +73,13 @@ class MsgPlot:
             for line in self.lines:
                 if item.fieldInfo == line.fieldInfo:
                     return
-            if item.fieldInfo.units == self.units and item.msg_class == self.msgClass:
+            if item.fieldInfo.units == self.units and type(item.msg) == self.msgClass:
                 fieldIndex = 0
                 try:
                     fieldIndex = item.index
                 except AttributeError:
                     pass
-                self.addPlot(item.msg_class, item.fieldInfo, fieldIndex)
+                self.addPlot(type(item.msg), item.fieldInfo, fieldIndex)
         except AttributeError:
             pass
 
@@ -140,8 +140,6 @@ import MsgGui
 class MessagePlotGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Plot 0.1", argv, [], parent)
-        from UnknownMsg import UnknownMsg
-        self.unknownMsg = UnknownMsg
 
         vbox = QVBoxLayout()
         centralWidget = QWidget()
@@ -180,16 +178,9 @@ class MessagePlotGui(MsgGui.MsgGui):
                         plot.addPlot(msgClass, fieldInfo, 0)
 
     def ProcessMessage(self, msg):
-        msg_id = hex(msg.hdr.GetMessageID())
-
-        if msg_id in Messaging.MsgNameFromID:
-            msg_name = Messaging.MsgNameFromID[msg_id]
-            msgClass = Messaging.MsgClassFromName[msg_name]
-
-        #msg_key = ",".join(self.MsgRoute(msg)) + "," + msg_id
         try:
             if msgClass.ID in self.msgPlots:
-                plotListForID = self.msgPlots[msgClass.ID]
+                plotListForID = self.msgPlots[msg.ID]
                 for plot in plotListForID:
                     plot.addData(msg)
         except AttributeError:

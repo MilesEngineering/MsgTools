@@ -7,6 +7,10 @@ import inspect
 # for better 'import' functionality
 import imp
 
+# for conversion to JSON
+from collections import OrderedDict
+import json
+
 # A decorator to specify units for fields
 def units(arg):
     def _units(fcn):
@@ -121,6 +125,21 @@ class Messaging:
         Messaging.MsgClassFromName[name] = classDef
 
     @staticmethod
+    def MsgFactory(hdr):
+        msgId = hex(hdr.GetMessageID())
+
+        if not msgId in Messaging.MsgNameFromID:
+            #print("WARNING! No definition for ", msg_id, "!\n")
+            from UnknownMsg import UnknownMsg
+            msgClass = UnknownMsg
+        else:
+            msgName = Messaging.MsgNameFromID[msgId]
+            msgClass = Messaging.MsgClassFromName[msgName]
+        
+        msg = msgClass(hdr.rawBuffer())
+        return msg
+
+    @staticmethod
     def set(msg, fieldInfo, value, index=0):
         if("int" in fieldInfo.type):
             value = int(float(value))
@@ -175,6 +194,25 @@ class Messaging:
                     if name == bfi.name:
                         return bfi
         return None
+
+    @staticmethod
+    def toJson(msg):
+        msgClass = type(msg)
+        pythonObj = OrderedDict()
+        for fieldInfo in msgClass.fields:
+            if(fieldInfo.count == 1):
+                if len(fieldInfo.bitfieldInfo) == 0:
+                    pythonObj[fieldInfo.name] = str(Messaging.get(msg, fieldInfo))
+                else:
+                    for bitInfo in fieldInfo.bitfieldInfo:
+                        pythonObj[bitInfo.name] = str(Messaging.get(msg, bitInfo))
+            else:
+                arrayList = []
+                for i in range(0,fieldInfo.count):
+                    arrayList.append(str(Messaging.get(msg, fieldInfo, i)))
+                pythonObj[fieldInfo.name] = arrayList
+
+        return json.dumps({msg.MsgName() : pythonObj})
 
 class BitFieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum):

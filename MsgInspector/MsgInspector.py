@@ -123,27 +123,10 @@ class MsgInspector(MsgGui.MsgGui):
         self.autoscroll = not self.autoscroll
         self.scrollAction.setChecked(self.autoscroll)
 
-    def ProcessMessage(self, hdr):
-        # default to NOT printing body as hex
-        printBodyAsHex = 0
-        # read the ID, and get the message name, so we can print stuff about the body
+    def ProcessMessage(self, msg):
+        hdr = msg.hdr
         id       = hex(hdr.GetMessageID())
-        if not id in Messaging.MsgNameFromID:
-            printBodyAsHex = 1
-            if(not(id in self.msgWidgets)):
-                print("WARNING! No definition for ", id, ", only displaying header!\n")
-            #return
-            msgName = "unknown "+id
-            msgClass = Messaging.hdr
-        else:
-            msgName = Messaging.MsgNameFromID[id]
-            msgClass = Messaging.MsgClassFromName[msgName]
-
-        if(msgClass == None):
-            print("WARNING!  No definition for ", id, "!\n")
-            return
-        
-        msg = msgClass(hdr.rawBuffer())
+        msgName = msg.MsgName()
 
         replaceMode = 0
         if self.allowedMessages:
@@ -177,12 +160,10 @@ class MsgInspector(MsgGui.MsgGui):
             # add table header, one column for each message field
             tableHeader = []
             tableHeader.append("Time (ms)")
-            for fieldInfo in msgClass.fields:
+            for fieldInfo in type(msg).fields:
                 tableHeader.append(fieldInfo.name)
                 for bitInfo in fieldInfo.bitfieldInfo:
                     tableHeader.append(bitInfo.name)
-            if printBodyAsHex:
-                tableHeader.append("Body")
             
             msgWidget.setHeaderLabels(tableHeader)
             
@@ -192,13 +173,13 @@ class MsgInspector(MsgGui.MsgGui):
         msgStringList = []
         columnAlerts = []
         try:
-            msgStringList.append(str(Messaging.hdr.GetTime(msg)))
+            msgStringList.append(str(msg.hdr.GetTime()))
         except AttributeError:
             msgStringList.append("Unknown")
         columnAlerts.append(0)
         keyColumn = -1
         columnCounter = 1
-        for fieldInfo in msgClass.fields:
+        for fieldInfo in type(msg).fields:
             if(fieldInfo.count == 1):
                 fieldValue = str(Messaging.get(msg, fieldInfo))
                 msgStringList.append(fieldValue)
@@ -231,11 +212,6 @@ class MsgInspector(MsgGui.MsgGui):
                 msgStringList.append(columnText)
                 columnAlerts.append(alert)
                 columnCounter += 1
-        if printBodyAsHex:
-            value = "0x"
-            for i in range(Messaging.hdrSize, len(msg)):
-                value += " " + format(struct.unpack_from('B', msg, i)[0], '02x')
-            msgStringList.append(value)
 
         msgItem = TreeWidgetItem(None,msgStringList)
         for column in range(0, len(columnAlerts)):
@@ -265,7 +241,7 @@ class MsgInspector(MsgGui.MsgGui):
                 self.msgWidgets[id].scrollToItem(msgItem)
         if firstTime:
             count = 0
-            for fieldInfo in msgClass.fields:
+            for fieldInfo in type(msg).fields:
                 msgWidget.resizeColumnToContents(count)
                 count += 1
 

@@ -97,15 +97,11 @@ filenames will be composed like so:
         # create a new file
         self.file = None
         
-    def ProcessMessage(self, hdr):
+    def ProcessMessage(self, msg):
         # if user specified allowed messages...
         if self.allowedMessages:
-            # read the ID, and get the message name, to check if it's allowed
-            id       = hex(Messaging.hdr.GetMessageID(msg))
-            msgName = Messaging.MsgNameFromID[id]
-        
             # only log this message if it's in that list
-            if not msgName in self.allowedMessages:
+            if not msg.MsgName() in self.allowedMessages:
                 return
 
         if self.file is not None:

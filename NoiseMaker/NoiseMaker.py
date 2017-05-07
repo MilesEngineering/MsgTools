@@ -38,7 +38,7 @@ class NoiseMaker(MsgGui.MsgGui):
         for msgName in Messaging.MsgClassFromName:
             #print("found message " + msgName)
             self.msgPeriod[msgName] = period
-            period = period + 200
+            period = period + 20
             self.msgTxTime[msgName] = 0
         
         self.msgTimer.start()
@@ -98,7 +98,7 @@ class NoiseMaker(MsgGui.MsgGui):
                         Messaging.set(msg, fieldInfo, self.fieldValue(fieldInfo), i)
         self.sendFn(msg.rawBuffer().raw)
 
-    def ProcessMessage(self, hdr):
+    def ProcessMessage(self, msg):
         pass
 
 # main starts here

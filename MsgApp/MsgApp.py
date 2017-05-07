@@ -150,7 +150,7 @@ class MsgApp(QtWidgets.QMainWindow):
                 return
             
             # if we got this far, we have a whole message! So, emit the signal
-            self.RxMsg.emit(hdr)
+            self.RxMsg.emit(Messaging.MsgFactory(hdr))
             # then clear the buffer, so we start over on the next message
             self.rxBuf = bytearray()
 
@@ -206,6 +206,6 @@ class MsgApp(QtWidgets.QMainWindow):
                 hdr = Messaging.hdr(self.rxBuf)
 
                 # got a complete message, call the callback to process it
-                self.ProcessMessage(hdr)
+                self.ProcessMessage(Messaging.MsgFactory(hdr))
         except StopIteration:
             print("found end of file, exited")

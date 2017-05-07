@@ -7,16 +7,28 @@ import Messaging as msg
 class UnknownMsg :
     MSG_OFFSET = Messaging.hdrSize
     
-    @staticmethod
-    def GetRawData(message_buffer, index):
+    def __init__(self, messageBuffer):
+        # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
+        self.msg_buffer_wrapper = { "msg_buffer": messageBuffer }
+
+        self.hdr = Messaging.hdr(messageBuffer)
+
+    def rawBuffer(self):
+        # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
+        return self.msg_buffer_wrapper["msg_buffer"]
+
+    def MsgName():
+        id = hex(self.hdr.GetMessageID())
+        return "Unknown_"+id
+
+    def GetRawData(index):
         """"""
-        value = struct.unpack_from('>B', message_buffer, UnknownMsg.MSG_OFFSET + index)[0]
-        return value
+        value = struct.unpack_from('>B', self.rawBuffer(), UnknownMsg.MSG_OFFSET + index)[0]
+        return hex(value)
         
-    @staticmethod
-    def SetRawData(message_buffer, value, index):
+    def SetRawData(value, index):
         """"""
-        struct.pack_into('>B', message_buffer, UnknownMsg.MSG_OFFSET + index, value)
+        struct.pack_into('>B', self.rawBuffer(), UnknownMsg.MSG_OFFSET + index, value)
     
     # Reflection information
     fields = [FieldInfo(name="rawData",type="int",units="",minVal="",maxVal="",description="",get=GetRawData,set=SetRawData,count=64, bitfieldInfo = [], enum = [])]

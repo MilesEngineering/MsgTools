@@ -71,8 +71,6 @@ class RxRateCalculatorThread(QObject):
 class MessageScopeGui(MsgGui.MsgGui):
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Scope 0.1", argv, [], parent)
-        from UnknownMsg import UnknownMsg
-        self.unknownMsg = UnknownMsg
 
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -192,7 +190,7 @@ class MessageScopeGui(MsgGui.MsgGui):
             message_class = Messaging.MsgClassFromName[messageName]
             messageObj = message_class() # invoke constructor
 
-            messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageObj)
+            messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(self.txMsgs, messageObj)
             messageTreeWidgetItem.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, msg):
@@ -214,9 +212,7 @@ class MessageScopeGui(MsgGui.MsgGui):
                 fieldIndex = 0
                 if isinstance(rxWidgetItem, TxTreeWidget.FieldArrayItem):
                     fieldIndex = rxWidgetItem.index
-                msg_class = rxWidgetItem.msg_class
-                hdr = rxWidgetItem.msg.hdr
-                msg_id = hex(hdr.GetMessageID())
+                msg_id = hex(rxWidgetItem.msg.hdr.GetMessageID())
                 plotListForID = []
                 msg_key = ",".join(self.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
                 if msg_key in self.msgPlots:
@@ -229,9 +225,9 @@ class MessageScopeGui(MsgGui.MsgGui):
                         if line.fieldInfo == fieldInfo and line.fieldSubindex == fieldIndex:
                             alreadyThere = True
                 if not alreadyThere:
-                    plotName = msg_class.MsgName()
+                    plotName = rxWidgetItem.msg.MsgName()
                     if plottingLoaded:
-                        msgPlot = MsgPlot(msg_class, fieldInfo, fieldIndex)
+                        msgPlot = MsgPlot(type(rxWidgetItem.msg), fieldInfo, fieldIndex)
                         # add a tab for new plot
                         dock = QDockWidget(plotName, self)
                         dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
@@ -260,46 +256,30 @@ class MessageScopeGui(MsgGui.MsgGui):
             pass
         return msg_route
 
-    def ProcessMessage(self, hdr):
+    def ProcessMessage(self, msg):
+        hdr = msg.hdr
         msg_id = hex(hdr.GetMessageID())
-
-        if not msg_id in Messaging.MsgNameFromID:
-            #print("WARNING! No definition for ", msg_id, "!\n")
-            msg_name = "unknown "+msg_id
-            msg_class = self.unknownMsg
-        else:
-            msg_name = Messaging.MsgNameFromID[msg_id]
-            msg_class = Messaging.MsgClassFromName[msg_name]
-        
-        msg = msg_class(hdr.rawBuffer())
 
         msg_key = ",".join(self.MsgRoute(msg)) + "," + msg_id
         
-        self.display_message_in_rx_list(msg_key, msg_name, msg)
-        self.display_message_in_rx_tree(msg_key, msg_name, msg_class, msg)
+        self.display_message_in_rx_list(msg_key, msg)
+        self.display_message_in_rx_tree(msg_key, msg)
         self.display_message_in_plots(msg_key, msg)
 
     def onRxListDoubleClicked(self, rxListItem):
-        msg_key = rxListItem.msg_key
-        msg_name = rxListItem.msg_name
-        msg = rxListItem.msg
-        try:
-            msg_class = Messaging.MsgClassFromName[msg_name]
-        except KeyError:
-            msg_class = self.unknownMsg
-        self.add_message_to_rx_tree(msg_key, msg_name, msg_class, msg)
+        self.add_message_to_rx_tree(rxListItem.msg_key, rxListItem.msg)
 
-    def display_message_in_rx_list(self, msg_key, msg_name, msg):
+    def display_message_in_rx_list(self, msg_key, msg):
         rx_time = datetime.datetime.now()
 
         if not msg_key in self.rx_msg_list:
-            widget_name = msg_name
+            widget_name = msg.MsgName()
             msg_route = self.MsgRoute(msg)
             if len(msg_route) > 0 and not(all ("0" == a for a in msg_route)):
                 widget_name += " ("+"->".join(msg_route)+")"
             msg_list_item = QTreeWidgetItem([ widget_name, str(rx_time), "- Hz" ])
             msg_list_item.msg_key = msg_key
-            msg_list_item.msg_name = msg_name
+            msg_list_item.msg = msg
 
             self.rx_message_list.addTopLevelItem(msg_list_item)
             self.rx_message_list.resizeColumnToContents(0)
@@ -329,14 +309,14 @@ class MessageScopeGui(MsgGui.MsgGui):
 
             self.rx_msg_list[msg_key].setText(2, output)
 
-    def add_message_to_rx_tree(self, msg_key, msg_name, msg_class, msg):
+    def add_message_to_rx_tree(self, msg_key, msg):
         if not msg_key in self.rx_msg_widgets:
-            msg_widget = TxTreeWidget.MessageItem(msg_name, self.rx_messages_widget, msg_class, msg)
+            msg_widget = TxTreeWidget.MessageItem(self.rx_messages_widget, msg)
             self.rx_msg_widgets[msg_key] = msg_widget
             self.rx_messages_widget.addTopLevelItem(msg_widget)
             self.rx_messages_widget.resizeColumnToContents(0)
 
-    def display_message_in_rx_tree(self, msg_key, msg_name, msg_class, msg):
+    def display_message_in_rx_tree(self, msg_key, msg):
         if msg_key in self.rx_msg_widgets:
             self.rx_msg_widgets[msg_key].set_msg_buffer(msg.rawBuffer())
     
