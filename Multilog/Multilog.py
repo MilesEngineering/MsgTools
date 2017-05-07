@@ -42,7 +42,7 @@ filenames will be composed like so:
         MsgGui.MsgGui.__init__(self, "Multilog 0.1", argv, options, parent)
         
         # event-based way of getting messages
-        self.RxMsg.connect(self.LogMessage)
+        self.RxMsg.connect(self.ProcessMessage)
 
         # tab widget to show multiple messages, one per tab
         widget = QtWidgets.QWidget(self)
@@ -97,7 +97,7 @@ filenames will be composed like so:
         # create a new file
         self.file = None
         
-    def LogMessage(self, msg):
+    def ProcessMessage(self, hdr):
         # if user specified allowed messages...
         if self.allowedMessages:
             # read the ID, and get the message name, to check if it's allowed
@@ -110,7 +110,7 @@ filenames will be composed like so:
 
         if self.file is not None:
             #write to a single binary log file
-            self.file.write(msg)
+            self.file.write(hdr.rawBuffer())
 
             # if you want to write to multiple CSV files, look at lumberjack for an example of how to do so.
             # for each message, you'll need to

@@ -27,9 +27,9 @@ class TestClass(unittest.TestCase):
         msgclass = self.msgLib.MsgClassFromName["Network.Connect"]
 
         expected = "Testing"
-        testbuf = msgclass.Create()
-        Messaging.set(testbuf, msgclass.fields[0], expected)
-        observed = self.msgLib.Connect.Connect.GetName(testbuf)
+        testMsg = msgclass()
+        Messaging.set(testMsg, msgclass.fields[0], expected)
+        observed = testMsg.GetName()
         self.assertMultiLineEqual(expected, observed)
         
         expected="MoreTesting"
@@ -51,7 +51,7 @@ class TestClass(unittest.TestCase):
 
     # example of how to call a method given by reflection
     def PrintAccessors(self, msgClass):
-        msg = msgClass.Create()
+        msg = msgClass()
         for fieldInfo in msgClass.fields:
             txt = "body.%s.%s: " % (msgClass.__name__, fieldInfo.name)
             if(fieldInfo.count == 1):

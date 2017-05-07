@@ -8,20 +8,20 @@ from PyQt5.QtWidgets import *
 from Messaging import Messaging
 
 class FieldItem(QTreeWidgetItem):
-    def __init__(self, msg_class, msg_buffer_wrapper, fieldInfo, column_strings = []):
+    def __init__(self, msg_class, msg, fieldInfo, column_strings = []):
         column_strings = column_strings if len(column_strings) > 0 else [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
         
         QTreeWidgetItem.__init__(self, None, column_strings)
         
         self.fieldInfo = fieldInfo
         self.msg_class = msg_class
-        self.msg_buffer_wrapper = msg_buffer_wrapper
+        self.msg = msg
         
     def data(self, column, role):
         if column != 2:
             return super(FieldItem, self).data(column, role)
 
-        alert = Messaging.getAlert(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
+        alert = Messaging.getAlert(self.msg, self.fieldInfo)
         if role == Qt.FontRole:
             font = QFont()
             if alert == 1:
@@ -34,11 +34,11 @@ class FieldItem(QTreeWidgetItem):
             return brush
 
         if role == Qt.DisplayRole:
-            value  = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
+            value  = Messaging.get(self.msg, self.fieldInfo)
             
             try:
                 self.overrideWidget
-                valueAsString = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo)
+                valueAsString = Messaging.get(self.msg, self.fieldInfo)
                 
                 if valueAsString in self.comboBoxIndexOfEnum:
                     #self.overrideWidget.setCurrentText(valueAsString)
@@ -54,8 +54,8 @@ class FieldItem(QTreeWidgetItem):
         return super(FieldItem, self).data(column, role)
 
 class EditableFieldItem(FieldItem):
-    def __init__(self, msg_class, msg_buffer_wrapper, fieldInfo, column_strings = []):
-        super(EditableFieldItem, self).__init__(msg_class, msg_buffer_wrapper, fieldInfo, column_strings)
+    def __init__(self, msg_class, msg, fieldInfo, column_strings = []):
+        super(EditableFieldItem, self).__init__(msg_class, msg, fieldInfo, column_strings)
 
         self.setFlags(self.flags() | Qt.ItemIsEditable)
         
@@ -76,7 +76,7 @@ class EditableFieldItem(FieldItem):
     def overrideWidgetValueChanged(self, value):
         valueAsString = self.overrideWidget.itemText(value)
         # set the value in the message/header buffer
-        Messaging.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, valueAsString)
+        Messaging.set(self.msg, self.fieldInfo, valueAsString)
 
         # no need to reset UI to value read from message, if user picked value from drop down.
         # \todo: need to if they type something, though.
@@ -92,35 +92,35 @@ class EditableFieldItem(FieldItem):
             value = str(int(value, 0))
 
         # set the value in the message/header buffer
-        Messaging.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, value)
+        Messaging.set(self.msg, self.fieldInfo, value)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(FieldItem, self).setData(column, role, Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo))
+        super(FieldItem, self).setData(column, role, Messaging.get(self.msg, self.fieldInfo))
 
 class FieldBits(FieldItem):
-    def __init__(self, msg_class, msg_buffer_wrapper, bitfieldInfo):
+    def __init__(self, msg_class, msg, bitfieldInfo):
        column_strings = [None, "    " + bitfieldInfo.name, "", bitfieldInfo.units, bitfieldInfo.description]
-       super(FieldBits, self).__init__(msg_class, msg_buffer_wrapper, bitfieldInfo, column_strings)
+       super(FieldBits, self).__init__(msg_class, msg, bitfieldInfo, column_strings)
 
 class FieldBitfieldItem(FieldItem):
-    def __init__(self, tree_widget, msg_class, msg_buffer_wrapper, fieldInfo):
-        super(FieldBitfieldItem, self).__init__(msg_class, msg_buffer_wrapper, fieldInfo)
+    def __init__(self, tree_widget, msg_class, msg, fieldInfo):
+        super(FieldBitfieldItem, self).__init__(msg_class, msg, fieldInfo)
 
         for bitfieldInfo in fieldInfo.bitfieldInfo:
-            bitfieldBitsItem = FieldBits(self.msg_class, self.msg_buffer_wrapper, bitfieldInfo)
+            bitfieldBitsItem = FieldBits(self.msg_class, self.msg, bitfieldInfo)
             self.addChild(bitfieldBitsItem)
 
 class EditableFieldBits(EditableFieldItem):
-    def __init__(self, msg_class, msg_buffer_wrapper, bitfieldInfo):
+    def __init__(self, msg_class, msg, bitfieldInfo):
        column_strings = [None, "    " + bitfieldInfo.name, "", bitfieldInfo.units, bitfieldInfo.description]
-       super(EditableFieldBits, self).__init__(msg_class, msg_buffer_wrapper, bitfieldInfo, column_strings)
+       super(EditableFieldBits, self).__init__(msg_class, msg, bitfieldInfo, column_strings)
 
 class EditableFieldBitfieldItem(EditableFieldItem):
-    def __init__(self, tree_widget, msg_class, msg_buffer_wrapper, fieldInfo):
-        super(EditableFieldBitfieldItem, self).__init__(msg_class, msg_buffer_wrapper, fieldInfo)
+    def __init__(self, tree_widget, msg_class, msg, fieldInfo):
+        super(EditableFieldBitfieldItem, self).__init__(msg_class, msg, fieldInfo)
 
         for bitfieldInfo in fieldInfo.bitfieldInfo:
-            bitfieldBitsItem = EditableFieldBits(self.msg_class, self.msg_buffer_wrapper, bitfieldInfo)
+            bitfieldBitsItem = EditableFieldBits(self.msg_class, self.msg, bitfieldInfo)
             self.addChild(bitfieldBitsItem)
             try:
                 bitfieldBitsItem.overrideWidget
@@ -129,7 +129,7 @@ class EditableFieldBitfieldItem(EditableFieldItem):
                 pass
 
 class FieldArrayItem(QTreeWidgetItem):
-    def __init__(self, msg_class, msg_buffer_wrapper, fieldInfo, field_array_constructor, index = None):
+    def __init__(self, msg_class, msg, fieldInfo, field_array_constructor, index = None):
         column_strings = [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
         
         if index != None:
@@ -139,12 +139,12 @@ class FieldArrayItem(QTreeWidgetItem):
         
         self.fieldInfo = fieldInfo
         self.msg_class = msg_class
-        self.msg_buffer_wrapper = msg_buffer_wrapper
+        self.msg = msg
         self.index = index
 
         if index == None:
             for i in range(0, self.fieldInfo.count):
-                messageFieldTreeItem = field_array_constructor(self.msg_class, self.msg_buffer_wrapper, self.fieldInfo, field_array_constructor, i)
+                messageFieldTreeItem = field_array_constructor(self.msg_class, self.msg, self.fieldInfo, field_array_constructor, i)
                 self.addChild(messageFieldTreeItem)
 
     def data(self, column, role):
@@ -154,7 +154,7 @@ class FieldArrayItem(QTreeWidgetItem):
         if self.index == None:
             return ""
 
-        alert = Messaging.getAlert(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, self.index)
+        alert = Messaging.getAlert(self.msg, self.fieldInfo, self.index)
         if role == Qt.FontRole:
             font = QFont()
             if alert == 1:
@@ -167,14 +167,14 @@ class FieldArrayItem(QTreeWidgetItem):
             return brush
 
         if role == Qt.DisplayRole:
-            value  = Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, self.index)
+            value  = Messaging.get(self.msg, self.fieldInfo, self.index)
             return str(value)
 
         return super(FieldArrayItem, self).data(column, role)
 
 class EditableFieldArrayItem(FieldArrayItem):
-    def __init__(self, messageClass, msg_buffer_wrapper, fieldInfo, field_array_constructor, index = None):
-        super(EditableFieldArrayItem, self).__init__(messageClass, msg_buffer_wrapper, fieldInfo, field_array_constructor, index)
+    def __init__(self, messageClass, msg, fieldInfo, field_array_constructor, index = None):
+        super(EditableFieldArrayItem, self).__init__(messageClass, msg, fieldInfo, field_array_constructor, index)
 
         self.setFlags(self.flags() | Qt.ItemIsEditable)
 
@@ -192,10 +192,10 @@ class EditableFieldArrayItem(FieldArrayItem):
             value = str(int(value, 0))
 
         # set the value in the message/header buffer
-        Messaging.set(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, value, int(self.index))
+        Messaging.set(self.msg, self.fieldInfo, value, int(self.index))
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(EditableFieldArrayItem, self).setData(column, role, Messaging.get(self.msg_buffer_wrapper["msg_buffer"], self.fieldInfo, int(self.index)))
+        super(EditableFieldArrayItem, self).setData(column, role, Messaging.get(self.msg, self.fieldInfo, int(self.index)))
 
 class QObjectProxy(QObject):
     send_message = pyqtSignal(object)
@@ -203,7 +203,7 @@ class QObjectProxy(QObject):
         QObject.__init__(self)
 
 class MessageItem(QTreeWidgetItem):
-    def __init__(self, msg_name, tree_widget, msg_class, msg_buffer,
+    def __init__(self, msg_name, tree_widget, msg_class, msg,
                  child_constructor = FieldItem,
                  child_array_constructor = FieldArrayItem,
                  child_bitfield_constructor = FieldBitfieldItem):
@@ -214,7 +214,7 @@ class MessageItem(QTreeWidgetItem):
         self.tree_widget = tree_widget
 
         self.msg_class = msg_class
-        self.msg_buffer_wrapper = { "msg_buffer": msg_buffer }
+        self.msg = msg
 
         self.setup_fields(tree_widget, child_constructor, child_array_constructor, child_bitfield_constructor)
 
@@ -229,7 +229,7 @@ class MessageItem(QTreeWidgetItem):
         self.tree_widget.setDirtyRegion(region)
 
     def set_msg_buffer(self, msg_buffer):
-        self.msg_buffer_wrapper["msg_buffer"] = msg_buffer
+        self.msg.msg_buffer_wrapper["msg_buffer"] = msg_buffer
         self.repaintAll()
 
     def setup_fields(self, tree_widget, child_constructor, child_array_constructor, child_bitfield_constructor):
@@ -238,9 +238,9 @@ class MessageItem(QTreeWidgetItem):
 
         for headerFieldInfo in Messaging.hdr.fields:
             if headerFieldInfo.bitfieldInfo != None:
-                headerFieldTreeItem = child_bitfield_constructor(tree_widget, Messaging.hdr, self.msg_buffer_wrapper, headerFieldInfo)
+                headerFieldTreeItem = child_bitfield_constructor(tree_widget, Messaging.hdr, self.msg, headerFieldInfo)
             else:
-                headerFieldTreeItem = child_constructor(Messaging.hdr, self.msg_buffer_wrapper, headerFieldInfo)
+                headerFieldTreeItem = child_constructor(Messaging.hdr, self.msg, headerFieldInfo)
             headerTreeItemParent.addChild(headerFieldTreeItem)
 
         for fieldInfo in self.msg_class.fields:
@@ -248,11 +248,11 @@ class MessageItem(QTreeWidgetItem):
 
             if fieldInfo.count == 1:
                 if fieldInfo.bitfieldInfo != None:
-                    messageFieldTreeItem = child_bitfield_constructor(tree_widget, self.msg_class, self.msg_buffer_wrapper, fieldInfo)
+                    messageFieldTreeItem = child_bitfield_constructor(tree_widget, self.msg_class, self.msg, fieldInfo)
                 else:
-                    messageFieldTreeItem = child_constructor(self.msg_class, self.msg_buffer_wrapper, fieldInfo)
+                    messageFieldTreeItem = child_constructor(self.msg_class, self.msg, fieldInfo)
             else:
-                messageFieldTreeItem = child_array_constructor(self.msg_class, self.msg_buffer_wrapper, fieldInfo, child_array_constructor)
+                messageFieldTreeItem = child_array_constructor(self.msg_class, self.msg, fieldInfo, child_array_constructor)
             
             self.addChild(messageFieldTreeItem)
             try:
@@ -268,5 +268,5 @@ class EditableMessageItem(MessageItem):
 
         sendButton = QPushButton("Send", tree_widget)
         sendButton.autoFillBackground()
-        sendButton.clicked.connect(lambda: self.qobjectProxy.send_message.emit(self.msg_buffer_wrapper["msg_buffer"]))
+        sendButton.clicked.connect(lambda: self.qobjectProxy.send_message.emit(self.msg))
         tree_widget.setItemWidget(self, 4, sendButton)

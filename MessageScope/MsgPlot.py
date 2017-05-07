@@ -106,12 +106,12 @@ class MsgPlot:
         else:
             print("Not paused")
 
-    def addData(self, message_buffer):
+    def addData(self, msg):
         # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
         for line in self.lines:
-            newDataPoint = Messaging.getFloat(message_buffer, line.fieldInfo, line.fieldSubindex)
+            newDataPoint = Messaging.getFloat(msg, line.fieldInfo, line.fieldSubindex)
             try:
-                newTime = float(Messaging.hdr.GetTime(message_buffer)/1000.0)
+                newTime = float(msg.hdr.GetTime()/1000.0)
                 if newTime != 0:
                     self.useHeaderTime = 1
                 if not self.useHeaderTime:
@@ -179,19 +179,19 @@ class MessagePlotGui(MsgGui.MsgGui):
                     else:
                         plot.addPlot(msgClass, fieldInfo, 0)
 
-    def ProcessMessage(self, msg_buffer):
-        msg_id = hex(Messaging.hdr.GetMessageID(msg_buffer))
+    def ProcessMessage(self, msg):
+        msg_id = hex(msg.hdr.GetMessageID())
 
         if msg_id in Messaging.MsgNameFromID:
             msg_name = Messaging.MsgNameFromID[msg_id]
             msgClass = Messaging.MsgClassFromName[msg_name]
 
-        #msg_key = ",".join(self.MsgRoute(msg_buffer)) + "," + msg_id
+        #msg_key = ",".join(self.MsgRoute(msg)) + "," + msg_id
         try:
             if msgClass.ID in self.msgPlots:
                 plotListForID = self.msgPlots[msgClass.ID]
                 for plot in plotListForID:
-                    plot.addData(msg_buffer)
+                    plot.addData(msg)
         except AttributeError:
             pass
 

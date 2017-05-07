@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QInputDialog, QLineEdit
 from Messaging import Messaging
 
 class MsgApp(QtWidgets.QMainWindow):
-    RxMsg = QtCore.pyqtSignal(bytearray)
+    RxMsg = QtCore.pyqtSignal(object)
     statusUpdate = QtCore.pyqtSignal(str)
     
     def __init__(self, name, headerName, argv, options):
@@ -104,13 +104,13 @@ class MsgApp(QtWidgets.QMainWindow):
     
     def onConnected(self):
         # send a connect message
-        connectBuffer = self.msgLib.Connect.Connect.Create();
-        self.msgLib.Connect.Connect.SetName(connectBuffer, self.name);
+        connectMsg = self.msgLib.Connect.Connect();
+        connectMsg.SetName(self.name);
         output_stream = QtCore.QDataStream(self.connection)
-        self.sendFn(connectBuffer.raw);
+        self.sendFn(connectMsg.rawBuffer().raw);
         # send a subscription message
-        subscribeBuffer = self.msgLib.MaskedSubscription.MaskedSubscription.Create();
-        self.sendFn(subscribeBuffer.raw);
+        subscribeMsg = self.msgLib.MaskedSubscription.MaskedSubscription();
+        self.sendFn(subscribeMsg.rawBuffer().raw);
         self.statusUpdate.emit('Connected')
     
     def onDisconnect(self):
@@ -134,8 +134,10 @@ class MsgApp(QtWidgets.QMainWindow):
                 print("don't have full header, quitting")
                 return
             
+            hdr = Messaging.hdr(self.rxBuf)
+            
             # need to decode body len to read the body
-            bodyLen = Messaging.hdr.GetDataLength(self.rxBuf)
+            bodyLen = hdr.GetDataLength()
             
             # read the body, unless we have the body
             if(len(self.rxBuf) < Messaging.hdrSize + bodyLen):
@@ -148,7 +150,7 @@ class MsgApp(QtWidgets.QMainWindow):
                 return
             
             # if we got this far, we have a whole message! So, emit the signal
-            self.RxMsg.emit(self.rxBuf)
+            self.RxMsg.emit(hdr)
             # then clear the buffer, so we start over on the next message
             self.rxBuf = bytearray()
 
@@ -172,8 +174,9 @@ class MsgApp(QtWidgets.QMainWindow):
                 if(len(self.rxBuf) != Messaging.hdrSize):
                     raise StopIteration
                 
+                hdr = Messaging.hdr(self.rxBuf)
                 try:
-                    start = Messaging.hdr.GetStartSequence(self.rxBuf)
+                    start = hdr.GetStartSequence()
                     if(start != startSequence):
                         print("Error on message " + str(msgCount) + ". Start sequence invalid: 0x" + format(start, '02X'))
                         # resync on start sequence
@@ -184,23 +187,25 @@ class MsgApp(QtWidgets.QMainWindow):
                             if(len(self.rxBuf) != Messaging.hdrSize):
                                 raise StopIteration
                             bytesThrownAway += 1
-                            start = Messaging.hdr.GetStartSequence(self.rxBuf)
+                            start = hdr.GetStartSequence()
                             if(start == startSequence):
                                 print("Resynced after " + str(bytesThrownAway) + " bytes")
                                 break
-                    headerChecksum = Messaging.hdr.GetHeaderChecksum(self.rxBuf)
-                    bodyChecksum = Messaging.hdr.GetBodyChecksum(self.rxBuf)
+                    headerChecksum = hdr.GetHeaderChecksum()
+                    bodyChecksum = hdr.GetBodyChecksum(self)
                 except AttributeError:
                     pass
 
                 # need to decode body len to read the body
-                bodyLen = Messaging.hdr.GetDataLength(self.rxBuf)
+                bodyLen = hdr.GetDataLength()
                 
                 # read the body
                 self.rxBuf += self.readFn(bodyLen)
                 if(len(self.rxBuf) != Messaging.hdrSize + bodyLen): break
+                
+                hdr = Messaging.hdr(self.rxBuf)
 
                 # got a complete message, call the callback to process it
-                self.PrintMessage(self.rxBuf)
+                self.ProcessMessage(hdr)
         except StopIteration:
             print("found end of file, exited")

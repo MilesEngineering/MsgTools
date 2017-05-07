@@ -190,21 +190,22 @@ class MessageScopeGui(MsgGui.MsgGui):
             # Always add to TX panel even if the same message class may already exist
             # since we may want to send the same message with different contents/header/rates.
             message_class = Messaging.MsgClassFromName[messageName]
-            messageBuffer = message_class.Create()
+            messageObj = message_class() # invoke constructor
 
-            messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageBuffer)
+            messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageObj)
             messageTreeWidgetItem.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
-    def on_tx_message_send(self, messageBuffer):
-        bufferSize = len(messageBuffer.raw)
-        computedSize = Messaging.hdrSize + Messaging.hdr.GetDataLength(messageBuffer)
+    def on_tx_message_send(self, msg):
+        bufferSize = len(msg.rawBuffer().raw)
+        hdr = msg.hdr
+        computedSize = Messaging.hdrSize + hdr.GetDataLength()
         if(computedSize > bufferSize):
-            Messaging.hdr.SetDataLength(messageBuffer, bufferSize - Messaging.hdrSize)
+            hdr.SetDataLength(bufferSize - Messaging.hdrSize)
             print("Truncating message to "+str(computedSize)+" bytes")
         if(computedSize < bufferSize):
-            self.sendFn(messageBuffer.raw[0:computedSize])
+            self.sendFn(msg.rawBuffer().raw[0:computedSize])
         else:
-            self.sendFn(messageBuffer.raw)
+            self.sendFn(msg.rawBuffer().raw)
     
     def onRxMessageFieldSelected(self, rxWidgetItem):
         try:
@@ -214,9 +215,10 @@ class MessageScopeGui(MsgGui.MsgGui):
                 if isinstance(rxWidgetItem, TxTreeWidget.FieldArrayItem):
                     fieldIndex = rxWidgetItem.index
                 msg_class = rxWidgetItem.msg_class
-                msg_id = hex(Messaging.hdr.GetMessageID(rxWidgetItem.msg_buffer_wrapper["msg_buffer"]))
+                hdr = rxWidgetItem.msg.hdr
+                msg_id = hex(hdr.GetMessageID())
                 plotListForID = []
-                msg_key = ",".join(self.MsgRoute(rxWidgetItem.msg_buffer_wrapper["msg_buffer"])) + "," + msg_id
+                msg_key = ",".join(self.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
                 if msg_key in self.msgPlots:
                     plotListForID = self.msgPlots[msg_key]
                 else:
@@ -237,27 +239,29 @@ class MessageScopeGui(MsgGui.MsgGui):
                         dock.setWidget(msgPlot.plotWidget)
                         self.addDockWidget(Qt.RightDockWidgetArea, dock)
                         plotListForID.append(msgPlot)
+                        msgPlot.addData(rxWidgetItem.msg)
         except AttributeError:
             pass
     
-    def MsgRoute(self, msg_buffer):
+    def MsgRoute(self, msg):
+        hdr = msg.hdr
         msg_route = []
         try:
-            msg_route.append(str(Messaging.hdr.GetSource(msg_buffer)))
+            msg_route.append(str(hdr.GetSource()))
         except AttributeError:
             pass
         try:
-            msg_route.append(str(Messaging.hdr.GetDestination(msg_buffer)))
+            msg_route.append(str(hdr.GetDestination()))
         except AttributeError:
             pass
         try:
-            msg_route.append(str(Messaging.hdr.GetDeviceID(msg_buffer)))
+            msg_route.append(str(hdr.GetDeviceID()))
         except AttributeError:
             pass
         return msg_route
 
-    def ProcessMessage(self, msg_buffer):
-        msg_id = hex(Messaging.hdr.GetMessageID(msg_buffer))
+    def ProcessMessage(self, hdr):
+        msg_id = hex(hdr.GetMessageID())
 
         if not msg_id in Messaging.MsgNameFromID:
             #print("WARNING! No definition for ", msg_id, "!\n")
@@ -266,29 +270,31 @@ class MessageScopeGui(MsgGui.MsgGui):
         else:
             msg_name = Messaging.MsgNameFromID[msg_id]
             msg_class = Messaging.MsgClassFromName[msg_name]
-
-        msg_key = ",".join(self.MsgRoute(msg_buffer)) + "," + msg_id
         
-        self.display_message_in_rx_list(msg_key, msg_name, msg_buffer)
-        self.display_message_in_rx_tree(msg_key, msg_name, msg_class, msg_buffer)
-        self.display_message_in_plots(msg_key, msg_buffer)
+        msg = msg_class(hdr.rawBuffer())
+
+        msg_key = ",".join(self.MsgRoute(msg)) + "," + msg_id
+        
+        self.display_message_in_rx_list(msg_key, msg_name, msg)
+        self.display_message_in_rx_tree(msg_key, msg_name, msg_class, msg)
+        self.display_message_in_plots(msg_key, msg)
 
     def onRxListDoubleClicked(self, rxListItem):
         msg_key = rxListItem.msg_key
         msg_name = rxListItem.msg_name
-        msg_buffer = rxListItem.msg_buffer
+        msg = rxListItem.msg
         try:
             msg_class = Messaging.MsgClassFromName[msg_name]
         except KeyError:
             msg_class = self.unknownMsg
-        self.add_message_to_rx_tree(msg_key, msg_name, msg_class, msg_buffer)
+        self.add_message_to_rx_tree(msg_key, msg_name, msg_class, msg)
 
-    def display_message_in_rx_list(self, msg_key, msg_name, msg_buffer):
+    def display_message_in_rx_list(self, msg_key, msg_name, msg):
         rx_time = datetime.datetime.now()
 
         if not msg_key in self.rx_msg_list:
             widget_name = msg_name
-            msg_route = self.MsgRoute(msg_buffer)
+            msg_route = self.MsgRoute(msg)
             if len(msg_route) > 0 and not(all ("0" == a for a in msg_route)):
                 widget_name += " ("+"->".join(msg_route)+")"
             msg_list_item = QTreeWidgetItem([ widget_name, str(rx_time), "- Hz" ])
@@ -309,7 +315,7 @@ class MessageScopeGui(MsgGui.MsgGui):
             self.thread_lock.release()
 
         self.rx_msg_list[msg_key].setText(1, str(rx_time))
-        self.rx_msg_list[msg_key].msg_buffer = msg_buffer
+        self.rx_msg_list[msg_key].msg = msg
 
     def show_rx_msg_rates(self, rx_rates):
         for msg_key, rate in rx_rates.items():
@@ -323,23 +329,23 @@ class MessageScopeGui(MsgGui.MsgGui):
 
             self.rx_msg_list[msg_key].setText(2, output)
 
-    def add_message_to_rx_tree(self, msg_key, msg_name, msg_class, msg_buffer):
+    def add_message_to_rx_tree(self, msg_key, msg_name, msg_class, msg):
         if not msg_key in self.rx_msg_widgets:
-            msg_widget = TxTreeWidget.MessageItem(msg_name, self.rx_messages_widget, msg_class, msg_buffer)
+            msg_widget = TxTreeWidget.MessageItem(msg_name, self.rx_messages_widget, msg_class, msg)
             self.rx_msg_widgets[msg_key] = msg_widget
             self.rx_messages_widget.addTopLevelItem(msg_widget)
             self.rx_messages_widget.resizeColumnToContents(0)
 
-    def display_message_in_rx_tree(self, msg_key, msg_name, msg_class, msg_buffer):
+    def display_message_in_rx_tree(self, msg_key, msg_name, msg_class, msg):
         if msg_key in self.rx_msg_widgets:
-            self.rx_msg_widgets[msg_key].set_msg_buffer(msg_buffer)
+            self.rx_msg_widgets[msg_key].set_msg_buffer(msg.rawBuffer())
     
-    def display_message_in_plots(self, msg_key, msg_buffer):
+    def display_message_in_plots(self, msg_key, msg):
         try:
             if msg_key in self.msgPlots:
                 plotListForID = self.msgPlots[msg_key]
                 for plot in plotListForID:
-                    plot.addData(msg_buffer)
+                    plot.addData(msg)
         except AttributeError:
             pass
 

@@ -34,7 +34,7 @@ in that directory.''')
         print("outputName is " + self.outputName + "\n")
 
         # event-based way of getting messages
-        self.RxMsg.connect(self.PrintMessage)
+        self.RxMsg.connect(self.ProcessMessage)
         
         self.outputFiles = {}
 
@@ -42,15 +42,20 @@ in that directory.''')
         self._timestampOffset = 0
         self._lastTimestamp = 0
 
-    def PrintMessage(self, msg):
+        self.messageCount = 0
+
+    def ProcessMessage(self, hdr):
+        self.messageCount += 1
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = hex(Messaging.hdr.GetMessageID(msg))
+        id       = hex(hdr.GetMessageID())
         msgName = Messaging.MsgNameFromID[id]
         msgClass = Messaging.MsgClassFromName[msgName]
 
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
             return
+
+        msg = msgClass(hdr.rawBuffer())
 
         # if we write CSV to multiple files, we'd probably look up a hash table for this message id,
         # and open it and write a header
@@ -105,3 +110,4 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     msgApp = Lumberjack(sys.argv)
     msgApp.MessageLoop()
+    print("Processed " + str(msgApp.messageCount) + " messages")

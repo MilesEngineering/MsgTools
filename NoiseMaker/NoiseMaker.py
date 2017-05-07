@@ -17,7 +17,7 @@ class NoiseMaker(MsgGui.MsgGui):
         MsgGui.MsgGui.__init__(self, "Noise Maker 0.1", argv, [], parent)
         
         # event-based way of getting messages
-        self.RxMsg.connect(self.ShowMessage)
+        self.RxMsg.connect(self.ProcessMessage)
         
         self.currentTime = 0
         
@@ -78,9 +78,10 @@ class NoiseMaker(MsgGui.MsgGui):
         return bottom + range * scale
                 
     def sendMsg(self, msgClass):
-        msg = msgClass.Create()
+        msg = msgClass()
         try:
-            Messaging.hdr.SetTime(msg, self.currentTime)
+            hdr = Messaging.hdr(msg.rawBuffer())
+            hdr.SetTime(self.currentTime)
         except AttributeError:
             pass
         for fieldInfo in msgClass.fields:
@@ -95,9 +96,9 @@ class NoiseMaker(MsgGui.MsgGui):
                 else:
                     for i in range(0,fieldInfo.count):
                         Messaging.set(msg, fieldInfo, self.fieldValue(fieldInfo), i)
-        self.sendFn(msg.raw)
+        self.sendFn(msg.rawBuffer().raw)
 
-    def ShowMessage(self, msg):
+    def ProcessMessage(self, hdr):
         pass
 
 # main starts here

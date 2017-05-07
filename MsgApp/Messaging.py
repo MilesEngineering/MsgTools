@@ -121,38 +121,38 @@ class Messaging:
         Messaging.MsgClassFromName[name] = classDef
 
     @staticmethod
-    def set(message_buffer, fieldInfo, value, index=0):
+    def set(msg, fieldInfo, value, index=0):
         if("int" in fieldInfo.type):
             value = int(float(value))
         elif("float" in fieldInfo.type):
             value = float(value)
         
         if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
-            fieldInfo.set.__func__(message_buffer, value)
+            fieldInfo.set(msg, value)
         else:
-            fieldInfo.set.__func__(message_buffer, value, index)
+            fieldInfo.set(msg, value, index)
 
     @staticmethod
-    def get(message_buffer, fieldInfo, index=0):
+    def get(msg, fieldInfo, index=0):
         try:
             if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
-                value = fieldInfo.get.__func__(message_buffer)
+                value = fieldInfo.get(msg)
             else:
-                value = fieldInfo.get.__func__(message_buffer, index)
+                value = fieldInfo.get(msg, index)
         except struct.error:
             value = "UNALLOCATED"
         return str(value)
 
     @staticmethod
-    def getFloat(message_buffer, fieldInfo, index=0):
-        value = Messaging.get(message_buffer, fieldInfo, index)
+    def getFloat(msg, fieldInfo, index=0):
+        value = Messaging.get(msg, fieldInfo, index)
         if len(fieldInfo.enum) != 0:
             value = fieldInfo.enum[0].get(value, value)
         return float(value)
 
     @staticmethod
-    def getAlert(message_buffer, fieldInfo, index=0):
-        value = Messaging.get(message_buffer, fieldInfo, index)
+    def getAlert(msg, fieldInfo, index=0):
+        value = Messaging.get(msg, fieldInfo, index)
         alert = 0
         try:
             floatVal = float(value)

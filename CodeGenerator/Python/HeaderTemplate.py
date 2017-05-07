@@ -16,22 +16,35 @@ class <MSGNAME> :
     # Enumerations
     <ENUMERATIONS>
 
-    @staticmethod
-    def Create() :
-        message_buffer = ctypes.create_string_buffer(<MSGNAME>.SIZE)
-        <INIT_CODE>
-        return message_buffer
+    #@staticmethod
+    #def Create() :
+    #    message_buffer = ctypes.create_string_buffer(<MSGNAME>.SIZE)
+    #    <INIT_CODE>
+    #    return message_buffer
+    
+    def __init__(self, messageBuffer=None):
+        doInit = 0
+        if messageBuffer == None:
+            doInit = 1
+            messageBuffer = ctypes.create_string_buffer(<MSGNAME>.SIZE)
+        # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
+        self.msg_buffer_wrapper = { "msg_buffer": messageBuffer }
+        if doInit:
+            <INIT_CODE>
+            pass
+    
+    def rawBuffer(self):
+        # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
+        return self.msg_buffer_wrapper["msg_buffer"]
 
     @staticmethod
     def MsgName():
         return "<MSGNAME>"
 
-    @staticmethod
-    def SetMessageID(message_buffer, id):
+    def SetMessageID(self, id):
         <SETMSGID>
 
-    @staticmethod
-    def GetMessageID(message_buffer):
+    def GetMessageID(self):
         id = <GETMSGID>
         return id
 

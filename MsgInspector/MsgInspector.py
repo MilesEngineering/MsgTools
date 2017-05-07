@@ -78,7 +78,7 @@ class MsgInspector(MsgGui.MsgGui):
         MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", argv, [], parent)
         
         # event-based way of getting messages
-        self.RxMsg.connect(self.ShowMessage)
+        self.RxMsg.connect(self.ProcessMessage)
 
         # tab widget to show multiple messages, one per tab
         self.tabWidget = QtWidgets.QTabWidget(self)
@@ -123,11 +123,11 @@ class MsgInspector(MsgGui.MsgGui):
         self.autoscroll = not self.autoscroll
         self.scrollAction.setChecked(self.autoscroll)
 
-    def ShowMessage(self, msg):
+    def ProcessMessage(self, hdr):
         # default to NOT printing body as hex
         printBodyAsHex = 0
         # read the ID, and get the message name, so we can print stuff about the body
-        id       = hex(Messaging.hdr.GetMessageID(msg))
+        id       = hex(hdr.GetMessageID())
         if not id in Messaging.MsgNameFromID:
             printBodyAsHex = 1
             if(not(id in self.msgWidgets)):
@@ -142,6 +142,8 @@ class MsgInspector(MsgGui.MsgGui):
         if(msgClass == None):
             print("WARNING!  No definition for ", id, "!\n")
             return
+        
+        msg = msgClass(hdr.rawBuffer())
 
         replaceMode = 0
         if self.allowedMessages:

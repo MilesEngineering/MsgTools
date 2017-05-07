@@ -94,7 +94,7 @@ def fieldInfos(msg):
     pass
 
 def fnHdr(field, offset, count, name):
-    param = "message_buffer"
+    param = "self"
     if str.find(name, "Set") == 0:
         param += ", value"
     if  count > 1:
@@ -112,7 +112,6 @@ def fnHdr(field, offset, count, name):
         fieldSize = 0
         
     ret = '''\
-@staticmethod
 @msg.units('%s')
 @msg.default('%s')
 @msg.minVal('%s')
@@ -153,8 +152,8 @@ def getFn(msg, field, offset):
     if  count > 1:
         if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
             preface += "\n    count = " + str(count)+"\n"
-            preface += "    if count > len(message_buffer)-("+loc+"):\n"
-            preface += "        count = len(message_buffer)-(<MSGNAME>.MSG_OFFSET + 1)\n"
+            preface += "    if count > len(self.rawBuffer())-("+loc+"):\n"
+            preface += "        count = len(self.rawBuffer())-(<MSGNAME>.MSG_OFFSET + 1)\n"
             type = "str(count)+'s'"
             count = 1
             cleanup = '''ascii_len = str(value).find("\\\\x00")
@@ -166,7 +165,7 @@ def getFn(msg, field, offset):
         cleanup = "value = " + MsgParser.getMath("value", field, "")+"\n    "
     ret = '''\
 %s%s
-    value = struct.unpack_from(%s, message_buffer, %s)[0]
+    value = struct.unpack_from(%s, self.rawBuffer(), %s)[0]
     %sreturn value
 ''' % (fnHdr(field,offset,count, "Get"+field["Name"]), preface, type, loc, cleanup)
     return ret
@@ -194,12 +193,12 @@ def setFn(msg, field, offset):
     ret  = '''\
 %s
     %s
-    struct.pack_into('%s', message_buffer, %s, tmp)
+    struct.pack_into('%s', self.rawBuffer(), %s, tmp)
 ''' % (fnHdr(field,offset,count, "Set"+field["Name"]), math, type, loc)
     return ret
 
 def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
-    access = "("+msg["Name"]+".Get%s(message_buffer) >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+    access = "(self.Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
     access = MsgParser.getMath(access, bits, "float")
     cleanup = ""
     if "Enum" in bits:
@@ -222,8 +221,8 @@ def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
     ret = '''\
 %s
     %s
-    %s.Set%s(message_buffer, (%s.Get%s(message_buffer) & ~(%s << %s)) | ((%s & %s) << %s))
-''' % (fnHdr(bits,offset,1,"Set"+MsgParser.BitfieldName(field, bits)), math, msg["Name"], field["Name"], msg["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
+    self.Set%s((self.Get%s() & ~(%s << %s)) | ((%s & %s) << %s))
+''' % (fnHdr(bits,offset,1,"Set"+MsgParser.BitfieldName(field, bits)), math, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -250,20 +249,17 @@ def initField(field, messageName):
     ret = []
     if "Default" in field:
         defaultValue = str(field["Default"])
-        if "Enum" in field:
-            defaultValue = messageName + "." + str(field["Enum"]) + "['" +str(field["Default"]) + "']"
+        if pythonFieldCount(field) == 1:
+            ret.append("self.Set" + field["Name"] + "(" + defaultValue + ")")
         else:
-            if pythonFieldCount(field) == 1:
-                ret.append(messageName + ".Set" + field["Name"] + "(message_buffer, " + defaultValue + ")")
-            else:
-                ret.append("for i in range(0,"+str(pythonFieldCount(field))+"):")
-                ret.append("    " + messageName + ".Set" + field["Name"] + "(message_buffer, " + defaultValue + ", i)")
+            ret.append("for i in range(0,"+str(pythonFieldCount(field))+"):")
+            ret.append("    " + "self.Set" + field["Name"] + "(" + defaultValue + ", i)")
     return ret
 
 def initBitfield(field, bits, messageName):
     ret = []
     if "Default" in bits:
-        ret.append(messageName + ".Set" + MsgParser.BitfieldName(field, bits) + "(message_buffer, " + str(bits["Default"]) + ")")
+        ret.append("self.Set" + MsgParser.BitfieldName(field, bits) + "(" + str(bits["Default"]) + ")")
     return ret
 
 def initCode(msg):
@@ -307,7 +303,7 @@ def declarations(msg):
     return [""]
 
 def getMsgID(msg):
-    return baseGetMsgID("<MSGNAME>.", "message_buffer", 0, 1, msg)
+    return baseGetMsgID("self.", "", 0, 1, msg)
     
 def setMsgID(msg):
-    return baseSetMsgID("<MSGNAME>.", "message_buffer, ", 0, 1, msg)
+    return baseSetMsgID("self.", "", 0, 1, msg)

@@ -17,15 +17,34 @@ class <MSGNAME> :
     # Enumerations
     <ENUMERATIONS>
     
-    @staticmethod
-    def Create(packetLen=<MSGSIZE>):
-        message_buffer = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + packetLen)
+    #@staticmethod
+    #def Create():
+    #    message_buffer = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + <MSGNAME>.SIZE)
+    #
+    #    Messaging.hdr.SetMessageID(message_buffer, <MSGNAME>.ID)
+    #    Messaging.hdr.SetDataLength(message_buffer, <MSGNAME>.SIZE)
+    #
+    #    <INIT_CODE>
+    #    return message_buffer
 
-        Messaging.hdr.SetMessageID(message_buffer, <MSGNAME>.ID)
-        Messaging.hdr.SetDataLength(message_buffer, packetLen)
+    def __init__(self, messageBuffer=None):
+        doInit = 0
+        if messageBuffer == None:
+            doInit = 1
+            messageBuffer = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + <MSGNAME>.SIZE)
+        # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
+        self.msg_buffer_wrapper = { "msg_buffer": messageBuffer }
 
-        <INIT_CODE>
-        return message_buffer
+        self.hdr = Messaging.hdr(messageBuffer)
+        if doInit:
+            self.hdr.SetMessageID(<MSGNAME>.ID)
+            self.hdr.SetDataLength(<MSGNAME>.SIZE)
+        
+            <INIT_CODE>
+
+    def rawBuffer(self):
+        # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
+        return self.msg_buffer_wrapper["msg_buffer"]
 
     @staticmethod
     def MsgName():
