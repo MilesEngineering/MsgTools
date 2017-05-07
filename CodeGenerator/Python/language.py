@@ -283,18 +283,18 @@ def enums(e):
     ret = ""
     for enum in e:
         # forward enum
-        fwd = enum["Name"]+" = {"
+        fwd = enum["Name"]+" = OrderedDict(["
         for option in enum["Options"]:
-            fwd += '"'+option["Name"]+'"'+" : "+str(option["Value"]) + ', '
+            fwd += '("'+option["Name"]+'"'+", "+str(option["Value"]) + '), '
         fwd = fwd[:-2]
-        fwd += "}\n"
+        fwd += "])\n"
 
         # Reverse enum
-        back = "Reverse" + enum["Name"]+" = {"
+        back = "Reverse" + enum["Name"]+" = OrderedDict(["
         for option in enum["Options"]:
-            back += str(option["Value"]) +' : "'+str(option["Name"]) + '", '
+            back += "("+str(option["Value"]) +', "'+str(option["Name"]) + '"), '
         back = back[:-2]
-        back += "}\n"
+        back += "])\n"
 
         ret += fwd + back
     return ret

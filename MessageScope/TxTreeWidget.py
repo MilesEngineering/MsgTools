@@ -60,8 +60,7 @@ class EditableFieldItem(FieldItem):
         
         if fieldInfo.type == "enumeration":
             self.overrideWidget = QComboBox()
-            # if we need keys in order originally specified, it needs to be declared as an OrderedDict
-            self.overrideWidget.addItems(sorted(list(fieldInfo.enum[0].keys())))
+            self.overrideWidget.addItems(fieldInfo.enum[0].keys())
             self.overrideWidget.activated.connect(self.overrideWidgetValueChanged)
             # there's some odd behavior in the UI when the box is editable :(
             # if you want it editable, uncomment this line, and play around and see if you like it
