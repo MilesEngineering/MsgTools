@@ -126,10 +126,11 @@ class SerialConnection(QObject):
                         #if it's start sequence, break.
                         #else, throw it away and try again.
                         self.tmpRxHdr = self.serialPort.peek(self.startSeqSize)
-                        startSequence = self.hdr.GetStartSequence(self.tmpRxHdr)
+                        serialHdr = self.hdr(self.tmpRxHdr)
+                        startSequence = serialHdr.GetStartSequence()
                         if startSequence == self.startSequence:
                             foundStart = 1
-                            break;
+                            break
                         else:
                             print("  " + hex(startSequence) + " != " + hex(self.startSequence))
                             throwAway = self.serialPort.read(1)
@@ -139,13 +140,13 @@ class SerialConnection(QObject):
 
                 if foundStart:
                     if self.serialPort.bytesAvailable() >= self.hdr.SIZE:
-                        serialHdr = self.hdr(self.tmpRxHdr)
                         self.tmpRxHdr = self.serialPort.read(self.hdr.SIZE)
+                        serialHdr = self.hdr(self.tmpRxHdr)
                         if self.serialStartSeqField == None or serialHdr.GetStartSequence() == self.startSequence:
                             if self.hdrCrcRegion != None:
                                 # Stop counting before we reach header checksum location.
                                 headerCrc = Crc16(self.tmpRxHdr[:self.hdrCrcRegion])
-                                receivedHeaderCrc = self.hdr.GetHeaderChecksum(self.tmpRxHdr)
+                                receivedHeaderCrc = serialHdr.GetHeaderChecksum()
                                 if headerCrc == receivedHeaderCrc:
                                     self.gotHeader = 1
                                 else:
@@ -187,17 +188,16 @@ class SerialConnection(QObject):
                     break
 
     def SerialMsgSlot(self, serialHdr, body):
-        dbmsg = ctypes.create_string_buffer(NetworkHeader.SIZE+self.hdr.GetDataLength(serialHdr))
+        dbmsg = ctypes.create_string_buffer(NetworkHeader.SIZE+serialHdr.GetDataLength())
         networkHeader = NetworkHeader(dbmsg)
-        networkHeader.SetMessageID(dbmsg, serialHdr.GetMessageID())
+        networkHeader.SetMessageID(serialHdr.GetMessageID())
 
         # loop through fields using reflection, and transfer contents from
         # serial message to network message
         for pair in self.correspondingFields:
             si = pair[0]
             ni = pair[1]
-            value = Messaging.get(serialHdr.rawBuffer(), si)
-            Messaging.set(dbmsg, ni, Messaging.get(serialHdr, si))
+            Messaging.set(networkHeader, ni, Messaging.get(serialHdr, si))
 
         if self.serialTimeField != None and self.networkTimeField != None and self.serialTimeFieldSize < self.networkTimeFieldSize:
             # Detect time rolling
@@ -215,26 +215,26 @@ class SerialConnection(QObject):
             NetworkHeader.SetTime(dbmsg, (timestampOffset << 16) + thisTimestamp)
         elif self.networkTimeField != None and self.serialTimeField == None:
             thisTime = QDateTime.currentDateTime()
-            NetworkHeader.SetTime(dbmsg, self.startTime.msecsTo(thisTime))
+            networkHeader.SetTime(self.startTime.msecsTo(thisTime))
 
         for i in range(0,len(body)):
             dbmsg[NetworkHeader.SIZE+i] = body[i]
+        networkHeader = NetworkHeader(dbmsg.raw)
         self.messagereceived.emit(networkHeader)
 
-    def sendMsg(self, msgBuffer):
-        networkHeader = Messaging.hdr(msgBuffer)
+    def sendMsg(self, networkHeader):
         if networkHeader.GetMessageID() > 0xFFFFF:
             return
-        bodyLen = networkHeader.GetDataLength(msg)
+        bodyLen = networkHeader.GetDataLength()
         serialHdr = self.hdr()
         #set hdr fields that exist in network and serial
         for pair in self.correspondingFields:
             si = pair[0]
             ni = pair[1]
-            Messaging.set(serialHdr, si, Messaging.get(msg, ni))
+            Messaging.set(serialHdr, si, Messaging.get(networkHeader, ni))
         if self.hdrCrcRegion != None:
             # set header and body CRC
-            serialHdr.SetHeaderChecksum(Crc16(serialHdr[:self.hdrCrcRegion]))
-            serialHdr.SetBodyChecksum(Crc16(msg[Messaging.hdrSize:]))
+            serialHdr.SetHeaderChecksum(Crc16(serialHdr.rawBuffer()[:self.hdrCrcRegion]))
+            serialHdr.SetBodyChecksum(Crc16(networkHeader.rawBuffer()[Messaging.hdrSize:]))
         self.serialPort.write(serialHdr.rawBuffer().raw)
-        self.serialPort.write(msgBuffer[Messaging.hdrSize:])
+        self.serialPort.write(networkHeader.rawBuffer()[Messaging.hdrSize:])
