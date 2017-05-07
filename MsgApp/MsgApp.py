@@ -22,9 +22,6 @@ class MsgApp(QtWidgets.QMainWindow):
     def __init__(self, name, headerName, argv, options):
         self.name = name
         
-        # error out unless python version 3
-        exit
-        
         # rx buffer, to receive a message with multiple signals
         self.rxBuf = bytearray()
         
