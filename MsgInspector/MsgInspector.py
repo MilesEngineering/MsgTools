@@ -74,6 +74,8 @@ class TreeWidget(QtWidgets.QTreeWidget):
             header.setSortIndicator(0, QtCore.Qt.AscendingOrder)
 
 class MsgInspector(MsgGui.MsgGui):
+    MAX_ROWS = 1000
+    ROWS_TO_DELETE = 50
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Inspector 0.1", argv, [], parent)
         
@@ -239,6 +241,12 @@ class MsgInspector(MsgGui.MsgGui):
             self.msgWidgets[id].addTopLevelItem(msgItem)
             if(self.autoscroll):
                 self.msgWidgets[id].scrollToItem(msgItem)
+            # when deleting, make a bunch of room so that if we're auto scrolling we have a bit of time before it
+            # shifts the data.  Otherwise the user can't read stuff if it's going by too fast.
+            if self.msgWidgets[id].topLevelItemCount() > MsgInspector.MAX_ROWS:
+                for i in range(0, MsgInspector.ROWS_TO_DELETE):
+                    self.msgWidgets[id].takeTopLevelItem(0)
+                    
         if firstTime:
             count = 0
             for fieldInfo in type(msg).fields:
