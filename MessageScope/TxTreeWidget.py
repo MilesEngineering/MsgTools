@@ -170,8 +170,8 @@ class FieldArrayItem(QTreeWidgetItem):
         return super(FieldArrayItem, self).data(column, role)
 
 class EditableFieldArrayItem(FieldArrayItem):
-    def __init__(self, messageClass, msg, fieldInfo, field_array_constructor, index = None):
-        super(EditableFieldArrayItem, self).__init__(messageClass, msg, fieldInfo, field_array_constructor, index)
+    def __init__(self, msg, fieldInfo, field_array_constructor, index = None):
+        super(EditableFieldArrayItem, self).__init__(msg, fieldInfo, field_array_constructor, index)
 
         self.setFlags(self.flags() | Qt.ItemIsEditable)
 
