@@ -214,7 +214,7 @@ class MessageScopeGui(MsgGui.MsgGui):
                     fieldIndex = rxWidgetItem.index
                 msg_id = hex(rxWidgetItem.msg.hdr.GetMessageID())
                 plotListForID = []
-                msg_key = ",".join(self.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
+                msg_key = ",".join(Messaging.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
                 if msg_key in self.msgPlots:
                     plotListForID = self.msgPlots[msg_key]
                 else:
@@ -238,29 +238,12 @@ class MessageScopeGui(MsgGui.MsgGui):
                         msgPlot.addData(rxWidgetItem.msg)
         except AttributeError:
             pass
-    
-    def MsgRoute(self, msg):
-        hdr = msg.hdr
-        msg_route = []
-        try:
-            msg_route.append(str(hdr.GetSource()))
-        except AttributeError:
-            pass
-        try:
-            msg_route.append(str(hdr.GetDestination()))
-        except AttributeError:
-            pass
-        try:
-            msg_route.append(str(hdr.GetDeviceID()))
-        except AttributeError:
-            pass
-        return msg_route
 
     def ProcessMessage(self, msg):
         hdr = msg.hdr
         msg_id = hex(hdr.GetMessageID())
 
-        msg_key = ",".join(self.MsgRoute(msg)) + "," + msg_id
+        msg_key = ",".join(Messaging.MsgRoute(msg)) + "," + msg_id
         
         self.display_message_in_rx_list(msg_key, msg)
         self.display_message_in_rx_tree(msg_key, msg)
@@ -274,7 +257,7 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         if not msg_key in self.rx_msg_list:
             widget_name = msg.MsgName()
-            msg_route = self.MsgRoute(msg)
+            msg_route = Messaging.MsgRoute(msg)
             if len(msg_route) > 0 and not(all ("0" == a for a in msg_route)):
                 widget_name += " ("+"->".join(msg_route)+")"
             msg_list_item = QTreeWidgetItem([ widget_name, str(rx_time), "- Hz" ])

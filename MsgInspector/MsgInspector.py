@@ -157,7 +157,11 @@ class MsgInspector(MsgGui.MsgGui):
             header.sectionClicked.connect(msgWidget.tableHeaderClicked)
             
             # add it to the tab widget, so the user can see it
-            self.tabWidget.addTab(msgWidget, msgName)
+            widgetName = msgName
+            msgRoute = Messaging.MsgRoute(msg)
+            if len(msgRoute) > 0 and not(all ("0" == a for a in msgRoute)):
+                widgetName += " ("+"->".join(msgRoute)+")"
+            self.tabWidget.addTab(msgWidget, widgetName)
             
             # add table header, one column for each message field
             tableHeader = []

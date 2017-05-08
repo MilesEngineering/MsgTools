@@ -214,6 +214,25 @@ class Messaging:
 
         return json.dumps({msg.MsgName() : pythonObj})
 
+    # should this move to a member function of a hypothetical Message base class?
+    @staticmethod
+    def MsgRoute(msg):
+        hdr = msg.hdr
+        msg_route = []
+        try:
+            msg_route.append(str(hdr.GetSource()))
+        except AttributeError:
+            pass
+        try:
+            msg_route.append(str(hdr.GetDestination()))
+        except AttributeError:
+            pass
+        try:
+            msg_route.append(str(hdr.GetDeviceID()))
+        except AttributeError:
+            pass
+        return msg_route
+
 class BitFieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum):
         self.name=name
