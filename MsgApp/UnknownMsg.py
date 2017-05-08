@@ -17,16 +17,16 @@ class UnknownMsg :
         # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
         return self.msg_buffer_wrapper["msg_buffer"]
 
-    def MsgName():
+    def MsgName(self):
         id = hex(self.hdr.GetMessageID())
         return "Unknown_"+id
 
-    def GetRawData(index):
+    def GetRawData(self, index):
         """"""
         value = struct.unpack_from('>B', self.rawBuffer(), UnknownMsg.MSG_OFFSET + index)[0]
         return hex(value)
         
-    def SetRawData(value, index):
+    def SetRawData(self, value, index):
         """"""
         struct.pack_into('>B', self.rawBuffer(), UnknownMsg.MSG_OFFSET + index, value)
     
