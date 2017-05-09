@@ -201,9 +201,10 @@ class MessageScopeGui(MsgGui.MsgGui):
             hdr.SetDataLength(bufferSize - Messaging.hdrSize)
             print("Truncating message to "+str(computedSize)+" bytes")
         if(computedSize < bufferSize):
-            self.sendFn(msg.rawBuffer().raw[0:computedSize])
+            # don't send the *whole* message, just a section of it up to the specified length
+            self.sendBytesFn(msg.rawBuffer().raw[0:computedSize])
         else:
-            self.sendFn(msg.rawBuffer().raw)
+            self.SendMsg(msg)
     
     def onRxMessageFieldSelected(self, rxWidgetItem):
         try:

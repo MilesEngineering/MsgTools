@@ -96,7 +96,7 @@ class NoiseMaker(MsgGui.MsgGui):
                 else:
                     for i in range(0,fieldInfo.count):
                         Messaging.set(msg, fieldInfo, self.fieldValue(fieldInfo), i)
-        self.sendFn(msg.rawBuffer().raw)
+        self.SendMsg(msg)
 
     def ProcessMessage(self, msg):
         pass

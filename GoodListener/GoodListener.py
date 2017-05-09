@@ -4,6 +4,7 @@ import queue
 import time
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QTimer
 
 from datetime import datetime
 
@@ -35,6 +36,7 @@ where RESULTS and LOG are the optional results and log files.
 ''')
         
         MsgGui.MsgGui.__init__(self, "Good Listener 0.1", [argv[0],"file"]+argv[1:], [], parent)
+        self.resize(800, 300)
         
         resultsFilename = argv[1]
         logFileName = argv[2]
@@ -42,7 +44,8 @@ where RESULTS and LOG are the optional results and log files.
         self.statusWindow = QtWidgets.QPlainTextEdit(self)
         self.setCentralWidget(self.statusWindow)
 
-        self.msgList = queue.Queue()
+        self.msgRxList = queue.Queue()
+        self.msgTxList = queue.Queue()
 
         # hook up to received messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -51,6 +54,12 @@ where RESULTS and LOG are the optional results and log files.
         self.thread.status.connect(self.PrintStatus, QtCore.Qt.QueuedConnection)
         self.thread.finished.connect(self.scriptFinished)
         self.thread.start()
+
+        self.txMsgTimer = QTimer(self)
+        self.txMsgTimer.setInterval(20) # this is the rate we check for messages to transmit!
+        self.txMsgTimer.timeout.connect(self.CheckForTxMsgs)
+        self.txMsgTimer.start()
+
     
     def PrintStatus(self, msg):
         self.statusWindow.appendPlainText(msg)
@@ -63,10 +72,28 @@ where RESULTS and LOG are the optional results and log files.
     # queue all received messages
     def ProcessMessage(self, msg):
         # create a python object of the message
-        self.msgList.put(msg)
-        #if len(self.msgList) > SOME_MAX_VALUE:
+        self.msgRxList.put(msg)
+        #if len(self.msgRxList) > SOME_MAX_VALUE:
         #    raise an error?
     
+    def SendMsg(self, msg):
+        self.msgTxList.put(msg)
+        
+    def CheckForTxMsgs(self):
+        try:
+            while(1):
+                msg = self.msgTxList.get(False)
+                super(GoodListener, self).SendMsg(msg)
+        except queue.Empty:
+            pass
+
+    # throw away all queued messages
+    def FlushRxQueue(self):
+        # http://stackoverflow.com/questions/6517953/clear-all-items-from-the-queue
+        with self.msgRxList.mutex:
+            self.msgRxList.queue.clear()
+    
+    # wait for a new message (can include things already in queue!)
     def WaitForMsg(self, msgName, timeout=None):
         if timeout == None:
             timeout = GoodListener.MSG_TIMEOUT
@@ -77,7 +104,7 @@ where RESULTS and LOG are the optional results and log files.
                 now = datetime.now()
                 elapsedTime = (now - start).total_seconds()
                 remainingTime = timeout - elapsedTime
-                msg = self.msgList.get(True, remainingTime)
+                msg = self.msgRxList.get(True, remainingTime)
                 if msg.MsgName() == msgName:
                     return msg
                 else:

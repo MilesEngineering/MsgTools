@@ -53,7 +53,7 @@ class MsgApp(QtWidgets.QMainWindow):
                     print("only allowing msg " + str(option))
         
         # initialize the read function to None, so it's not accidentally called
-        self.readFn = None
+        self.readBytesFn = None
 
         srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
         msgdir = srcroot+"/../obj/CodeGenerator/Python/"
@@ -80,8 +80,8 @@ class MsgApp(QtWidgets.QMainWindow):
             self.connection.error.connect(self.displayConnectError)
             ret = self.connection.readyRead.connect(self.readRxBuffer)
             self.connection.connectToHost(ip, port)
-            self.readFn = self.connection.read
-            self.sendFn = self.connection.write
+            self.readBytesFn = self.connection.read
+            self.sendBytesFn = self.connection.write
             #print("making connection returned", ret, "for socket", self.connection)
             self.connection.connected.connect(self.onConnected)
             self.connection.disconnected.connect(self.onDisconnect)
@@ -91,8 +91,8 @@ class MsgApp(QtWidgets.QMainWindow):
                 self.connection = open(self.connectionName, 'rb')
             except IOError:
                 print("\nERROR!\ncan't open file ", self.connectionName)
-            self.readFn = self.connection.read
-            self.sendFn = self.connection.write
+            self.readBytesFn = self.connection.read
+            self.sendBytesFn = self.connection.write
         else:
             print("\nERROR!\nneed to specify socket or file")
             sys.exit()
@@ -104,10 +104,10 @@ class MsgApp(QtWidgets.QMainWindow):
         connectMsg = self.msgLib.Connect.Connect();
         connectMsg.SetName(self.name);
         output_stream = QtCore.QDataStream(self.connection)
-        self.sendFn(connectMsg.rawBuffer().raw);
+        self.SendMsg(connectMsg);
         # send a subscription message
         subscribeMsg = self.msgLib.MaskedSubscription.MaskedSubscription();
-        self.sendFn(subscribeMsg.rawBuffer().raw);
+        self.SendMsg(subscribeMsg);
         self.statusUpdate.emit('Connected')
     
     def onDisconnect(self):
@@ -150,6 +150,9 @@ class MsgApp(QtWidgets.QMainWindow):
             self.RxMsg.emit(Messaging.MsgFactory(hdr))
             # then clear the buffer, so we start over on the next message
             self.rxBuf = bytearray()
+    
+    def SendMsg(self, msg):
+        self.sendBytesFn(msg.rawBuffer().raw)
 
     # this function reads messages (perhaps from a file, like in LumberJack), and calls the message handler.
     # unclear if it ever makes sense to use this in a application that talks to a socket or UART, because
@@ -166,7 +169,7 @@ class MsgApp(QtWidgets.QMainWindow):
         try:
             while (1):
                 msgCount+=1
-                self.rxBuf = self.readFn(Messaging.hdrSize)
+                self.rxBuf = self.readBytesFn(Messaging.hdrSize)
                 
                 if(len(self.rxBuf) != Messaging.hdrSize):
                     raise StopIteration
@@ -179,7 +182,7 @@ class MsgApp(QtWidgets.QMainWindow):
                         # resync on start sequence
                         bytesThrownAway = 0
                         while (1):
-                            self.rxBuf += self.readFn(1)
+                            self.rxBuf += self.readBytesFn(1)
                             self.rxBuf = self.rxBuf[1:]
                             if(len(self.rxBuf) != Messaging.hdrSize):
                                 raise StopIteration
@@ -197,7 +200,7 @@ class MsgApp(QtWidgets.QMainWindow):
                 bodyLen = hdr.GetDataLength()
                 
                 # read the body
-                self.rxBuf += self.readFn(bodyLen)
+                self.rxBuf += self.readBytesFn(bodyLen)
                 if(len(self.rxBuf) != Messaging.hdrSize + bodyLen): break
                 
                 hdr = Messaging.hdr(self.rxBuf)
