@@ -24,6 +24,63 @@ def Crc16(data):
         crc = 0xFFFF & crc
     return crc
 
+class SelectSerialportDialog(QtWidgets.QDialog):
+    portChanged = QtCore.pyqtSignal(str)
+    @staticmethod
+    def naIfEmpty(value):
+        if not value:
+            return "N/A"
+        return value
+    @staticmethod
+    def naIfEmptyHex(value):
+        if not value:
+            return "N/A"
+        try:
+            return hex(int(value))
+        except ValueError:
+            pass
+        return value
+    def __init__(self, parent=None):
+        super(SelectSerialportDialog, self).__init__(parent)
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.setWindowTitle("Select a Port")
+        
+        self.resize(600, 200)
+
+        self.portsList = QtWidgets.QTreeWidget()
+        openButton = QtWidgets.QPushButton("Open")
+        openButton.clicked.connect(self.openPort)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.portsList)
+        layout.addWidget(openButton)
+        self.setLayout(layout)
+
+        tableHeader = ["Name", "Description", "Mfg", "Location", "VendorID", "ProductID"]
+        self.portsList.setHeaderLabels(tableHeader)
+        for info in QSerialPortInfo.availablePorts():
+            list = []
+            description = info.description()
+            manufacturer = info.manufacturer()
+            serialNumber = info.serialNumber()
+            list.append(info.portName())
+            list.append(self.naIfEmpty(description))
+            list.append(self.naIfEmpty(manufacturer))
+            #list.append(self.naIfEmpty(serialNumber))
+            list.append(info.systemLocation())
+            list.append(self.naIfEmptyHex(info.vendorIdentifier()))
+            list.append(self.naIfEmptyHex(info.productIdentifier()))
+
+            self.portsList.addTopLevelItem(QtWidgets.QTreeWidgetItem(None, list))
+        for i in range(0, len(tableHeader)):
+            self.portsList.resizeColumnToContents(i)
+        
+    def openPort(self):
+        cur_item = self.portsList.currentItem()
+        if cur_item is not None:
+            self.portChanged.emit(cur_item.text(0))
+            self.close()
+
 class SerialConnection(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     messagereceived = QtCore.pyqtSignal(object)
@@ -35,14 +92,25 @@ class SerialConnection(QObject):
 
         self.hdr = hdr
         
-        self.pushButton = QtWidgets.QPushButton("button")
-        self.pushButton.pressed.connect(self.onButtonPress)
+        self.settings = QtCore.QSettings("MsgTools", "MessageServer/SerialPlugin")
+        
+        # button to open/close serial port
+        self.openCloseButton = QtWidgets.QPushButton("button")
+        self.openCloseButton.pressed.connect(self.openCloseSwitch)
+        
+        # button select new serial port
+        self.selectPortButton = QtWidgets.QPushButton("Select Port")
+        self.selectPortButton.pressed.connect(self.selectPort)
+
         self.statusLabel = QtWidgets.QLabel()
         self.subscriptions = {}
         self.subMask = 0
         self.subValue = 0
+        
+        # if port not specified, default to last used port
+        if not portName:
+            portName = self.settings.value("portName", None)
 
-        self.portName = portName
         self.serialPort = QSerialPort(portName)
         self.serialPort.setBaudRate(QSerialPort.Baud115200);
         self.serialPort.setFlowControl(QSerialPort.NoFlowControl);
@@ -54,8 +122,7 @@ class SerialConnection(QObject):
         self.rxMsgCount = 0
 
         self.serialPort.readyRead.connect(self.onReadyRead)
-        self.name = "Serial " + self.portName
-        self.statusLabel.setText(self.name)
+        self.name = "Serial " + self.serialPort.portName()
 
         # Make a list of fields in the serial header and network header that have matching names.
         self.correspondingFields = []
@@ -84,32 +151,44 @@ class SerialConnection(QObject):
 
     def widget(self, index):
         if index == 0:
-            return self.pushButton
+            return self.openCloseButton
         if index == 1:
+            return self.selectPortButton
+        if index == 2:
             return self.statusLabel
         return None
 
-    def onButtonPress(self):
+    def openCloseSwitch(self):
         # open or close the port
         if self.serialPort.isOpen():
-            self.statusUpdate.emit("Closed SerialPort on port "+str(self.portName))
+            self.statusUpdate.emit("Closed SerialPort on port "+str(self.serialPort.portName()))
             self.serialPort.close()
-            self.pushButton.setText("Open")
+            self.openCloseButton.setText("Open")
         else:
             if self.serialPort.open(QSerialPort.ReadWrite):
-                self.statusUpdate.emit("Opened SerialPort on port "+str(self.portName))
-                self.pushButton.setText("Close")
+                self.statusUpdate.emit("Opened SerialPort on port "+str(self.serialPort.portName()))
+                self.openCloseButton.setText("Close")
+                self.settings.setValue("portName", self.serialPort.portName())
             else:
-                self.statusUpdate.emit("Can't open SerialPort on port "+str(self.portName)+"!")
-                self.pushButton.setText("Open")
+                self.statusUpdate.emit("Can't open SerialPort on port "+str(self.serialPort.portName())+"!")
+                self.openCloseButton.setText("Open")
+        self.name = "Serial " + self.serialPort.portName()
+        self.statusLabel.setText(self.name)
+
+    def portChanged(self, portName):
+        self.statusUpdate.emit("switching to serial port " + portName)
+        if self.serialPort.isOpen():
+            self.serialPort.close()
+        self.serialPort.setPortName(portName)
+        self.openCloseSwitch()
+
+    def selectPort(self):
+        d = SelectSerialportDialog()
+        d.portChanged.connect(self.portChanged)
+        d.exec_()
 
     def start(self):
-        if self.serialPort.open(QSerialPort.ReadWrite):
-            self.statusUpdate.emit("Opened SerialPort on port "+str(self.portName))
-            self.pushButton.setText("Close")
-        else:
-            self.statusUpdate.emit("Can't open SerialPort on port "+str(self.portName)+"!")
-            self.pushButton.setText("Open")
+        self.openCloseSwitch()
 
     def gotRxError(self, errType):
         print("Got rx error " + errType)

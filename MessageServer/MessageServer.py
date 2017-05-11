@@ -39,8 +39,22 @@ class MessageServer(QtWidgets.QMainWindow):
         self.wsServer.statusUpdate.connect(self.onStatusUpdate)
         self.wsServer.newConnection.connect(self.onNewConnection)
 
-        options = ['serial=', 'bluetoothSPP=', 'plugin=']
-        self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
+        # need a way to make serial= and serial both work!
+        try:
+            tmpOptions = ['serial=', 'bluetoothSPP=', 'plugin=']
+            self.optlist, args = getopt.getopt(sys.argv[1:], '', tmpOptions)
+        except getopt.GetoptError:
+            pass
+        else:
+            options = tmpOptions
+        try:
+            tmpOptions = ['serial', 'bluetoothSPP=', 'plugin=']
+            self.optlist, args = getopt.getopt(sys.argv[1:], '', tmpOptions)
+        except getopt.GetoptError:
+            pass
+        else:
+            options = tmpOptions
+
         for opt in self.optlist:
             if opt[0] == '--serial':
                 from SerialHeader import SerialHeader
@@ -74,6 +88,7 @@ class MessageServer(QtWidgets.QMainWindow):
         self.wsServer.start()
         name = self.tcpServer.serverInfo() + "(TCP) and " + str(self.wsServer.portNumber) + "(WebSocket)"
         self.statusBar().addPermanentWidget(QtWidgets.QLabel(name))
+        self.readSettings()
 
     def initializeGui(self):
         # Layout
@@ -96,7 +111,6 @@ class MessageServer(QtWidgets.QMainWindow):
 
         # Main Window Stuff
         self.setWindowTitle("MessageServer 0.1")
-        self.setGeometry(300, 100, 800, 400)
         self.statusBar()
     
     def onLogButtonClicked(self):
@@ -179,6 +193,14 @@ class MessageServer(QtWidgets.QMainWindow):
                 id = hdr.GetMessageID()
                 if id in client.subscriptions or (id & client.subMask == client.subValue):
                     client.sendMsg(hdr)
+    def closeEvent(self, event):
+        self.settings.setValue("geometry", self.saveGeometry())
+        self.settings.setValue("windowState", self.saveState())
+        super(MessageServer, self).closeEvent(event)
+    
+    def readSettings(self):
+        self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))
+        self.restoreState(self.settings.value("windowState", QtCore.QByteArray()))
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
