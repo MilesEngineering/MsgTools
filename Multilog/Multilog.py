@@ -48,7 +48,6 @@ filenames will be composed like so:
         widget = QtWidgets.QWidget(self)
         vLayout = QtWidgets.QVBoxLayout(widget)
         self.setCentralWidget(widget)
-        self.resize(640, 480)
         self.statusMsg = QtWidgets.QLabel("NOT logging")
         vLayout.addWidget(self.statusMsg)
 

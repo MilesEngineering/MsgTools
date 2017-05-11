@@ -34,14 +34,17 @@ Invoke like this
     
 where RESULTS and LOG are the optional results and log files.
 ''')
-        
-        MsgGui.MsgGui.__init__(self, "Good Listener 0.1", [argv[0],"file"]+argv[1:], [], parent)
-        self.resize(800, 300)
+        appName = "Good Listener 0.1, " + ThreadClass.__name__
+        MsgGui.MsgGui.__init__(self, appName, [argv[0],"file"]+argv[1:], [], parent)
         
         resultsFilename = argv[1]
         logFileName = argv[2]
         
         self.statusWindow = QtWidgets.QPlainTextEdit(self)
+        doc = self.statusWindow.document()
+        font = doc.defaultFont()
+        font.setFamily("Courier New");
+        doc.setDefaultFont(font)
         self.setCentralWidget(self.statusWindow)
 
         self.msgRxList = queue.Queue()

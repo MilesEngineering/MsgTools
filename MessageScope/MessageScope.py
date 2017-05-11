@@ -77,8 +77,6 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         self.configure_gui(parent)
         
-        self.resize(1000, 600)
-        
         self.ReadTxDictionary()
 
     def configure_gui(self, parent):

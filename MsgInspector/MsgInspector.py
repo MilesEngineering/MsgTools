@@ -22,7 +22,6 @@ class MsgInspector(MsgGui.MsgGui):
         # tab widget to show multiple messages, one per tab
         self.tabWidget = QtWidgets.QTabWidget(self)
         self.setCentralWidget(self.tabWidget)
-        self.resize(640, 480)
         
         # hash table to lookup the widget for a message, by message ID
         self.msgWidgets = {}

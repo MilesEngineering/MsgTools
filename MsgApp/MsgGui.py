@@ -197,8 +197,8 @@ class MsgGui(MsgApp, QtWidgets.QMainWindow):
         self.statusBar().addPermanentWidget(self.status)
         # hook it up to our base class statusUpdate signal
         self.statusUpdate.connect(self.status.setText)
-        
-        self.resize(320, 240)
+
+        self.readSettings()
         self.setWindowTitle(self.name)
 
         # create menu items, connect them to socket operations
@@ -227,3 +227,11 @@ class MsgGui(MsgApp, QtWidgets.QMainWindow):
         hostIp, ok = QInputDialog.getText(self, 'Connect',  'Server:', QLineEdit.Normal, hostIp)
         self.connection.connectToHost(hostIp, port)
     
+    def closeEvent(self, event):
+        self.settings.setValue("geometry", self.saveGeometry())
+        self.settings.setValue("windowState", self.saveState())
+        super(MsgGui, self).closeEvent(event)
+    
+    def readSettings(self):
+        self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))
+        self.restoreState(self.settings.value("windowState", QtCore.QByteArray()))

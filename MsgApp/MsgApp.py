@@ -22,6 +22,9 @@ class MsgApp(QtWidgets.QMainWindow):
     def __init__(self, name, headerName, argv, options):
         self.name = name
         
+        # persistent settings
+        self.settings = QtCore.QSettings("MsgTools", name)
+        
         # rx buffer, to receive a message with multiple signals
         self.rxBuf = bytearray()
         
@@ -101,14 +104,19 @@ class MsgApp(QtWidgets.QMainWindow):
     
     def onConnected(self):
         # send a connect message
-        connectMsg = self.msgLib.Connect.Connect();
-        connectMsg.SetName(self.name);
-        output_stream = QtCore.QDataStream(self.connection)
-        self.SendMsg(connectMsg);
-        # send a subscription message
-        subscribeMsg = self.msgLib.MaskedSubscription.MaskedSubscription();
-        self.SendMsg(subscribeMsg);
-        self.statusUpdate.emit('Connected')
+        connectMsg = self.msgLib.Connect.Connect()
+        connectMsg.SetName(self.name)
+        self.SendMsg(connectMsg)
+        # if the app has it's own function to happen after connection, assume it will set subscriptions to what it wants.
+        try:
+            fn = self.onAppConnected
+        except AttributeError:
+            # send a subscription message
+            subscribeMsg = self.msgLib.MaskedSubscription.MaskedSubscription()
+            self.SendMsg(subscribeMsg)
+            self.statusUpdate.emit('Connected')
+        else:
+            self.onAppConnected()
     
     def onDisconnect(self):
         self.statusUpdate.emit('*NOT* Connected')
