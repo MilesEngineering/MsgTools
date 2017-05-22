@@ -160,7 +160,17 @@ class MsgApp(QtWidgets.QMainWindow):
             self.rxBuf = bytearray()
     
     def SendMsg(self, msg):
-        self.sendBytesFn(msg.rawBuffer().raw)
+        bufferSize = len(msg.rawBuffer().raw)
+        hdr = msg.hdr
+        computedSize = Messaging.hdrSize + hdr.GetDataLength()
+        if(computedSize > bufferSize):
+            hdr.SetDataLength(bufferSize - Messaging.hdrSize)
+            print("Truncating message to "+str(computedSize)+" bytes")
+        if(computedSize < bufferSize):
+            # don't send the *whole* message, just a section of it up to the specified length
+            self.sendBytesFn(msg.rawBuffer().raw[0:computedSize])
+        else:
+            self.sendBytesFn(msg.rawBuffer().raw)
 
     # this function reads messages (perhaps from a file, like in LumberJack), and calls the message handler.
     # unclear if it ever makes sense to use this in a application that talks to a socket or UART, because
