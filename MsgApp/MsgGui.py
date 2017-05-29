@@ -197,6 +197,13 @@ class MsgGui(MsgApp, QtWidgets.QMainWindow):
         self.statusBar().addPermanentWidget(self.status)
         # hook it up to our base class statusUpdate signal
         self.statusUpdate.connect(self.status.setText)
+        
+        # a checkbox for connection state to the status bar
+        self.connectionCheckbox = QtWidgets.QCheckBox("")
+        self.statusBar().addPermanentWidget(self.connectionCheckbox)
+        # hook it up to connect/disconnect
+        self.connectionCheckbox.clicked.connect(self.connectionCheckedChanged)
+        self.connectionChanged.connect(self.connectionChangedSlot)
 
         self.readSettings()
         self.setWindowTitle(self.name)
@@ -211,7 +218,7 @@ class MsgGui(MsgApp, QtWidgets.QMainWindow):
             connectMenu.addAction(connectAction)
             connectMenu.addAction(disconnectAction)
             connectAction.triggered.connect(self.chooseHost)
-            disconnectAction.triggered.connect(self.connection. disconnectFromHost)
+            disconnectAction.triggered.connect(self.connection.disconnectFromHost)
     
     # open dialog box to choose host to connect to
     def chooseHost(self):
@@ -235,3 +242,28 @@ class MsgGui(MsgApp, QtWidgets.QMainWindow):
     def readSettings(self):
         self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))
         self.restoreState(self.settings.value("windowState", QtCore.QByteArray()))
+
+    def connectionChangedSlot(self, connected):
+        self.statusUpdate.emit('')
+        self.connectionCheckbox.setChecked(connected)
+        if connected:
+            self.connectionCheckbox.setText("Connected")
+        else:
+            self.connectionCheckbox.setText("NOT Connected")
+
+    def connectionCheckedChanged(self, checked):
+        self.statusUpdate.emit('')
+        if checked:
+            self.connectionCheckbox.setText("Connecting")
+            (hostIp, port) = self.connectionName.split(":")
+            if(hostIp == None):
+                hostIp = "127.0.0.1"
+
+            if(port == None):
+                port = "5678"
+            
+            port = int(port)
+            self.connection.connectToHost(hostIp, port)
+        else:
+            self.connectionCheckbox.setText("NOT Connected")
+            self.connection.disconnectFromHost()

@@ -18,6 +18,7 @@ from Messaging import Messaging
 class MsgApp(QtWidgets.QMainWindow):
     RxMsg = QtCore.pyqtSignal(object)
     statusUpdate = QtCore.pyqtSignal(str)
+    connectionChanged = QtCore.pyqtSignal(bool)
     
     def __init__(self, name, headerName, argv, options):
         self.name = name
@@ -103,6 +104,7 @@ class MsgApp(QtWidgets.QMainWindow):
         self.connection;
     
     def onConnected(self):
+        self.connectionChanged.emit(True)
         # send a connect message
         connectMsg = self.msgLib.Connect.Connect()
         connectMsg.SetName(self.name)
@@ -114,14 +116,16 @@ class MsgApp(QtWidgets.QMainWindow):
             # send a subscription message
             subscribeMsg = self.msgLib.MaskedSubscription.MaskedSubscription()
             self.SendMsg(subscribeMsg)
-            self.statusUpdate.emit('Connected')
+            #self.statusUpdate.emit('Connected')
         else:
             self.onAppConnected()
     
     def onDisconnect(self):
-        self.statusUpdate.emit('*NOT* Connected')
+        self.connectionChanged.emit(False)
+        #self.statusUpdate.emit('NOT Connected')
     
     def displayConnectError(self, socketError):
+        self.connectionChanged.emit(False)
         self.statusUpdate.emit('Not Connected('+str(socketError)+')')
 
     # Qt signal/slot based reading of TCP socket
