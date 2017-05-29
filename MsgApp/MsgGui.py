@@ -244,9 +244,9 @@ class MsgGui(MsgApp, QtWidgets.QMainWindow):
         self.restoreState(self.settings.value("windowState", QtCore.QByteArray()))
 
     def connectionChangedSlot(self, connected):
-        self.statusUpdate.emit('')
         self.connectionCheckbox.setChecked(connected)
         if connected:
+            self.statusUpdate.emit('')
             self.connectionCheckbox.setText("Connected")
         else:
             self.connectionCheckbox.setText("NOT Connected")

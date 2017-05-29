@@ -126,7 +126,7 @@ class MsgApp(QtWidgets.QMainWindow):
     
     def displayConnectError(self, socketError):
         self.connectionChanged.emit(False)
-        self.statusUpdate.emit('Not Connected('+str(socketError)+')')
+        self.statusUpdate.emit('Not Connected('+str(socketError)+'), '+self.connection.errorString())
 
     # Qt signal/slot based reading of TCP socket
     def readRxBuffer(self):
