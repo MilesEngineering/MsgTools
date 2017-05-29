@@ -18,6 +18,7 @@ class WebSocketClientConnection(QObject):
         self.subscriptions = {}
         self.subMask = ~0
         self.subValue = 0
+        self.isHardwareLink = False
 
         self.webSocket = webSocket
         self.webSocket.binaryMessageReceived.connect(self.processBinaryMessage)

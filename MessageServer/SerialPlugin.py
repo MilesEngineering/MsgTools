@@ -106,6 +106,7 @@ class SerialConnection(QObject):
         self.subscriptions = {}
         self.subMask = 0
         self.subValue = 0
+        self.isHardwareLink = True
         
         # if port not specified, default to last used port
         if not portName:

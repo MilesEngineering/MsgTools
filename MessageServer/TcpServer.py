@@ -17,6 +17,7 @@ class TcpClientConnection(QObject):
         self.subscriptions = {}
         self.subMask = ~0
         self.subValue = 0
+        self.isHardwareLink = False
         
         self.tcpSocket = tcpSocket
         self.tcpSocket.readyRead.connect(self.onReadyRead)

@@ -26,8 +26,14 @@ class MessageServer(QtWidgets.QMainWindow):
         self.connectClass = Messaging.MsgClassFromName["Network.Connect"]
         self.subscriptionListClass = Messaging.MsgClassFromName["Network.SubscriptionList"]
         self.maskedSubscriptionClass = Messaging.MsgClassFromName["Network.MaskedSubscription"]
+        try:
+            self.privateSubscriptionListClass = Messaging.MsgClassFromName["Network.PrivateSubscriptionList"]
+        except KeyError:
+            self.privateSubscriptionListClass = None
 
         self.clients = {}
+        
+        self.privateSubscriptions = {}
 
         self.initializeGui()
 
@@ -184,6 +190,19 @@ class MessageServer(QtWidgets.QMainWindow):
             c.subMask = subMsg.GetMask()
             c.subValue = subMsg.GetValue()
             self.onStatusUpdate("updating subscription for "+c.name+" to id & " + hex(c.subMask) + " == " + hex(c.subValue))
+        elif self.privateSubscriptionListClass != None and hdr.GetMessageID() == self.privateSubscriptionListClass.ID:
+            subListMsg = self.privateSubscriptionListClass(hdr.rawBuffer())
+            privateSubs = []
+            for idx in range(0,self.privateSubscriptionListClass.GetIDs.count):
+                id = subListMsg.GetIDs(idx)
+                if id == 0:
+                    break
+                privateSubs.append(id)
+                if id in self.privateSubscriptions:
+                    self.privateSubscriptions[id].append(c)
+                else:
+                    self.privateSubscriptions[id] = [c]
+            self.onStatusUpdate("adding Private subscription for "+c.name+": " + ', '.join(hex(x) for x in privateSubs))
         else:
             #write to log, if log is open
             if self.logFile != None:
@@ -191,8 +210,14 @@ class MessageServer(QtWidgets.QMainWindow):
         for client in self.clients.values():
             if client != c:
                 id = hdr.GetMessageID()
-                if id in client.subscriptions or (id & client.subMask == client.subValue):
-                    client.sendMsg(hdr)
+                if id in client.subscriptions or (id & client.subMask == client.subValue):                    
+                    if id in self.privateSubscriptions:
+                        # if it's a "private" message, only give it to clients that specifically said they want it
+                        # or to clients that are a hardware link.
+                        if client in self.privateSubscriptions[id] or client.isHardwareLink:
+                            client.sendMsg(hdr)
+                    else:
+                        client.sendMsg(hdr)
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())
