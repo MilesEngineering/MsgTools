@@ -13,7 +13,8 @@ function buf2hex(buffer) { // buffer is an ArrayBuffer
 var MessageDictionary = {};
     
 var MessagingClient = function() {
-    this.webSocket = new WebSocket("ws://127.0.0.1:5679", "BMAP");
+    // don't specify subprotocol, our Qt Websocket server doesn't support that
+    this.webSocket = new WebSocket("ws://127.0.0.1:5679"); //, "BMAP");
     this.webSocket.binaryType = 'arraybuffer';
     this.webSocket.onopen = this.onopen.bind(this);
     this.webSocket.onclose = this.onclose.bind(this);
