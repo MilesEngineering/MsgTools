@@ -55,9 +55,21 @@ class MsgTreeWidget(TreeWidget):
     ROWS_TO_DELETE = 50
     def __init__(self, msgClass, keyField=None, maxRows=1000, rowsToDelete=50):
         super(MsgTreeWidget, self).__init__()
+        from UnknownMsg import UnknownMsg
+        if msgClass == UnknownMsg:
+            self.showHeader = True
+        else:
+            self.showHeader = False
         # add table header, one column for each message field
         tableHeader = []
         tableHeader.append("Time (ms)")
+        if self.showHeader:
+            for fieldInfo in Messaging.hdr.fields:
+                if len(fieldInfo.bitfieldInfo) == 0:
+                    tableHeader.append(fieldInfo.name)
+                else:
+                    for bitInfo in fieldInfo.bitfieldInfo:
+                        tableHeader.append(bitInfo.name)
         for fieldInfo in msgClass.fields:
             tableHeader.append(fieldInfo.name)
             for bitInfo in fieldInfo.bitfieldInfo:
@@ -91,6 +103,17 @@ class MsgTreeWidget(TreeWidget):
         columnAlerts.append(0)
         keyColumn = -1
         columnCounter = 1
+        if self.showHeader:
+            for fieldInfo in Messaging.hdr.fields:
+                if len(fieldInfo.bitfieldInfo) == 0:
+                    fieldValue = str(Messaging.get(msg.hdr, fieldInfo))
+                    msgStringList.append(fieldValue)
+                    columnCounter += 1
+                else:
+                    for bitInfo in fieldInfo.bitfieldInfo:
+                        fieldValue = str(Messaging.get(msg.hdr, bitInfo))
+                        msgStringList.append(fieldValue)
+                        columnCounter += 1
         for fieldInfo in type(msg).fields:
             if(fieldInfo.count == 1):
                 fieldValue = str(Messaging.get(msg, fieldInfo))
