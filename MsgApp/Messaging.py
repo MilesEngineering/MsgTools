@@ -129,7 +129,7 @@ class Messaging:
         msgId = hex(hdr.GetMessageID())
 
         if not msgId in Messaging.MsgNameFromID:
-            #print("WARNING! No definition for ", msg_id, "!\n")
+            #print("WARNING! No definition for ", msgId, "!\n")
             from UnknownMsg import UnknownMsg
             msgClass = UnknownMsg
         else:
