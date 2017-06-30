@@ -12,10 +12,10 @@ def ProcessDir(outFile, msgDir):
         inputFilename = msgDir + '/' + filename
         if os.path.isdir(inputFilename):
             ProcessDir(outFile, inputFilename)
-        else:
+        elif filename.endswith(".js"):
             script = '<script type="text/javascript" src="%s" ></script>\n' % inputFilename
             print("Removing 'import' statements from " + filename + " so it can be used in web browser!")
-            os.system("sed -i'' -e 's|\(^import.*\)|// "+sys.argv[0]+" stole your import statements so the js can run in the browser! // \\1|' "+inputFilename)
+            os.system("sed -i'.bak' -e 's|\(^import.*\)|// "+sys.argv[0]+" stole your import statements so the js can run in the browser! // \\1|' "+inputFilename)
             outFile.write(script)
 
 # main starts here
