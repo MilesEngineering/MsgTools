@@ -106,7 +106,7 @@ classdef Messaging
                 inputMsgBuffer = [];
             end
             myClassname = obj.msgClassnameFromID(msgid);
-            fprintf('myClass is %s\n', myClassname);
+            % fprintf('myClass is %s\n', myClassname);
             ctorMethodName = myClassname; %findobj(myClass.MethodList, 'Access','public', 'Name',myClass.Name);
 
             % get number of contructor arguments
