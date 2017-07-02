@@ -14,7 +14,15 @@ var MessageDictionary = {};
     
 var MessagingClient = function() {
     // don't specify subprotocol, our Qt Websocket server doesn't support that
-    this.webSocket = new WebSocket("ws://127.0.0.1:5679"); //, "BMAP");
+    
+    websocketServer = "127.0.0.1";
+    var urlParams = new URLSearchParams(window.location.search);
+    if(urlParams.has('ws'))
+    {
+        websocketServer = urlParams.get("ws")
+    }
+    
+    this.webSocket = new WebSocket("ws://"+websocketServer+":5679"); //, "BMAP");
     this.webSocket.binaryType = 'arraybuffer';
     this.webSocket.onopen = this.onopen.bind(this);
     this.webSocket.onclose = this.onclose.bind(this);
