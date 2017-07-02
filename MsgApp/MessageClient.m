@@ -71,6 +71,17 @@ classdef MessageClient
             subMsg.Value = id;
             obj.SendMsg(subMsg);
         end
+        function ret = WaitForMsg(obj, id)
+            while(1)
+                msg = obj.GetMsg();
+                %fprintf('Got message with ID 0x%X', msg.MSG_ID);
+                if(msg.MSG_ID == id)
+                    %fprintf('Got matching message! returning!');
+                    ret = msg;
+                    break;
+                end
+            end
+        end
         function PrintMessages(obj, id, mask)
             obj.SubscribeToMessage(id,mask);
             while(1)
