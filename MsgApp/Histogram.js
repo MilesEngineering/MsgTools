@@ -6,13 +6,16 @@ var Histogram = function(htmlId) {
 
 
     this.margin = {top: 10, right: 30, bottom: 30, left: 30}
-    this.width = 960 - this.margin.left - this.margin.right
-    this.height = 500 - this.margin.top - this.margin.bottom
+    this.width = 960
+    this.height = 500
 
     this.svg = d3.select(htmlId).append('svg')
         .attr('class', 'chart')
         .attr('width', this.width)
         .attr('height', this.height)
+
+    this.width += - this.margin.left - this.margin.right
+    this.height += - this.margin.top - this.margin.bottom
     
     this.g = this.svg.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
 
@@ -57,5 +60,5 @@ var Histogram = function(htmlId) {
 Histogram.prototype.plot = function(data){
 }
 
-Histogram.prototype.clear = function(data){
+Histogram.prototype.clear = function(){
 }
