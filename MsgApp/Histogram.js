@@ -1,9 +1,6 @@
 var Histogram = function(htmlId) {
 
-    this.data = d3.range(100).map(d3.randomBates(10));
-
-    var formatCount = d3.format(",.0f");
-
+    this.data = d3.range(10).map(d3.randomNormal(50, 10));
 
     this.margin = {top: 10, right: 30, bottom: 30, left: 30}
     this.width = 960
@@ -17,11 +14,19 @@ var Histogram = function(htmlId) {
     this.width += - this.margin.left - this.margin.right
     this.height += - this.margin.top - this.margin.bottom
     
+    this.initFromData()
+}
+
+Histogram.prototype.initFromData = function()
+{
+    var formatCount = d3.format(",.0f");
+    
     this.g = this.svg.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
 
     var that = this
 
     this.x = d3.scaleLinear()
+        .domain(d3.extent(this.data))
         .rangeRound([0, that.width]);
 
     this.bins = d3.histogram()
@@ -58,6 +63,9 @@ var Histogram = function(htmlId) {
 }
 
 Histogram.prototype.plot = function(data){
+    console.log("Got " + data)
+    this.data.push(data)
+    this.initFromData()
 }
 
 Histogram.prototype.clear = function(){
