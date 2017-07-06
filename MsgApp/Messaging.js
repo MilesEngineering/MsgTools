@@ -65,7 +65,7 @@ MessagingClient.prototype.onmessage = function (event) {
     else
     {
         // construct a Unknown message
-        console.log("ERROR! Msg ID 0x" + id.toString(16) + " not defined!");
+        //console.log("ERROR! Msg ID 0x" + id.toString(16) + " not defined!");
         msg = new UnknownMsg(event.data);
         this.onmsg(msg);
     }
