@@ -92,7 +92,7 @@ classdef Messaging
 
             % Get a list of all files and folders in this folder.
             d = dir(dirname);
-            isub = [d(:).isdir]; %# returns logical vector
+            isub = [d(:).isdir]; % returns logical vector
             subFolders = {d(isub).name}';
             subFolders(ismember(subFolders,{'.','..'})) = [];
             % Print folder names to command window.
@@ -112,7 +112,7 @@ classdef Messaging
             % get number of contructor arguments
             %numArgs = numel(ctorMethod.InputNames);
 
-            %# create object
+            % create object
             try
                 if(nargin < 3)
                     ret = feval(ctorMethodName);
