@@ -352,16 +352,18 @@ def structUnpacking(msg):
         for field in msg["Fields"]:
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
-                    ret.append('ret["'+bits["Name"] + '"] = this.Get' + bits["Name"] + "();")
+                    ret.append('try { ret["'+bits["Name"] + '"] = this.Get' + bits["Name"] + "(); } catch (err) {}")
             else:
                 if MsgParser.fieldCount(field) == 1:
-                    ret.append('ret["'+field["Name"] + '"] = this.Get' + field["Name"] + "();")
+                    ret.append('try { ret["'+field["Name"] + '"] = this.Get' + field["Name"] + "(); } catch (err) {}")
                 else:
                     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
-                        ret.append('ret["'+field["Name"] + '"] = this.Get' + field["Name"] + "String();")
+                        ret.append('try { ret["'+field["Name"] + '"] = this.Get' + field["Name"] + "String(); } catch (err) {}")
                     else:
-                        ret.append('ret["'+field["Name"] + '"] = [];')
-                        ret.append("for(i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
-                        ret.append('    ret["'+field["Name"] + '"][i] = this.Get' + field["Name"] + "(i);")
+                        ret.append('try { ret["'+field["Name"] + '"] = []; } catch (err) {}')
+                        ret.append('try { ')
+                        ret.append("    for(i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
+                        ret.append('        ret["'+field["Name"] + '"][i] = this.Get' + field["Name"] + "(i);")
+                        ret.append('} catch (err) {}')
             
     return "\n".join(ret)
