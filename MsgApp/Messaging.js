@@ -13,8 +13,8 @@ function buf2hex(buffer) { // buffer is an ArrayBuffer
 var MessageDictionary = {};
     
 var MessagingClient = function() {
-    // don't specify subprotocol, our Qt Websocket server doesn't support that
     
+    // use default localhost, or else address specified in URL
     websocketServer = "127.0.0.1";
     var urlParams = new URLSearchParams(window.location.search);
     if(urlParams.has('ws'))
@@ -22,6 +22,7 @@ var MessagingClient = function() {
         websocketServer = urlParams.get("ws")
     }
     
+    // don't specify subprotocol, our Qt Websocket server doesn't support that
     this.webSocket = new WebSocket("ws://"+websocketServer+":5679"); //, "BMAP");
     this.webSocket.binaryType = 'arraybuffer';
     this.webSocket.onopen = this.onopen.bind(this);
