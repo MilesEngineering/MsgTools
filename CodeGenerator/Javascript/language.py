@@ -66,7 +66,7 @@ def getFn(field, offset):
     for(i=0; i<%s && i<this.hdr.GetDataLength()-%s; i++)
     {
         nextChar = String.fromCharCode(this.Get%s(i));
-        if(nextChar == '\0')
+        if(nextChar == '\\0')
             break;
         value += nextChar;
     }
