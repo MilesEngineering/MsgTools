@@ -207,17 +207,17 @@ class MessageServer(QtWidgets.QMainWindow):
             #write to log, if log is open
             if self.logFile != None:
                 self.logFile.write(hdr.rawBuffer())
-        for client in self.clients.values():
-            if client != c:
-                id = hdr.GetMessageID()
-                if id in client.subscriptions or (id & client.subMask == client.subValue):                    
-                    if id in self.privateSubscriptions:
-                        # if it's a "private" message, only give it to clients that specifically said they want it
-                        # or to clients that are a hardware link.
-                        if client in self.privateSubscriptions[id] or client.isHardwareLink:
+            for client in self.clients.values():
+                if client != c:
+                    id = hdr.GetMessageID()
+                    if id in client.subscriptions or (id & client.subMask == client.subValue):                    
+                        if id in self.privateSubscriptions:
+                            # if it's a "private" message, only give it to clients that specifically said they want it
+                            # or to clients that are a hardware link.
+                            if client in self.privateSubscriptions[id] or client.isHardwareLink:
+                                client.sendMsg(hdr)
+                        else:
                             client.sendMsg(hdr)
-                    else:
-                        client.sendMsg(hdr)
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())

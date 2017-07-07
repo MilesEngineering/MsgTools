@@ -13,7 +13,16 @@ function buf2hex(buffer) { // buffer is an ArrayBuffer
 var MessageDictionary = {};
     
 var MessagingClient = function() {
-    this.webSocket = new WebSocket("ws://127.0.0.1:5679", "BMAP");
+    // don't specify subprotocol, our Qt Websocket server doesn't support that
+    
+    websocketServer = "127.0.0.1";
+    var urlParams = new URLSearchParams(window.location.search);
+    if(urlParams.has('ws'))
+    {
+        websocketServer = urlParams.get("ws")
+    }
+    
+    this.webSocket = new WebSocket("ws://"+websocketServer+":5679"); //, "BMAP");
     this.webSocket.binaryType = 'arraybuffer';
     this.webSocket.onopen = this.onopen.bind(this);
     this.webSocket.onclose = this.onclose.bind(this);
@@ -56,7 +65,7 @@ MessagingClient.prototype.onmessage = function (event) {
     else
     {
         // construct a Unknown message
-        console.log("ERROR! Msg ID 0x" + id.toString(16) + " not defined!");
+        //console.log("ERROR! Msg ID 0x" + id.toString(16) + " not defined!");
         msg = new UnknownMsg(event.data);
         this.onmsg(msg);
     }
