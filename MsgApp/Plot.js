@@ -1,8 +1,8 @@
 // right now this works with exactly 3 lines.
 // it should be modified to work with any number of lines, specified by constructor parameters
 // perhaps allow user to pass in an array of names and colors?
-var PlotData = function(htmlId) {   
-    this.timeLimit = 10 // seconds
+var PlotData = function(htmlId, timeLimit, yMin, yMax) {   
+    this.timeLimit = timeLimit // seconds
     this.duration = 750
     this.width = 500
     this.height = 200
@@ -28,13 +28,16 @@ var PlotData = function(htmlId) {
     
     var that = this
     
+    yAxisLabelWidth = 50;
+    xAxisLabelHeight = 20;
+    
     this.xScale = d3.scale.linear()
         .domain([-this.timeLimit, 0])
-        .range([0, this.width])
+        .range([yAxisLabelWidth, this.width-10])
 
     this.yScale = d3.scale.linear()
-        .domain([-8200, 8200])
-        .range([this.height, 0])
+        .domain([yMin, yMax])
+        .range([this.height-xAxisLabelHeight, 0])
 
     this.line = d3.svg.line()
         .interpolate('linear')
@@ -49,12 +52,17 @@ var PlotData = function(htmlId) {
     this.svg = d3.select(htmlId).append('svg')
         .attr('class', 'chart')
         .attr('width', this.width)
-        .attr('height', this.height + 50)
+        .attr('height', this.height + 0)
 
-    this.axis = this.svg.append('g')
+    this.xAxis = this.svg.append('g')
         .attr('class', 'x axis')
-        .attr('transform', 'translate(0,' + this.height + ')')
+        .attr('transform', 'translate(0,' + (this.height-xAxisLabelHeight) + ')')
         .call(that.xScale.axis = d3.svg.axis().scale(that.xScale).orient('bottom'))
+
+    this.yAxis = this.svg.append('g')
+        .attr('class', 'y axis')
+        .attr('transform', 'translate(' + 50 + ',0)')
+        .call(that.yScale.axis = d3.svg.axis().scale(that.yScale).orient('left'))
 
     this.paths = this.svg.append('g')
 
