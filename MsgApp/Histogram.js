@@ -1,4 +1,9 @@
-var Histogram = function(htmlId) {
+var Histogram = function(htmlId, minVal, maxVal) {
+    
+    this.htmlId = htmlId;
+    
+    this.minVal = minVal;
+    this.maxVal = maxVal;
 
     this.data = d3.range(10).map(d3.randomNormal(50, 10));
 
@@ -19,14 +24,12 @@ var Histogram = function(htmlId) {
 
 Histogram.prototype.initFromData = function()
 {
-    var formatCount = d3.format(",.0f");
-    
     this.g = this.svg.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
 
     var that = this
 
     this.x = d3.scaleLinear()
-        .domain(d3.extent(this.data))
+        .domain([this.minVal, this.maxVal])
         .rangeRound([0, that.width]);
 
     this.bins = d3.histogram()
@@ -49,6 +52,8 @@ Histogram.prototype.initFromData = function()
         .attr("width", that.x(that.bins[0].x1) - that.x(that.bins[0].x0) - 1)
         .attr("height", function(d) { return that.height - that.y(d.length); });
 
+    var formatCount = d3.format(",.0f");
+
     this.bar.append("text")
         .attr("dy", ".75em")
         .attr("y", 6)
@@ -65,8 +70,12 @@ Histogram.prototype.initFromData = function()
 Histogram.prototype.plot = function(data){
     console.log("Got " + data)
     this.data.push(data)
+    $(this.htmlId+">svg").empty();
     this.initFromData()
 }
 
 Histogram.prototype.clear = function(){
+    this.data = [];
+    $(this.htmlId+">svg").empty();
+    this.initFromData()
 }
