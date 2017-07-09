@@ -1,50 +1,46 @@
 // right now this works with exactly 3 lines.
 // it should be modified to work with any number of lines, specified by constructor parameters
 // perhaps allow user to pass in an array of names and colors?
-var PlotData = function(htmlId) {
-    this.limit = 60 * 1
+var PlotData = function(htmlId) {   
+    this.timeLimit = 10 // seconds
     this.duration = 750
-    this.now = new Date(Date.now() - this.duration)
     this.width = 500
     this.height = 200
     
-    this.groups = {
+    this.dataSets = {
         X: {
             value: 0,
             color: 'orange',
-            data: d3.range(this.limit).map(function() {
-                return 0
-            })
+            data: []
         },
         Y: {
             value: 0,
             color: 'green',
-            data: d3.range(this.limit).map(function() {
-                return 0
-            })
+            data: []
         },
         Z: {
             value: 0,
-            color: 'grey',
-            data: d3.range(this.limit).map(function() {
-                return 0
-            })
+            color: 'red',
+            data: []
         }
     }
+    this.timestamps = []
     
     var that = this
-    this.xScale = d3.time.scale()
-        .domain([that.now - (that.limit - 2), that.now - that.duration])
+    
+    this.xScale = d3.scale.linear()
+        .domain([-this.timeLimit, 0])
         .range([0, this.width])
 
     this.yScale = d3.scale.linear()
-        .domain([-8192, 8192])
+        .domain([-8200, 8200])
         .range([this.height, 0])
 
     this.line = d3.svg.line()
         .interpolate('linear')
         .x(function(d, i) {
-            return that.xScale(that.now - (that.limit - 1 - i) * that.duration)
+            timeOffset = -(that.now - that.timestamps[i]) / 1000.0
+            return that.xScale(timeOffset);
         })
         .y(function(d) {
             return that.yScale(d)
@@ -62,8 +58,9 @@ var PlotData = function(htmlId) {
 
     this.paths = this.svg.append('g')
 
-    for (var name in this.groups) {
-        var group = this.groups[name]
+        
+    for (var name in this.dataSets) {
+        let group = this.dataSets[name]
         group.path = this.paths.append('path')
             .data([group.data])
             .attr('class', name + ' group')
@@ -71,23 +68,24 @@ var PlotData = function(htmlId) {
     }
 };
 
-PlotData.prototype.plot = function(time, data){
-    this.now = time
-    // Add new values
-    var dataNum = 0
-    for (var name in this.groups)
+PlotData.prototype.plot = function(time, newData){
+    this.now = time;
+    // remove data older than timeLimit
+    while(this.timestamps[0] < time - this.timeLimit*1000)
     {
-        this.groups[name].data.push(data[dataNum])
-        this.groups[name].path.attr('d', this.line)
-        dataNum++
+        for (var name in this.dataSets)
+        {
+            this.dataSets[name].data.shift();
+        }
+        this.timestamps.shift();
     }
-
-    // Shift domain
-    this.xScale.domain([time - (this.limit - 2) * this.duration, time - this.duration])
-
-    // Remove oldest data point from each group
-    for (var name in this.groups)
+    // Add new values
+    var dataNum = 0;
+    this.timestamps.push(time);
+    for (var name in this.dataSets)
     {
-        this.groups[name].data.shift()
+        this.dataSets[name].data.push(newData[dataNum]);
+        this.dataSets[name].path.attr('d', this.line);
+        dataNum++;
     }
 }
