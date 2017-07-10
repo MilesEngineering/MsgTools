@@ -5,11 +5,11 @@ var Histogram = function(htmlId, minVal, maxVal) {
     this.minVal = minVal;
     this.maxVal = maxVal;
 
-    this.data = d3.range(10).map(d3.randomNormal(50, 10));
+    this.data = [];
 
     this.margin = {top: 10, right: 30, bottom: 30, left: 30}
-    this.width = 960
-    this.height = 500
+    this.width = 500
+    this.height = 200
 
     this.svg = d3.select(htmlId).append('svg')
         .attr('class', 'chart')
