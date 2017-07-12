@@ -13,17 +13,24 @@ function buf2hex(buffer) { // buffer is an ArrayBuffer
 var MessageDictionary = {};
     
 var MessagingClient = function() {
+    var urlParams = new URLSearchParams(window.location.search);
     
     // use default localhost, or else address specified in URL
     websocketServer = "127.0.0.1";
-    var urlParams = new URLSearchParams(window.location.search);
     if(urlParams.has('ws'))
     {
         websocketServer = urlParams.get("ws")
     }
+
+    // use default port, or else port specified in URL
+    websocketPort = "5679";
+    if(urlParams.has('port'))
+    {
+        websocketPort = urlParams.get("port")
+    }
     
     // don't specify subprotocol, our Qt Websocket server doesn't support that
-    this.webSocket = new WebSocket("ws://"+websocketServer+":5679"); //, "BMAP");
+    this.webSocket = new WebSocket("ws://"+websocketServer+":" + websocketPort); //, "BMAP");
     this.webSocket.binaryType = 'arraybuffer';
     this.webSocket.onopen = this.onopen.bind(this);
     this.webSocket.onclose = this.onclose.bind(this);
