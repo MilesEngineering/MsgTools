@@ -12,7 +12,8 @@ function buf2hex(buffer) { // buffer is an ArrayBuffer
 
 var MessageDictionary = {};
     
-var MessagingClient = function() {
+var MessagingClient = function(name) {
+    this.clientName = name
     var urlParams = new URLSearchParams(window.location.search);
     
     // use default localhost, or else address specified in URL
@@ -39,7 +40,7 @@ var MessagingClient = function() {
 
 MessagingClient.prototype.onopen = function (event) {
     cm = new Connect();
-    cm.SetNameString("javascript");
+    cm.SetNameString(""+this.clientName);
     this.send(cm);
 
     // default values will make us receive all messages
