@@ -157,14 +157,20 @@ def accessors(msg):
 
     return gets+sets+arrayAccessors
 
+def fieldDefault(field):
+    ret = field["Default"]
+    if("Type" in field and "int" in field["Type"]) and ret > 2**31:
+        ret = str(ret)+'u'
+    return ret
+
 def initField(field):
     if "Default" in field:
         if MsgParser.fieldCount(field) > 1:
             ret = "for (int i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
-            ret += "    "+namespace+"Set" + field["Name"] + "(" + params(firstParam, str(field["Default"])) + ", i);" 
+            ret += "    "+namespace+"Set" + field["Name"] + "(" + params(firstParam, str(fieldDefault(field))) + ", i);" 
             return ret;
         else:
-            return  namespace+"Set" + field["Name"] + "(" + params(firstParam, str(field["Default"])) + ");"
+            return  namespace+"Set" + field["Name"] + "(" + params(firstParam, str(fieldDefault(field))) + ");"
     return ""
 
 def initBitfield(field, bits):
@@ -174,18 +180,22 @@ def initBitfield(field, bits):
 
 def initCode(msg):
     ret = []
-    
+    noInitCode = True
     offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
             fieldInit = initField(field)
             if fieldInit:
                 ret.append(fieldInit)
+                noInitCode = False
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     bits = initBitfield(field, bits)
                     if bits:
                         ret.append(bits)
+                        noInitCode = False
+    if noInitCode:
+        ret.append("UNUSED(m_data);")
 
     return ret
 
@@ -335,7 +345,7 @@ def genericInfo(field, type, offset):
     params += '    char static constexpr units[] = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
     params += '    int static constexpr count = ' + str(MsgParser.fieldCount(field)) + ';\n'
     if "Default" in field:
-        params += '    '+type+' static constexpr defaultValue = ' + str(field["Default"]) + ";\n" 
+        params += '    '+type+' static constexpr defaultValue = ' + str(fieldDefault(field)) + ";\n" 
     if "Scale" in field:
         params += '    auto static constexpr scale = ' + str(field["Scale"]) + ';\n'
     if "Offset" in field:

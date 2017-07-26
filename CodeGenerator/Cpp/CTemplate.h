@@ -1,6 +1,5 @@
 /*
-    <OUTPUTFILENAME>
-    Created <DATE> from:
+    Created from:
         Messages = <INPUTFILENAME>
         Template = <TEMPLATEFILENAME>
         Language = <LANGUAGEFILENAME>
@@ -11,14 +10,12 @@
 #ifndef <MSGNAME>Code_H__
 #define <MSGNAME>Code_H__
 
-#include <stdint.h>
-
 #define <MSGNAME>_MSG_ID <MSGID>
 #define <MSGNAME>_MSG_SIZE <MSGSIZE>
 <ENUMERATIONS>
 <FIELDINFOS>
 <ACCESSORS>
-extern inline void <MSGNAME>_Init(uint8_t* m_data)
+INLINE void <MSGNAME>_Init(uint8_t* m_data)
 {
     <INIT_CODE>
 }

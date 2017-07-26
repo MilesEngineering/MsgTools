@@ -8,7 +8,7 @@ language.firstParam = "m_data"
 language.firstParamDecl = "uint8_t* m_data"
 language.const = ""
 language.enumNamespace = 1
-language.functionPrefix = "extern inline "
+language.functionPrefix = "INLINE "
 language.enumClass = ""
 
 enums = language.enums
@@ -16,10 +16,16 @@ accessors = language.accessors
 declarations = language.declarations
 initCode = language.initCode
 
+def fieldDefault(field):
+    ret = field["Default"]
+    if("Type" in field and "int" in field["Type"]) and ret > 2**31:
+        ret = str(ret)+'u'
+    return ret
+
 def fieldInfo(field, offset):
     ret = ""
     if "Default" in field:
-        ret += '#define <MSGNAME>_'+field["Name"]+'_DEFAULT ' + str(field["Default"]) + "\n"
+        ret += '#define <MSGNAME>_'+field["Name"]+'_DEFAULT ' + str(fieldDefault(field)) + "\n"
     if MsgParser.fieldCount(field) > 1:
         ret += '#define <MSGNAME>_'+field["Name"]+'_COUNT ' + str(MsgParser.fieldCount(field)) + "\n"
     ret += '#define <MSGNAME>_'+field["Name"]+'_OFFSET ' + str(offset) + "\n"
