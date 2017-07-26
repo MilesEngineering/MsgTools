@@ -1,5 +1,4 @@
 %{
-    <OUTPUTFILENAME>
     Created <DATE> from:
         Messages = <INPUTFILENAME>
         Template = <TEMPLATEFILENAME>
