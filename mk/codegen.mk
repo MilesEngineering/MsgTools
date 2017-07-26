@@ -50,10 +50,10 @@ $(MSGDIR)/Cpp/headers/%.h : $(mdir)/headers/%.yaml $(CG_DIR)Cpp/language.py  $(C
 $(MSGDIR)/Cpp/%.h : $(mdir)/%.yaml $(CG_DIR)Cpp/language.py  $(CG_DIR)Cpp/CppTemplate.h $(CG_DIR)MsgParser.py $(CG_DIR)MsgUtils.py Makefile
 	$(PARSER) $< $(call CYGPATH,$@) $(CG_DIR)Cpp/language.py  $(CG_DIR)Cpp/CppTemplate.h
 
-$(MSGDIR)/C/headers/%.h : $(mdir)/headers/%.yaml $(CG_DIR)Cpp/Clanguage.py  $(CG_DIR)Cpp/CHeaderTemplate.h $(CG_DIR)MsgParser.py $(CG_DIR)MsgUtils.py Makefile
+$(MSGDIR)/C/headers/%.h : $(mdir)/headers/%.yaml $(CG_DIR)Cpp/Clanguage.py  $(CG_DIR)Cpp/language.py $(CG_DIR)Cpp/CHeaderTemplate.h $(CG_DIR)MsgParser.py $(CG_DIR)MsgUtils.py Makefile
 	$(PARSER) $< $(call CYGPATH,$@) $(CG_DIR)Cpp/Clanguage.py  $(CG_DIR)Cpp/CHeaderTemplate.h
 
-$(MSGDIR)/C/%.h : $(mdir)/%.yaml $(CG_DIR)Cpp/Clanguage.py $(CG_DIR)Cpp/Clanguage.py  $(CG_DIR)Cpp/CTemplate.h $(CG_DIR)MsgParser.py $(CG_DIR)MsgUtils.py Makefile
+$(MSGDIR)/C/%.h : $(mdir)/%.yaml $(CG_DIR)Cpp/Clanguage.py $(CG_DIR)Cpp/language.py $(CG_DIR)Cpp/Clanguage.py  $(CG_DIR)Cpp/CTemplate.h $(CG_DIR)MsgParser.py $(CG_DIR)MsgUtils.py Makefile
 	$(PARSER) $< $(call CYGPATH,$@) $(CG_DIR)Cpp/Clanguage.py  $(CG_DIR)Cpp/CTemplate.h
 
 $(MSGDIR)/Python/headers/%.py : $(mdir)/headers/%.yaml $(CG_DIR)Python/language.py  $(CG_DIR)Python/HeaderTemplate.py $(CG_DIR)MsgParser.py $(CG_DIR)MsgUtils.py Makefile
