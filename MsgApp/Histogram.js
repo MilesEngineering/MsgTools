@@ -7,30 +7,39 @@ var Histogram = function(htmlId, minVal, maxVal) {
 
     this.data = [];
 
-    this.margin = {top: 10, right: 30, bottom: 30, left: 30}
-    this.width = 500
-    this.height = 200
+    this.parent = $(htmlId)[0];
 
-    this.svg = d3.select(htmlId).append('svg')
-        .attr('class', 'chart')
-        .attr('width', this.width)
-        .attr('height', this.height)
+    this.svg = d3.select(htmlId).append('svg').attr('class', 'chart');
 
-    this.width += - this.margin.left - this.margin.right
-    this.height += - this.margin.top - this.margin.bottom
-    
-    this.initFromData()
+    var histogram = this;
+
+    this.resize = function() {
+        // there's probably a better test to do here.
+        if(histogram.parent.parentElement.style.display == "none")
+            return;
+        // basically these offset values don't make any sense if we're
+        // hidden.
+        histogram.width = histogram.parent.offsetWidth - 10;
+        histogram.height = histogram.parent.offsetHeight - 20;
+        $(histogram.htmlId+">svg").empty();
+        histogram.initFromData();
+    };
+
+    window.addEventListener('resize', this.resize);
+    this.resize();
 }
 
 Histogram.prototype.initFromData = function()
 {
-    this.g = this.svg.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+    this.g = this.svg.append("g");
+
+    this.svg.attr("viewBox", "0 0 "+(this.width+10)+" "+(this.height+20));
 
     var that = this
 
     this.x = d3.scaleLinear()
         .domain([this.minVal, this.maxVal])
-        .rangeRound([0, that.width]);
+        .rangeRound([5, that.width]);
 
     this.bins = d3.histogram()
         .domain(that.x.domain())
@@ -67,8 +76,20 @@ Histogram.prototype.initFromData = function()
         .call(d3.axisBottom(that.x));
 }
 
+Histogram.prototype.changeDomain = function(lo, hi) {
+    if(this.width === undefined)
+        return;
+    this.minVal = lo;
+    this.maxVal = hi;
+    this.x = d3.scaleLinear()
+    .domain([this.minVal, this.maxVal])
+    .rangeRound([5, this.width]);
+
+    $(this.htmlId+">svg").empty();
+    this.initFromData()
+}
+
 Histogram.prototype.plot = function(data){
-    console.log("Got " + data)
     this.data.push(data)
     $(this.htmlId+">svg").empty();
     this.initFromData()
