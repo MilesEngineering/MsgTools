@@ -204,6 +204,30 @@ class MsgTreeWidget(TreeWidget):
             self.keyField = None
             self.header().setSortIndicator(0, QtCore.Qt.AscendingOrder)
 
+class MsgCommandWindow(QtWidgets.QPlainTextEdit):
+    commandEntered = QtCore.pyqtSignal(str)
+    messageEntered = QtCore.pyqtSignal(object)
+    def __init__(self, parent=None):
+        super(MsgCommandWindow, self).__init__()
+
+    def keyPressEvent(self, keyEvent):
+        if keyEvent.key() == QtCore.Qt.Key_Return:
+            lineOfText = self.toPlainText().split('\n')[-1]
+            firstWord = lineOfText.split(' ')[0]
+            if firstWord in Messaging.MsgClassFromName:
+                self.appendPlainText("you typed a message!")
+                msgClass = Messaging.MsgClassFromName[firstWord]
+                msg = msgClass()
+                paramString = lineOfText.split(' ')[1]
+                params = paramString.split(',')
+                fieldNumber = 0
+                for param in params:
+                    Messaging.set(msg, msg.fields[fieldNumber], param)
+                    fieldNumber += 1
+                self.messageEntered.emit(msg)
+            else:
+                self.commandEntered.emit(lineOfText)
+        super(MsgCommandWindow, self).keyPressEvent(keyEvent)
 
 class MsgGui(MsgApp, QtWidgets.QMainWindow):
     def __init__(self, name, argv, options, parent=None):
