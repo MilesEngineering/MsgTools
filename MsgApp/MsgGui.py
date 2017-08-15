@@ -213,12 +213,11 @@ class MsgCommandWindow(QtWidgets.QPlainTextEdit):
     def keyPressEvent(self, keyEvent):
         if keyEvent.key() == QtCore.Qt.Key_Return:
             lineOfText = self.toPlainText().split('\n')[-1]
-            firstWord = lineOfText.split(' ')[0]
+            firstWord = lineOfText.split()[0]
             if firstWord in Messaging.MsgClassFromName:
-                self.appendPlainText("you typed a message!")
                 msgClass = Messaging.MsgClassFromName[firstWord]
                 msg = msgClass()
-                paramString = lineOfText.split(' ')[1]
+                paramString = lineOfText.replace(firstWord, "",1)
                 params = paramString.split(',')
                 fieldNumber = 0
                 for param in params:
