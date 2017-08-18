@@ -204,30 +204,82 @@ class MsgTreeWidget(TreeWidget):
             self.keyField = None
             self.header().setSortIndicator(0, QtCore.Qt.AscendingOrder)
 
-class MsgCommandWindow(QtWidgets.QPlainTextEdit):
+class LineEditWithHistory(QtWidgets.QLineEdit):
+    def __init__(self, parent=None):
+        super(LineEditWithHistory, self).__init__()
+        self.commandHistory = []
+        self.placeInHistory = 0
+
+    def setToHistoryItem(self, index):
+        self.placeInHistory = index
+        if self.placeInHistory > len(self.commandHistory) - 1:
+            self.placeInHistory = len(self.commandHistory)
+            self.setText('')
+        else:
+            if self.placeInHistory < 0:
+                self.placeInHistory = 0
+            try:
+                self.setText(self.commandHistory[self.placeInHistory])
+            except IndexError:
+                self.setText('')
+        
+    def keyPressEvent(self, keyEvent):
+        if keyEvent.key() == QtCore.Qt.Key_Return:
+            # add to history
+            lineOfText = self.text()
+            if len(self.commandHistory) == 0 or self.commandHistory[-1] != lineOfText:
+                self.commandHistory.append(lineOfText)
+                if len(self.commandHistory) > 20:
+                    self.commandHistory.pop(0)
+            self.placeInHistory = len(self.commandHistory)
+        elif keyEvent.key() == QtCore.Qt.Key_Up:
+            #up in history
+            self.setToHistoryItem(self.placeInHistory - 1)
+        elif keyEvent.key() == QtCore.Qt.Key_Down:
+            # down in history
+            self.setToHistoryItem(self.placeInHistory + 1)
+        super(LineEditWithHistory, self).keyPressEvent(keyEvent)
+
+class MsgCommandWidget(QtWidgets.QWidget):
     commandEntered = QtCore.pyqtSignal(str)
     messageEntered = QtCore.pyqtSignal(object)
     def __init__(self, parent=None):
-        super(MsgCommandWindow, self).__init__()
-
-    def keyPressEvent(self, keyEvent):
-        if keyEvent.key() == QtCore.Qt.Key_Return:
-            lineOfText = self.toPlainText().split('\n')[-1]
+        super(MsgCommandWidget, self).__init__()
+        self.textBox = QtWidgets.QPlainTextEdit()
+        self.textBox.setReadOnly(True)
+        self.lineEdit = LineEditWithHistory()
+        self.lineEdit.returnPressed.connect(self.returnPressed)
+        
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addWidget(self.textBox)
+        vbox.addWidget(self.lineEdit)
+        self.setLayout(vbox)
+    
+    def returnPressed(self):
+        lineOfText = self.lineEdit.text()
+        self.addText(lineOfText)
+        try:
             firstWord = lineOfText.split()[0]
-            if firstWord in Messaging.MsgClassFromName:
-                msgClass = Messaging.MsgClassFromName[firstWord]
-                msg = msgClass()
-                paramString = lineOfText.replace(firstWord, "",1)
-                params = paramString.split(',')
-                fieldNumber = 0
-                for param in params:
-                    Messaging.set(msg, msg.fields[fieldNumber], param)
-                    fieldNumber += 1
-                self.messageEntered.emit(msg)
-            else:
-                self.commandEntered.emit(lineOfText)
-        super(MsgCommandWindow, self).keyPressEvent(keyEvent)
+        except IndexError:
+            firstWord = ''
+        if firstWord in Messaging.MsgClassFromName:
+            msgClass = Messaging.MsgClassFromName[firstWord]
+            msg = msgClass()
+            paramString = lineOfText.replace(firstWord, "",1)
+            params = paramString.split(',')
+            fieldNumber = 0
+            for param in params:
+                Messaging.set(msg, msg.fields[fieldNumber], param)
+                fieldNumber += 1
+            self.messageEntered.emit(msg)
+        else:
+            self.commandEntered.emit(lineOfText+'\n')
+        self.lineEdit.setText("")
 
+    def addText(self, text):
+        self.textBox.moveCursor (QtGui.QTextCursor.End)
+        self.textBox.insertPlainText(text)
+    
 class MsgGui(MsgApp, QtWidgets.QMainWindow):
     def __init__(self, name, argv, options, parent=None):
         # default to Network, unless we have a input filename that contains .txt
