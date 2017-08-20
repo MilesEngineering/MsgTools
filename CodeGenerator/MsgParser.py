@@ -132,7 +132,7 @@ def ProcessFile(inputFilename, outputFilename, languageFilename, templateFilenam
             os.remove(outputFilename)
             sys.exit(1)
 
-def ProcessDir(msgDir, outDir, languageFilename, templateFilename):
+def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplateFilename):
     # make the output directory
     try:
         os.makedirs(outDir)
@@ -141,37 +141,40 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename):
     for filename in os.listdir(msgDir):
         inputFilename = msgDir + '/' + filename
         if os.path.isdir(inputFilename):
-            if filename != 'headers':
-                try:
-                    outputFilename = language.outputSubdir(outDir, filename)
-                except AttributeError:
-                    outputFilename = outDir + "/" + filename
-                ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename)
-        else:
             try:
-                outputFilename = language.outputFilename(outDir, filename, templateFilename)
+                outputFilename = language.outputSubdir(outDir, filename)
             except AttributeError:
-                justFilename = filename.split('.')[0] + '.' + os.path.basename(templateFilename).split('.')[1]
+                outputFilename = outDir + "/" + filename
+            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename)
+        else:
+            particularTemplate = templateFilename
+            if msgDir.endswith("headers"):
+                particularTemplate = headerTemplateFilename
+            try:
+                outputFilename = language.outputFilename(outDir, filename, particularTemplate)
+            except AttributeError:
+                justFilename = filename.split('.')[0] + '.' + os.path.basename(particularTemplate).split('.')[1]
                 outputFilename = outDir + "/" + justFilename
             inputFileTime = os.path.getmtime(inputFilename)
             try:
                 outputFileTime = os.path.getmtime(outputFilename)
             except:
                 outputFileTime = 0
-            templateFileTime = os.path.getmtime(templateFilename)
+            templateFileTime = os.path.getmtime(particularTemplate)
             languageFileTime = os.path.getmtime(languageFilename)
             if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
-                ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename)
+                ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
 
 # main starts here
 if __name__ == '__main__':
-    if len(sys.argv) < 5:
-        sys.stderr.write('Usage: ' + sys.argv[0] + ' input output language template\n')
+    if len(sys.argv) < 6:
+        sys.stderr.write('Usage: ' + sys.argv[0] + ' input output language template headertemplate\n')
         sys.exit(1)
     inputFilename = sys.argv[1]
     outputFilename = sys.argv[2]
     languageFilename = sys.argv[3]
     templateFilename = sys.argv[4]
+    headerTemplateFilename = sys.argv[5]
 
     # import the language file
     sys.path.append(os.path.dirname(languageFilename))
@@ -180,8 +183,11 @@ if __name__ == '__main__':
 
     if(os.path.exists(inputFilename)):
         if(os.path.isdir(inputFilename)):
-            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename)
+            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename)
         else:
-            ProcessFile(inputFilename, outputFilename, languageFilename, templateFilename)
+            particularTemplate = templateFilename
+            if "/headers/" in outputFilename:
+                particularTemplate = headerTemplateFilename
+            ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
     else:
         print("Path " + inputFilename + " does not exist!")
