@@ -155,14 +155,13 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
             except AttributeError:
                 justFilename = filename.split('.')[0] + '.' + os.path.basename(particularTemplate).split('.')[1]
                 outputFilename = outDir + "/" + justFilename
+            templateFileTime = os.path.getmtime(particularTemplate)
             inputFileTime = os.path.getmtime(inputFilename)
             try:
                 outputFileTime = os.path.getmtime(outputFilename)
             except:
                 outputFileTime = 0
-            templateFileTime = os.path.getmtime(particularTemplate)
-            languageFileTime = os.path.getmtime(languageFilename)
-            if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
+            if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or lastSourceFileTime > outputFileTime):
                 ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
 
 # main starts here
@@ -180,6 +179,25 @@ if __name__ == '__main__':
     sys.path.append(os.path.dirname(languageFilename))
     languageName = os.path.splitext(os.path.basename(languageFilename) )[0]
     language = __import__(languageName)
+    
+    # Get latest timestamp of imported modules.
+    # We should only check the file times of any user-defined imports!
+    # It's a bit difficult to determine what's a regular module included with the python distribution,
+    # and what's a user-created module.
+    lastSourceFileTime = 0
+    modulenames = sys.modules.keys()
+    import inspect
+    curpath = os.path.abspath(".")
+    for m in modulenames:
+        try:
+            modulePath = os.path.abspath(inspect.getfile(sys.modules[m]))
+            if curpath in modulePath:
+                moduleFileTime = os.path.getmtime(modulePath)
+                lastSourceFileTime = max(lastSourceFileTime, moduleFileTime)
+        except TypeError:
+            pass
+        except AttributeError:
+            pass
 
     if(os.path.exists(inputFilename)):
         if(os.path.isdir(inputFilename)):
