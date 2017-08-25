@@ -272,6 +272,7 @@ class MsgCommandWidget(QtWidgets.QWidget):
                 Messaging.set(msg, msg.fields[fieldNumber], param)
                 fieldNumber += 1
             self.messageEntered.emit(msg)
+            self.addText(" -> Msg\n")
         else:
             self.commandEntered.emit(lineOfText+'\n')
         self.lineEdit.setText("")
