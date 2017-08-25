@@ -1,7 +1,15 @@
-all: WebConsole.html
+include ../makefile.inc
+
+ifeq ($(UNAME),Cygwin)
+PYTHON=python.exe
+else
+PYTHON=python3
+endif
+
+all :: WebConsole.html
 
 WebConsole.html: MakeHtml.py
-	./MakeHtml.py $@ ../../obj/CodeGenerator/Javascript
+	$(PYTHON) ./MakeHtml.py $@ ../../obj/CodeGenerator/Javascript
 
-clean:
-	rm WebConsole.html
+clean::
+	rm -f WebConsole.html
