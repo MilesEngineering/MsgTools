@@ -40,3 +40,4 @@ $RECYCLE.BIN/
 
 # Other custom ignores:
 *.pyc
+WebConsole/WebConsole.html
