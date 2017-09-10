@@ -210,34 +210,37 @@ def subfieldReplacements(line,msg):
 def msgName(msg):
     return msg["Name"]
 
-def msgID(msg, enums, undefinedMsgId):
+def msgID(msg, enums, ids, undefinedMsgId):
     ret = undefinedMsgId
-    if "IDs" in msg:
-        ret = 0
-        # iterate over list of keys
-        shiftValue = 0
-        for id in msg["IDs"]:
-            value = id["Value"]
-            #print("got value " + str(value))
-            try:
-                value = int(value)
-            except ValueError:
-                for enum in enums:
-                    enumType = enum["Name"]
-                    for option in enum["Options"]:
-                        if value == enumType + "." + option["Name"] or (enum["Name"] == id["Name"]+"s" and value == option["Name"]):
-                            enumName = value
-                            value = int(option["Value"])
-                            #print("found value " + str(value) + " for " + enumType + "." + str(enumName))
-                            break
-            try:
-                value = int(value)
-            except ValueError:
-                raise MessageException("ERROR! Can't find value for " + str(value))
-            shiftValue = id["Bits"]
-            #print("ID " + id["Name"] + " is " + str(value) + ", " + str(id["Bits"]) + " bits")
-            ret = (ret << shiftValue) + value
-        ret = ret
+    # check if there was an externally specified list of ID fields
+    if ids:
+        try:
+            ret = 0
+            # iterate over list of ids
+            shiftValue = 0
+            for id in ids:
+                value = msg[id["Name"]]
+                #print("got value " + str(value))
+                try:
+                    value = int(value)
+                except ValueError:
+                    for enum in enums:
+                        enumType = enum["Name"]
+                        for option in enum["Options"]:
+                            if value == enumType + "." + option["Name"] or (enum["Name"] == id["Name"]+"s" and value == option["Name"]):
+                                enumName = value
+                                value = int(option["Value"])
+                                #print("found value " + str(value) + " for " + enumType + "." + str(enumName))
+                                break
+                try:
+                    value = int(value)
+                except ValueError:
+                    raise MessageException("ERROR! Can't find value for " + str(value))
+                shiftValue = id["Bits"]
+                #print("ID " + id["Name"] + " is " + str(value) + ", " + str(id["Bits"]) + " bits")
+                ret = (ret << shiftValue) + value
+        except KeyError:
+            pass
     if "ID" in msg:
         ret = msg["ID"]
     #print("message " + msg["Name"] + " has ID " + hex(ret))
@@ -313,6 +316,16 @@ def Enums(inputData):
         for data in inputData["includes"]:
             enumList = enumList + Enums(data)
     return enumList
+
+# return a list of all IDs in this input file, or anything it includes
+def MsgIDs(inputData):
+    idList = []
+    if "IDs" in inputData:
+        idList = inputData["IDs"]
+    if "includes" in inputData:
+        for data in inputData["includes"]:
+            idList = idList + MsgIDs(data)
+    return idList
 
 # return a list of just the enums that are used by a message's fields/bitfields
 # this is useful for languages that put enum info into their output file, because

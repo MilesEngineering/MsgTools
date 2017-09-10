@@ -87,6 +87,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
         lineEndings="\r\n"
         replacements = {}
         enums = Enums(inputData)
+        ids = MsgIDs(inputData)
         replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(inputData, enums))
         if "Messages" in inputData:
             for msg in Messages(inputData):
@@ -124,9 +125,9 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                             except AttributeError:
                                 pass
                             try:
-                                replacements["<MSGID>"] = language.languageConst(msgID(msg, enums, undefinedMsgId))
+                                replacements["<MSGID>"] = language.languageConst(msgID(msg, enums, ids, undefinedMsgId))
                             except AttributeError:
-                                replacements["<MSGID>"] = str(msgID(msg, enums, undefinedMsgId))
+                                replacements["<MSGID>"] = str(msgID(msg, enums, ids, undefinedMsgId))
                             replacements["<MSGSIZE>"] = str(msgSize(msg))
                             replacements["<MSGDESCRIPTION>"] = str(msg["Description"])
                             replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))

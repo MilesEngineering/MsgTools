@@ -47,12 +47,12 @@ def fieldTypeValid(field):
       "float64", "float32"]
     return field["Type"] in allowedFieldTypes
 
-def ProcessMsg(msg, subdirComponent, enums):
+def ProcessMsg(msg, subdirComponent, enums, ids):
     enumNames = {}
     for enum in enums:
         enumNames[enum["Name"]] = enum
 
-    id = msgID(msg, enums, -1)
+    id = msgID(msg, enums, ids, -1)
     idInt = int(id, 0)
     if "ID" in msg or "IDs" in msg:
         global msgPaths
@@ -95,10 +95,11 @@ def ProcessMsg(msg, subdirComponent, enums):
 
 def ProcessFile(outFile, inputData, subdirComponent):
     enums = Enums(inputData)
+    ids = MsgIDs(inputData)
 
     if "Messages" in inputData:
         for msg in Messages(inputData):
-            outFile.write(ProcessMsg(msg, subdirComponent, enums))
+            outFile.write(ProcessMsg(msg, subdirComponent, enums, ids))
 
 # main starts here
 if __name__ == '__main__':
