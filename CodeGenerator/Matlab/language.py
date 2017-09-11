@@ -306,3 +306,4 @@ def setMsgID(msg):
                         ret +=  "obj."+bitfield["Name"]+" = "+setStr
     return ret
 
+oneOutputFilePerMsg = True

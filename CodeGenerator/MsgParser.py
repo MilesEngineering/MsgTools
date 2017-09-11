@@ -67,86 +67,110 @@ def CommonSubdir(f1, f2):
     # strip slashes at ends
     return subdirComponent.strip("/").strip("\\")
 
-def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
-    # read the input file
-    inputData = readFile(inputFilename)
-    # if there's no input, return without creating output
-    if inputData == 0:
-        return
+def OutputFile(inputName, outDir):
+    try:
+        outputFilename = language.outputFilename(outDir, inputName, templateFilename)
+    except AttributeError:
+        justFilename = inputName + '.' + os.path.basename(templateFilename).split('.')[1]
+        outputFilename = outDir + "/" + justFilename
+    inputFileTime = os.path.getmtime(inputFilename)
+    try:
+        outputFileTime = os.path.getmtime(outputFilename)
+    except:
+        outputFileTime = 0
+    templateFileTime = os.path.getmtime(templateFilename)
+    languageFileTime = os.path.getmtime(languageFilename)
+    if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
+        try:
+            os.makedirs(os.path.dirname(outputFilename))
+        except FileExistsError:
+            pass
+        lineEndings = os.linesep
+        # for windows, override lineseperator, to force windows native line endings,
+        # even if we're running cygwin with \n line endings.
+        if sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
+            lineEndings="\r\n"
+        print("Creating " + outputFilename)
+        return outputFilename, open(outputFilename,'w', newline=lineEndings)
+    return outputFilename, None
 
+def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     currentDateTime = strftime("%d/%m/%Y at %H:%M:%S")
     
     # read the template file
     with open(templateFilename, 'r') as templateFile:
-        template = templateFile.read().splitlines() 
+        template = templateFile.read().splitlines()
     
-    lineEndings = os.linesep
-    # for windows, override lineseperator, to force windows native line endings,
-    # even if we're running cygwin with \n line endings.
-    if sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
-        lineEndings="\r\n"
+    try:
+        oneOutputFilePerMsg = language.oneOutputFilePerMsg
+    except AttributeError:
+        oneOutputFilePerMsg = False
+        
+    # open output file now
+    if not oneOutputFilePerMsg:
+        filename = os.path.basename(inputFilename).split('.')[0]
+        outputFilename, outFile = OutputFile(filename, outDir)
+        if not outFile:
+            return
+
+    # read the input file
+    inputData = readFile(inputFilename)
+
+    # if there's no input, return without creating output
+    if inputData == 0:
+        return
+
     replacements = {}
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
     replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(inputData, enums))
+    
     if "Messages" in inputData:
         for msg in Messages(inputData):
             try:
-                #filename = os.path.basename(inputFilename)
-                try:
-                    outputFilename = language.outputFilename(outDir, msgName(msg), templateFilename)
-                except AttributeError:
-                    justFilename = msgName(msg) + '.' + os.path.basename(templateFilename).split('.')[1]
-                    outputFilename = outDir + "/" + justFilename
-                inputFileTime = os.path.getmtime(inputFilename)
-                try:
-                    outputFileTime = os.path.getmtime(outputFilename)
-                except:
-                    outputFileTime = 0
-                templateFileTime = os.path.getmtime(templateFilename)
-                languageFileTime = os.path.getmtime(languageFilename)
-                if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
-                    print("Creating " + outputFilename)
+                if oneOutputFilePerMsg:
+                    outputFilename, outFile = OutputFile(msgName(msg), outDir)
+                    if not outFile:
+                        continue
 
-                    commonSubdir = CommonSubdir(inputFilename, outputFilename)
-                
-                    try:
-                        os.makedirs(os.path.dirname(outputFilename))
-                    except FileExistsError:
-                        pass
-                
-                    with open(outputFilename,'w', newline=lineEndings) as outFile:
-                        replacements["<MSGNAME>"] = msgName(msg)
-                        replacements["<NUMBER_OF_FIELDS>"] = str(numberOfFields(msg))
-                        replacements["<NUMBER_OF_SUBFIELDS>"] = str(numberOfSubfields(msg))
-                        undefinedMsgId = "UNDEFINED_MSGID"
-                        try:
-                            undefinedMsgId = language.undefinedMsgId()
-                        except AttributeError:
-                            pass
-                        try:
-                            replacements["<MSGID>"] = language.languageConst(msgID(msg, enums, ids, undefinedMsgId))
-                        except AttributeError:
-                            replacements["<MSGID>"] = str(msgID(msg, enums, ids, undefinedMsgId))
-                        replacements["<MSGSIZE>"] = str(msgSize(msg))
-                        replacements["<MSGDESCRIPTION>"] = str(msg["Description"])
-                        replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))
-                        replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg))
-                        replacements["<INIT_CODE>"] = "\n".join(language.initCode(msg))
-                        replacements["<OUTPUTFILENAME>"] = outputFilename
-                        replacements["<INPUTFILENAME>"] = inputFilename
-                        replacements["<TEMPLATEFILENAME>"] = templateFilename
-                        replacements["<LANGUAGEFILENAME>"] = languageFilename
-                        replacements["<MESSAGE_SUBDIR>"] = commonSubdir
-                        replacements["<DATE>"] = currentDateTime
-                        for line in template:
-                            line = DoReplacements(line, msg, replacements)
-                            outFile.write(line)
+                commonSubdir = CommonSubdir(inputFilename, outputFilename)
+            
+                replacements["<MSGNAME>"] = msgName(msg)
+                replacements["<NUMBER_OF_FIELDS>"] = str(numberOfFields(msg))
+                replacements["<NUMBER_OF_SUBFIELDS>"] = str(numberOfSubfields(msg))
+                undefinedMsgId = "UNDEFINED_MSGID"
+                try:
+                    undefinedMsgId = language.undefinedMsgId()
+                except AttributeError:
+                    pass
+                try:
+                    replacements["<MSGID>"] = language.languageConst(msgID(msg, enums, ids, undefinedMsgId))
+                except AttributeError:
+                    replacements["<MSGID>"] = str(msgID(msg, enums, ids, undefinedMsgId))
+                replacements["<MSGSIZE>"] = str(msgSize(msg))
+                replacements["<MSGDESCRIPTION>"] = str(msg["Description"])
+                replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))
+                replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg))
+                replacements["<INIT_CODE>"] = "\n".join(language.initCode(msg))
+                replacements["<OUTPUTFILENAME>"] = outputFilename
+                replacements["<INPUTFILENAME>"] = inputFilename
+                replacements["<TEMPLATEFILENAME>"] = templateFilename
+                replacements["<LANGUAGEFILENAME>"] = languageFilename
+                replacements["<MESSAGE_SUBDIR>"] = commonSubdir
+                replacements["<DATE>"] = currentDateTime
+                for line in template:
+                    line = DoReplacements(line, msg, replacements)
+                    outFile.write(line)
+                if oneOutputFilePerMsg:
+                    outFile.close()
+
             except MessageException as e:
                 sys.stderr.write(str(e)+'\n')
                 outFile.close()
                 os.remove(outputFilename)
                 sys.exit(1)
+    if not oneOutputFilePerMsg:
+        outFile.close()
 
 def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplateFilename):
     # make the output directory
