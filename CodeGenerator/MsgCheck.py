@@ -27,7 +27,7 @@ def ProcessDir(outFile, msgDir, subdirComponent):
             try:
                 inputData = readFile(inputFilename)
                 if inputData != 0:
-                    ProcessFile(outFile, inputData, subdirComponent)
+                    ProcessFile(filename, outFile, inputData, subdirComponent)
             except MessageException as e:
                 sys.stderr.write('Error in ' + inputFilename)
                 sys.stderr.write('\n'+str(e)+'\n')
@@ -47,7 +47,7 @@ def fieldTypeValid(field):
       "float64", "float32"]
     return field["Type"] in allowedFieldTypes
 
-def ProcessMsg(msg, subdirComponent, enums, ids):
+def ProcessMsg(filename, msg, subdirComponent, enums, ids):
     enumNames = {}
     for enum in enums:
         enumNames[enum["Name"]] = enum
@@ -91,15 +91,15 @@ def ProcessMsg(msg, subdirComponent, enums, ids):
     if offset > 128:
         raise MessageException('message ' + msg["Name"] + ' too big\n')
 
-    return (subdirComponent+'/'+msg['Name']).ljust(32) +" "+ str(id).rjust(10)+'\n'
+    return (subdirComponent+'/'+msg['Name']).ljust(35) +" "+(subdirComponent+'/'+filename).ljust(40) +" "+ str(id).rjust(10)+'\n'
 
-def ProcessFile(outFile, inputData, subdirComponent):
+def ProcessFile(filename, outFile, inputData, subdirComponent):
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
 
     if "Messages" in inputData:
         for msg in Messages(inputData):
-            outFile.write(ProcessMsg(msg, subdirComponent, enums, ids))
+            outFile.write(ProcessMsg(filename, msg, subdirComponent, enums, ids))
 
 # main starts here
 if __name__ == '__main__':
