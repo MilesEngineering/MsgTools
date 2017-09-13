@@ -21,7 +21,12 @@ class YamlLoader(yaml.Loader):
         except FileNotFoundError:
             raise MessageException("Error loading " + filename + " for include statement [" + node.value + "]")
 
+    def loadFile(self, node):
+        filename = os.path.join(self._dirname, node.value)
+        return "*Not* including " + filename
+
 YamlLoader.add_constructor('!include', YamlLoader.include)
+YamlLoader.add_constructor('!File', YamlLoader.loadFile)
 
 def readFile(filename):
     #print("Processing ", filename)
