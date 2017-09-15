@@ -67,16 +67,22 @@ def ProcessMsg(filename, msg, subdirComponent, enums, ids):
     if "Fields" in msg:
         for field in msg["Fields"]:
             bitOffset = 0
+            if " " in field["Name"]:
+                raise MessageException('bad field name [' + field["Name"]+"]")
             if not fieldTypeValid(field):
                 raise MessageException('field ' + field["Name"] + ' has invalid type ' + field['Type'])
             if "Enum" in field:
                 if not field["Enum"] in enumNames:
-                    raise MessageException('bad enum ' + field["Enum"])
+                    raise MessageException('bad enum [' + field["Enum"]+"]")
+                if " " in field["Enum"]:
+                    raise MessageException('bad enum [' + field["Enum"]+"]")
                 pass
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
                     bitOffset += numBits
+                    if " " in bits["Name"]:
+                        raise MessageException('bad bitfield name [' + bits["Name"]+"]")
                 if bitOffset > 8*fieldSize(field):
                     raise MessageException('too many bits')
                 if "Enum" in bits:
