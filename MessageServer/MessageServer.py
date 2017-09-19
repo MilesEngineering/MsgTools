@@ -61,6 +61,8 @@ class MessageServer(QtWidgets.QMainWindow):
         else:
             options = tmpOptions
 
+        self.pluginPort = None
+
         for opt in self.optlist:
             if opt[0] == '--serial':
                 from SerialHeader import SerialHeader
@@ -118,7 +120,7 @@ class MessageServer(QtWidgets.QMainWindow):
         # Main Window Stuff
         self.setWindowTitle("MessageServer 0.1")
         self.statusBar()
-    
+
     def onLogButtonClicked(self):
         if self.logFile != None:
             self.logFile.close()
@@ -210,7 +212,7 @@ class MessageServer(QtWidgets.QMainWindow):
             for client in self.clients.values():
                 if client != c:
                     id = hdr.GetMessageID()
-                    if id in client.subscriptions or (id & client.subMask == client.subValue):                    
+                    if id in client.subscriptions or (id & client.subMask == client.subValue):
                         if id in self.privateSubscriptions:
                             # if it's a "private" message, only give it to clients that specifically said they want it
                             # or to clients that are a hardware link.
@@ -221,8 +223,10 @@ class MessageServer(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())
+        if self.pluginPort:
+            self.pluginPort.stop()
         super(MessageServer, self).closeEvent(event)
-    
+
     def readSettings(self):
         self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))
         self.restoreState(self.settings.value("windowState", QtCore.QByteArray()))
