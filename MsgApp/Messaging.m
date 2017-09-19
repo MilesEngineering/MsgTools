@@ -52,7 +52,7 @@ classdef Messaging
             obj.ProcessDir(msgdir, msgdir);
         end
         function ProcessDir(obj, basedir, dirname)
-            fprintf('Processing %s\n', dirname);
+            %fprintf('Processing %s\n', dirname);
 
             % loop over filenames in dir
             filenames = dir(strcat(dirname,'/*.m'));
@@ -71,7 +71,7 @@ classdef Messaging
                     if any(idIdx)
                         id = mc.PropertyList(idIdx).DefaultValue;
                         if id > 0
-                            fprintf('class %s, ID %d=0x%s\n', classname, id, dec2hex(id));
+                            %fprintf('class %s, ID %d=0x%s\n', classname, id, dec2hex(id));
                             sizeIdx = strcmp({mc.PropertyList.Name}, 'MSG_SIZE')==1;
                             size = mc.PropertyList(sizeIdx).DefaultValue;
                             obj.msgClassnameFromID(id) = classname;
