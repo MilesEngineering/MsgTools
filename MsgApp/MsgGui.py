@@ -265,12 +265,13 @@ class MsgCommandWidget(QtWidgets.QWidget):
         if firstWord in Messaging.MsgClassFromName:
             msgClass = Messaging.MsgClassFromName[firstWord]
             msg = msgClass()
-            paramString = lineOfText.replace(firstWord, "",1)
-            params = paramString.split(',')
-            fieldNumber = 0
-            for param in params:
-                Messaging.set(msg, msg.fields[fieldNumber], param)
-                fieldNumber += 1
+            if msg.fields:
+                paramString = lineOfText.replace(firstWord, "",1)
+                params = paramString.split(',')
+                fieldNumber = 0
+                for param in params:
+                    Messaging.set(msg, msg.fields[fieldNumber], param)
+                    fieldNumber += 1
             self.messageEntered.emit(msg)
             self.addText(" -> Msg\n")
         else:
