@@ -97,10 +97,13 @@ class Messaging:
                         print("descending into directory ", filepath)
                     self.LoadDir(filepath)
             elif filename.endswith('.py'):
+                dirname = loadDir.split("/")[-1]
                 moduleName = os.path.splitext(os.path.basename(filename))[0]
                 if Messaging.debug:
-                    print("loading module ", filepath, "as",moduleName)
-                vars(self)[moduleName] = imp.load_source(filepath.replace("/", "_"), filepath)
+                    print("loading module "+filepath+" as "+dirname+"."+moduleName)
+                if dirname and not dirname in vars(self):
+                    vars(self)[dirname] = lambda: None
+                vars(vars(self)[dirname])[moduleName] = imp.load_source(filepath.replace("/", "_"), filepath)
                 #print("vars(self)[%s] is "% moduleName, vars(self))
                 
 
