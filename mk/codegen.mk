@@ -43,6 +43,6 @@ install all:: Makefile check cpp c python java js matlab html
 clean clobber::
 	rm -rf $(MSGDIR) __pycache__ *.pyc
 
-$(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES))
+$(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES)) $(CG_DIR)MsgCheck.py
 	$(call colorecho,Checking message validity)
 	$(CHECK) $(call CYGPATH,$(DIGEST)) $(mdir)
