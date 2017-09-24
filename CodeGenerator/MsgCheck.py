@@ -54,15 +54,14 @@ def ProcessMsg(filename, msg, subdirComponent, enums, ids):
 
     id = msgID(msg, enums, ids, -1)
     idInt = int(id, 0)
-    if "ID" in msg or "IDs" in msg:
-        global msgPaths
+    if idInt:
         global msgNames
+        fullMsgName = subdirComponent+'/'+msgName(msg)
         if idInt in msgNames:
-            raise MessageException('\nERROR! '+msg['Name']+' uses id '+str(id)+', but already used by '+msgNames[idInt]+'\n\n')
-        if msg['Name'] in msgPaths:
-            raise MessageException('\nERROR! '+subdirComponent+'/'+msg['Name']+' being processed, but name already used by '+msgPaths[msg['Name']]+'/'+msg['Name']+'.\n\n')
-    msgNames[idInt] = msg['Name']
-    msgPaths[msg['Name']] = subdirComponent
+            raise MessageException('\nERROR! '+fullMsgName+' uses id '+str(id)+', but already used by '+msgNames[idInt]+'\n\n')
+        if fullMsgName in msgNames:
+            raise MessageException('\nERROR! '+fullMsgName+' being processed, but name already used by '+msg['Name']+'.\n\n')
+        msgNames[idInt] = fullMsgName
     offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
@@ -116,8 +115,6 @@ if __name__ == '__main__':
     
     global msgNames
     msgNames = {}
-    global msgPaths
-    msgPaths = {}
 
     try:
         os.makedirs(os.path.dirname(outputFilename))
