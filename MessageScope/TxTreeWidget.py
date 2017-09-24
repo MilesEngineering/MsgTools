@@ -89,6 +89,11 @@ class EditableFieldItem(FieldItem):
         if self.fieldInfo.type == "int" and value.startswith("0x"):
             value = str(int(value, 0))
 
+        # if user deletes the value, for anything besides a string,
+        # return without setting the new value
+        if self.fieldInfo.type != "string" and value == "":
+            return
+
         # set the value in the message/header buffer
         Messaging.set(self.msg, self.fieldInfo, value)
 
