@@ -268,10 +268,26 @@ class MsgCommandWidget(QtWidgets.QWidget):
             if msg.fields:
                 paramString = lineOfText.replace(firstWord, "",1)
                 params = paramString.split(',')
-                fieldNumber = 0
-                for param in params:
-                    Messaging.set(msg, msg.fields[fieldNumber], param)
-                    fieldNumber += 1
+                try:
+                    paramNumber = 0
+                    for fieldInfo in msgClass.fields:
+                        if(fieldInfo.count == 1):
+                            if len(fieldInfo.bitfieldInfo) == 0:
+                                Messaging.set(msg, fieldInfo, params[paramNumber])
+                                paramNumber+=1
+                            else:
+                                for bitInfo in fieldInfo.bitfieldInfo:
+                                    Messaging.set(msg, bitInfo, params[paramNumber])
+                                    paramNumber+=1
+                        else:
+                            arrayList = []
+                            for i in range(0,fieldInfo.count):
+                                Messaging.set(msg, fieldInfo, params[paramNumber], i)
+                                paramNumber+=1
+                except IndexError:
+                    # if index error occurs on accessing params, then stop processing params
+                    # because we've processed them all
+                    pass
             self.messageEntered.emit(msg)
             self.addText(" -> Msg\n")
         else:
