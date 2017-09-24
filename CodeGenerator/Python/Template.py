@@ -58,4 +58,4 @@ class <MSGNAME> :
         <REFLECTION>\
     ]
 
-Messaging.Register("<MESSAGE_SUBDIR>.<MSGNAME>", <MSGNAME>.ID, <MSGNAME>)
+Messaging.Register("<MESSAGE_SUBDIR>_<MSGNAME>", <MSGNAME>.ID, <MSGNAME>)

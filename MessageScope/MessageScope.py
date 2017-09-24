@@ -5,6 +5,7 @@ import datetime
 import collections
 import functools
 import threading
+import re
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -156,33 +157,40 @@ class MessageScopeGui(MsgGui.MsgGui):
     def ReadTxDictionary(self):
         #print("Tx Dictionary:")
         for id in Messaging.MsgNameFromID:
-            #print(Messaging.MsgNameFromID[id], "=", id)
             name = Messaging.MsgNameFromID[id]
-            (msgDir, msgName) = name.split('.')
-            addFn = None
+            components = name.split('.')
+            dirs = components[:-1]
+            msgName = components[-1]
             
-            parentWidget = None
-            if msgDir == None:
-                parentWidget = self.txDictionary
-            else:
-                dirItemMatches = self.txDictionary.findItems(msgDir, Qt.MatchExactly, 0)
-                if(len(dirItemMatches) > 0):
-                    parentWidget = dirItemMatches[0]
-                else:
-                    parentWidget = QTreeWidgetItem(self.txDictionary)
-                    parentWidget.setText(0, msgDir)
+            parentWidget = self.txDictionary
+            parentPath = ""
+            for dir in dirs:
+                # find the node that matches the directory we're looking for
+                dirItemMatches = self.txDictionary.findItems(dir, Qt.MatchExactly | Qt.MatchRecursive, 0)
+                foundMatch = False
+                for dirItem in dirItemMatches:
+                    try:
+                        if parentPath == dirItem.parentPath:
+                            parentWidget = dirItem
+                            foundMatch = True
+                            break
+                    except AttributeError:
+                        pass
+                # if we didn't find the node for the directory, add it
+                if not foundMatch:
+                    newWidget = QTreeWidgetItem(parentWidget)
+                    newWidget.setText(0, dir)
+                    newWidget.parentPath = parentPath
+                    parentWidget = newWidget
             msgItem = QTreeWidgetItem(parentWidget)
             msgItem.setText(0, msgName)
+            msgItem.msgName = name
         self.txDictionary.sortByColumn(0, Qt.AscendingOrder)
 
     def onTxMessageSelected(self, txListWidgetItem):
-        parentWidget = txListWidgetItem.parent()
-        messageName = "." + txListWidgetItem.text(0)
-        if not parentWidget is None:
-            messageName = parentWidget.text(0) + messageName
-
         # directories have children but messages don't, so only add messages by verifying the childCount is zero
         if txListWidgetItem.childCount() == 0:
+            messageName = txListWidgetItem.msgName
             # Always add to TX panel even if the same message class may already exist
             # since we may want to send the same message with different contents/header/rates.
             message_class = Messaging.MsgClassFromName[messageName]

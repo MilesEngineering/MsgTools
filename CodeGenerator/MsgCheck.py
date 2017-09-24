@@ -47,12 +47,12 @@ def fieldTypeValid(field):
       "float64", "float32"]
     return field["Type"] in allowedFieldTypes
 
-def ProcessMsg(filename, msg, subdirComponent, enums, ids):
+def ProcessMsg(filename, msg, subdirComponent, enums):
     enumNames = {}
     for enum in enums:
         enumNames[enum["Name"]] = enum
-
-    id = msgID(msg, enums, ids, -1)
+    
+    id = msgID(msg, enums, -1)
     idInt = int(id, 0)
     if idInt:
         global msgNames
@@ -94,9 +94,9 @@ def ProcessMsg(filename, msg, subdirComponent, enums, ids):
             offset += fieldSize(field) * fieldCount(field)
     
     if offset > 128:
-        raise MessageException('message ' + msg["Name"] + ' too big\n')
+        raise MessageException('message ' + msgName(msg) + ' too big\n')
 
-    return (subdirComponent+'/'+msg['Name']).ljust(35) +" "+(subdirComponent+'/'+filename).ljust(40) +" "+ str(id).rjust(10)+'\n'
+    return (subdirComponent+'/'+msgName(msg)).ljust(35) +" "+(subdirComponent+'/'+filename).ljust(40) +" "+ str(id).rjust(10)+'\n'
 
 def ProcessFile(filename, outFile, inputData, subdirComponent):
     enums = Enums(inputData)
@@ -104,7 +104,8 @@ def ProcessFile(filename, outFile, inputData, subdirComponent):
 
     if "Messages" in inputData:
         for msg in Messages(inputData):
-            outFile.write(ProcessMsg(filename, msg, subdirComponent, enums, ids))
+            msg["ids"] = ids
+            outFile.write(ProcessMsg(filename, msg, subdirComponent, enums))
 
 # main starts here
 if __name__ == '__main__':

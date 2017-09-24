@@ -127,6 +127,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     
     if "Messages" in inputData:
         for msg in Messages(inputData):
+            msg["ids"] = ids
             try:
                 if oneOutputFilePerMsg:
                     outputFilename, outFile = OutputFile(msgName(msg), outDir)
@@ -144,9 +145,9 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 except AttributeError:
                     pass
                 try:
-                    replacements["<MSGID>"] = language.languageConst(msgID(msg, enums, ids, undefinedMsgId))
+                    replacements["<MSGID>"] = language.languageConst(msgID(msg, enums, undefinedMsgId))
                 except AttributeError:
-                    replacements["<MSGID>"] = str(msgID(msg, enums, ids, undefinedMsgId))
+                    replacements["<MSGID>"] = str(msgID(msg, enums, undefinedMsgId))
                 replacements["<MSGSIZE>"] = str(msgSize(msg))
                 replacements["<MSGDESCRIPTION>"] = str(msg["Description"])
                 replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))

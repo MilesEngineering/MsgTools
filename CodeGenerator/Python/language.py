@@ -131,17 +131,17 @@ def enumLookup(msg, field):
     lookup += "        pass\n"
     lookup += "    if isinstance(value, int) or value.isdigit():\n"
     lookup += "        defaultValue = int(value)\n"
-    lookup += "    value = " + msg["Name"] + "." + str(field["Enum"]) + ".get(value, defaultValue)\n"
+    lookup += "    value = " + msgName(msg) + "." + str(field["Enum"]) + ".get(value, defaultValue)\n"
     lookup += "    "
     return lookup
 
 def reverseEnumLookup(msg, field):
     lookup = "if not enumAsInt:\n"
-    lookup += "        value = " + msg["Name"] + ".Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
+    lookup += "        value = " + msgName(msg) + ".Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
     return lookup
 
 def getFn(msg, field, offset):
-    loc = msg["Name"] + ".MSG_OFFSET + " + str(offset)
+    loc = msgName(msg) + ".MSG_OFFSET + " + str(offset)
     type = "'"+fieldType(field)+"'"
     count = MsgParser.fieldCount(field)
     cleanup = ""
@@ -171,7 +171,7 @@ def getFn(msg, field, offset):
     return ret
 
 def setFn(msg, field, offset):
-    loc = msg["Name"] + ".MSG_OFFSET + " + str(offset)
+    loc = msgName(msg) + ".MSG_OFFSET + " + str(offset)
     count = MsgParser.fieldCount(field)
     type = fieldType(field)
     lookup = ""
@@ -268,12 +268,12 @@ def initCode(msg):
     offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
-            fieldInit = initField(field, msg["Name"])
+            fieldInit = initField(field, msgName(msg))
             if fieldInit:
                 ret += fieldInit
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
-                    bits = initBitfield(field, bits, msg["Name"])
+                    bits = initBitfield(field, bits, msgName(msg))
                     if bits:
                         ret += bits
 

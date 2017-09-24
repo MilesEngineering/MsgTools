@@ -110,6 +110,7 @@ class Messaging:
     # add message to the global hash table of names by ID, and IDs by name
     def Register(name, id, classDef):
         id = hex(id)
+        name = name.replace("_", ".")
         
         if Messaging.debug:
             print("Registering", name, "as",id)

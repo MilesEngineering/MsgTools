@@ -213,17 +213,32 @@ def subfieldReplacements(line,msg):
     return ret 
 
 def msgName(msg):
-    return msg["Name"]
+    try:
+        return msg["Name"]
+    except KeyError:
+        pass
+    ret = None
+    # iterate over list of ids
+    for id in msg["ids"]:
+        subname = msg[id["Name"]]
+        if "." in subname:
+            subname = subname.split(".")[1]
+        if ret:
+            ret = ret + "_" + subname
+        else:
+            ret = subname
+    return ret
+    
 
-def msgID(msg, enums, ids, undefinedMsgId):
+def msgID(msg, enums, undefinedMsgId):
     ret = undefinedMsgId
     # check if there was an externally specified list of ID fields
-    if ids:
+    if msg["ids"]:
         try:
             ret = 0
             # iterate over list of ids
             shiftValue = 0
-            for id in ids:
+            for id in msg["ids"]:
                 value = msg[id["Name"]]
                 #print("got value " + str(value))
                 try:
