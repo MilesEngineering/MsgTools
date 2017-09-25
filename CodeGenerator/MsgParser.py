@@ -123,7 +123,6 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     replacements = {}
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
-    replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(inputData, enums))
     
     if "Messages" in inputData:
         for msg in Messages(inputData):
@@ -136,6 +135,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
 
                 commonSubdir = CommonSubdir(inputFilename, outputFilename)
             
+                replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(msg, enums))
                 replacements["<MSGNAME>"] = msgName(msg)
                 replacements["<NUMBER_OF_FIELDS>"] = str(numberOfFields(msg))
                 replacements["<NUMBER_OF_SUBFIELDS>"] = str(numberOfSubfields(msg))

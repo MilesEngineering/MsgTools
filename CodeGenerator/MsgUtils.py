@@ -2,6 +2,7 @@ import re
 import io
 import json
 import os.path
+from collections import OrderedDict
 
 class MessageException(Exception):
     pass
@@ -352,30 +353,55 @@ def MsgIDs(inputData):
 # it will be a list of only the enums that are relevant.  often there can be many
 # enums defiined in a common include file, and they aren't all used by a particular
 # message
-def UsedEnums(inputData, enums):
+def UsedEnums(msg, enums):
     usedEnums = []
-    if "Messages" in inputData:
-        for enum in enums:
-            for msg in inputData["Messages"]:
+    for enum in enums:
+        if "Fields" in msg:
+            for field in msg["Fields"]:
+                if "Enum" in field:
+                    if field["Enum"] == enum["Name"]:
+                        usedEnums.append(enum)
+                        break
                 foundEnum = 0
-                if "Fields" in msg:
-                    for field in msg["Fields"]:
-                        if "Enum" in field:
-                            if field["Enum"] == enum["Name"]:
+                if "Bitfields" in field:
+                    for bits in field["Bitfields"]:
+                        if "Enum" in bits:
+                            if bits["Enum"] == enum["Name"]:
                                 usedEnums.append(enum)
                                 foundEnum = 1
                                 break
-                        if "Bitfields" in field:
-                            for bits in field["Bitfields"]:
-                                if "Enum" in bits:
-                                    if bits["Enum"] == enum["Name"]:
-                                        usedEnums.append(enum)
-                                        foundEnum = 1
-                                        break
-                        if foundEnum:
-                            break
-                if foundEnum:
-                    break
+                    if foundEnum:
+                        break
+
+    try:
+        if msg["ids"]:
+            idEnum = {}
+            idEnum["Name"] = "IDs"
+            idEnum["Options"] = []
+            for id in msg["ids"]:
+                idName = id["Name"]
+                idValue = msg[idName]
+                try:
+                    idValue = int(idValue)
+                except ValueError:
+                    for enum in enums:
+                        enumType = enum["Name"]
+                        for option in enum["Options"]:
+                            if idValue == enumType + "." + option["Name"] or (enum["Name"] == id["Name"]+"s" and idValue == option["Name"]):
+                                enumName = idValue
+                                idValue = int(option["Value"])
+                                break
+                try:
+                    idValue = int(idValue)
+                except ValueError:
+                    raise MessageException("ERROR! Can't find value for " + str(idValue))
+                option = {}
+                option["Name"] = idName
+                option["Value"] = idValue
+                idEnum["Options"].append(option)
+            usedEnums.append(idEnum)
+    except KeyError:
+        pass
     return usedEnums
 
 def typeForScaledInt(field):
