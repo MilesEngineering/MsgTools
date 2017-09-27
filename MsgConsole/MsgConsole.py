@@ -11,7 +11,6 @@ import janus
 import signal
 
 loop = asyncio.get_event_loop()
-msg_q = janus.Queue(loop=loop)
 
 async def handle_tcp_client(client_reader):
     #print("handle_tcp_client")
@@ -22,24 +21,18 @@ async def handle_tcp_client(client_reader):
         data = await client_reader.read(1024)
         if not data:
             break
-        hdr = Messaging.hdr(data)
-        msg = Messaging.MsgFactory(hdr)
-        json = Messaging.toJson(msg)
-        print(json)
-
-tcp_clients = {} # task -> (reader, writer)
-ws_clients = {}
+        await consoleserver.send_to_others(client_reader, data)
 
 def client_connected_handler(client_reader, client_writer):
     # Start a new asyncio.Task to handle this specific client connection
     task = asyncio.Task(handle_tcp_client(client_reader))
-    print("Added new client to list of " + str(len(tcp_clients)) + " clients")
-    tcp_clients[task] = (client_reader, client_writer)
+    print("Added new client to list of " + str(len(consoleserver.tcp_clients)) + " clients")
+    consoleserver.tcp_clients[task] = (client_reader, client_writer)
 
     def client_done(task):
         print("client exited")
         # When the tasks that handles the specific client connection is done
-        del tcp_clients[task]
+        del consoleserver.tcp_clients[task]
 
     # Add the client_done callback to be run when the future becomes done
     task.add_done_callback(client_done)
@@ -47,28 +40,21 @@ def client_connected_handler(client_reader, client_writer):
 async def handle_console_input():
     loop = asyncio.get_event_loop()
     while True:
-        msg = await msg_q.async_q.get()
-        # send to TCP clients
-        for task in tcp_clients.keys():
-            (reader, writer) = tcp_clients[task]
-            #print('sending console io msg to client')
-            #yield client.send(msg.rawBuffer().raw)
-            writer.write(msg.rawBuffer().raw)
-        
-        # send to Websocket clients
-        for ws in ws_clients.keys():
-            await ws.send(msg.rawBuffer().raw)
+        data = await consoleserver.msg_q.async_q.get()
+        await consoleserver.send_to_others(consoleserver.msg_q, data)
 
 async def handle_ws_client(websocket, path):
-    while True:
-        ws_clients[websocket] = websocket
-        data = await websocket.recv()
-        if not data:
-            break
-        hdr = Messaging.hdr(data)
-        msg = Messaging.MsgFactory(hdr)
-        json = Messaging.toJson(msg)
-        print(json)
+    consoleserver.ws_clients[websocket] = websocket
+    print("websocket connected")
+    try:
+        while True:
+            data = await websocket.recv()
+            if not data:
+                break
+            await consoleserver.send_to_others(websocket, data)
+    except websockets.exceptions.ConnectionClosed:
+        print("websocket closed")
+        del consoleserver.ws_clients[websocket]
 
 class ConsoleServer:
     def start(self):
@@ -77,7 +63,12 @@ class ConsoleServer:
         self.loop = asyncio.get_event_loop()
 
         # console input
+        self.msg_q = janus.Queue(loop=loop)
         asyncio.ensure_future(handle_console_input())
+
+        # client lists
+        self.tcp_clients = {} # task -> (reader, writer)
+        self.ws_clients = {}
 
         # tcp server
         self.tcp_server = self.loop.run_until_complete(asyncio.start_server(client_connected_handler, '127.0.0.1', 5678))
@@ -95,10 +86,32 @@ class ConsoleServer:
         self.loop.stop()
         self.loop.close()
     
-    def send_to_others(self, me, msg):
-        for connection in connections.keys():
-            if connection != me:
-                connection.sendMsg(msg)
+    async def send_to_others(self, me, data):
+        if me != self.msg_q:
+            try:
+                # print as JSON for debug purposes
+                hdr = Messaging.hdr(data)
+                msg = Messaging.MsgFactory(hdr)
+                json = Messaging.toJson(msg)
+                print(json)
+            except:
+                pass
+
+        #for connection in connections.keys():
+        #    if connection != me:
+        #        connection.sendMsg(msg)
+
+        # send to Websocket clients
+        for ws in consoleserver.ws_clients.keys():
+            if ws != me:
+                # calling ws.send REQUIRES an 'await', otherwise data never gets to the ws client!
+                await ws.send(data)
+
+        # send to TCP clients
+        for task in consoleserver.tcp_clients.keys():
+                (reader, writer) = consoleserver.tcp_clients[task]
+                if reader != me:
+                    writer.write(data)
 
 consoleserver = ConsoleServer()
 
@@ -131,9 +144,10 @@ if __name__ == "__main__":
     try:
         while True:
             cmd = input("")
-            print("got input cmd " + cmd)
-            msg = Messaging.csvToMsg(cmd)
-            if msg:
-                msg_q.sync_q.put(msg)
+            #print("got input cmd [" + cmd + "]")
+            if cmd:
+                msg = Messaging.csvToMsg(cmd)
+                if msg:
+                    consoleserver.msg_q.sync_q.put(msg.rawBuffer().raw)
     except SystemExit:
         print("exiting main")
