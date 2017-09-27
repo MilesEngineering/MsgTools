@@ -27,45 +27,8 @@ async def handle_tcp_client(client_reader):
         json = Messaging.toJson(msg)
         print(json)
 
-async def get_msg():
-  loop = asyncio.get_event_loop()
-  return (await msg_q.async_q.get())
-
-def csvToMsg(lineOfText):
-    firstWord = lineOfText.split()[0]
-    if firstWord in Messaging.MsgClassFromName:
-        msgClass = Messaging.MsgClassFromName[firstWord]
-        msg = msgClass()
-        if msg.fields:
-            paramString = lineOfText.replace(firstWord, "",1)
-            params = paramString.split(',')
-            try:
-                paramNumber = 0
-                for fieldInfo in msgClass.fields:
-                    if(fieldInfo.count == 1):
-                        if len(fieldInfo.bitfieldInfo) == 0:
-                            Messaging.set(msg, fieldInfo, params[paramNumber])
-                            paramNumber+=1
-                        else:
-                            for bitInfo in fieldInfo.bitfieldInfo:
-                                Messaging.set(msg, bitInfo, params[paramNumber])
-                                paramNumber+=1
-                    else:
-                        arrayList = []
-                        for i in range(0,fieldInfo.count):
-                            Messaging.set(msg, fieldInfo, params[paramNumber], i)
-                            paramNumber+=1
-            except IndexError:
-                # if index error occurs on accessing params, then stop processing params
-                # because we've processed them all
-                pass
-        return msg
-    else:
-        print("["+lineOfText+"] is NOT A MESSAGE NAME!")
-    return None
-
 tcp_clients = {} # task -> (reader, writer)
-ws_clients = []
+ws_clients = {}
 
 def client_connected_handler(client_reader, client_writer):
     # Start a new asyncio.Task to handle this specific client connection
@@ -82,8 +45,9 @@ def client_connected_handler(client_reader, client_writer):
     task.add_done_callback(client_done)
 
 async def handle_console_input():
+    loop = asyncio.get_event_loop()
     while True:
-        msg = await get_msg()
+        msg = await msg_q.async_q.get()
         # send to TCP clients
         for task in tcp_clients.keys():
             (reader, writer) = tcp_clients[task]
@@ -92,12 +56,12 @@ async def handle_console_input():
             writer.write(msg.rawBuffer().raw)
         
         # send to Websocket clients
-        for ws in ws_clients:
+        for ws in ws_clients.keys():
             await ws.send(msg.rawBuffer().raw)
 
 async def handle_ws_client(websocket, path):
     while True:
-        ws_clients.append(websocket)
+        ws_clients[websocket] = websocket
         data = await websocket.recv()
         if not data:
             break
@@ -106,7 +70,7 @@ async def handle_ws_client(websocket, path):
         json = Messaging.toJson(msg)
         print(json)
 
-class Control:
+class ConsoleServer:
     def start(self):
         # general asyncio stuff
         asyncio.set_event_loop(loop)
@@ -130,19 +94,24 @@ class Control:
         self.tcp_server.close()
         self.loop.stop()
         self.loop.close()
+    
+    def send_to_others(self, me, msg):
+        for connection in connections.keys():
+            if connection != me:
+                connection.sendMsg(msg)
 
-con = Control()
+consoleserver = ConsoleServer()
+
 def background_thread_for_io():
-    con.start()
-
+    consoleserver.start()
 
 def signal_handler(signal, frame):
     print('You pressed Ctrl+C!')
     for task in asyncio.Task.all_tasks():
         task.cancel()
-    #con.stop()
-    con.tcp_server.close()
-    con.loop.stop()
+    #consoleserver.stop()
+    consoleserver.tcp_server.close()
+    consoleserver.loop.stop()
     sys.exit(0)
 
 if __name__ == "__main__":
@@ -163,7 +132,7 @@ if __name__ == "__main__":
         while True:
             cmd = input("")
             print("got input cmd " + cmd)
-            msg = csvToMsg(cmd)
+            msg = Messaging.csvToMsg(cmd)
             if msg:
                 msg_q.sync_q.put(msg)
     except SystemExit:

@@ -218,6 +218,40 @@ class Messaging:
 
         return json.dumps({msg.MsgName() : pythonObj})
 
+    @staticmethod
+    def csvToMsg(lineOfText):
+        firstWord = lineOfText.split()[0]
+        if firstWord in Messaging.MsgClassFromName:
+            msgClass = Messaging.MsgClassFromName[firstWord]
+            msg = msgClass()
+            if msg.fields:
+                paramString = lineOfText.replace(firstWord, "",1)
+                params = paramString.split(',')
+                try:
+                    paramNumber = 0
+                    for fieldInfo in msgClass.fields:
+                        if(fieldInfo.count == 1):
+                            if len(fieldInfo.bitfieldInfo) == 0:
+                                Messaging.set(msg, fieldInfo, params[paramNumber])
+                                paramNumber+=1
+                            else:
+                                for bitInfo in fieldInfo.bitfieldInfo:
+                                    Messaging.set(msg, bitInfo, params[paramNumber])
+                                    paramNumber+=1
+                        else:
+                            arrayList = []
+                            for i in range(0,fieldInfo.count):
+                                Messaging.set(msg, fieldInfo, params[paramNumber], i)
+                                paramNumber+=1
+                except IndexError:
+                    # if index error occurs on accessing params, then stop processing params
+                    # because we've processed them all
+                    pass
+            return msg
+        else:
+            print("["+lineOfText+"] is NOT A MESSAGE NAME!")
+        return None
+
     # should this move to a member function of a hypothetical Message base class?
     @staticmethod
     def MsgRoute(msg):
