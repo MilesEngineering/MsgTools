@@ -59,10 +59,10 @@ class SynchronousMsgServer:
         asyncio.set_event_loop(self.loop)
         self.loop = asyncio.get_event_loop()
 
-        # console input/output
+        # synchronous input/output
         self.synchronous_tx_queue = janus.Queue(loop=self.loop)
         self.synchronous_rx_queue = queue.Queue()
-        asyncio.ensure_future(self.handle_console_input())
+        asyncio.ensure_future(self.handle_synchronous_input())
 
         # client lists
         self.tcp_clients = {} # task -> (reader, writer)
@@ -79,7 +79,7 @@ class SynchronousMsgServer:
         self.loop.run_forever()
         self.stopped()
 
-    async def handle_console_input(self):
+    async def handle_synchronous_input(self):
         while True:
             data = await self.synchronous_tx_queue.async_q.get()
             await self.send_to_others(self.synchronous_tx_queue, data)
@@ -165,7 +165,8 @@ if __name__ == "__main__":
             if cmd:
                 if cmd == "getmsg":
                     # this blocks until message received, or timeout occurs
-                    data = server.get_message(1, [msgLib.Network.Connect.Connect.ID, msgLib.Debug.AccelData.AccelData.ID])
+                    timeout = 10.0 # value in seconds
+                    data = server.get_message(timeout, [msgLib.Network.Connect.Connect.ID, msgLib.Debug.AccelData.AccelData.ID])
                     if data:
                         # print as JSON for debug purposes
                         hdr = Messaging.hdr(data)
