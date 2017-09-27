@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+#
+# SynchronousMsgServer is a class that contains a TCP server and Websocket server which run asynchronously
+# in a background thread, and also allows synchronous code to send and receives messages with it.
+#
+# The main application creates a SynchronousMsgServer, and sends data to it, and reads data from it.
+#
 # based on:
 #   https://stackoverflow.com/questions/29324610/python-queue-linking-object-running-asyncio-coroutines-with-main-thread-input
 #   https://stackoverflow.com/questions/32054066/python-how-to-run-multiple-coroutines-concurrently-using-asyncio
@@ -12,7 +18,7 @@ import queue
 
 loop = asyncio.get_event_loop()
 
-class ConsoleServer:
+class SynchronousMsgServer:
     def __init__(self):
         from threading import Thread
         t = Thread(target=self.start)
@@ -32,9 +38,9 @@ class ConsoleServer:
     def stop(self):
         for task in asyncio.Task.all_tasks():
             task.cancel()
-        #consoleserver.stop()
-        consoleserver.tcp_server.close()
-        consoleserver.loop.stop()
+        #self.stop()
+        self.tcp_server.close()
+        self.loop.stop()
         # Some thread hangs and sys.exit doesn't return, perhaps?
         sys.exit(0)
 
@@ -82,10 +88,6 @@ class ConsoleServer:
                 self.synchronous_rx_queue.put(data)
             except:
                 pass
-
-        #for connection in connections.keys():
-        #    if connection != me:
-        #        connection.sendMsg(msg)
 
         # send to Websocket clients
         for ws in self.ws_clients.keys():
@@ -145,7 +147,7 @@ if __name__ == "__main__":
     from Messaging import Messaging
     msgLib = Messaging(thisFileDir+"/../../obj/CodeGenerator/Python/", 0, "NetworkHeader")
 
-    consoleserver = ConsoleServer()
+    server = SynchronousMsgServer()
 
     _cmd = ""
     try:
@@ -154,8 +156,8 @@ if __name__ == "__main__":
             #print("got input cmd [" + cmd + "]")
             if cmd:
                 if cmd == "getmsg":
-                    # this blocks until message received
-                    data = consoleserver.get_message(1)
+                    # this blocks until message received, or timeout occurs
+                    data = server.get_message(1)
                     if data:
                         # print as JSON for debug purposes
                         hdr = Messaging.hdr(data)
@@ -165,10 +167,11 @@ if __name__ == "__main__":
                     else:
                         print("{}")
                 else:
+                    # this translates the input command from CSV to a message, and sends it.
                     msg = Messaging.csvToMsg(cmd)
                     if msg:
-                        consoleserver.send_message(msg.rawBuffer().raw)
+                        server.send_message(msg.rawBuffer().raw)
     # I can't get exit on Ctrl-C to work!
     except KeyboardInterrupt:
         print('You pressed Ctrl+C!')
-        consoleserver.stop()
+        server.stop()
