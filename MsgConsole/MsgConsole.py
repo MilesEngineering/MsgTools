@@ -16,10 +16,9 @@ import websockets
 import janus
 import queue
 
-loop = asyncio.get_event_loop()
-
 class SynchronousMsgServer:
     def __init__(self):
+        self.loop = asyncio.get_event_loop()
         from threading import Thread
         t = Thread(target=self.start)
         t.start()
@@ -57,11 +56,11 @@ class SynchronousMsgServer:
     # Implementation details from here down
     def start(self):
         # general asyncio stuff
-        asyncio.set_event_loop(loop)
+        asyncio.set_event_loop(self.loop)
         self.loop = asyncio.get_event_loop()
 
         # console input/output
-        self.synchronous_tx_queue = janus.Queue(loop=loop)
+        self.synchronous_tx_queue = janus.Queue(loop=self.loop)
         self.synchronous_rx_queue = queue.Queue()
         asyncio.ensure_future(self.handle_console_input())
 
@@ -81,7 +80,6 @@ class SynchronousMsgServer:
         self.stopped()
 
     async def handle_console_input(self):
-        loop = asyncio.get_event_loop()
         while True:
             data = await self.synchronous_tx_queue.async_q.get()
             await self.send_to_others(self.synchronous_tx_queue, data)
