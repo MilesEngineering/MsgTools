@@ -29,11 +29,21 @@ class SynchronousMsgServer:
         self.synchronous_tx_queue.sync_q.put(data)
     
     # how to get a message, from the outside world
-    def get_message(self, timeout):
-        try:
-            return self.synchronous_rx_queue.get(True, timeout)
-        except queue.Empty:
-            return None
+    def get_message(self, timeout, msgIds=[]):
+        while True:
+            try:
+                data = self.synchronous_rx_queue.get(True, timeout)
+                if len(msgIds) == 0:
+                    return data
+                else:
+                    hdr = msgLib.hdr(data)
+                    id = hdr.GetMessageID()
+                    if id in msgIds:
+                        return data
+                    #else:
+                    #    print("throwing away " + str(id) + " msg")
+            except queue.Empty:
+                return None
 
     def stop(self):
         for task in asyncio.Task.all_tasks():
@@ -157,7 +167,7 @@ if __name__ == "__main__":
             if cmd:
                 if cmd == "getmsg":
                     # this blocks until message received, or timeout occurs
-                    data = server.get_message(1)
+                    data = server.get_message(1, [msgLib.Network.Connect.Connect.ID, msgLib.Debug.AccelData.AccelData.ID])
                     if data:
                         # print as JSON for debug purposes
                         hdr = Messaging.hdr(data)
