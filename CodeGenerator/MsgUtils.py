@@ -2,7 +2,6 @@ import re
 import io
 import json
 import os.path
-from collections import OrderedDict
 
 class MessageException(Exception):
     pass
