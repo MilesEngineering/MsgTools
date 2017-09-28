@@ -3,10 +3,6 @@
 # Creates a SynchronousMsg Client or Server, and uses it for a message console.
 # Reads are JSON, writes are CSV.
 #
-# based on:
-#   https://stackoverflow.com/questions/29324610/python-queue-linking-object-running-asyncio-coroutines-with-main-thread-input
-#   https://stackoverflow.com/questions/32054066/python-how-to-run-multiple-coroutines-concurrently-using-asyncio
-#   https://websockets.readthedocs.io/en/stable/intro.html
 import os
 import sys
 from SynchronousMsgServer import SynchronousMsgServer
@@ -23,7 +19,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "server":
         connection = SynchronousMsgServer(msgLib)
     else:
-        connection = SynchronousMsgClient(msgLib)
+        connection = SynchronousMsgClient(msgLib, "CLI")
 
     _cmd = ""
     try:
@@ -34,11 +30,9 @@ if __name__ == "__main__":
                 if cmd == "getmsg":
                     # this blocks until message received, or timeout occurs
                     timeout = 10.0 # value in seconds
-                    data = connection.get_message(timeout, [msgLib.Network.Connect.Connect.ID, msgLib.Debug.AccelData.AccelData.ID])
-                    if data:
+                    msg = connection.get_message(timeout, [msgLib.Network.Connect.Connect.ID, msgLib.Debug.AccelData.AccelData.ID])
+                    if msg:
                         # print as JSON for debug purposes
-                        hdr = Messaging.hdr(data)
-                        msg = Messaging.MsgFactory(hdr)
                         json = Messaging.toJson(msg)
                         print(json)
                     else:
@@ -47,7 +41,7 @@ if __name__ == "__main__":
                     # this translates the input command from CSV to a message, and sends it.
                     msg = Messaging.csvToMsg(cmd)
                     if msg:
-                        connection.send_message(msg.rawBuffer().raw)
+                        connection.send_message(msg)
     # I can't get exit on Ctrl-C to work!
     except KeyboardInterrupt:
         print('You pressed Ctrl+C!')

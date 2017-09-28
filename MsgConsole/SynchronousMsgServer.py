@@ -23,8 +23,8 @@ class SynchronousMsgServer:
         t.start()
 
     # how to send a message, from the outside world
-    def send_message(self, data):
-        self.synchronous_tx_queue.sync_q.put(data)
+    def send_message(self, msg):
+        self.synchronous_tx_queue.sync_q.put(msg.rawBuffer().raw)
     
     # how to get a message, from the outside world
     def get_message(self, timeout, msgIds=[]):
@@ -37,7 +37,8 @@ class SynchronousMsgServer:
                     hdr = self.msgLib.hdr(data)
                     id = hdr.GetMessageID()
                     if id in msgIds:
-                        return data
+                        msg = self.msgLib.MsgFactory(hdr)
+                        return msg
                     #else:
                     #    print("throwing away " + str(id) + " msg")
             except queue.Empty:
@@ -111,7 +112,7 @@ class SynchronousMsgServer:
     async def handle_tcp_client(self, client_reader):
         #print("handle_tcp_client")
         while True:
-            # we *should* read Messaging.hdr.SIZE bytes,
+            # we *should* read self.msgLib.hdr.SIZE bytes,
             # then parse header to see body length,
             # then read those bytes.
             data = await client_reader.read(1024)
