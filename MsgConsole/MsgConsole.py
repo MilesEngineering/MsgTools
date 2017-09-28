@@ -20,10 +20,10 @@ if __name__ == "__main__":
     from Messaging import Messaging
     msgLib = Messaging(thisFileDir+"/../../obj/CodeGenerator/Python/", 0, "NetworkHeader")
 
-    if len(sys.argv) > 1 and sys.argv[1] == "client":
-        connection = SynchronousMsgClient(msgLib)
-    else:
+    if len(sys.argv) > 1 and sys.argv[1] == "server":
         connection = SynchronousMsgServer(msgLib)
+    else:
+        connection = SynchronousMsgClient(msgLib)
 
     _cmd = ""
     try:
