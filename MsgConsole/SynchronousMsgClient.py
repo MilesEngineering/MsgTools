@@ -8,10 +8,11 @@ import sys
 import socket
 
 class SynchronousMsgClient:
-    def __init__(self):
+    def __init__(self, msgLib):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect(("127.0.0.1", 5678))
         self.timeout = 0
+        self.msgLib = msgLib
 
     def send_message(self, data):
         self.sock.send(data)
@@ -23,17 +24,17 @@ class SynchronousMsgClient:
         while True:
             try:
                 # see if there's enough for header
-                data = self.sock.recv(msgLib.hdr.SIZE, socket.MSG_PEEK)
-                if len(data) == msgLib.hdr.SIZE:
+                data = self.sock.recv(self.msgLib.hdr.SIZE, socket.MSG_PEEK)
+                if len(data) == self.msgLib.hdr.SIZE:
                     # read header
-                    data = self.sock.recv(msgLib.hdr.SIZE)
-                    hdr = msgLib.hdr(data)
+                    data = self.sock.recv(self.msgLib.hdr.SIZE)
+                    hdr = self.msgLib.hdr(data)
                     # read body
                     data += self.sock.recv(hdr.GetDataLength())
                     if len(msgIds) == 0:
                         return data
                     else:
-                        hdr = msgLib.hdr(data)
+                        hdr = self.msgLib.hdr(data)
                         id = hdr.GetMessageID()
                         if id in msgIds:
                             return data
@@ -41,6 +42,9 @@ class SynchronousMsgClient:
                         #    print("throwing away " + str(id) + " msg")
             except socket.timeout:
                 return None
+
+    def stop(self):
+        self.sock.close()
 
 if __name__ == "__main__":
     # annoying stuff to start Messaging.
