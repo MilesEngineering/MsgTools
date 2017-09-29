@@ -220,13 +220,18 @@ class Messaging:
 
     @staticmethod
     def csvToMsg(lineOfText):
-        firstWord = lineOfText.split()[0]
-        if firstWord in Messaging.MsgClassFromName:
-            msgClass = Messaging.MsgClassFromName[firstWord]
+        if lineOfText == '':
+            return None
+        params = lineOfText.split()
+        msgName = params[0]
+        if len(params) == 1:
+            params = []
+        else:
+            params = lineOfText.replace(msgName, "",1).split(',')
+        if msgName in Messaging.MsgClassFromName:
+            msgClass = Messaging.MsgClassFromName[msgName]
             msg = msgClass()
             if msg.fields:
-                paramString = lineOfText.replace(firstWord, "",1)
-                params = paramString.split(',')
                 try:
                     paramNumber = 0
                     for fieldInfo in msgClass.fields:
@@ -251,6 +256,91 @@ class Messaging:
         else:
             print("["+lineOfText+"] is NOT A MESSAGE NAME!")
         return None
+
+    def long_substr(data):
+        substr = ''
+        if len(data) > 1 and len(data[0]) > 0:
+            for i in range(len(data[0])):
+                for j in range(len(data[0])-i+1):
+                    if j > len(substr) and all(data[0][i:i+j] in x for x in data):
+                        substr = data[0][i:i+j]
+        return substr
+
+    @staticmethod
+    def csvHelp(lineOfText):
+        autoComplete = None
+        help = ""
+        params = lineOfText.split()
+        msgName = params[0]
+        # if there's no params beyond first word, try to auto-complete a message name
+        if len(params) == 1 and not lineOfText.endswith(" "):
+            # search for messages that match us
+            matchingMsgNames = []
+            for aMsgName in sorted(Messaging.MsgClassFromName.keys()):
+                if aMsgName.startswith(msgName):
+                    matchingMsgNames.append(aMsgName)
+            if len(matchingMsgNames) == 1:
+                help = matchingMsgNames[0]
+                autoComplete = matchingMsgNames[0]
+                # if there's only one result and we don't match it exactly (because it's longer than us)
+                # accept it by giving it as autoComplete with a space at end
+                #if autoComplete != msgName:
+                autoComplete = autoComplete + ' '
+                return (autoComplete, help)
+            else:
+                help = '\n'.join(matchingMsgNames)
+                autoComplete = Messaging.long_substr(matchingMsgNames)
+                #print("long_substr returned " + autoComplete)
+                return (autoComplete, help)
+                
+
+        # if we didn't auto-complete a message name above, then show help on params
+        params = lineOfText.replace(msgName, "",1).split(',')
+        if msgName in Messaging.MsgClassFromName:
+            helpOnJustParam = False
+            if not helpOnJustParam:
+                help = msgName + " "
+            msgClass = Messaging.MsgClassFromName[msgName]
+            msg = msgClass()
+            if msg.fields:
+                try:
+                    paramNumber = 0
+                    for fieldInfo in msgClass.fields:
+                        if(fieldInfo.count == 1):
+                            if len(fieldInfo.bitfieldInfo) == 0:
+                                if helpOnJustParam:
+                                    if paramNumber == len(params)-1:
+                                        return (None, fieldInfo.name)
+                                    paramNumber+=1
+                                else:
+                                    help += fieldInfo.name + ", "
+                            else:
+                                for bitInfo in fieldInfo.bitfieldInfo:
+                                    if helpOnJustParam:
+                                        if paramNumber == len(params)-1:
+                                            return (None, bitInfo.name)
+                                        paramNumber+=1
+                                    else:
+                                        help += bitInfo.name + ", "
+                        else:
+                            if helpOnJustParam:
+                                arrayList = []
+                                for i in range(0,fieldInfo.count):
+                                    if helpOnJustParam and paramNumber == len(params)-1:
+                                        return (None, fieldInfo.name)
+                                    paramNumber+=1
+                            else:
+                                help += fieldInfo.name + "["+str(fieldInfo.count)+"], "
+                except IndexError:
+                    # if index error occurs on accessing params, then stop processing params
+                    # because we've processed them all
+                    print("done at index " + str(paramNumber))
+                    pass
+                if help.endswith(", "):
+                    help = help[:-2]
+        else:
+            return (None, "["+msgName+"] is not a message name!")
+        return (autoComplete, help)
 
     # should this move to a member function of a hypothetical Message base class?
     @staticmethod

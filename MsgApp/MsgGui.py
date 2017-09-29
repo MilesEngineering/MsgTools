@@ -205,6 +205,7 @@ class MsgTreeWidget(TreeWidget):
             self.header().setSortIndicator(0, QtCore.Qt.AscendingOrder)
 
 class LineEditWithHistory(QtWidgets.QLineEdit):
+    tabPressed = QtCore.pyqtSignal()
     def __init__(self, parent=None):
         super(LineEditWithHistory, self).__init__()
         self.commandHistory = []
@@ -222,7 +223,11 @@ class LineEditWithHistory(QtWidgets.QLineEdit):
                 self.setText(self.commandHistory[self.placeInHistory])
             except IndexError:
                 self.setText('')
-        
+    
+    # disable tab focus so we get tab keys delivered via keyPressEvent.
+    def focusNextPrevChild(self, next):
+        return False
+
     def keyPressEvent(self, keyEvent):
         if keyEvent.key() == QtCore.Qt.Key_Return:
             # add to history
@@ -238,6 +243,9 @@ class LineEditWithHistory(QtWidgets.QLineEdit):
         elif keyEvent.key() == QtCore.Qt.Key_Down:
             # down in history
             self.setToHistoryItem(self.placeInHistory + 1)
+        elif keyEvent.key() == QtCore.Qt.Key_Tab:
+            self.tabPressed.emit()
+            return
         super(LineEditWithHistory, self).keyPressEvent(keyEvent)
 
 class MsgCommandWidget(QtWidgets.QWidget):
@@ -249,45 +257,26 @@ class MsgCommandWidget(QtWidgets.QWidget):
         self.textBox.setReadOnly(True)
         self.lineEdit = LineEditWithHistory()
         self.lineEdit.returnPressed.connect(self.returnPressed)
+        self.lineEdit.tabPressed.connect(self.tabPressed)
         
         vbox = QtWidgets.QVBoxLayout()
         vbox.addWidget(self.textBox)
         vbox.addWidget(self.lineEdit)
         self.setLayout(vbox)
     
+    def tabPressed(self):
+        lineOfText = self.lineEdit.text()
+        autocomplete, help = Messaging.csvHelp(lineOfText)
+        if autocomplete:
+            self.lineEdit.setText(autocomplete)
+        if help:
+            self.addText('\n'+help+'\n>\n')
+
     def returnPressed(self):
         lineOfText = self.lineEdit.text()
         self.addText(lineOfText)
-        try:
-            firstWord = lineOfText.split()[0]
-        except IndexError:
-            firstWord = ''
-        if firstWord in Messaging.MsgClassFromName:
-            msgClass = Messaging.MsgClassFromName[firstWord]
-            msg = msgClass()
-            if msg.fields:
-                paramString = lineOfText.replace(firstWord, "",1)
-                params = paramString.split(',')
-                try:
-                    paramNumber = 0
-                    for fieldInfo in msgClass.fields:
-                        if(fieldInfo.count == 1):
-                            if len(fieldInfo.bitfieldInfo) == 0:
-                                Messaging.set(msg, fieldInfo, params[paramNumber])
-                                paramNumber+=1
-                            else:
-                                for bitInfo in fieldInfo.bitfieldInfo:
-                                    Messaging.set(msg, bitInfo, params[paramNumber])
-                                    paramNumber+=1
-                        else:
-                            arrayList = []
-                            for i in range(0,fieldInfo.count):
-                                Messaging.set(msg, fieldInfo, params[paramNumber], i)
-                                paramNumber+=1
-                except IndexError:
-                    # if index error occurs on accessing params, then stop processing params
-                    # because we've processed them all
-                    pass
+        msg = Messaging.csvToMsg(lineOfText)
+        if msg:
             self.messageEntered.emit(msg)
             self.addText(" -> Msg\n")
         else:
@@ -297,6 +286,7 @@ class MsgCommandWidget(QtWidgets.QWidget):
     def addText(self, text):
         self.textBox.moveCursor (QtGui.QTextCursor.End)
         self.textBox.insertPlainText(text)
+        self.textBox.moveCursor (QtGui.QTextCursor.End)
     
 class MsgGui(MsgApp, QtWidgets.QMainWindow):
     def __init__(self, name, argv, options, parent=None):
