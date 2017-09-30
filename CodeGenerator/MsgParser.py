@@ -67,7 +67,7 @@ def CommonSubdir(f1, f2):
     # strip slashes at ends
     return subdirComponent.strip("/").strip("\\")
 
-def OutputFile(inputName, outDir):
+def OutputFile(inputFilename, inputName, outDir):
     try:
         outputFilename = language.outputFilename(outDir, inputName, templateFilename)
     except AttributeError:
@@ -109,7 +109,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     # open output file now
     if not oneOutputFilePerMsg:
         filename = os.path.basename(inputFilename).split('.')[0]
-        outputFilename, outFile = OutputFile(filename, outDir)
+        outputFilename, outFile = OutputFile(inputFilename, filename, outDir)
         if not outFile:
             return
 
@@ -129,7 +129,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
             msg["ids"] = ids
             try:
                 if oneOutputFilePerMsg:
-                    outputFilename, outFile = OutputFile(msgName(msg), outDir)
+                    outputFilename, outFile = OutputFile(inputFilename, msgName(msg), outDir)
                     if not outFile:
                         continue
 
