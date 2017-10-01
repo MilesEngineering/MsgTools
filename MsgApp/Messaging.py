@@ -89,6 +89,9 @@ class Messaging:
         self.LoadDir(loadDir)
 
     def LoadDir(self, loadDir):
+        # ugly hack so message classes get added to the current Messaging object
+        global activeMsgLib
+        activeMsgLib = self
         for filename in os.listdir(loadDir):
             filepath = loadDir + '/' + filename
             if os.path.isdir(filepath):
@@ -97,20 +100,13 @@ class Messaging:
                         print("descending into directory ", filepath)
                     self.LoadDir(filepath)
             elif filename.endswith('.py'):
-                dirname = loadDir.split("/")[-1]
-                moduleName = os.path.splitext(os.path.basename(filename))[0]
                 if Messaging.debug:
-                    print("loading module "+filepath+" as "+dirname+"."+moduleName)
-                if dirname and not dirname in vars(self):
-                    vars(self)[dirname] = lambda: None
-                vars(vars(self)[dirname])[moduleName] = imp.load_source(filepath.replace("/", "_"), filepath)
-                #print("vars(self)[%s] is "% moduleName, vars(self))
-                
+                    print("loading module "+filepath)
+                importedModule = imp.load_source(filepath.replace("/", "_"), filepath)
 
     # add message to the global hash table of names by ID, and IDs by name
     def Register(name, id, classDef):
         id = hex(id)
-        name = name.replace("_", ".")
         
         if Messaging.debug:
             print("Registering", name, "as",id)
@@ -127,6 +123,17 @@ class Messaging:
         if(name in Messaging.MsgClassFromName):
             print("WARNING! Trying to define message ", name, " but already in use by ID ", Messaging.MsgIDFromName[name])
         Messaging.MsgClassFromName[name] = classDef
+
+        # split up the name between periods, and add it to the Messaging object so it
+        # can be accessed via dot notation
+        nameParts = name.split(".")
+        # ugly hack so message classes get added to the current Messaging object, which was set by LoadDir above
+        messagingVars = vars(activeMsgLib)
+        for namePart in nameParts[:-1]:
+            if namePart and not namePart in messagingVars:
+                messagingVars[namePart] = lambda: None
+            messagingVars = vars(messagingVars[namePart])
+        messagingVars[nameParts[-1]] = classDef
 
     @staticmethod
     def MsgFactory(hdr):

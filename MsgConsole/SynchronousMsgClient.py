@@ -15,12 +15,12 @@ class SynchronousMsgClient:
         self.msgLib = msgLib
         
         # say my name
-        connectMsg = self.msgLib.Network.Connect.Connect()
+        connectMsg = self.msgLib.Network.Connect()
         connectMsg.SetName(name)
         self.send_message(connectMsg)
         
         # do default subscription to get *everything*
-        subscribeMsg = self.msgLib.Network.MaskedSubscription.MaskedSubscription()
+        subscribeMsg = self.msgLib.Network.MaskedSubscription()
         self.send_message(subscribeMsg)
 
     def send_message(self, msg):

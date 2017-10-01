@@ -49,7 +49,7 @@ class <MSGNAME> :
 
     @staticmethod
     def MsgName():
-        return "<MSGNAME>"
+        return "<MSGDESCRIPTOR>"
     # Accessors
     <ACCESSORS>
 
@@ -58,4 +58,4 @@ class <MSGNAME> :
         <REFLECTION>\
     ]
 
-Messaging.Register("<MESSAGE_SUBDIR>_<MSGNAME>", <MSGNAME>.ID, <MSGNAME>)
+Messaging.Register("<MSGDESCRIPTOR>", <MSGNAME>.ID, <MSGNAME>)

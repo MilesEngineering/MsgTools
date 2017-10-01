@@ -38,10 +38,10 @@ MessageDictionary[<MSGID>] = <MSGNAME>
 // how to make constants?
 <MSGNAME>.prototype.MSG_ID = <MSGID>;
 <MSGNAME>.prototype.MSG_SIZE = <MSGSIZE>;
-<MSGNAME>.prototype.MSG_NAME = "<MESSAGE_SUBDIR>.<MSGNAME>";
+<MSGNAME>.prototype.MSG_NAME = "<MSGDESCRIPTOR>";
 
 <MSGNAME>.prototype.MsgName = function(){
-    return "<MESSAGE_SUBDIR>.<MSGNAME>";
+    return "<MSGDESCRIPTOR>";
 }
 
 <MSGNAME>.prototype.Init = function(){

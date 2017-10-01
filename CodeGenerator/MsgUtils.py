@@ -266,6 +266,12 @@ def msgID(msg, enums, undefinedMsgId):
     #print("message " + msg["Name"] + " has ID " + hex(ret))
     return str(ret)
 
+def msgDescriptor(msg, subdir):
+    name = msgName(msg)
+    if name.startswith(subdir+"_"):
+        return name.replace("_", ".")
+    return subdir+"."+name
+
 def addShift(base, value, shiftValue):
     ret = value
     if base != "":

@@ -158,6 +158,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<TEMPLATEFILENAME>"] = templateFilename
                 replacements["<LANGUAGEFILENAME>"] = languageFilename
                 replacements["<MESSAGE_SUBDIR>"] = commonSubdir
+                replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg, commonSubdir)
                 replacements["<DATE>"] = currentDateTime
                 for line in template:
                     line = DoReplacements(line, msg, replacements)

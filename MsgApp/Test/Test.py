@@ -25,6 +25,8 @@ class TestClass(unittest.TestCase):
 
     def test_accessors(self):
         msgclass = self.msgLib.MsgClassFromName["Network.Connect"]
+        sameMsgClass = self.msgLib.Network.Connect
+        self.assertEqual(msgclass, sameMsgClass)
 
         expected = "Testing"
         testMsg = msgclass()
@@ -33,8 +35,8 @@ class TestClass(unittest.TestCase):
         self.assertMultiLineEqual(expected, observed)
         
         expected="MoreTesting"
-        msgclass.SetName(testbuf, expected)
-        observed=Messaging.get(testbuf, msgclass.fields[0])
+        testMsg.SetName(expected)
+        observed=Messaging.get(testMsg, msgclass.fields[0])
         self.assertMultiLineEqual(expected, observed)
 
     def PrintDictionary(self):
