@@ -149,7 +149,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 except AttributeError:
                     replacements["<MSGID>"] = str(msgID(msg, enums, undefinedMsgId))
                 replacements["<MSGSIZE>"] = str(msgSize(msg))
-                replacements["<MSGDESCRIPTION>"] = str(msg["Description"])
+                replacements["<MSGDESCRIPTION>"] = str(fieldItem(msg, "Description", ""))
                 replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))
                 replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg))
                 replacements["<INIT_CODE>"] = "\n".join(language.initCode(msg))

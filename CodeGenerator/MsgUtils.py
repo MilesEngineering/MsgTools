@@ -138,7 +138,10 @@ def fieldUnits(field):
     return fieldItem(field, "Units", "")
 
 def fieldDescription(field):
-    return fieldItem(field, "Description", "")
+    ret = fieldItem(field, "Description", "")
+    if not ret:
+        ret = ""
+    return ret
 
 def fieldDefault(field):
     return fieldItem(field, "Default", "")
