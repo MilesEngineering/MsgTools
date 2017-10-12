@@ -181,6 +181,7 @@ class MessageScopeGui(MsgGui.MsgGui):
                     newWidget.setText(0, dir)
                     newWidget.parentPath = parentPath
                     parentWidget = newWidget
+                parentPath += dir + "."
             msgItem = QTreeWidgetItem(parentWidget)
             msgItem.setText(0, msgName)
             msgItem.msgName = name
