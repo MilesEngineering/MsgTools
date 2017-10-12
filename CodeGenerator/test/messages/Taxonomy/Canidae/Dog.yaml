@@ -3,16 +3,9 @@ includes:
 Messages:
   - Name: Dog
     Description: Doggone it
-    IDs:
-      - Name: Family
-        Value: Families.Canidae
-        Bits: 8
-      - Name: Genus
-        Value: Genuses.Canis
-        Bits: 8
-      - Name: Species
-        Value: Species.Familaris
-        Bits: 16
+    Family: Families.Canidae
+    Genus: Genuses.Canis
+    Species: Species.Familaris
     Fields:
       - Name: FavoriteFood
         Type: int8

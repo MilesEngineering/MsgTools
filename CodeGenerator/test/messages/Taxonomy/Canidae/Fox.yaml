@@ -4,16 +4,9 @@ includes:
 Messages:
   - Name: Fox
     Description: Foxity fox fox
-    IDs:
-      - Name: Family
-        Value: Families.Canidae
-        Bits: 8
-      - Name: Genus
-        Value: Genuses.Vulpes
-        Bits: 8
-      - Name: Species
-        Value: Species.Vulpes
-        Bits: 16
+    Family: Families.Canidae
+    Genus: Genuses.Vulpes
+    Species: Species.Vulpes
     Fields:
       - Name: FavoriteFood
         Type: int8

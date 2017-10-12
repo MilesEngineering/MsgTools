@@ -1,3 +1,10 @@
+IDs:
+  - Name: Family
+    Bits: 8
+  - Name: Genus
+    Bits: 8
+  - Name: Species
+    Bits: 16
 Enums:
   - Name: Families
     Options:

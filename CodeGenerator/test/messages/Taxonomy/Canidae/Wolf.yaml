@@ -3,16 +3,9 @@ includes:
 Messages:
   - Name: Wolf
     Description: Howl.
-    IDs:
-      - Name: Family
-        Value: Families.Canidae
-        Bits: 8
-      - Name: Genus
-        Value: Genuses.Canis
-        Bits: 8
-      - Name: Species
-        Value: Species.Lupis
-        Bits: 16
+    Family: Families.Canidae
+    Genus: Genuses.Canis
+    Species: Species.Lupis
     Fields:
       - Name: Height
         Type: uint8
