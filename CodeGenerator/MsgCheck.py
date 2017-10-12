@@ -64,10 +64,14 @@ def ProcessMsg(filename, msg, subdirComponent, enums):
         msgNames[idInt] = fullMsgName
     offset = 0
     if "Fields" in msg:
+        fieldNames = {}
         for field in msg["Fields"]:
             bitOffset = 0
-            if " " in field["Name"]:
+            if not re.match("^[\w\d_]+$", field["Name"]):
                 raise MessageException('bad field name [' + field["Name"]+"]")
+            if field["Name"] in fieldNames:
+                raise MessageException('Duplicate field name [' + field["Name"]+"]")
+            fieldNames[field["Name"]] = field["Name"]
             if not fieldTypeValid(field):
                 raise MessageException('field ' + field["Name"] + ' has invalid type ' + field['Type'])
             if "Enum" in field:
@@ -80,8 +84,11 @@ def ProcessMsg(filename, msg, subdirComponent, enums):
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
                     bitOffset += numBits
-                    if " " in bits["Name"]:
+                    if not re.match("^[\w\d_]+$", bits["Name"]):
                         raise MessageException('bad bitfield name [' + bits["Name"]+"]")
+                    if bits["Name"] in fieldNames:
+                        raise MessageException('Duplicate bitfield name [' + bits["Name"]+"] in field ["+field["Name"]+"]")
+                    fieldNames[bits["Name"]] = bits["Name"]
                 if bitOffset > 8*fieldSize(field):
                     raise MessageException('too many bits')
                 if "Enum" in bits:
