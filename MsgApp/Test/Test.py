@@ -25,7 +25,7 @@ class TestClass(unittest.TestCase):
 
     def test_accessors(self):
         msgclass = self.msgLib.MsgClassFromName["Network.Connect"]
-        sameMsgClass = self.msgLib.Network.Connect
+        sameMsgClass = self.msgLib.Messages.Network.Connect
         self.assertEqual(msgclass, sameMsgClass)
 
         expected = "Testing"

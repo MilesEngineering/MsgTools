@@ -68,6 +68,10 @@ class Messaging:
     MsgNameFromID = {}
     MsgIDFromName = {}
     MsgClassFromName = {}
+    # container for accessing message classes via dot notation.
+    # odd, in python, that using an empty lambda expression is a suitable container
+    # for this, and that some other Object doesn't work better.
+    Messages = lambda: None
     
     debug=0
 
@@ -89,9 +93,6 @@ class Messaging:
         self.LoadDir(loadDir)
 
     def LoadDir(self, loadDir):
-        # ugly hack so message classes get added to the current Messaging object
-        global activeMsgLib
-        activeMsgLib = self
         for filename in os.listdir(loadDir):
             filepath = loadDir + '/' + filename
             if os.path.isdir(filepath):
@@ -127,8 +128,7 @@ class Messaging:
         # split up the name between periods, and add it to the Messaging object so it
         # can be accessed via dot notation
         nameParts = name.split(".")
-        # ugly hack so message classes get added to the current Messaging object, which was set by LoadDir above
-        messagingVars = vars(activeMsgLib)
+        messagingVars = vars(Messaging.Messages)
         for namePart in nameParts[:-1]:
             if namePart and not namePart in messagingVars:
                 messagingVars[namePart] = lambda: None

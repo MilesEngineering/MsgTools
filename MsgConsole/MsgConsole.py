@@ -30,7 +30,7 @@ if __name__ == "__main__":
                 if cmd == "getmsg":
                     # this blocks until message received, or timeout occurs
                     timeout = 10.0 # value in seconds
-                    msg = connection.get_message(timeout, [msgLib.Network.Connect.Connect.ID, msgLib.Debug.AccelData.AccelData.ID])
+                    msg = connection.get_message(timeout, [msgLib.Messages.Network.Connect.ID, msgLib.Messages.Debug.AccelData.Status.ID])
                     if msg:
                         # print as JSON for debug purposes
                         json = Messaging.toJson(msg)

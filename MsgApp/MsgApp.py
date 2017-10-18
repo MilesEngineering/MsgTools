@@ -106,7 +106,7 @@ class MsgApp(QtWidgets.QMainWindow):
     def onConnected(self):
         self.connectionChanged.emit(True)
         # send a connect message
-        connectMsg = self.msgLib.Network.Connect()
+        connectMsg = self.msgLib.Messages.Network.Connect()
         connectMsg.SetName(self.name)
         self.SendMsg(connectMsg)
         # if the app has it's own function to happen after connection, assume it will set subscriptions to what it wants.
@@ -114,7 +114,7 @@ class MsgApp(QtWidgets.QMainWindow):
             fn = self.onAppConnected
         except AttributeError:
             # send a subscription message
-            subscribeMsg = self.msgLib.Network.MaskedSubscription()
+            subscribeMsg = self.msgLib.Messages.Network.MaskedSubscription()
             self.SendMsg(subscribeMsg)
             #self.statusUpdate.emit('Connected')
         else:
