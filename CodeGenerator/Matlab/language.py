@@ -29,7 +29,7 @@ def typeForScaledInt(field):
 
 def matlabFieldName(msg, field):
     fieldName = field["Name"]
-    if fieldName == msgName(msg):
+    if fieldName == msgShortName(msg):
         fieldName = fieldName + "_"
     return fieldName
 

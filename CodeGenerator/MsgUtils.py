@@ -232,6 +232,13 @@ def msgName(msg):
             ret = subname
     return ret
     
+def msgShortName(msg):
+    commonSubdir = msg["commonSubdir"]
+    name = msgName(msg)
+    # remove subdirs from start
+    if name.startswith(commonSubdir+"_"):
+        name = name.replace(commonSubdir+"_", "")
+    return name
 
 def msgID(msg, enums, undefinedMsgId):
     ret = undefinedMsgId
@@ -269,7 +276,8 @@ def msgID(msg, enums, undefinedMsgId):
     #print("message " + msg["Name"] + " has ID " + hex(ret))
     return str(ret)
 
-def msgDescriptor(msg, subdir):
+def msgDescriptor(msg):
+    subdir = msg["commonSubdir"]
     name = msgName(msg)
     if name.startswith(subdir+"_"):
         return name.replace("_", ".")

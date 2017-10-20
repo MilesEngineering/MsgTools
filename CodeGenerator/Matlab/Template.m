@@ -8,7 +8,7 @@
 
 %}
 
-classdef <MSGNAME>
+classdef <MSGSHORTNAME>
 
     properties (Constant)
         MSG_ID = <MSGID>;
@@ -23,7 +23,7 @@ classdef <MSGNAME>
             <DECLARATIONS>
     end
     methods
-        function obj = <MSGNAME>(data)
+        function obj = <MSGSHORTNAME>(data)
             if nargin == 0
                 % create a new message (allocates a buffer for it)
                 obj.m_data = zeros(obj.MSG_SIZE, 1, 'uint8');
