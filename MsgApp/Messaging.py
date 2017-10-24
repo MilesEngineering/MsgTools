@@ -78,9 +78,7 @@ class Messaging:
     def __init__(self, loadDir, debug, headerName):
         Messaging.debug = debug
         sys.path.append(loadDir)
-        mainObjDir = os.path.dirname(os.path.abspath(__file__)) + "/../../obj/CodeGenerator/Python"
-        sys.path.append(mainObjDir)
-        sys.path.append(mainObjDir+"/headers")
+        sys.path.append(loadDir+"/headers")
         
         headerModule = __import__(headerName)
 
