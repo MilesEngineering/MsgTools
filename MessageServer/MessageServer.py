@@ -85,7 +85,9 @@ class MessageServer(QtWidgets.QMainWindow):
                 moduleName = os.path.splitext(os.path.basename(filename))[0]
                 if Messaging.debug:
                     print("loading module ", filename, "as",moduleName)
-                self.plugin = imp.load_source(filename.replace("/", "_"), filename)
+
+                name = filename.replace("/", "_")
+                self.plugin = importlib.machinery.SourceFileLoader(name, filename).load_module(name)
 
                 self.pluginPort = self.plugin.PluginConnection()
                 self.pluginPort.statusUpdate.connect(self.onStatusUpdate)

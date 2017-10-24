@@ -5,7 +5,7 @@ import os, glob, sys, struct
 import inspect
 
 # for better 'import' functionality
-import imp
+import importlib
 
 # for conversion to JSON
 from collections import OrderedDict
@@ -103,7 +103,8 @@ class Messaging:
             elif filename.endswith('.py'):
                 if Messaging.debug:
                     print("loading module "+filepath)
-                importedModule = imp.load_source(filepath.replace("/", "_"), filepath)
+                name = filepath.replace("/", "_")
+                importedModule = importlib.machinery.SourceFileLoader(name, filepath).load_module(name)
 
     # add message to the global hash table of names by ID, and IDs by name
     def Register(name, id, classDef):
