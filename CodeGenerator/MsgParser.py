@@ -192,7 +192,8 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
             particularTemplate = templateFilename
             if msgDir.endswith("headers"):
                 particularTemplate = headerTemplateFilename
-            ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
+            if filename.endswith(".yaml") or filename.endswith(".json"):
+                ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
 
 # main starts here
 if __name__ == '__main__':
