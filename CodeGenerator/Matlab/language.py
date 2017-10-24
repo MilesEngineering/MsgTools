@@ -29,7 +29,7 @@ def typeForScaledInt(field):
 
 def matlabFieldName(msg, field):
     fieldName = field["Name"]
-    if fieldName == msgName(msg):
+    if fieldName == msgShortName(msg):
         fieldName = fieldName + "_"
     return fieldName
 
@@ -57,8 +57,8 @@ end
 function ret = get.%s(%s)
     ret = obj.%sAsInt;
 ''' % (fnHdr(field), matlabFieldName(msg,field), param, matlabFieldName(msg,field))
-        ret += "    if isKey(obj."+field["Enum"]+", ret)\n"
-        ret += "        ret = obj."+field["Enum"]+"(ret);\n"
+        ret += "    if isKey(obj."+field["Enum"]+"Enum, ret)\n"
+        ret += "        ret = obj."+field["Enum"]+"Enum(ret);\n"
         ret += "    end\n"
         ret += "end\n"
     return ret
@@ -83,8 +83,8 @@ end
 %s
 function obj = set.%s(obj, value)
 ''' % (fnHdr(field), matlabFieldName(msg,field))
-        ret += "    if isKey(obj.Reverse"+field["Enum"]+", value)\n"
-        ret += "        value = obj.Reverse"+field["Enum"]+"(value);\n"
+        ret += "    if isKey(obj.Reverse"+field["Enum"]+"Enum, value)\n"
+        ret += "        value = obj.Reverse"+field["Enum"]+"Enum(value);\n"
         ret += "    end\n"
         ret += "    obj."+matlabFieldName(msg,field)+"AsInt = value;\n"
         ret += "end\n"
@@ -111,8 +111,8 @@ end
 function ret = get.%s(obj)
     ret = obj.%sAsInt;
 ''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), MsgParser.BitfieldName(field, bits))
-        ret += "    if isKey(obj."+bits["Enum"]+", ret)\n"
-        ret += "        ret = obj."+bits["Enum"]+"(ret);\n"
+        ret += "    if isKey(obj."+bits["Enum"]+"Enum, ret)\n"
+        ret += "        ret = obj."+bits["Enum"]+"Enum(ret);\n"
         ret += "    end\n"
         ret += "end\n"
     return ret
@@ -137,8 +137,8 @@ end''' % (matlabFieldName(msg,field), matlabFieldName(msg,field), fieldType(fiel
 %s
 function obj = set.%s(obj, value)
 ''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits))
-        ret += "    if isKey(obj.Reverse"+bits["Enum"]+", value)\n"
-        ret += "        value = obj.Reverse"+bits["Enum"]+"(value);\n"
+        ret += "    if isKey(obj.Reverse"+bits["Enum"]+"Enum, value)\n"
+        ret += "        value = obj.Reverse"+bits["Enum"]+"Enum(value);\n"
         ret += "    end\n"
         ret += "    obj."+MsgParser.BitfieldName(field, bits)+"AsInt = value;\n"
         ret += "end\n"
@@ -176,14 +176,14 @@ def enums(e):
             values += "    '" + option["Name"] + "',\n"
         values = values[:-2]
         # forward enum
-        fwd = enum["Name"]+" = containers.Map({...\n"
+        fwd = enum["Name"]+"Enum = containers.Map({...\n"
         fwd += keys
         fwd += "}, {\n"
         fwd += values
         fwd += "});\n"
 
         # Reverse enum
-        back = "Reverse" + enum["Name"]+" = containers.Map({...\n"
+        back = "Reverse" + enum["Name"]+"Enum = containers.Map({...\n"
         back += values
         back += "}, {\n"
         back += keys

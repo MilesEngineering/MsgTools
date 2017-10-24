@@ -50,6 +50,7 @@ def DoReplacements(line, msg, replacements):
     # ugly, but do this twice, before and after other replacements, because the code generator
     # might insert it while doing other replacements.
     ret = replace(ret, "<MSGNAME>", replacements["<MSGNAME>"])
+    ret = replace(ret, "<MSGSHORTNAME>", replacements["<MSGSHORTNAME>"])
     return ret
 
 def CommonSubdir(f1, f2):
@@ -128,15 +129,17 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
         for msg in Messages(inputData):
             msg["ids"] = ids
             try:
+                msg["commonSubdir"] = CommonSubdir(inputFilename, outDir+"/fake")
+                print("commonSubdir of ("+inputFilename+","+outDir +") is " + msg["commonSubdir"])
+
                 if oneOutputFilePerMsg:
-                    outputFilename, outFile = OutputFile(inputFilename, msgName(msg), outDir)
+                    outputFilename, outFile = OutputFile(inputFilename, msgShortName(msg), outDir)
                     if not outFile:
                         continue
 
-                commonSubdir = CommonSubdir(inputFilename, outputFilename)
-            
                 replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(msg, enums))
                 replacements["<MSGNAME>"] = msgName(msg)
+                replacements["<MSGSHORTNAME>"] = msgShortName(msg)
                 replacements["<NUMBER_OF_FIELDS>"] = str(numberOfFields(msg))
                 replacements["<NUMBER_OF_SUBFIELDS>"] = str(numberOfSubfields(msg))
                 undefinedMsgId = "UNDEFINED_MSGID"
@@ -157,8 +160,8 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<INPUTFILENAME>"] = inputFilename
                 replacements["<TEMPLATEFILENAME>"] = templateFilename
                 replacements["<LANGUAGEFILENAME>"] = languageFilename
-                replacements["<MESSAGE_SUBDIR>"] = commonSubdir
-                replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg, commonSubdir)
+                replacements["<MESSAGE_SUBDIR>"] = msg["commonSubdir"]
+                replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg)
                 replacements["<DATE>"] = currentDateTime
                 for line in template:
                     line = DoReplacements(line, msg, replacements)

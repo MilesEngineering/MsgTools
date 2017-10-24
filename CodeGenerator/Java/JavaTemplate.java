@@ -15,18 +15,18 @@ import java.util.HashMap;
 import java.util.Map;
 import MsgApp.*;
 
-public class <MSGNAME> extends Message
+public class <MSGSHORTNAME> extends Message
 {
     public static final int MSG_ID = (int)<MSGID>;
     public static final int MSG_SIZE = <MSGSIZE>;
-    public <MSGNAME>()
+    public <MSGSHORTNAME>()
     {
         super(MSG_SIZE);
         SetMessageID(MSG_ID);
         //InitializeTime();
         Init();
     }
-    public <MSGNAME>(ByteBuffer buffer)
+    public <MSGSHORTNAME>(ByteBuffer buffer)
     {
         super(buffer);
     }
@@ -41,7 +41,7 @@ public class <MSGNAME> extends Message
     public static MsgInfo msgInfo;
     static
     {
-        msgInfo = new MsgInfo(<MSGNAME>.class, MSG_ID, "<MSGDESCRIPTION>", MSG_SIZE);
+        msgInfo = new MsgInfo(<MSGSHORTNAME>.class, MSG_ID, "<MSGDESCRIPTION>", MSG_SIZE);
         msgInfo.AddField(new <REFLECTION>);
     }
 };
