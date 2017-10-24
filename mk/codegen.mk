@@ -12,7 +12,7 @@ DIGEST=$(MSGDIR)/MsgDigest.txt
 
 MSG_FILES := $(shell cd $(mdir) && find * -iname \*.yaml)
 
-.PHONY: python cpp c java js matlab html check
+.PHONY: python cpp c java js swift matlab html check
 
 python:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Python $(CG_DIR)Python/language.py  $(CG_DIR)Python/Template.py $(CG_DIR)Python/HeaderTemplate.py
@@ -29,6 +29,9 @@ java:
 js:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Javascript $(CG_DIR)Javascript/language.py  $(CG_DIR)Javascript/Template.js $(CG_DIR)Javascript/HeaderTemplate.js
 
+swift:
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Swift $(CG_DIR)Swift/language.py  $(CG_DIR)Swift/Template.swift $(CG_DIR)Swift/HeaderTemplate.swift
+
 matlab:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Matlab/+Messages $(CG_DIR)Matlab/language.py  $(CG_DIR)Matlab/Template.m $(CG_DIR)Matlab/HeaderTemplate.m
 
@@ -38,7 +41,7 @@ html:
 
 check: $(DIGEST)
 
-install all:: Makefile check cpp c python java js matlab html
+install all:: Makefile check cpp c python java js swift matlab html
 
 clean clobber::
 	rm -rf $(MSGDIR) __pycache__ *.pyc
