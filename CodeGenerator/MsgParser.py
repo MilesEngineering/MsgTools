@@ -130,7 +130,6 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
             msg["ids"] = ids
             try:
                 msg["commonSubdir"] = CommonSubdir(inputFilename, outDir+"/fake")
-                print("commonSubdir of ("+inputFilename+","+outDir +") is " + msg["commonSubdir"])
 
                 if oneOutputFilePerMsg:
                     outputFilename, outFile = OutputFile(inputFilename, msgShortName(msg), outDir)
