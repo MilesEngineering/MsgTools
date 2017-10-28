@@ -11,16 +11,16 @@
 //import NetworkHeader from '../headers/NetworkHeader.js'
 //import MessageDictionary from '../MessageDictionary.js'
 
-var <MSGNAME> = function(buffer) {
+var <MSGSHORTNAME> = function(buffer) {
     // have baseclass construct the buffer?
     //Message.call(this, MSG_SIZE);
         
     if (buffer==undefined)
     {
-        buffer = new ArrayBuffer(NetworkHeader.prototype.MSG_SIZE+<MSGNAME>.prototype.MSG_SIZE);
+        buffer = new ArrayBuffer(NetworkHeader.prototype.MSG_SIZE+<MSGSHORTNAME>.prototype.MSG_SIZE);
         this.m_data = new DataView(buffer, NetworkHeader.prototype.MSG_SIZE);
         this.hdr = new NetworkHeader(buffer);
-        this.hdr.SetMessageID(<MSGNAME>.prototype.MSG_ID);
+        this.hdr.SetMessageID(<MSGSHORTNAME>.prototype.MSG_ID);
         this.hdr.SetDataLength(buffer.byteLength - NetworkHeader.prototype.MSG_SIZE);
         //this.InitializeTime();
         this.Init();
@@ -33,18 +33,18 @@ var <MSGNAME> = function(buffer) {
 };
 
 // add our class to the dictionary
-MessageDictionary[<MSGID>] = <MSGNAME>
+MessageDictionary[<MSGID>] = <MSGSHORTNAME>
 
 // how to make constants?
-<MSGNAME>.prototype.MSG_ID = <MSGID>;
-<MSGNAME>.prototype.MSG_SIZE = <MSGSIZE>;
-<MSGNAME>.prototype.MSG_NAME = "<MSGDESCRIPTOR>";
+<MSGSHORTNAME>.prototype.MSG_ID = <MSGID>;
+<MSGSHORTNAME>.prototype.MSG_SIZE = <MSGSIZE>;
+<MSGSHORTNAME>.prototype.MSG_NAME = "<MSGDESCRIPTOR>";
 
-<MSGNAME>.prototype.MsgName = function(){
+<MSGSHORTNAME>.prototype.MsgName = function(){
     return "<MSGDESCRIPTOR>";
 }
 
-<MSGNAME>.prototype.Init = function(){
+<MSGSHORTNAME>.prototype.Init = function(){
     <INIT_CODE>
 };
 
@@ -54,17 +54,17 @@ MessageDictionary[<MSGID>] = <MSGNAME>
 <ACCESSORS>
 
 // Convert to a javascript object
-<MSGNAME>.prototype.toObject = function(){
+<MSGSHORTNAME>.prototype.toObject = function(){
     ret = {};
     <STRUCTUNPACKING>
     return ret;
 }
 
 // Reflection information
-<MSGNAME>.prototype.fields = [
+<MSGSHORTNAME>.prototype.fields = [
     <REFLECTION>
 ]
 
 // for react-native and node.js, we should set module.exports so our class can be accessed externally
 if(typeof module != 'undefined' && typeof module.exports != 'undefined')
-    module.exports = <MSGNAME>;
+    module.exports.<MSGSHORTNAME> = <MSGSHORTNAME>;
