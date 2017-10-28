@@ -100,9 +100,6 @@ def ProcessMsg(filename, msg, subdirComponent, enums):
             #    raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(fieldSize(field)))
             offset += fieldSize(field) * fieldCount(field)
     
-    if offset > 128:
-        raise MessageException('message ' + msgName(msg) + ' too big\n')
-
     return (subdirComponent+'/'+msgName(msg)).ljust(35) +" "+(subdirComponent+'/'+filename).ljust(40) +" "+ str(id).rjust(10)+'\n'
 
 def ProcessFile(filename, outFile, inputData, subdirComponent):
