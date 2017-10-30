@@ -19,16 +19,15 @@ class MessageServer(QtWidgets.QMainWindow):
         
         self.settings = QtCore.QSettings("MsgTools", "MessageServer")
         self.logFile = None
+        self.logFileType = None
         
         srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
         msgdir = srcroot+"/../obj/CodeGenerator/Python/"
         self.msgLib = Messaging(msgdir, 0, "NetworkHeader")
-        self.connectClass = Messaging.MsgClassFromName["Network.Connect"]
-        self.subscriptionListClass = Messaging.MsgClassFromName["Network.SubscriptionList"]
-        self.maskedSubscriptionClass = Messaging.MsgClassFromName["Network.MaskedSubscription"]
+        self.networkMsgs = self.msgLib.Messages.Network
         try:
-            self.privateSubscriptionListClass = Messaging.MsgClassFromName["Network.PrivateSubscriptionList"]
-        except KeyError:
+            self.privateSubscriptionListClass = self.networkMsgs.PrivateSubscriptionList
+        except AttributeError:
             self.privateSubscriptionListClass = None
 
         self.clients = {}
@@ -123,11 +122,21 @@ class MessageServer(QtWidgets.QMainWindow):
         self.setWindowTitle("MessageServer 0.1")
         self.statusBar()
 
+    def startLog(self, logFileName):
+        self.logFile = QtCore.QFile(logFileName)
+        self.logFile.open(QtCore.QIODevice.Append)
+        fileInfo = QtCore.QFileInfo(logFileName)
+        self.settings.setValue("logging/filename", fileInfo.dir().absolutePath())
+        self.logButton.setText("Stop " + fileInfo.fileName())
+    
+    def stopLog(self):
+        self.logFile.close()
+        self.logFile = None
+        self.logButton.setText("Start Logging")
+
     def onLogButtonClicked(self):
         if self.logFile != None:
-            self.logFile.close()
-            self.logFile = None
-            self.logButton.setText("Start Logging")
+            self.stopLog()
         else:
             currentDateTime = QtCore.QDateTime.currentDateTime()
             defaultFilename = currentDateTime.toString("yyyyMMdd-hhmmss") + ".log"
@@ -135,11 +144,7 @@ class MessageServer(QtWidgets.QMainWindow):
             # if they hit cancel, don't do anything
             if not logFileName:
                 return
-            self.logFile = QtCore.QFile(logFileName)
-            self.logFile.open(QtCore.QIODevice.Append)
-            fileInfo = QtCore.QFileInfo(logFileName)
-            self.settings.setValue("logging/filename", fileInfo.dir().absolutePath())
-            self.logButton.setText("Stop " + fileInfo.fileName())
+            self.startLog(logFileName)
 
     def onStatusUpdate(self, message):
         self.statusBox.appendPlainText(message)
@@ -177,23 +182,32 @@ class MessageServer(QtWidgets.QMainWindow):
     def onMessageReceived(self, hdr):
         c = self.sender()
         # check for name, subscription, etc.
-        if hdr.GetMessageID() == self.connectClass.ID:
-            connectMsg = self.connectClass(hdr.rawBuffer())
+        if hdr.GetMessageID() == self.networkMsgs.Connect.ID:
+            connectMsg = self.networkMsgs.Connect(hdr.rawBuffer())
             c.name = connectMsg.GetName()
             c.statusLabel.setText(c.name)
-        elif hdr.GetMessageID() == self.subscriptionListClass.ID:
+        elif hdr.GetMessageID() == self.networkMsgs.SubscriptionList.ID:
             c.subscriptions = {}
-            subListMsg = self.subscriptionListClass(hdr.rawBuffer())
-            for idx in range(0,self.subscriptionListClass.GetIDs.count):
+            subListMsg = self.networkMsgs.SubscriptionList(hdr.rawBuffer())
+            for idx in range(0,self.networkMsgs.SubscriptionList.GetIDs.count):
                 id = subListMsg.GetIDs(idx)
                 if id != 0:
                     c.subscriptions[id] = id
             self.onStatusUpdate("updating subscription for "+c.name+" to " + ', '.join(hex(x) for x in c.subscriptions.keys()))
-        elif hdr.GetMessageID() == self.maskedSubscriptionClass.ID:
-            subMsg = self.maskedSubscriptionClass(hdr.rawBuffer())
+        elif hdr.GetMessageID() == self.networkMsgs.MaskedSubscription.ID:
+            subMsg = self.networkMsgs.MaskedSubscription(hdr.rawBuffer())
             c.subMask = subMsg.GetMask()
             c.subValue = subMsg.GetValue()
             self.onStatusUpdate("updating subscription for "+c.name+" to id & " + hex(c.subMask) + " == " + hex(c.subValue))
+        elif hdr.GetMessageID() == self.networkMsgs.StartLog.ID:
+            startLog = self.networkMsgs.StartLog(hdr.rawBuffer())
+            self.logFileType = startLog.GetLogFileType()
+            logFileName = startLog.GetLogFileName()
+            if not logFileName:
+                logFileName = QtCore.QDateTime.currentDateTime().toString("yyyyMMdd-hhmmss") + ".log"
+            self.startLog(logFileName)
+        elif hdr.GetMessageID() == self.networkMsgs.StopLog.ID:
+            self.stopLog()
         elif self.privateSubscriptionListClass != None and hdr.GetMessageID() == self.privateSubscriptionListClass.ID:
             subListMsg = self.privateSubscriptionListClass(hdr.rawBuffer())
             privateSubs = []
@@ -210,7 +224,11 @@ class MessageServer(QtWidgets.QMainWindow):
         else:
             #write to log, if log is open
             if self.logFile != None:
-                self.logFile.write(hdr.rawBuffer())
+                if self.logFileType and self.logFileType == "JSON":
+                    msgObj = Messaging.MsgFactory(hdr)
+                    self.logFile.write(Messaging.toJson(msgObj).encode('utf-8'))
+                else:
+                    self.logFile.write(hdr.rawBuffer())
             for client in self.clients.values():
                 if client != c:
                     id = hdr.GetMessageID()
