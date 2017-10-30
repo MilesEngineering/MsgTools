@@ -83,3 +83,16 @@ MessagingClient.prototype.onmessage = function (event) {
 MessagingClient.prototype.send = function (msg) {
     this.webSocket.send(msg.m_data.buffer);
 };
+
+MessagingClient.prototype.startlogging = function ()
+{
+    sl = new StartLog();
+    sl.SetLogFileType("JSON");
+    this.send(sl);
+}
+
+MessagingClient.prototype.stoplogging = function ()
+{
+        sl = new StopLog();
+        this.send(sl);
+}
