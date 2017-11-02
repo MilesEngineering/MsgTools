@@ -141,6 +141,7 @@ def fieldDescription(field):
     ret = fieldItem(field, "Description", "")
     if not ret:
         ret = ""
+    ret = ret.replace('\n', ' ')
     return ret
 
 def fieldDefault(field):
