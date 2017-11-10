@@ -67,5 +67,9 @@ class TestClass(unittest.TestCase):
             txt += " # "+fieldInfo.description+" in " + fieldInfo.units
             print(txt)
 
-if __name__ == '__main__':
+def main(args=None):
     unittest.main()
+
+# main starts here
+if __name__ == '__main__':
+    main()

@@ -92,9 +92,12 @@ in that directory.''')
         text += '\n'
         outputFile.write(text)
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
     msgApp = Lumberjack(sys.argv)
     msgApp.MessageLoop()
     print("Processed " + str(msgApp.messageCount) + " messages")
+
+# main starts here
+if __name__ == '__main__':
+    main()

@@ -4,7 +4,7 @@ import os
 import string
 from time import gmtime, strftime
 
-from MsgUtils import *
+from msgtools.parser.MsgUtils import *
 
 def Messages(inputData):
     return inputData["Messages"]
@@ -197,11 +197,11 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
             if filename.endswith(".yaml") or filename.endswith(".json"):
                 ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     if len(sys.argv) < 6:
         sys.stderr.write('Usage: ' + sys.argv[0] + ' input output language template headertemplate\n')
         sys.exit(1)
+    global inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename
     inputFilename = sys.argv[1]
     outputFilename = sys.argv[2]
     languageFilename = sys.argv[3]
@@ -211,6 +211,7 @@ if __name__ == '__main__':
     # import the language file
     sys.path.append(os.path.dirname(languageFilename))
     languageName = os.path.splitext(os.path.basename(languageFilename) )[0]
+    global language
     language = __import__(languageName)
     
     # Get latest timestamp of imported modules.
@@ -242,3 +243,8 @@ if __name__ == '__main__':
             ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
     else:
         print("Path " + inputFilename + " does not exist!")
+
+
+# main starts here
+if __name__ == '__main__':
+    main()

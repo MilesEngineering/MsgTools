@@ -151,9 +151,12 @@ filenames will be composed like so:
             button.setText("Stop")
             self.activeLogButton = button
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
     msgApp = Multilog(sys.argv)
     msgApp.show()
     sys.exit(app.exec_())
+
+# main starts here
+if __name__ == '__main__':
+    main()

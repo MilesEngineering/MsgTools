@@ -1,5 +1,5 @@
-import MsgParser
-from MsgUtils import *
+import msgtools.parser.parser as MsgParser
+from msgtools.parser.MsgUtils import *
 
 # https://www.html5rocks.com/en/tutorials/webgl/typed_arrays/
 # https://github.com/kig/DataStream.js

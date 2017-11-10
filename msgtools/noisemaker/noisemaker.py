@@ -99,9 +99,12 @@ class NoiseMaker(msgtools.lib.gui.Gui):
     def ProcessMessage(self, msg):
         pass
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
     msgApp = NoiseMaker(sys.argv)
     msgApp.show()
     sys.exit(app.exec_())
+
+# main starts here
+if __name__ == '__main__':
+    main()

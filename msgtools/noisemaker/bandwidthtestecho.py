@@ -48,9 +48,12 @@ class BandwidthTestEcho(msgtools.lib.gui.Gui):
             if self.msgCount >= 100:
                 self.msgCount = 0
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
     msgApp = BandwidthTestEcho(sys.argv)
     msgApp.show()
     sys.exit(app.exec_())
+
+# main starts here
+if __name__ == '__main__':
+    main()

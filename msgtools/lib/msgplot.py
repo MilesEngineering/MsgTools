@@ -186,9 +186,12 @@ class MessagePlotGui(msgtools.lib.gui.Gui):
         except AttributeError:
             pass
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     app = QApplication(sys.argv)
     gui = MessagePlotGui(sys.argv)
     gui.show()    
     sys.exit(app.exec_())
+
+# main starts here
+if __name__ == '__main__':
+    main()

@@ -3,7 +3,7 @@ import unittest
 import yaml
 import sys
 sys.path.append("..")
-import MsgParser
+import msgtools.parser.parser as MsgParser
 sys.path.append("../Cpp")
 import language
 
@@ -182,5 +182,9 @@ uint8_t* FieldC()
         with self.assertRaises(IndexError):
             language.initCode(MsgParser.Messages(self.msgDict)[1])
 
-if __name__ == '__main__':
+def main(args=None):
     unittest.main()
+
+# main starts here
+if __name__ == '__main__':
+    main()

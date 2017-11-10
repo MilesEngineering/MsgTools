@@ -1,5 +1,5 @@
-import MsgParser
-from MsgUtils import *
+import msgtools.parser.parser as MsgParser
+from msgtools.parser.MsgUtils import *
 
 # used as a prefix to namespace functions, enums, etc.
 namespace = ""

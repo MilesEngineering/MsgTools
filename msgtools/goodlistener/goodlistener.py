@@ -137,9 +137,12 @@ class MyTest(ScriptThread):
         except MsgTimeoutError as e:
             self.output(">>>> " + str(e))
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
     listener = GoodListener(sys.argv, MyTest)
     listener.show()
     sys.exit(app.exec_())
+
+# main starts here
+if __name__ == '__main__':
+    main()

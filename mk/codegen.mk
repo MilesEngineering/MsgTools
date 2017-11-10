@@ -4,8 +4,8 @@ else
 PYTHON=python3
 endif
 
-PARSER=$(PYTHON) $(CG_DIR)MsgParser.py
-CHECK=$(PYTHON) $(CG_DIR)MsgCheck.py
+PARSER=$(PYTHON) $(CG_DIR)parser.py
+CHECK=$(PYTHON) $(CG_DIR)check.py
 DIGEST=$(MSGDIR)/MsgDigest.txt
 
 .PHONY: all test
@@ -46,6 +46,6 @@ install all:: Makefile check cpp c python java js swift matlab html
 clean clobber::
 	rm -rf $(MSGDIR) __pycache__ *.pyc
 
-$(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES)) $(CG_DIR)MsgCheck.py
+$(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES)) $(CG_DIR)check.py
 	$(call colorecho,Checking message validity)
 	$(CHECK) $(call CYGPATH,$(DIGEST)) $(mdir)

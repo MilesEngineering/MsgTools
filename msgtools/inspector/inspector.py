@@ -91,9 +91,12 @@ class MsgInspector(msgtools.lib.gui.Gui):
         # give the data to the widget
         self.msgWidgets[msgKey].addData(msg, self.autoscroll)
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
     msgApp = MsgInspector(sys.argv)
     msgApp.show()
     sys.exit(app.exec_())
+
+# main starts here
+if __name__ == '__main__':
+    main()

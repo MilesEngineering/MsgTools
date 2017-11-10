@@ -4,7 +4,7 @@ import os
 import string
 from time import gmtime, strftime
 
-from MsgUtils import *
+from msgtools.parser.MsgUtils import *
 
 def Usage():
     sys.stderr.write('Usage: ' + sys.argv[0] + ' msgdir outputfile\n')
@@ -111,8 +111,7 @@ def ProcessFile(filename, outFile, inputData, subdirComponent):
             msg["ids"] = ids
             outFile.write(ProcessMsg(filename, msg, subdirComponent, enums))
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     if len(sys.argv) < 3:
         Usage();
     outputFilename = sys.argv[1]
@@ -131,3 +130,7 @@ if __name__ == '__main__':
         if len(sys.argv) > 3:
             msgDir = sys.argv[3]
             ProcessDir(outFile, msgDir, "")
+
+# main starts here
+if __name__ == '__main__':
+    main()

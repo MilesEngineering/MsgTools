@@ -307,9 +307,12 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         except AttributeError:
             pass
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     app = QApplication(sys.argv)
     msgScopeGui = MessageScopeGui(sys.argv)
     msgScopeGui.show()
     sys.exit(app.exec_())
+
+# main starts here
+if __name__ == '__main__':
+    main()

@@ -1,4 +1,4 @@
-import MsgParser
+import msgtools.parser.parser as MsgParser
 
 def accessors(msg):
     return ""

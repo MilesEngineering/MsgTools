@@ -173,9 +173,12 @@ class BandwidthTester(msgtools.lib.gui.Gui):
         self.rxBytesPerSec = 0
         self.txBytesPerSec = 0
 
-# main starts here
-if __name__ == '__main__':
+def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
     msgApp = BandwidthTester(sys.argv)
     msgApp.show()
     sys.exit(app.exec_())
+
+# main starts here
+if __name__ == '__main__':
+    main()

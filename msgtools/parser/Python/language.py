@@ -1,5 +1,5 @@
-import MsgParser
-from MsgUtils import *
+import msgtools.parser.parser as MsgParser
+from msgtools.parser.MsgUtils import *
 
 # >/</= means big/little/native endian, see docs for struct.pack_into or struct.unpack_from.
 def fieldType(field):

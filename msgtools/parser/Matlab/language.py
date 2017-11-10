@@ -1,5 +1,5 @@
-import MsgParser
-from MsgUtils import *
+import msgtools.parser.parser as MsgParser
+from msgtools.parser.MsgUtils import *
 
 def outputSubdir(outDir, filename):
     return outDir + "/+" + filename
