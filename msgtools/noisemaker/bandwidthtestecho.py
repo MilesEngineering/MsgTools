@@ -2,10 +2,13 @@
 import sys
 from PyQt5 import QtGui, QtWidgets, QtCore
 
-import os
-srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-sys.path.append(srcroot)
-from msgtools.lib.messaging import Messaging
+try:
+    from msgtools.lib.messaging import Messaging
+except ImportError:
+    import os
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
+    sys.path.append(srcroot)
+    from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
 class BandwidthTestEcho(msgtools.lib.gui.Gui):

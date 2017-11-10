@@ -77,6 +77,23 @@ class Messaging:
 
     def __init__(self, loadDir, debug, headerName):
         Messaging.debug = debug
+        if not loadDir:
+            srcdir=os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
+            loadDir = os.path.join(srcdir, "../../../obj/CodeGenerator/Python/")
+            if not os.path.isdir(loadDir):
+                srcdir = os.getcwd()
+                loadDir = os.path.join(srcdir, "obj/CodeGenerator/Python/")
+                while not os.path.isdir(loadDir):
+                    lastsrcdir = srcdir
+                    srcdir = os.path.abspath(os.path.join(srcdir, os.pardir))
+                    # checking if joining with pardir returns the same dir is the easiest way to
+                    # determine if we're at root of filesystem
+                    if lastsrcdir == srcdir:
+                        # if we're at root of filesystem, just give up!
+                        return
+                    loadDir = srcdir + "/obj/CodeGenerator/Python/"
+                    if 1: #if Messaging.debug:
+                        print("search for objdir in " + loadDir)
         sys.path.append(loadDir)
         sys.path.append(loadDir+"/headers")
         

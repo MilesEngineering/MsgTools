@@ -10,10 +10,13 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
-import os
-srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-sys.path.append(srcroot)
-from msgtools.lib.messaging import Messaging
+try:
+    from msgtools.lib.messaging import Messaging
+except ImportError:
+    import os
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
+    sys.path.append(srcroot)
+    from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
 import msgtools.lib.txtreewidget as txtreewidget

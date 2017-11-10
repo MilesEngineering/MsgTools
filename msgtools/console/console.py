@@ -8,13 +8,18 @@ import sys
 from SynchronousMsgServer import SynchronousMsgServer
 from SynchronousMsgClient import SynchronousMsgClient
 
-def main(args=None):
-    # annoying stuff to start Messaging.
-    # this should be simpler!
-    thisFileDir = os.path.dirname(os.path.abspath(__file__))
-    sys.path.append(thisFileDir+"/../..")
+# annoying stuff to start Messaging.
+# this should be simpler!
+try:
     from msgtools.lib.messaging import Messaging
-    msgLib = Messaging(thisFileDir+"/../../../obj/CodeGenerator/Python/", 0, "NetworkHeader")
+except ImportError:
+    import os
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
+    sys.path.append(srcroot)
+    from msgtools.lib.messaging import Messaging
+
+def main(args=None):
+    msgLib = Messaging(None, 0, "NetworkHeader")
 
     if len(sys.argv) > 1 and sys.argv[1] == "server":
         connection = SynchronousMsgServer(msgLib)

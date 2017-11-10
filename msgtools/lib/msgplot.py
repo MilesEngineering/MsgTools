@@ -11,13 +11,13 @@ import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
 
-import os
-srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
-
-import sys
-# import the MsgApp baseclass, for messages, and network I/O
-sys.path.append(srcroot+"/MsgApp")
-from msgtools.lib.messaging import Messaging
+try:
+    from msgtools.lib.messaging import Messaging
+except ImportError:
+    import os
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
+    sys.path.append(srcroot)
+    from msgtools.lib.messaging import Messaging
 
 from datetime import datetime
 from datetime import timedelta

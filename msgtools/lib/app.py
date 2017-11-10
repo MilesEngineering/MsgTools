@@ -59,9 +59,7 @@ class App(QtWidgets.QMainWindow):
         # initialize the read function to None, so it's not accidentally called
         self.readBytesFn = None
 
-        srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
-        msgdir = srcroot+"/../../obj/CodeGenerator/Python/"
-        self.msgLib = Messaging(msgdir, 0, headerName)
+        self.msgLib = Messaging(None, 0, headerName)
         
         self.OpenConnection()
 

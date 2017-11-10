@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 import sys
-import os
 import getopt
 
-srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-sys.path.append(srcroot)
+try:
+    from msgtools.lib.messaging import Messaging
+except ImportError:
+    import os
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
+    sys.path.append(srcroot)
+    from msgtools.lib.messaging import Messaging
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
 from msgtools.server.TcpServer import *
 from msgtools.server.WebSocketServer import *
-
-from msgtools.lib.messaging import Messaging
 
 class MessageServer(QtWidgets.QMainWindow):
     def __init__(self, argv):
@@ -21,9 +23,7 @@ class MessageServer(QtWidgets.QMainWindow):
         self.logFile = None
         self.logFileType = None
         
-        srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
-        msgdir = srcroot+"/../../obj/CodeGenerator/Python/"
-        self.msgLib = Messaging(msgdir, 0, "NetworkHeader")
+        self.msgLib = Messaging(None, 0, "NetworkHeader")
         self.networkMsgs = self.msgLib.Messages.Network
         try:
             self.privateSubscriptionListClass = self.networkMsgs.PrivateSubscriptionList
