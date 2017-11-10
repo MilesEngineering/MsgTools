@@ -8,8 +8,8 @@ sys.path.append(srcroot)
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
-from TcpServer import *
-from WebSocketServer import *
+from msgtools.server.TcpServer import *
+from msgtools.server.WebSocketServer import *
 
 from msgtools.lib.messaging import Messaging
 
@@ -259,10 +259,13 @@ class MessageServer(QtWidgets.QMainWindow):
         self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))
         self.restoreState(self.settings.value("windowState", QtCore.QByteArray()))
 
-if __name__ == "__main__":
+def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
 
     msgServer = MessageServer(sys.argv)
     msgServer.show()
 
     sys.exit(app.exec_())
+    
+if __name__ == "__main__":
+    main()

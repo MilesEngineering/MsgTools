@@ -157,29 +157,29 @@ class MessagePlotGui(msgtools.lib.gui.Gui):
             msgName = argComponentList[0]
             fieldNameList = argComponentList[1]
 
-            msgClass = Messaging.MsgClassFromName[msgName]
+            self.msgClass = Messaging.MsgClassFromName[msgName]
             
             fieldNames = fieldNameList.split(",")
             firstField = 1
             for fieldName in fieldNames:
-                fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
+                fieldInfo = Messaging.findFieldInfo(self.msgClass.fields, fieldName)
                 if fieldInfo != None:
                     if firstField:
-                        plot = MsgPlot(msgClass, fieldInfo, 0)
+                        plot = MsgPlot(self.msgClass, fieldInfo, 0)
                         vbox.addWidget(plot.plotWidget)
                         firstField = 0
                         plotListForID = []
-                        if msgClass.ID in self.msgPlots:
-                            plotListForID = self.msgPlots[msgClass.ID]
+                        if self.msgClass.ID in self.msgPlots:
+                            plotListForID = self.msgPlots[self.msgClass.ID]
                         else:
-                            self.msgPlots[msgClass.ID] = plotListForID
+                            self.msgPlots[self.msgClass.ID] = plotListForID
                         plotListForID.append(plot)
                     else:
-                        plot.addPlot(msgClass, fieldInfo, 0)
+                        plot.addPlot(self.msgClass, fieldInfo, 0)
 
     def ProcessMessage(self, msg):
         try:
-            if msgClass.ID in self.msgPlots:
+            if self.msgClass.ID in self.msgPlots:
                 plotListForID = self.msgPlots[msg.ID]
                 for plot in plotListForID:
                     plot.addData(msg)

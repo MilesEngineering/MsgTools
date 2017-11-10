@@ -8,7 +8,7 @@ import sys
 from SynchronousMsgServer import SynchronousMsgServer
 from SynchronousMsgClient import SynchronousMsgClient
 
-if __name__ == "__main__":
+def main(args=None):
     # annoying stuff to start Messaging.
     # this should be simpler!
     thisFileDir = os.path.dirname(os.path.abspath(__file__))
@@ -46,3 +46,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print('You pressed Ctrl+C!')
         connection.stop()
+
+if __name__ == "__main__":
+    main()
