@@ -12,3 +12,6 @@ testupload:
 
 upload:
 	twine upload -r pypi dist/msgtools-*.tar.gz
+
+develop:
+	python3 setup.py develop --user
