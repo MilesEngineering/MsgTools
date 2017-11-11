@@ -4,7 +4,13 @@ import os
 import string
 from time import gmtime, strftime
 
-from msgtools.parser.MsgUtils import *
+try:
+    from msgtools.parser.MsgUtils import *
+except ImportError:
+    import os
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
+    sys.path.append(srcroot)
+    from msgtools.parser.MsgUtils import *
 
 def Usage():
     sys.stderr.write('Usage: ' + sys.argv[0] + ' msgdir outputfile\n')

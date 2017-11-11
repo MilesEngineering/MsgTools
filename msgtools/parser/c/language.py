@@ -1,7 +1,7 @@
 import msgtools.parser.parser as MsgParser
 from msgtools.parser.MsgUtils import *
 
-import language
+import msgtools.parser.cpp.language as language
 
 language.namespace = "<MSGNAME>_"
 language.firstParam = "m_data"

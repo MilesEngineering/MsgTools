@@ -4,7 +4,13 @@ import os
 import string
 from time import gmtime, strftime
 
-from msgtools.parser.MsgUtils import *
+try:
+    from msgtools.parser.MsgUtils import *
+except ImportError:
+    import os
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
+    sys.path.append(srcroot)
+    from msgtools.parser.MsgUtils import *
 
 def Messages(inputData):
     return inputData["Messages"]
@@ -79,7 +85,10 @@ def OutputFile(inputFilename, inputName, outDir):
         outputFileTime = os.path.getmtime(outputFilename)
     except:
         outputFileTime = 0
-    templateFileTime = os.path.getmtime(templateFilename)
+    try:
+        templateFileTime = os.path.getmtime(templateFilename)
+    except:
+        templateFileTime = 0
     languageFileTime = os.path.getmtime(languageFilename)
     if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
         try:
@@ -99,8 +108,17 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     currentDateTime = strftime("%d/%m/%Y at %H:%M:%S")
     
     # read the template file
-    with open(templateFilename, 'r') as templateFile:
-        template = templateFile.read().splitlines()
+    if os.path.isfile(templateFilename):
+        with open(templateFilename, 'r') as templateFile:
+            template = templateFile.read().splitlines()
+    else:
+        from pkg_resources import resource_string
+        global language
+        try:
+            template = resource_string(language.__name__, templateFilename).decode('UTF-8', 'replace').splitlines()
+        except FileNotFoundError:
+            print("Error opening " + language.__name__ + " " + templateFilename)
+            sys.exit(1)
     
     try:
         oneOutputFilePerMsg = language.oneOutputFilePerMsg
@@ -197,6 +215,19 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
             if filename.endswith(".yaml") or filename.endswith(".json"):
                 ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
 
+def loadlanguage(languageName):
+    if os.path.isfile(languageFilename):
+        sys.path.append(os.path.dirname(languageFilename))
+        languageName = os.path.splitext(os.path.basename(languageFilename) )[0]
+        return __import__(languageName)
+
+    import pkg_resources
+    for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
+        if entry_point.name == languageFilename:
+            return entry_point.load()
+    print("Error loading plugin " + languageName)
+    sys.exit(1)
+
 def main(args=None):
     if len(sys.argv) < 6:
         sys.stderr.write('Usage: ' + sys.argv[0] + ' input output language template headertemplate\n')
@@ -209,10 +240,8 @@ def main(args=None):
     headerTemplateFilename = sys.argv[5]
 
     # import the language file
-    sys.path.append(os.path.dirname(languageFilename))
-    languageName = os.path.splitext(os.path.basename(languageFilename) )[0]
     global language
-    language = __import__(languageName)
+    language = loadlanguage(languageFilename)
     
     # Get latest timestamp of imported modules.
     # We should only check the file times of any user-defined imports!
