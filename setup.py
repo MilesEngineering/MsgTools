@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.2',
+    version='0.21',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -39,5 +39,9 @@ setup(name='msgtools',
     extras_require={
         'gui':  ["pyqt5", "pyqtgraph"],
         'serverserial': ["pyqtserial"],
+    },
+    package_data={
+        # Include all Template files for the code generator
+        '': ['*Template*']
     }
 )
