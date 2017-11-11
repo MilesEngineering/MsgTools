@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.24',
+    version='0.25',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -42,6 +42,6 @@ setup(name='msgtools',
     },
     package_data={
         # Include all Template files for the code generator
-        '': ['*Template*']
+        '': ['*Template*', 'bootstrap.min.css']
     }
 )
