@@ -89,7 +89,10 @@ def OutputFile(inputFilename, inputName, outDir):
         templateFileTime = os.path.getmtime(templateFilename)
     except:
         templateFileTime = 0
-    languageFileTime = os.path.getmtime(languageFilename)
+    try:
+        languageFileTime = os.path.getmtime(languageFilename)
+    except:
+        languageFileTime = 0
     if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
         try:
             os.makedirs(os.path.dirname(outputFilename))
