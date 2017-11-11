@@ -1,13 +1,13 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.1',
+    version='0.2',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
     author_email='miles.gazic@gmail.com',
     license='GPLv2',
-    packages=['msgtools'],
+    packages=find_packages(),
     zip_safe=False,
     entry_points = {
         'console_scripts': ['msgparser=msgtools.parser.parser:main',
