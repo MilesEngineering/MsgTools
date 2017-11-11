@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.22',
+    version='0.23',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -11,7 +11,7 @@ setup(name='msgtools',
     zip_safe=False,
     entry_points = {
         'console_scripts': ['msgparser=msgtools.parser.parser:main',
-                            'msgcheck=msgtools.check.check:main',
+                            'msgcheck=msgtools.parser.check:main',
                             'msgconsole=msgtools.console.console:main'],
         'gui_scripts': ['msgscope=msgtools.scope.scope:main [gui]',
                         'msgserver=msgtools.server.server:main [gui]',
