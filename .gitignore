@@ -18,6 +18,8 @@ build-*-Qt*qt5*/
 build-*-Desktop-Debug/
 build-*-Desktop_Qt_5_*-Debug/
 *.plugin
+msgtools.egg-info/
+dist/
 
 # Windows image file caches
 Thumbs.db
