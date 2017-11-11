@@ -15,28 +15,28 @@ MSG_FILES := $(shell cd $(mdir) && find * -iname \*.yaml)
 .PHONY: python cpp c java js swift matlab html check
 
 python:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Python $(CG_DIR)python/language.py  $(CG_DIR)python/Template.py $(CG_DIR)python/HeaderTemplate.py
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Python python  Template.py HeaderTemplate.py
 
 cpp:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Cpp $(CG_DIR)cpp/language.py  $(CG_DIR)cpp/Template.h $(CG_DIR)cpp/HeaderTemplate.h
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Cpp cpp  Template.h HeaderTemplate.h
 
 c:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/C $(CG_DIR)c/language.py  $(CG_DIR)c/Template.h $(CG_DIR)c/HeaderTemplate.h
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/C c  Template.h HeaderTemplate.h
 
 java:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Java $(CG_DIR)java/language.py  $(CG_DIR)java/Template.java $(CG_DIR)java/HeaderTemplate.java
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Java java  Template.java HeaderTemplate.java
 
 js:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Javascript $(CG_DIR)javascript/language.py  $(CG_DIR)javascript/Template.js $(CG_DIR)javascript/HeaderTemplate.js
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Javascript javascript  Template.js HeaderTemplate.js
 
 swift:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Swift $(CG_DIR)swift/language.py  $(CG_DIR)swift/Template.swift $(CG_DIR)swift/HeaderTemplate.swift
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Swift swift  Template.swift HeaderTemplate.swift
 
 matlab:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Matlab/+Messages $(CG_DIR)matlab/language.py  $(CG_DIR)matlab/Template.m $(CG_DIR)matlab/HeaderTemplate.m
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Matlab/+Messages matlab  Template.m HeaderTemplate.m
 
 html:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Html $(CG_DIR)html/language.py  $(CG_DIR)html/Template.html $(CG_DIR)html/HeaderTemplate.html
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Html html  Template.html HeaderTemplate.html
 	@find $(MSGDIR)/Html -type d -print0 | xargs -n 1 -0 cp $(CG_DIR)html/bootstrap.min.css
 
 check: $(DIGEST)

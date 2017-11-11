@@ -107,19 +107,6 @@ def OutputFile(inputFilename, inputName, outDir):
 def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     currentDateTime = strftime("%d/%m/%Y at %H:%M:%S")
     
-    # read the template file
-    if os.path.isfile(templateFilename):
-        with open(templateFilename, 'r') as templateFile:
-            template = templateFile.read().splitlines()
-    else:
-        from pkg_resources import resource_string
-        global language
-        try:
-            template = resource_string(language.__name__, templateFilename).decode('UTF-8', 'replace').splitlines()
-        except FileNotFoundError:
-            print("Error opening " + language.__name__ + " " + templateFilename)
-            sys.exit(1)
-    
     try:
         oneOutputFilePerMsg = language.oneOutputFilePerMsg
     except AttributeError:
@@ -139,6 +126,21 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     if inputData == 0:
         return
 
+    # read the template file
+    if os.path.isfile(templateFilename):
+        with open(templateFilename, 'r') as templateFile:
+            template = templateFile.read().splitlines()
+    elif os.path.isfile(languageFilename+'/'+templateFilename):
+        with open(languageFilename+'/'+templateFilename, 'r') as templateFile:
+            template = templateFile.read().splitlines()
+    else:
+        from pkg_resources import resource_string
+        try:
+            template = resource_string(language.__name__, templateFilename).decode('UTF-8', 'replace').splitlines()
+        except FileNotFoundError:
+            print("Error opening " + language.__name__ + " " + templateFilename)
+            sys.exit(1)
+    
     replacements = {}
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
@@ -216,10 +218,9 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
                 ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
 
 def loadlanguage(languageName):
-    if os.path.isfile(languageFilename):
-        sys.path.append(os.path.dirname(languageFilename))
-        languageName = os.path.splitext(os.path.basename(languageFilename) )[0]
-        return __import__(languageName)
+    if os.path.isdir(languageFilename):
+        sys.path.append(os.path.abspath(languageFilename))
+        return __import__('language')
 
     import pkg_resources
     for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
