@@ -55,7 +55,11 @@ MessagingClient.prototype.onopen = function (event) {
 };
 
 MessagingClient.prototype.onclose = function(event) {
-    console.log("Websocket closed");
+    console.log("Websocket closed");    
+    if(typeof this.onconnect === "function")
+    {
+        this.onclose();
+    }
 };
 
 MessagingClient.prototype.onmessage = function (event) {
