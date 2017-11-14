@@ -157,7 +157,7 @@ class Messaging:
 
         if not msgId in Messaging.MsgNameFromID:
             #print("WARNING! No definition for ", msgId, "!\n")
-            from UnknownMsg import UnknownMsg
+            from msgtools.lib.unknownmsg import UnknownMsg
             msgClass = UnknownMsg
         else:
             msgName = Messaging.MsgNameFromID[msgId]
