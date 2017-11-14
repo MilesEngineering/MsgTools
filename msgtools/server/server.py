@@ -81,11 +81,13 @@ class MessageServer(QtWidgets.QMainWindow):
                 self.bluetoothPort.start()
             elif opt[0] == '--plugin':
                 filename = opt[1]
+                import os
                 moduleName = os.path.splitext(os.path.basename(filename))[0]
                 if Messaging.debug:
                     print("loading module ", filename, "as",moduleName)
 
                 name = filename.replace("/", "_")
+                import importlib
                 self.plugin = importlib.machinery.SourceFileLoader(name, filename).load_module(name)
 
                 self.pluginPort = self.plugin.PluginConnection()
