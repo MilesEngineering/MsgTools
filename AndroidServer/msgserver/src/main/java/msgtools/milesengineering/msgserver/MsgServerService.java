@@ -1,25 +1,27 @@
 package msgtools.milesengineering.msgserver;
 
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.widget.Toast;
+import android.os.Process;
 
 /**
  * The main MsgServerService class.  This sets up a service thread, manages incoming messages
  * for API requests, and broadcasts intents to interested clients for new and dropped connections.
  */
-public class MsgServerService extends Service {
+public class MsgServerService extends Service implements Handler.Callback {
     private static final String TAG = MsgServerService.class.getSimpleName();
 
     public  static final String INTENT_ACTION = "msgtools.milesengineering.msgserver.MsgServerServiceAction";
 
-    private Messenger m_MsgHandler;
+    private Messenger m_MsgHandler; // For external client binding
+    private Handler m_MsgServerHandler; // To pump messages on this service...
 
     /**
      * Private utility class that processes Messages from bound clients
@@ -44,9 +46,16 @@ public class MsgServerService extends Service {
         android.util.Log.i(TAG, "onCreate()");
         Toast.makeText(this, "MsgServer Service Starting...", Toast.LENGTH_SHORT).show();
 
+        // Setup a binding message handler for any client bind requests
         m_MsgHandler = new Messenger(new MsgServerAPIHandler());
 
-        // TODO: Spin up our message handling thread and ConnectionManagers
+        // Spin up our message handling thread and ConnectionManagers
+        HandlerThread ht = new HandlerThread( "MsgServerServiceThread",
+                Process.THREAD_PRIORITY_BACKGROUND);
+        ht.start();
+
+        Looper looper = ht.getLooper();
+        m_MsgServerHandler = new Handler(looper, this);
     }
 
     @Override
@@ -72,6 +81,11 @@ public class MsgServerService extends Service {
 
         sendBroadcast(sendIntent);
 
+        // MODEBUG: Send a message to test our message loop
+        Message msg = m_MsgServerHandler.obtainMessage();
+        msg.arg1 = startId;
+        m_MsgServerHandler.sendMessage(msg);
+
         return START_STICKY;
     }
 
@@ -87,13 +101,29 @@ public class MsgServerService extends Service {
     @Override
     public void onRebind(Intent intent) {
         android.util.Log.i(TAG, "onRebind(...)");
-        // TODO: reset any state based on binding
+        // TODO: reset any state based on binding if needed
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
         android.util.Log.i(TAG, "onUnbind(...)");
         return super.onUnbind(intent);
+    }
+
+    @Override
+    public boolean handleMessage(Message msg) {
+        android.util.Log.i(TAG, "MessageHandler::handleMessage(...)");
+
+        // Normally we would do some work here, like download a file.
+        // For our sample, we just sleep for 5 seconds.
+        try {
+            // TODO: Insert message handling here
+        } catch (InterruptedException e) {
+            // Restore interrupt status.
+            Thread.currentThread().interrupt();
+        }
+
+        return false;   // Keep going
     }
 
 }
