@@ -15,3 +15,6 @@ upload:
 
 develop:
 	python3 setup.py develop --user
+
+undevelop:
+	python3 setup.py develop --user --uninstall
