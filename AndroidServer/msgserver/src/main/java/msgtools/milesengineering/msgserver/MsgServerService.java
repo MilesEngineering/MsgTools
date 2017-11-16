@@ -8,20 +8,43 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
-import android.widget.Toast;
 import android.os.Process;
+import android.widget.Toast;
+
+import java.net.InetSocketAddress;
+import java.util.Hashtable;
+
+import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
+import msgtools.milesengineering.msgserver.connectionmgr.tcp.TCPConnectionMgr;
 
 /**
  * The main MsgServerService class.  This sets up a service thread, manages incoming messages
  * for API requests, and broadcasts intents to interested clients for new and dropped connections.
  */
-public class MsgServerService extends Service implements Handler.Callback {
+public class MsgServerService extends Service implements Handler.Callback, BaseConnectionMgr.IConnectionMgrListener {
     private static final String TAG = MsgServerService.class.getSimpleName();
 
-    public  static final String INTENT_ACTION = "msgtools.milesengineering.msgserver.MsgServerServiceAction";
+    public static final String INTENT_ACTION = "msgtools.milesengineering.msgserver.MsgServerServiceAction";
+    private final static int TCP_PORT = 5678;
 
+    private final Object m_Lock = new Object();   // Sync object
     private Messenger m_MsgHandler; // For external client binding
     private Handler m_MsgServerHandler; // To pump messages on this service...
+
+    //
+    // Connection Managers which handle connections on various transports for us.  Treated
+    // as Singletons by this class
+    //
+    private TCPConnectionMgr m_TCPConnectionMgr;
+
+    // Keep a class local record of connections - you might be wondering why we don't just get a list
+    // of connections from each manager.  Threadsafety is the simple answer.  Rather than making
+    // repeated copies of collections from the managers to iterate on for each message it's
+    // more performant to maintain a global list in the service.
+    // This of course leads to potential synchronization issues which we have to handle.
+    private Hashtable<BaseConnectionMgr.IConnection,BaseConnectionMgr.IConnection> m_Connections =
+            new Hashtable<BaseConnectionMgr.IConnection,BaseConnectionMgr.IConnection>();
+
 
     /**
      * Private utility class that processes Messages from bound clients
@@ -56,6 +79,10 @@ public class MsgServerService extends Service implements Handler.Callback {
 
         Looper looper = ht.getLooper();
         m_MsgServerHandler = new Handler(looper, this);
+
+        // Instantiate our connection managers.
+        m_TCPConnectionMgr = new TCPConnectionMgr(new InetSocketAddress(TCP_PORT), this);
+        m_TCPConnectionMgr.start();
     }
 
     @Override
@@ -64,6 +91,11 @@ public class MsgServerService extends Service implements Handler.Callback {
         Toast.makeText(this, "MsgServer Service Being Destroyed...", Toast.LENGTH_SHORT).show();
 
         // TODO: Stop our message handling loop and close all connections etc.
+        m_TCPConnectionMgr.requestHalt();
+        m_MsgServerHandler.getLooper().quitSafely();
+
+        m_TCPConnectionMgr = null;
+        m_MsgServerHandler = null;
     }
 
     @Override
@@ -92,6 +124,7 @@ public class MsgServerService extends Service implements Handler.Callback {
     //
     // Service binding stuff...
     //
+
     @Override
     public IBinder onBind(Intent intent) {
         android.util.Log.i(TAG, "onBind(...)");
@@ -110,6 +143,11 @@ public class MsgServerService extends Service implements Handler.Callback {
         return super.onUnbind(intent);
     }
 
+    /**
+     * Process messages from bound clients...
+     * @param msg message to process
+     * @return always returns false to continue processing.
+     */
     @Override
     public boolean handleMessage(Message msg) {
         android.util.Log.i(TAG, "MessageHandler::handleMessage(...)");
@@ -117,7 +155,8 @@ public class MsgServerService extends Service implements Handler.Callback {
         // Normally we would do some work here, like download a file.
         // For our sample, we just sleep for 5 seconds.
         try {
-            // TODO: Insert message handling here
+            // TODO: Insert message handling here - sleep for now
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             // Restore interrupt status.
             Thread.currentThread().interrupt();
@@ -125,5 +164,63 @@ public class MsgServerService extends Service implements Handler.Callback {
 
         return false;   // Keep going
     }
+
+    //
+    // Connection Manager Listener
+    //
+
+    @Override
+    public void onNewConnection(BaseConnectionMgr mgr, BaseConnectionMgr.IConnection newConnection) {
+        synchronized (m_Lock) {
+            if (m_Connections.put(newConnection, newConnection) == null) {
+                // TODO: Generate an intent for interested parties...
+            } else {
+                android.util.Log.w(TAG, "Received a duplicate new connection event");
+            }
+        }
+
+    }
+
+    @Override
+    public void onClosedConnection(BaseConnectionMgr mgr, BaseConnectionMgr.IConnection closedConnection) {
+        synchronized (m_Lock) {
+            if ( m_Connections.remove(closedConnection) == null ) {
+                android.util.Log.w(TAG, "Attempted to remove a closed connection that is not being tracked");
+                // TODO: Generate an intent for interested parties
+            }
+        }
+
+    }
+
+    @Override
+    public void onMessage(BaseConnectionMgr mgr, BaseConnectionMgr.IConnection srcConnection, long msgId, byte[] payload) {
+        synchronized (m_Lock) {
+
+            // If we don't know about this connection then flag a warning (probably a mgr bug)
+            // and add it to our local list.
+            if ( m_Connections.containsKey(srcConnection) == false ) {
+                android.util.Log.w(TAG, "Received message from unknown connection.");
+                m_Connections.put(srcConnection, srcConnection);
+            }
+
+            for(BaseConnectionMgr.IConnection c : m_Connections.values()) {
+                try {
+                    // Don't echo messages back to the sender
+                    if (c != srcConnection && c.sendMessage(msgId, payload) == false) {
+                        // TODO: When we have  a friendly connection name log it here
+                        android.util.Log.w(TAG, "Message not sent by connection: ");
+                    }
+                }
+                catch(Exception e) {
+                    // TODO: When we have  a friendly connection name log it here
+                    android.util.Log.w(TAG, "Exception sending message on connection: ");
+                    android.util.Log.w(TAG, e.toString());
+                }
+            }
+
+            // TODO: Generate an intent for interested parties
+        }
+    }
+
 
 }

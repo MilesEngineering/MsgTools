@@ -5,7 +5,7 @@ android {
     buildToolsVersion "26.0.2"
 
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -19,6 +19,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    // src/msgtools should point to the "Java" directory of wherever your generated
+    // code goes.  The app assumes headers are in a 'headers' package
+    // and explicitly looks for NetworkHeader and BluetoothHeader to do
+    // conversions.
+    sourceSets { main { java.srcDirs = ['src/main/java', 'src/msgtools'] } }
 }
 
 dependencies {

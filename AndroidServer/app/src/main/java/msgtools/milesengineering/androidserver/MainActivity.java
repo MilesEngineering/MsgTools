@@ -20,7 +20,7 @@ import msgtools.milesengineering.msgserver.MsgServerService;
 import msgtools.milesengineering.msgserver.MsgServerServiceAPI;
 
 public class MainActivity extends AppCompatActivity implements ServiceConnection {
-    private static final String TAG = MsgServerService.class.getSimpleName();
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     private MsgServerServiceAPI m_MsgServerAPI;
     private BroadcastReceiver m_BroadcastReceiver;
@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
-        android.util.Log.i(TAG, "onServicConnected(...)");
+        android.util.Log.i(TAG, "onServiceConnected(...)");
 
         if ( m_MsgServerAPI == null ) {
             m_MsgServerAPI = new MsgServerServiceAPI(service);
