@@ -2,9 +2,9 @@
 import unittest
 import yaml
 import sys
-sys.path.append("..")
+sys.path.append("../../..")
 import msgtools.parser.parser as MsgParser
-sys.path.append("../Java")
+sys.path.append("../java")
 import language
 
 class TestJava(unittest.TestCase):

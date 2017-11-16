@@ -2,9 +2,9 @@
 import unittest
 import yaml
 import sys
-sys.path.append("..")
+sys.path.append("../../..")
 import msgtools.parser.parser as MsgParser
-sys.path.append("../Python")
+sys.path.append("../python")
 import language
 
 class TestCpp(unittest.TestCase):
