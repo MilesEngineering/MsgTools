@@ -221,10 +221,14 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
                 ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
 
 def loadlanguage(languageName):
-    if os.path.isdir(languageFilename):
-        sys.path.append(os.path.abspath(languageFilename))
+    # assume the languageName is a subdirectory of the parser's location,
+    # and try loading a language from there
+    languageDir = os.path.dirname(__file__) + "/" + languageFilename
+    if os.path.isdir(languageDir):
+        sys.path.append(os.path.abspath(languageDir))
         return __import__('language')
 
+    # if the above fails, iterate over packages that implement the plugin interface
     import pkg_resources
     for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
         if entry_point.name == languageFilename:
