@@ -4,7 +4,7 @@ include makefile.inc
 include $(MK_DIR)/subdir.mk
 
 bundle:
-	rm dist/msgtools-*.tar.gz
+	rm -f dist/msgtools-*.tar.gz
 	python setup.py sdist
 
 testupload:
