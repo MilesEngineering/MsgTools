@@ -69,6 +69,24 @@ class RxRateCalculatorThread(QObject):
         return average_rate
 
 
+def slim_vbox(a, b):
+    vLayout = QVBoxLayout()
+    vLayout.setSpacing(0)
+    vLayout.setContentsMargins(0,0,0,0)
+    vLayout.addWidget(a)
+    vLayout.addWidget(b)
+
+    vBox = QWidget()
+    vBox.setLayout(vLayout)
+    return vBox
+
+def vsplitter(parent, a,b):
+    splitter = QSplitter(parent)
+    splitter.setOrientation(Qt.Vertical)
+    splitter.addWidget(a)
+    splitter.addWidget(b)
+    return splitter
+    
 class MessageScopeGui(msgtools.lib.gui.Gui):
     def __init__(self, argv, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Message Scope 0.1", argv, [], parent)
@@ -81,30 +99,39 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.ReadTxDictionary()
 
     def configure_gui(self, parent):
-        hSplitter = QSplitter(parent)
-        
-        txSplitter = QSplitter(parent)
-        rxSplitter = QSplitter(parent)
-
-        txSplitter.setOrientation(Qt.Vertical)
-        rxSplitter.setOrientation(Qt.Vertical)
-
-        hSplitter.addWidget(txSplitter)
-        hSplitter.addWidget(rxSplitter)
-
+        # create widgets for tx
         self.txDictionary = self.configure_tx_dictionary(parent)
         self.txMsgs = self.configure_tx_messages(parent)
+        txClearBtn = QPushButton("Clear")
+        
+        # add them to the tx layout
+        txVBox = slim_vbox(self.txMsgs, txClearBtn)
+        txSplitter = vsplitter(parent, self.txDictionary, txVBox)
+        
+        # create widgets for rx
         self.rx_message_list = self.configure_rx_message_list(parent)
         self.rx_messages_widget = self.configure_rx_messages_widget(parent)
         self.configure_msg_plots(parent)
-
-        txSplitter.addWidget(self.txDictionary)
-        txSplitter.addWidget(self.txMsgs)
-        rxSplitter.addWidget(self.rx_message_list)
-        rxSplitter.addWidget(self.rx_messages_widget)
+        rxClearListBtn = QPushButton("Clear")
+        rxClearMsgsBtn = QPushButton("Clear")
         
+        # add them to the rx layout
+        rxMsgListBox = slim_vbox(self.rx_message_list, rxClearListBtn)
+        rxMsgsBox = slim_vbox(self.rx_messages_widget, rxClearMsgsBtn)
+        rxSplitter = vsplitter(parent, rxMsgListBox, rxMsgsBox)
+
+        # top level horizontal splitter to divide the screen
+        hSplitter = QSplitter(parent)
+        hSplitter.addWidget(txSplitter)
+        hSplitter.addWidget(rxSplitter)
+
         self.setCentralWidget(hSplitter)
     
+        # connect signals for 'clear' buttons
+        txClearBtn.clicked.connect(self.clear_tx)
+        rxClearListBtn.clicked.connect(self.clear_rx_list)
+        rxClearMsgsBtn.clicked.connect(self.clear_rx_msgs)
+        
     def configure_msg_plots(self, parent):
         self.msgPlots = {}
 
@@ -288,7 +315,12 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             else:
                 output = "{0:0.1f} Hz".format(rate)
 
-            self.rx_msg_list[msg_key].setText(2, output)
+            try:
+                self.rx_msg_list[msg_key].setText(2, output)
+            except KeyError:
+                # ignore errors relates to the item disappearing from the rx_msg_list.
+                # these are caused by the list getting cleared
+                pass
 
     def add_message_to_rx_tree(self, msg_key, msg):
         if not msg_key in self.rx_msg_widgets:
@@ -309,6 +341,20 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                     plot.addData(msg)
         except AttributeError:
             pass
+    
+    def clear_rx_list(self):
+        if self.thread_lock.acquire():
+            self.rx_msg_list = {}
+            self.rx_msg_list_timestamps = {}
+            self.rx_message_list.clear()
+            self.thread_lock.release()
+
+    def clear_rx_msgs(self):
+        self.rx_msg_widgets = {}
+        self.rx_messages_widget.clear()
+
+    def clear_tx(self):
+        self.txMsgs.clear()
 
 def main(args=None):
     app = QApplication(sys.argv)

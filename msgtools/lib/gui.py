@@ -328,17 +328,17 @@ class Gui(App, QtWidgets.QMainWindow):
     
     # open dialog box to choose host to connect to
     def chooseHost(self):
-        (hostIp, port) = self.connectionName.split(":")
-        if(hostIp == None):
-            hostIp = "127.0.0.1"
-
-        if(port == None):
-            port = "5678"
-        
-        port = int(port)
-
-        hostIp, ok = QInputDialog.getText(self, 'Connect',  'Server:', QLineEdit.Normal, hostIp)
-        self.connection.connectToHost(hostIp, port)
+        userInput, ok = QInputDialog.getText(self, 'Connect',  'Server:', QLineEdit.Normal, self.connectionName)
+        if ok:
+            self.connectionName = userInput
+            parts = self.connectionName.split(":")
+            hostIp = parts[0]
+            if len(parts) > 1:
+                port = int(parts[1])
+            else:
+                port = 5678
+            print("connecting to " + hostIp + " on port " + str(port))
+            self.connection.connectToHost(hostIp, port)
     
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
