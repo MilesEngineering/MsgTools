@@ -12,6 +12,7 @@ import android.os.Process;
 import android.widget.Toast;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.Hashtable;
 
 import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
@@ -193,7 +194,8 @@ public class MsgServerService extends Service implements Handler.Callback, BaseC
     }
 
     @Override
-    public void onMessage(BaseConnectionMgr mgr, BaseConnectionMgr.IConnection srcConnection, long msgId, byte[] payload) {
+    public void onMessage(BaseConnectionMgr mgr, BaseConnectionMgr.IConnection srcConnection,
+                          long msgId, ByteBuffer payload) {
         synchronized (m_Lock) {
 
             // If we don't know about this connection then flag a warning (probably a mgr bug)

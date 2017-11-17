@@ -59,22 +59,29 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         }
 
         @Override
-        public boolean sendMessage(long msgId, byte[] payload) {
+        public boolean sendMessage(long msgId, ByteBuffer payloadBuff) {
             boolean retVal = true;
 
             synchronized (m_Lock) {
 
                 if ( m_Channel != null ) {
                     m_SendHeader.SetMessageID(msgId);
-                    m_SendHeader.SetDataLength(payload.length);
+                    m_SendHeader.SetDataLength(payloadBuff.capacity());
+                    ByteBuffer hdrBuff = m_SendHeader.GetBuffer();
 
                     SocketChannel channel = m_Channel.get();
                     if ( channel.isConnected() == true ) {
                         try {
-                            ByteBuffer sendBuf = ByteBuffer.wrap(payload);
+                            hdrBuff.position(0);
+                            payloadBuff.position(0);
 
-                            channel.write(m_SendHeader.GetBuffer());
-                            channel.write(sendBuf);
+                            while(hdrBuff.remaining() > 0)
+                                channel.write(hdrBuff);
+
+                            while( payloadBuff.remaining() > 0)
+                                channel.write(payloadBuff);
+
+
 
                             m_SentCount++;
                         } catch (IOException ioe) {
@@ -174,6 +181,15 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                         TCPConnection tcpConn = (TCPConnection)key.attachment();
                         SocketChannel channel = (SocketChannel)key.channel();
 
+                        // So - problem here - due to the way TCP works (keepalive and all
+                        // that stuff), if you disconnect the client select starts returning
+                        // immediately with read status set, but we get 0 bytes.  Which rails
+                        // the CPU and is really unfriendly.  We could test connection by trying
+                        // to write, but if the client reconnects short after we lose them
+                        // you'll botch the data stream and we don't have a good way to resync.
+                        // We could detect a read of 0 bytes and close the connection but that of
+                        // isn't very friendly.  Have to ponder some more.
+
                         // Read enough bytes to construct a network header
                         if ( tcpConn.m_Header == null ) {
                             channel.read(tcpConn.m_HeaderBuff);
@@ -197,7 +213,7 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                                 // event with the msgId and payload and reset our state
                                 tcpConn.addMessageReceived();
                                 onMessage(tcpConn, tcpConn.m_Header.GetMessageID(),
-                                        tcpConn.m_PayloadBuff.array());
+                                        tcpConn.m_PayloadBuff);
 
                                 // Now reset for the next go
                                 tcpConn.m_Header = null;
@@ -205,6 +221,8 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                                 tcpConn.m_HeaderBuff.position(0);
                             }
                         }
+
+                        keys.remove(key);
                     }
                     else {
                         android.util.Log.w(TAG, "Key selected but not readable!");

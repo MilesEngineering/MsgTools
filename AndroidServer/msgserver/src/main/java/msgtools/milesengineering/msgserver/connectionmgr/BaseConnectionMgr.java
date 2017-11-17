@@ -1,6 +1,7 @@
 package msgtools.milesengineering.msgserver.connectionmgr;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 /**
@@ -34,7 +35,7 @@ public abstract class BaseConnectionMgr extends Thread {
         /**
          * See BaseConnectionMgr.onMessage
          */
-        void onMessage(BaseConnectionMgr mgr, IConnection srcConnection, long msgId, byte[] payload);
+        void onMessage(BaseConnectionMgr mgr, IConnection srcConnection, long msgId, ByteBuffer payload);
     }
 
     /**
@@ -48,10 +49,10 @@ public abstract class BaseConnectionMgr extends Thread {
          * to use a header appropriate to it's underlying transport before sending.
          *
          * @param msgId MsgTools header message ID
-         * @param payload Binary payload for the message.
+         * @param payloadBuff Data payload for the message.
          * @return true if the message was sent, else false
          */
-        boolean sendMessage( long msgId, byte[] payload );
+        boolean sendMessage( long msgId, ByteBuffer payloadBuff );
 
         /**
          * Get the total number of messages sent
@@ -244,14 +245,14 @@ public abstract class BaseConnectionMgr extends Thread {
      * will be notified of the new message.
      * @param srcConnection The connection that sourced the message
      * @param msgId The message ID for the message
-     * @param payload  The binary payload for the message
+     * @param payloadBuff  The data payload for the message
      */
-    protected void onMessage(IConnection srcConnection, long msgId, byte[] payload) {
+    protected void onMessage(IConnection srcConnection, long msgId, ByteBuffer payloadBuff) {
         android.util.Log.i(TAG, "onMessage(...)");
         synchronized(m_Lock) {
             for( IConnectionMgrListener l : m_Listeners ) {
                 try {
-                    l.onMessage(this, srcConnection, msgId, payload);
+                    l.onMessage(this, srcConnection, msgId, payloadBuff);
                 }
                 catch( Exception e ) {
                     android.util.Log.w(TAG, e.toString() );

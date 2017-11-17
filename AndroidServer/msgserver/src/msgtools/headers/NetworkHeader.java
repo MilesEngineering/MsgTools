@@ -116,22 +116,22 @@ public class NetworkHeader
     //  , (0 to 65535)
     public int GetSource()
     {
-        return (int)Short.toUnsignedInt(m_data.getShort(0));
+        return toUnsignedInt(m_data.getShort(0));
     }
     //  , (0 to 65535)
     public int GetDestination()
     {
-        return (int)Short.toUnsignedInt(m_data.getShort(2));
+        return toUnsignedInt(m_data.getShort(2));
     }
     //  , (0 to 4294967295)
     public long GetID()
     {
-        return (long)Integer.toUnsignedLong(m_data.getInt(4));
+        return toUnsignedLong(m_data.getInt(4));
     }
     // To hold bitfields , (0 to 4294967295)
     public long GetPackedField()
     {
-        return (long)Integer.toUnsignedLong(m_data.getInt(8));
+        return toUnsignedLong(m_data.getInt(8));
     }
     //  , (0 to 255)
     public long GetPriority()
@@ -146,7 +146,7 @@ public class NetworkHeader
     // Rolling millisecond counter. , (0 to 4294967295)
     public long GetTime()
     {
-        return (long)Integer.toUnsignedLong(m_data.getInt(12));
+        return toUnsignedLong(m_data.getInt(12));
     }
     //  , (0 to 65535)
     public void SetSource(int value)
@@ -184,4 +184,12 @@ public class NetworkHeader
         m_data.putInt(12, (int)value);
     }
     private ByteBuffer m_data;
+
+    private static int toUnsignedInt(short s) {
+        return 0x0000FFFF & s;
+    }
+
+    private static long toUnsignedLong(int i) {
+        return 0x00000000FFFFFFFFL & i;
+    }
 };
