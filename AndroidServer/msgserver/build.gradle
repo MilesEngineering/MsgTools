@@ -24,7 +24,9 @@ android {
     // code goes.  The app assumes headers are in a 'headers' package
     // and explicitly looks for NetworkHeader and BluetoothHeader to do
     // conversions.
-    sourceSets { main { java.srcDirs = ['src/main/java', 'src/msgtools'] } }
+    sourceSets {
+        main { java.srcDirs = ['src/main/java', 'src/msgtools', '../Java-WebSocket/src/main/java'] }
+    }
 }
 
 dependencies {

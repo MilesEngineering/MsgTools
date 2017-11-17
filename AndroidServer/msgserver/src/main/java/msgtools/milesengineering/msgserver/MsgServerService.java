@@ -16,13 +16,16 @@ import java.nio.ByteBuffer;
 import java.util.Hashtable;
 
 import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
+import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
+import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgr;
+import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
 import msgtools.milesengineering.msgserver.connectionmgr.tcp.TCPConnectionMgr;
 
 /**
  * The main MsgServerService class.  This sets up a service thread, manages incoming messages
  * for API requests, and broadcasts intents to interested clients for new and dropped connections.
  */
-public class MsgServerService extends Service implements Handler.Callback, BaseConnectionMgr.IConnectionMgrListener {
+public class MsgServerService extends Service implements Handler.Callback, IConnectionMgrListener {
     private static final String TAG = MsgServerService.class.getSimpleName();
 
     public static final String INTENT_ACTION = "msgtools.milesengineering.msgserver.MsgServerServiceAction";
@@ -36,15 +39,15 @@ public class MsgServerService extends Service implements Handler.Callback, BaseC
     // Connection Managers which handle connections on various transports for us.  Treated
     // as Singletons by this class
     //
-    private TCPConnectionMgr m_TCPConnectionMgr;
+    private IConnectionMgr m_TCPConnectionMgr;
 
     // Keep a class local record of connections - you might be wondering why we don't just get a list
     // of connections from each manager.  Threadsafety is the simple answer.  Rather than making
     // repeated copies of collections from the managers to iterate on for each message it's
     // more performant to maintain a global list in the service.
     // This of course leads to potential synchronization issues which we have to handle.
-    private Hashtable<BaseConnectionMgr.IConnection,BaseConnectionMgr.IConnection> m_Connections =
-            new Hashtable<BaseConnectionMgr.IConnection,BaseConnectionMgr.IConnection>();
+    private Hashtable<IConnection,IConnection> m_Connections =
+            new Hashtable<IConnection,IConnection>();
 
 
     /**
@@ -171,7 +174,7 @@ public class MsgServerService extends Service implements Handler.Callback, BaseC
     //
 
     @Override
-    public void onNewConnection(BaseConnectionMgr mgr, BaseConnectionMgr.IConnection newConnection) {
+    public void onNewConnection(BaseConnectionMgr mgr, IConnection newConnection) {
         synchronized (m_Lock) {
             if (m_Connections.put(newConnection, newConnection) == null) {
                 // TODO: Generate an intent for interested parties...
@@ -183,7 +186,7 @@ public class MsgServerService extends Service implements Handler.Callback, BaseC
     }
 
     @Override
-    public void onClosedConnection(BaseConnectionMgr mgr, BaseConnectionMgr.IConnection closedConnection) {
+    public void onClosedConnection(BaseConnectionMgr mgr, IConnection closedConnection) {
         synchronized (m_Lock) {
             if ( m_Connections.remove(closedConnection) == null ) {
                 android.util.Log.w(TAG, "Attempted to remove a closed connection that is not being tracked");
@@ -194,7 +197,7 @@ public class MsgServerService extends Service implements Handler.Callback, BaseC
     }
 
     @Override
-    public void onMessage(BaseConnectionMgr mgr, BaseConnectionMgr.IConnection srcConnection,
+    public void onMessage(BaseConnectionMgr mgr, IConnection srcConnection,
                           long msgId, ByteBuffer payload) {
         synchronized (m_Lock) {
 
@@ -205,7 +208,7 @@ public class MsgServerService extends Service implements Handler.Callback, BaseC
                 m_Connections.put(srcConnection, srcConnection);
             }
 
-            for(BaseConnectionMgr.IConnection c : m_Connections.values()) {
+            for(IConnection c : m_Connections.values()) {
                 try {
                     // Don't echo messages back to the sender
                     if (c != srcConnection && c.sendMessage(msgId, payload) == false) {

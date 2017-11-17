@@ -9,70 +9,12 @@ import java.util.ArrayList;
  * Bluetooth, Websocket, and TCP type services that watch for new data connections.
  */
 
-public abstract class BaseConnectionMgr extends Thread {
+public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr {
     private static final String TAG = BaseConnectionMgr.class.getSimpleName();
 
     private Object m_Lock = new Object();   // Used as a private sync object for thread safety
     private ArrayList<IConnectionMgrListener> m_Listeners = new ArrayList<IConnectionMgrListener>();
     private ArrayList<IConnection> m_ActiveConnections = new ArrayList<IConnection>();
-
-    /**
-     * Callback interface for connection events.  All callbacks are done on the connection
-     * manager's thread.  Don't block for too long or traffic may be dropped.
-     */
-    public interface IConnectionMgrListener {
-
-        /**
-         * See BaseConnectionMgr.onNewConnection
-         */
-        void onNewConnection(BaseConnectionMgr mgr, IConnection newConnection);
-
-        /**
-         * See BaseConnectionMgr.onClosedConnection
-         */
-        void onClosedConnection(BaseConnectionMgr mgr, IConnection closedConnection);
-
-        /**
-         * See BaseConnectionMgr.onMessage
-         */
-        void onMessage(BaseConnectionMgr mgr, IConnection srcConnection, long msgId, ByteBuffer payload);
-    }
-
-    /**
-     * Connection interface, that represents a connection to a message source/sink
-     * Your implementation MUST be threadsafe with respect to this interface.
-     */
-    public interface IConnection {
-
-        /**
-         * Send a  message on this connection. The message will be converted
-         * to use a header appropriate to it's underlying transport before sending.
-         *
-         * @param msgId MsgTools header message ID
-         * @param payloadBuff Data payload for the message.
-         * @return true if the message was sent, else false
-         */
-        boolean sendMessage( long msgId, ByteBuffer payloadBuff );
-
-        /**
-         * Get the total number of messages sent
-         *
-         * @return int of total messages sent
-         */
-        int getMessagesSent();
-
-        /**
-         * Get the total number of messages received
-         *
-         * @return int total messages received
-         */
-        int getMessagesReceived();
-
-        /**
-         * Close the connection.
-         */
-        void close() throws IOException;
-    }
 
     private BaseConnectionMgr() {}
 
@@ -84,24 +26,14 @@ public abstract class BaseConnectionMgr extends Thread {
         m_Listeners.add( listener );
     }
 
-    /**
-     * Add a new listener to our callback list.  Listeners are invoked on
-     * the ConnectionManager's thread and should be threadsafe and not hold up
-     * exeuction for too long.
-     *
-     * @param listener Listener to add to the list
-     */
+    @Override
     public void addListener( IConnectionMgrListener listener ) {
         synchronized(m_Lock) {
             m_Listeners.add(listener);
         }
     }
 
-    /**
-     * Remove a listener from the list
-     * @param listener Listener to remove
-     * @return true if the listener was removed, else false
-     */
+    @Override
     public boolean removeListener( IConnectionMgrListener listener ) {
         synchronized (m_Lock) {
             return m_Listeners.remove(listener);
@@ -147,20 +79,13 @@ public abstract class BaseConnectionMgr extends Thread {
 
     private boolean m_HaltPending;
 
-    /**
-     * Stop monitoring and close all active connections.
-     *
-     */
+    @Override
     public void requestHalt() {
         android.util.Log.i(TAG, "requestHalt()");
         m_HaltPending = true;
     }
 
-    /**
-     * Check to see if a halt request is pending...use Thread.getState or isAlive
-     * to confirm when the thread is done.
-     * @return true if halt is pending, else false.
-     */
+    @Override
     public boolean haltPending() {
         return m_HaltPending;
     }

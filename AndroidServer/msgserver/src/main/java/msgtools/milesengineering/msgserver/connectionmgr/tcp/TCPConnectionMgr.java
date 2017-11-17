@@ -15,6 +15,8 @@ import java.util.Set;
 
 import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
+import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
+import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
 
 /**
  * This class opens a TCP server socket and listens for incoming
@@ -32,7 +34,7 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
     /**
      * Private implementation of a IConnection specific to TCP Sockets.
      */
-    private class TCPConnection implements BaseConnectionMgr.IConnection {
+    private class TCPConnection implements IConnection {
         private final Object m_Lock = new Object();   // Sync object
         private int m_SentCount = 0;
         private int m_RecvdCount = 0;
@@ -127,7 +129,7 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
      * @see ServerSocketChannel bind() for more details
      * @param addr Address to bind to
      */
-    public TCPConnectionMgr(InetSocketAddress addr, BaseConnectionMgr.IConnectionMgrListener listener) {
+    public TCPConnectionMgr(InetSocketAddress addr, IConnectionMgrListener listener) {
         super(listener);
         android.util.Log.i(TAG, "TCPConnectionMgr ctor");
 
