@@ -9,13 +9,13 @@ CG_DIR := ../
 install all:: testCpp testPython testJava
 
 testCpp:
-	./TestCpp.py
+	$(PYTHON) TestCpp.py
 
 testPython:
-	./TestPython.py
+	$(PYTHON) TestPython.py
 
 testJava:
-	./TestJava.py
+	$(PYTHON) TestJava.py
 
 include $(MK_DIR)/codegen.mk
 
