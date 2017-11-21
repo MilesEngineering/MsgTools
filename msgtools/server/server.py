@@ -129,12 +129,27 @@ class MessageServer(QtWidgets.QMainWindow):
         fileInfo = QtCore.QFileInfo(logFileName)
         self.settings.setValue("logging/filename", fileInfo.dir().absolutePath())
         self.logButton.setText("Stop " + fileInfo.fileName())
+        self.queryLog()
     
     def stopLog(self):
         if self.logFile != None:
             self.logFile.close()
             self.logFile = None
             self.logButton.setText("Start Logging")
+            self.queryLog()
+
+    def queryLog(self):
+        if hasattr(self.networkMsgs, 'LogStatus'):
+            logStatusMsg = self.networkMsgs.LogStatus()
+            if self.logFile != None:
+                logStatusMsg.SetLogOpen(1)
+                logStatusMsg.SetLogFileName(self.logFile.fileName())
+                if self.logFileType == "JSON":
+                    logStatusMsg.SetLogFileType("JSON")
+            buffer = bytearray(logStatusMsg.rawBuffer())
+            hdr = Messaging.hdr(buffer)
+            for client in self.clients.values():
+                client.sendMsg(hdr)
 
     def onLogButtonClicked(self):
         if self.logFile != None:
@@ -210,6 +225,8 @@ class MessageServer(QtWidgets.QMainWindow):
             self.startLog(logFileName)
         elif hasattr(self.networkMsgs, 'StopLog') and hdr.GetMessageID() == self.networkMsgs.StopLog.ID:
             self.stopLog()
+        elif hasattr(self.networkMsgs, 'QueryLog') and hdr.GetMessageID() == self.networkMsgs.QueryLog.ID:
+            self.queryLog()
         elif hasattr(self.networkMsgs, 'PrivateSubscriptionList') and  hdr.GetMessageID() == self.networkMsgs.PrivateSubscriptionList.ID:
             subListMsg = self.networkMsgs.PrivateSubscriptionList(hdr.rawBuffer())
             privateSubs = []
