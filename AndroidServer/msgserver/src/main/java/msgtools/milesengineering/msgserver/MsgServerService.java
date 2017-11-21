@@ -19,6 +19,7 @@ import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgr;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
+import msgtools.milesengineering.msgserver.connectionmgr.bluetooth.BluetoothConnectionMgr;
 import msgtools.milesengineering.msgserver.connectionmgr.tcp.TCPConnectionMgr;
 import msgtools.milesengineering.msgserver.connectionmgr.websocket.WebsocketConnectionMgr;
 
@@ -43,6 +44,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     //
     private IConnectionMgr m_TCPConnectionMgr;
     private IConnectionMgr m_WebsocketConnectionMgr;
+    private IConnectionMgr m_BluetoothConnectionMgr;
 
     // Keep a class local record of connections - you might be wondering why we don't just get a list
     // of connections from each manager.  Threadsafety is the simple answer.  Rather than making
@@ -94,7 +96,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         m_WebsocketConnectionMgr = new WebsocketConnectionMgr(new InetSocketAddress(WEBSOCKET_PORT), this);
         m_WebsocketConnectionMgr.start();
 
-
+        m_BluetoothConnectionMgr = new BluetoothConnectionMgr(this);
+        m_BluetoothConnectionMgr.start();
     }
 
     @Override
