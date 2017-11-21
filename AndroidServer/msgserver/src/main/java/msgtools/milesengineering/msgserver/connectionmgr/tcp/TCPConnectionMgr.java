@@ -184,8 +184,9 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                             readMessageData(key);
                         }
 
-                        keys.remove(key);
                     }
+
+                    keys.clear();
                 }
             }
         }
