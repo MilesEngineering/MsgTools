@@ -13,31 +13,22 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
     private static final String TAG = BaseConnectionMgr.class.getSimpleName();
 
     private Object m_Lock = new Object();   // Used as a private sync object for thread safety
-    private ArrayList<IConnectionMgrListener> m_Listeners = new ArrayList<IConnectionMgrListener>();
+    private ConnectionListenerHelper m_Listeners;
     private ArrayList<IConnection> m_ActiveConnections = new ArrayList<IConnection>();
 
-    private BaseConnectionMgr() {}
+
+    private BaseConnectionMgr() {
+        m_Listeners = new ConnectionListenerHelper(TAG, this);
+    }
 
     /**
      * Base constructor
+     *
      * @param listener Callback interface for connection events
      */
     public BaseConnectionMgr(IConnectionMgrListener listener) {
-        m_Listeners.add( listener );
-    }
-
-    @Override
-    public void addListener( IConnectionMgrListener listener ) {
-        synchronized(m_Lock) {
-            m_Listeners.add(listener);
-        }
-    }
-
-    @Override
-    public boolean removeListener( IConnectionMgrListener listener ) {
-        synchronized (m_Lock) {
-            return m_Listeners.remove(listener);
-        }
+        m_Listeners = new ConnectionListenerHelper(TAG, this);
+        m_Listeners.addListener(listener);
     }
 
     /**
@@ -50,13 +41,13 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
             android.util.Log.i(TAG, "setup()");
             setup();
 
-            while(haltPending() == false) {
+            while (haltPending() == false) {
                 execute();
             }
 
             android.util.Log.i(TAG, "cleanup()");
             cleanup();
-        } catch(IOException ioe) {
+        } catch (IOException ioe) {
             android.util.Log.w(TAG, "Exception in Manager loop");
             android.util.Log.w(TAG, ioe.toString());
         }
@@ -64,11 +55,10 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
         // Drop all listeners and close all connections
         android.util.Log.i(TAG, "Clearing listeners and closing connections...");
         synchronized (m_Lock) {
-            m_Listeners.clear();
-            for( IConnection c : m_ActiveConnections ) {
+            for (IConnection c : m_ActiveConnections) {
                 try {
                     c.close();
-                } catch(Exception e) {
+                } catch (Exception e) {
                     // Don't care...
                 }
             }
@@ -102,7 +92,7 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
     /**
      * Override this method to do any pre-execution setup.  For instance
      * setup server sockets, managers, or whatever...
-     *
+     * <p>
      * The base implementation does nothing.
      */
     protected void setup() throws IOException {
@@ -125,64 +115,36 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
 
     }
 
-    /**
-     * Adds a new tracked connection and notifies all listeners
-     * a new connection has been created.
-     *
-     * @param newConnection The new connection
-     */
-    protected void onNewConnection(IConnection newConnection) {
-        android.util.Log.i(TAG, "onNewConnection(...)");
-        synchronized(m_Lock) {
-            for( IConnectionMgrListener l : m_Listeners ) {
-                try {
-                    l.onNewConnection(this, newConnection);
-                }
-                catch( Exception e ) {
-                    android.util.Log.w(TAG, e.toString() );
-                }
-            }
+    //
+    // Listener handlers
+    //
+
+    @Override
+    public void addListener(IConnectionMgrListener listener) {
+        m_Listeners.addListener(listener);
+    }
+
+    @Override
+    public boolean removeListener(IConnectionMgrListener listener) {
+        return m_Listeners.removeListener(listener);
+    }
+
+    protected final void onNewConnection(IConnection newConnection) {
+        synchronized (m_Lock) {
+            m_Listeners.onNewConnection(newConnection);
         }
     }
 
-    /**
-     * Removes the connection from the list of tracked connections and
-     * notifies all listeners of the closure.
-     *
-     * @param closedConnection The connection that was closed.
-     */
-    protected void onClosedConnection(IConnection closedConnection) {
-        android.util.Log.i(TAG, "onClosedConnection(...)");
-        synchronized(m_Lock) {
-            for( IConnectionMgrListener l : m_Listeners ) {
-                try {
-                    l.onClosedConnection(this, closedConnection);
-                }
-                catch( Exception e ) {
-                    android.util.Log.w(TAG, e.toString() );
-                }
-            }
+    protected final void onClosedConnection(IConnection closedConnection) {
+        synchronized (m_Lock) {
+            m_Listeners.onClosedConnection(closedConnection);
         }
     }
 
-    /**
-     * Invoke this method when a new message has been received.  All registered listeners
-     * will be notified of the new message.
-     * @param srcConnection The connection that sourced the message
-     * @param msgId The message ID for the message
-     * @param payloadBuff  The data payload for the message
-     */
-    protected void onMessage(IConnection srcConnection, long msgId, ByteBuffer payloadBuff) {
-        android.util.Log.i(TAG, "onMessage(...)");
-        synchronized(m_Lock) {
-            for( IConnectionMgrListener l : m_Listeners ) {
-                try {
-                    l.onMessage(this, srcConnection, msgId, payloadBuff);
-                }
-                catch( Exception e ) {
-                    android.util.Log.w(TAG, e.toString() );
-                }
-            }
+    protected final void onMessage(IConnection srcConnection, ByteBuffer hdr,
+                                   ByteBuffer payloadBuff) {
+        synchronized (m_Lock) {
+            m_Listeners.onMessage(srcConnection, hdr, payloadBuff);
         }
     }
 }

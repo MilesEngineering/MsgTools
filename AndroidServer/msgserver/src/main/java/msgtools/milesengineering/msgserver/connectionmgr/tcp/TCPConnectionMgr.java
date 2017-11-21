@@ -35,63 +35,64 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
      * Private implementation of a IConnection specific to TCP Sockets.
      */
     private class TCPConnection implements IConnection {
-        private final Object m_Lock = new Object();   // Sync object
         private int m_SentCount = 0;
         private int m_RecvdCount = 0;
         private WeakReference<SocketChannel> m_Channel;
-        private NetworkHeader m_SendHeader;
 
         //
         // Buffers for pulling header and payload bytes.
         // These are used as state variables for reading and
         // parsing messages by the execute method.  Don't muck
-        // with then in this class!
+        // with then in this class!  Also don't muck with them
+        // in any other thread!
         //
         public ByteBuffer m_HeaderBuff;
         public ByteBuffer m_PayloadBuff;
-        public NetworkHeader m_Header;
 
         public TCPConnection(SocketChannel channel, int headerSize) {
             m_Channel = new WeakReference<SocketChannel>(channel);
-            m_HeaderBuff = ByteBuffer.allocate(headerSize);
-
-            // Rather then reallocating a header over and over for each message
-            // we send, just recycle...
-            m_SendHeader = new NetworkHeader();
         }
 
         @Override
-        public boolean sendMessage(long msgId, ByteBuffer payloadBuff) {
+        public boolean sendMessage(ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
             boolean retVal = true;
 
-            synchronized (m_Lock) {
+            android.util.Log.d(TAG, "TCPConnection:sendMessage(hdrBuffLen=" + hdrBuff.capacity() +
+                    ", payloadBuffLen="+payloadBuff.capacity());
 
-                if ( m_Channel != null ) {
-                    m_SendHeader.SetMessageID(msgId);
-                    m_SendHeader.SetDataLength(payloadBuff.capacity());
-                    ByteBuffer hdrBuff = m_SendHeader.GetBuffer();
+            if ( m_Channel != null ) {
+                SocketChannel channel = m_Channel.get();
+                if ( channel != null && channel.isConnected() == true ) {
+                    try {
+                        hdrBuff.position(0);
+                        payloadBuff.position(0);
 
-                    SocketChannel channel = m_Channel.get();
-                    if ( channel.isConnected() == true ) {
-                        try {
-                            hdrBuff.position(0);
-                            payloadBuff.position(0);
+                        // TODO: MessageScope doesn't handle two independent write requests correctly
+                        // It treats them as two messages.  GitHub issue #18.
+                        // Stacking the two buffers into one to get around this.  We'll want to remove this
+                        // later as it's just wasting CPU and thrashing memory.
+                        ByteBuffer sendBuf = ByteBuffer.allocate(hdrBuff.capacity()+payloadBuff.capacity());
+                        sendBuf.put(hdrBuff);
+                        sendBuf.put(payloadBuff);
 
-                            while(hdrBuff.remaining() > 0)
-                                channel.write(hdrBuff);
+                        sendBuf.position(0);
+                        while (sendBuf.remaining() > 0)
+                            channel.write(sendBuf);
 
-                            while( payloadBuff.remaining() > 0)
-                                channel.write(payloadBuff);
+// TODO: Put this back in when Issue #18 is fixed - per above
+//                        while(hdrBuff.remaining() > 0)
+//                            channel.write(hdrBuff);
+//
+//                        while( payloadBuff.remaining() > 0)
+//                            channel.write(payloadBuff);
 
-
-
-                            m_SentCount++;
-                        } catch (IOException ioe) {
-                            retVal = false;
-                        }
+                        m_SentCount++;
+                    } catch (IOException ioe) {
+                        retVal = false;
                     }
                 }
             }
+
             return retVal;
         }
 
@@ -107,11 +108,9 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
 
         @Override
         public void close() throws IOException {
-            synchronized (m_Lock) {
-                if (m_Channel != null) {
-                    m_Channel.get().close();
-                    m_Channel = null;
-                }
+            if (m_Channel != null) {
+                m_Channel.get().close();
+                m_Channel = null;
             }
         }
 
@@ -151,83 +150,41 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         m_ServerChannel.configureBlocking(false);
 
         m_Selector = Selector.open();
+
+        m_ServerChannel.register( m_Selector, m_ServerChannel.validOps() );
+
     }
 
     @Override
     protected void execute() throws IOException  {
-        android.util.Log.d(TAG, "execute()");
-
-        // Accept new connections - keep in mind we're non-blocking here
-        SocketChannel newConnection = m_ServerChannel.accept();
-
-        // If we got a new connection set it up for READ selection
-        // Also create a new TCPConnection object for our own tracking purposes.
-        if ( newConnection != null ) {
-            android.util.Log.d(TAG, "New Connection");
-            TCPConnection tcpConn = new TCPConnection(newConnection, NetworkHeader.SIZE);
-
-            // Register with our selector
-            newConnection.configureBlocking( false );   // Must be non-blocking
-            SelectionKey newKey = newConnection.register(m_Selector, SelectionKey.OP_READ, tcpConn);
-
-            // Notify listeners we have a new connection
-            onNewConnection(tcpConn);
-        }
-
+        // android.util.Log.d(TAG, "execute()");
         try {
             // Now check for data...
             if (m_Selector.select(SELECT_TIMEOUT) > 0) {
+
                 Set<SelectionKey> keys = m_Selector.selectedKeys();
-                for( SelectionKey key : keys  ) {
-                    if (key.isReadable() == true) {
-                        TCPConnection tcpConn = (TCPConnection)key.attachment();
-                        SocketChannel channel = (SocketChannel)key.channel();
+                synchronized(keys) {
+                    for (SelectionKey key : keys) {
+                        if (key.isValid() == false) {
+                            TCPConnection connection = (TCPConnection)key.attachment();
+                            key.attach(null);   // Help out the garbage collector
 
-                        // So - problem here - due to the way TCP works (keepalive and all
-                        // that stuff), if you disconnect the client select starts returning
-                        // immediately with read status set, but we get 0 bytes.  Which rails
-                        // the CPU and is really unfriendly.  We could test connection by trying
-                        // to write, but if the client reconnects short after we lose them
-                        // you'll botch the data stream and we don't have a good way to resync.
-                        // We could detect a read of 0 bytes and close the connection but that of
-                        // isn't very friendly.  Have to ponder some more.
+                            // Notify all listeners we're closing this connection
+                            // and clean it up...
+                            onClosedConnection(connection);
+                            key.cancel();
 
-                        // Read enough bytes to construct a network header
-                        if ( tcpConn.m_Header == null ) {
-                            channel.read(tcpConn.m_HeaderBuff);
-
-                            // If we have the full header loaded
-                            if (tcpConn.m_HeaderBuff.remaining() == 0) {
-                                tcpConn.m_Header = new NetworkHeader(tcpConn.m_HeaderBuff);
-                                // MODEBUG: Fix the test generator to make the length an int
-                                // and dump this cast.
-                                tcpConn.m_PayloadBuff =
-                                        ByteBuffer.allocate((int)tcpConn.m_Header.GetDataLength());
-                            }
+                            continue;
                         }
 
-                        // If we have the header the read into the payload until we're done
-                        if( tcpConn.m_Header != null ) {
-                            channel.read(tcpConn.m_PayloadBuff);
+                        if (key.isAcceptable() == true) {
+                            acceptNewConnection();
 
-                            if (tcpConn.m_PayloadBuff.remaining() == 0) {
-                                // We've got everything we need.  Fire off an onMessage
-                                // event with the msgId and payload and reset our state
-                                tcpConn.addMessageReceived();
-                                onMessage(tcpConn, tcpConn.m_Header.GetMessageID(),
-                                        tcpConn.m_PayloadBuff);
-
-                                // Now reset for the next go
-                                tcpConn.m_Header = null;
-                                tcpConn.m_PayloadBuff = null;
-                                tcpConn.m_HeaderBuff.position(0);
-                            }
+                        } else if (key.isReadable() == true) {
+                            readMessageData(key);
                         }
 
                         keys.remove(key);
-                    }
-                    else {
-                        android.util.Log.w(TAG, "Key selected but not readable!");
                     }
                 }
             }
@@ -235,6 +192,81 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         catch(ClosedSelectorException cse) {
             android.util.Log.e(TAG, cse.toString());
             requestHalt();
+        }
+    }
+
+    private void acceptNewConnection() throws IOException {
+        // Accept new connections - keep in mind we're non-blocking here
+        SocketChannel newConnection = m_ServerChannel.accept();
+
+
+        // If we got a new connection set it up for READ selection
+        // Also create a new TCPConnection object for our own tracking purposes.
+        if (newConnection != null) {
+            android.util.Log.d(TAG, "New Connection");
+            TCPConnection tcpConn = new TCPConnection(newConnection, NetworkHeader.SIZE);
+
+            // Register with our selector
+            newConnection.configureBlocking(false);   // Must be non-blocking
+            SelectionKey newKey = newConnection.register(m_Selector, SelectionKey.OP_READ, tcpConn);
+
+            // Notify listeners we have a new connection
+            onNewConnection(tcpConn);
+        }
+    }
+
+    private void readMessageData(SelectionKey key) throws IOException {
+        TCPConnection tcpConn = (TCPConnection) key.attachment();
+        SocketChannel channel = (SocketChannel) key.channel();
+
+        // TODO: So - problem here - due to the way TCP works (keepalive and all
+        // that stuff), if you disconnect the client select starts returning
+        // immediately with read status set, but we get 0 bytes.  Which rails
+        // the CPU and is really unfriendly.  We could test connection by trying
+        // to write, but if the client reconnects short after we lose them
+        // you'll botch the data stream and we don't have a good way to resync.
+        // We could detect a read of 0 bytes and close the connection but that of
+        // isn't very friendly.  Have to ponder some more.
+
+        // No network header?  Then create one...
+        if (tcpConn.m_HeaderBuff == null) {
+            tcpConn.m_HeaderBuff = ByteBuffer.allocate(NetworkHeader.SIZE);
+        }
+
+        // If we have header bytes left to read then read them...
+        if (tcpConn.m_HeaderBuff.remaining() > 0) {
+            channel.read(tcpConn.m_HeaderBuff);
+
+            // If we have the full header loaded
+            if (tcpConn.m_HeaderBuff.remaining() == 0) {
+                // Allocate a new NetworkHeader and get the length...
+                NetworkHeader hdr = new NetworkHeader(tcpConn.m_HeaderBuff);
+
+                // Allocate a buffer for the payload...
+                tcpConn.m_PayloadBuff =
+                        ByteBuffer.allocate((int) hdr.GetDataLength());
+            }
+        }
+
+        // If we have the header the read into the payload until we're done
+        if (tcpConn.m_HeaderBuff.remaining() == 0) {
+
+            channel.read(tcpConn.m_PayloadBuff);
+
+            if (tcpConn.m_PayloadBuff.remaining() == 0) {
+                // Chalk up a new msg received count
+                tcpConn.addMessageReceived();
+
+                // We've got everything we need.  Fire off an onMessage
+                // event with the msgId and payload and reset our state
+                onMessage(tcpConn, tcpConn.m_HeaderBuff,
+                        tcpConn.m_PayloadBuff);
+
+                // Now reset for the next go
+                tcpConn.m_HeaderBuff = null;
+                tcpConn.m_PayloadBuff = null;
+            }
+
         }
     }
 

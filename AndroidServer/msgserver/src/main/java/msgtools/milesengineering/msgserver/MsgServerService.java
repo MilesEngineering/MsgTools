@@ -20,6 +20,7 @@ import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgr;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
 import msgtools.milesengineering.msgserver.connectionmgr.tcp.TCPConnectionMgr;
+import msgtools.milesengineering.msgserver.connectionmgr.websocket.WebsocketConnectionMgr;
 
 /**
  * The main MsgServerService class.  This sets up a service thread, manages incoming messages
@@ -30,6 +31,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
 
     public static final String INTENT_ACTION = "msgtools.milesengineering.msgserver.MsgServerServiceAction";
     private final static int TCP_PORT = 5678;
+    private final static int WEBSOCKET_PORT = 5679;
 
     private final Object m_Lock = new Object();   // Sync object
     private Messenger m_MsgHandler; // For external client binding
@@ -40,6 +42,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     // as Singletons by this class
     //
     private IConnectionMgr m_TCPConnectionMgr;
+    private IConnectionMgr m_WebsocketConnectionMgr;
 
     // Keep a class local record of connections - you might be wondering why we don't just get a list
     // of connections from each manager.  Threadsafety is the simple answer.  Rather than making
@@ -87,6 +90,11 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         // Instantiate our connection managers.
         m_TCPConnectionMgr = new TCPConnectionMgr(new InetSocketAddress(TCP_PORT), this);
         m_TCPConnectionMgr.start();
+
+        m_WebsocketConnectionMgr = new WebsocketConnectionMgr(new InetSocketAddress(WEBSOCKET_PORT), this);
+        m_WebsocketConnectionMgr.start();
+
+
     }
 
     @Override
@@ -174,7 +182,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     //
 
     @Override
-    public void onNewConnection(BaseConnectionMgr mgr, IConnection newConnection) {
+    public void onNewConnection(IConnectionMgr mgr, IConnection newConnection) {
         synchronized (m_Lock) {
             if (m_Connections.put(newConnection, newConnection) == null) {
                 // TODO: Generate an intent for interested parties...
@@ -186,7 +194,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     }
 
     @Override
-    public void onClosedConnection(BaseConnectionMgr mgr, IConnection closedConnection) {
+    public void onClosedConnection(IConnectionMgr mgr, IConnection closedConnection) {
         synchronized (m_Lock) {
             if ( m_Connections.remove(closedConnection) == null ) {
                 android.util.Log.w(TAG, "Attempted to remove a closed connection that is not being tracked");
@@ -197,8 +205,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     }
 
     @Override
-    public void onMessage(BaseConnectionMgr mgr, IConnection srcConnection,
-                          long msgId, ByteBuffer payload) {
+    public void onMessage(IConnectionMgr mgr, IConnection srcConnection,
+                          ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
         synchronized (m_Lock) {
 
             // If we don't know about this connection then flag a warning (probably a mgr bug)
@@ -211,7 +219,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
             for(IConnection c : m_Connections.values()) {
                 try {
                     // Don't echo messages back to the sender
-                    if (c != srcConnection && c.sendMessage(msgId, payload) == false) {
+                    if (c != srcConnection && c.sendMessage(hdrBuff, payloadBuff) == false) {
                         // TODO: When we have  a friendly connection name log it here
                         android.util.Log.w(TAG, "Message not sent by connection: ");
                     }

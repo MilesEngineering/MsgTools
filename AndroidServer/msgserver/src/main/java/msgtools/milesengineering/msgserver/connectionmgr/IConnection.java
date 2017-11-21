@@ -12,11 +12,11 @@ public interface IConnection {
      * Send a  message on this connection. The message will be converted
      * to use a header appropriate to it's underlying transport before sending.
      *
-     * @param msgId MsgTools header message ID
+     * @param hdrBuff Buffer of Header Data
      * @param payloadBuff Data payload for the message.
      * @return true if the message was sent, else false
      */
-    boolean sendMessage(long msgId, ByteBuffer payloadBuff);
+    boolean sendMessage(ByteBuffer hdrBuff, ByteBuffer payloadBuff);
 
     /**
      * Get the total number of messages sent
