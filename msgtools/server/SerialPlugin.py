@@ -10,6 +10,8 @@ from msgtools.lib.messaging import Messaging
 from NetworkHeader import NetworkHeader
 
 import ctypes
+import struct
+import sys
 
 def Crc16(data):
     crc = 0;
