@@ -5,11 +5,13 @@ from PyQt5.QtCore import QDateTime
 from PyQt5.QtSerialPort import QSerialPortInfo
 from PyQt5.QtSerialPort import QSerialPort
 
-from Messaging import *
+from msgtools.lib.messaging import Messaging
 
 from NetworkHeader import NetworkHeader
 
 import ctypes
+import struct
+import sys
 
 def Crc16(data):
     crc = 0;
