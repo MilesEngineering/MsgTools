@@ -223,7 +223,7 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
 def loadlanguage(languageName):
     # assume the languageName is a subdirectory of the parser's location,
     # and try loading a language from there
-    languageDir = os.path.dirname(__file__) + "/" + languageFilename
+    languageDir = os.path.dirname(os.path.realpath(__file__)) + "/" + languageFilename
     if os.path.isdir(languageDir):
         sys.path.append(os.path.abspath(languageDir))
         return __import__('language')
