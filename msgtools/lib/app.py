@@ -59,35 +59,45 @@ class App(QtWidgets.QMainWindow):
         # initialize the read function to None, so it's not accidentally called
         self.readBytesFn = None
 
-        self.msgLib = Messaging(None, 0, headerName)
+        self.msgLib = Messaging(None, 1, headerName)
         
         self.OpenConnection()
 
     # this function opens a connection, and returns the connection object.
     def OpenConnection(self):
-        #print("\n\ndone reading message definitions, opening the connection ", self.connectionType, " ", self.connectionName)
+        print("\n\ndone reading message definitions, opening the connection ", self.connectionType, " ", self.connectionName)
 
         if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
-            (ip, port) = self.connectionName.split(":")
-            if(ip == None):
-                ip = "127.0.0.1"
+            if "ws:" in self.connectionName:
+                print ("websocket")
+                from PyQt5.QtWebSockets import QWebSocket
+                print ("creating websocket")
+                self.connection = QWebSocket()
+                print ("opening websocket")
+                self.connection.open(self.connectionName)
+                self.connection.binaryMessageReceived.connect(self.processBinaryMessage)
+                self.sendBytesFn = self.connection.sendBinaryMessage
+                print("done websocket")
+            else:
+                (ip, port) = self.connectionName.split(":")
+                if(ip == None):
+                    ip = "127.0.0.1"
 
-            if(port == None):
-                port = "5678"
-            
-            port = int(port)
+                if(port == None):
+                    port = "5678"
+                
+                port = int(port)
 
-            #print("ip is ", ip, ", port is ", port)
-            self.connection = QtNetwork.QTcpSocket(self)
-            self.connection.error.connect(self.displayConnectError)
-            ret = self.connection.readyRead.connect(self.readRxBuffer)
-            self.connection.connectToHost(ip, port)
-            self.readBytesFn = self.connection.read
-            self.sendBytesFn = self.connection.write
-            #print("making connection returned", ret, "for socket", self.connection)
-            self.connection.connected.connect(self.onConnected)
-            self.connection.disconnected.connect(self.onDisconnect)
-            
+                #print("ip is ", ip, ", port is ", port)
+                self.connection = QtNetwork.QTcpSocket(self)
+                self.connection.error.connect(self.displayConnectError)
+                ret = self.connection.readyRead.connect(self.readRxBuffer)
+                self.connection.connectToHost(ip, port)
+                self.readBytesFn = self.connection.read
+                self.sendBytesFn = self.connection.write
+                #print("making connection returned", ret, "for socket", self.connection)
+                self.connection.connected.connect(self.onConnected)
+                self.connection.disconnected.connect(self.onDisconnect)
         elif(self.connectionType.lower() == "file"):
             try:
                 self.connection = open(self.connectionName, 'rb')
@@ -125,6 +135,12 @@ class App(QtWidgets.QMainWindow):
     def displayConnectError(self, socketError):
         self.connectionChanged.emit(False)
         self.statusUpdate.emit('Not Connected('+str(socketError)+'), '+self.connection.errorString())
+
+    # Qt signal/slot based reading of websocket
+    def processBinaryMessage(self, bytes):
+        hdr = Messaging.hdr(bytes.data())
+        # if we got this far, we have a whole message! So, emit the signal
+        self.RxMsg.emit(Messaging.MsgFactory(hdr))
 
     # Qt signal/slot based reading of TCP socket
     def readRxBuffer(self):
