@@ -59,25 +59,33 @@ class App(QtWidgets.QMainWindow):
         # initialize the read function to None, so it's not accidentally called
         self.readBytesFn = None
 
-        self.msgLib = Messaging(None, 1, headerName)
+        self.msgLib = Messaging(None, 0, headerName)
         
         self.OpenConnection()
 
+    def CloseConnection(self):
+        if hasattr(self, 'connection') and (self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
+            if "ws:" in self.connectionName:
+                if self.connection:
+                    self.connection.disconnectFromHost()
+                    self.connection = None
+            else:
+                if self.connection:
+                    self.connection.close()
+                    self.connection = None
+
     # this function opens a connection, and returns the connection object.
     def OpenConnection(self):
-        print("\n\ndone reading message definitions, opening the connection ", self.connectionType, " ", self.connectionName)
+        self.CloseConnection()
 
         if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
             if "ws:" in self.connectionName:
-                print ("websocket")
                 from PyQt5.QtWebSockets import QWebSocket
-                print ("creating websocket")
+                from PyQt5.QtCore import QUrl
                 self.connection = QWebSocket()
-                print ("opening websocket")
-                self.connection.open(self.connectionName)
+                self.connection.open(QUrl(self.connectionName))
                 self.connection.binaryMessageReceived.connect(self.processBinaryMessage)
                 self.sendBytesFn = self.connection.sendBinaryMessage
-                print("done websocket")
             else:
                 (ip, port) = self.connectionName.split(":")
                 if(ip == None):
@@ -96,8 +104,8 @@ class App(QtWidgets.QMainWindow):
                 self.readBytesFn = self.connection.read
                 self.sendBytesFn = self.connection.write
                 #print("making connection returned", ret, "for socket", self.connection)
-                self.connection.connected.connect(self.onConnected)
-                self.connection.disconnected.connect(self.onDisconnect)
+            self.connection.connected.connect(self.onConnected)
+            self.connection.disconnected.connect(self.onDisconnect)
         elif(self.connectionType.lower() == "file"):
             try:
                 self.connection = open(self.connectionName, 'rb')

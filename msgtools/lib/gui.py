@@ -331,14 +331,7 @@ class Gui(App, QtWidgets.QMainWindow):
         userInput, ok = QInputDialog.getText(self, 'Connect',  'Server:', QLineEdit.Normal, self.connectionName)
         if ok:
             self.connectionName = userInput
-            parts = self.connectionName.split(":")
-            hostIp = parts[0]
-            if len(parts) > 1:
-                port = int(parts[1])
-            else:
-                port = 5678
-            print("connecting to " + hostIp + " on port " + str(port))
-            self.connection.connectToHost(hostIp, port)
+            self.OpenConnection()
     
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
@@ -361,15 +354,7 @@ class Gui(App, QtWidgets.QMainWindow):
         self.statusUpdate.emit('')
         if checked:
             self.connectionCheckbox.setText("Connecting")
-            (hostIp, port) = self.connectionName.split(":")
-            if(hostIp == None):
-                hostIp = "127.0.0.1"
-
-            if(port == None):
-                port = "5678"
-            
-            port = int(port)
-            self.connection.connectToHost(hostIp, port)
+            self.OpenConnection()
         else:
             self.connectionCheckbox.setText("NOT Connected")
             self.connection.disconnectFromHost()
