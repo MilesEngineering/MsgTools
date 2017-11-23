@@ -67,11 +67,11 @@ class App(QtWidgets.QMainWindow):
         if hasattr(self, 'connection') and (self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
             if "ws:" in self.connectionName:
                 if self.connection:
-                    self.connection.disconnectFromHost()
+                    self.connection.close()
                     self.connection = None
             else:
                 if self.connection:
-                    self.connection.close()
+                    self.connection.disconnectFromHost()
                     self.connection = None
 
     # this function opens a connection, and returns the connection object.
@@ -83,10 +83,12 @@ class App(QtWidgets.QMainWindow):
                 from PyQt5.QtWebSockets import QWebSocket
                 from PyQt5.QtCore import QUrl
                 self.connection = QWebSocket()
+                #print("opening websocket " + self.connectionName)
                 self.connection.open(QUrl(self.connectionName))
                 self.connection.binaryMessageReceived.connect(self.processBinaryMessage)
                 self.sendBytesFn = self.connection.sendBinaryMessage
             else:
+                #print("opening TCP socket " + self.connectionName)
                 (ip, port) = self.connectionName.split(":")
                 if(ip == None):
                     ip = "127.0.0.1"

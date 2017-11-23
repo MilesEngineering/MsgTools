@@ -324,7 +324,7 @@ class Gui(App, QtWidgets.QMainWindow):
             connectMenu.addAction(connectAction)
             connectMenu.addAction(disconnectAction)
             connectAction.triggered.connect(self.chooseHost)
-            disconnectAction.triggered.connect(self.connection.disconnectFromHost)
+            disconnectAction.triggered.connect(self.CloseConnection)
     
     # open dialog box to choose host to connect to
     def chooseHost(self):
@@ -357,4 +357,4 @@ class Gui(App, QtWidgets.QMainWindow):
             self.OpenConnection()
         else:
             self.connectionCheckbox.setText("NOT Connected")
-            self.connection.disconnectFromHost()
+            self.CloseConnection()
