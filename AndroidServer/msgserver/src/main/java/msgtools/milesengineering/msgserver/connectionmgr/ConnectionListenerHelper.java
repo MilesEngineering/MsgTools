@@ -4,6 +4,8 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.Vector;
 
+import headers.NetworkHeader;
+
 /**
  * Utility class for handling connection listeners...
  */
@@ -55,13 +57,14 @@ public class ConnectionListenerHelper {
         }
     }
 
-    public void onMessage(IConnection srcConnection, ByteBuffer header, ByteBuffer payload) {
+    public void onMessage(IConnection srcConnection, NetworkHeader networkHeader,
+                          ByteBuffer header, ByteBuffer payload) {
         synchronized (m_Lock) {
             android.util.Log.i(m_LogTag, "oMessage(...)");
             IConnectionMgr mgr = m_Mgr.get();
             if ( mgr != null ) {
                 for (IConnectionMgrListener l : m_Listeners) {
-                    l.onMessage(mgr, srcConnection, header, payload);
+                    l.onMessage(mgr, srcConnection, networkHeader, header, payload);
                 }
             }
         }

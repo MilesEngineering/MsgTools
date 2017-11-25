@@ -23,5 +23,6 @@ public interface IConnectionMgrListener {
     /**
      * See BaseConnectionMgr.onMessage
      */
-    void onMessage(IConnectionMgr mgr, IConnection srcConnection, ByteBuffer header, ByteBuffer payload);
+    void onMessage(IConnectionMgr mgr, IConnection srcConnection, NetworkHeader networkHeader,
+                   ByteBuffer header, ByteBuffer payload);
 }

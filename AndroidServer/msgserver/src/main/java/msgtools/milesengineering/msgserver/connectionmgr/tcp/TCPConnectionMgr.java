@@ -54,7 +54,8 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         }
 
         @Override
-        public boolean sendMessage(ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
+        public boolean sendMessage(NetworkHeader networkHeader, ByteBuffer hdrBuff,
+                                   ByteBuffer payloadBuff) {
             boolean retVal = true;
 
             android.util.Log.d(TAG, "TCPConnection:sendMessage(hdrBuffLen=" + hdrBuff.capacity() +
@@ -235,13 +236,14 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         }
 
         // If we have header bytes left to read then read them...
+        NetworkHeader hdr = null;
         if (tcpConn.m_HeaderBuff.remaining() > 0) {
             channel.read(tcpConn.m_HeaderBuff);
 
             // If we have the full header loaded
             if (tcpConn.m_HeaderBuff.remaining() == 0) {
                 // Allocate a new NetworkHeader and get the length...
-                NetworkHeader hdr = new NetworkHeader(tcpConn.m_HeaderBuff);
+                hdr = new NetworkHeader(tcpConn.m_HeaderBuff);
 
                 // Allocate a buffer for the payload...
                 tcpConn.m_PayloadBuff =
@@ -258,9 +260,14 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                 // Chalk up a new msg received count
                 tcpConn.addMessageReceived();
 
+                // If we didn't get the whole payload in one read
+                // then the header will be null.  Recreate it.
+                if(hdr == null)
+                    hdr = new NetworkHeader(tcpConn.m_HeaderBuff);
+
                 // We've got everything we need.  Fire off an onMessage
                 // event with the msgId and payload and reset our state
-                onMessage(tcpConn, tcpConn.m_HeaderBuff,
+                onMessage(tcpConn, hdr, tcpConn.m_HeaderBuff,
                         tcpConn.m_PayloadBuff);
 
                 // Now reset for the next go

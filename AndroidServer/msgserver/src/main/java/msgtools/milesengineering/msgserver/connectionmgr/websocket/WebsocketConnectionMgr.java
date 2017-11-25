@@ -65,7 +65,8 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
         // IConnection methods
         //
         @Override
-        public boolean sendMessage(ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
+        public boolean sendMessage(NetworkHeader networkHeader, ByteBuffer hdrBuff,
+                                   ByteBuffer payloadBuff) {
             boolean retVal = false;
             synchronized (m_Lock) {
                 if (m_Websocket != null) {
@@ -223,7 +224,7 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
                     }
 
                     // Let everybody know about it...
-                    m_Listeners.onMessage(wsc, hdrBuff, payload);
+                    m_Listeners.onMessage(wsc, nh, hdrBuff, payload);
 
                 } else {
                     android.util.Log.w(TAG, "Received message shorter than the header! Dropping it...");

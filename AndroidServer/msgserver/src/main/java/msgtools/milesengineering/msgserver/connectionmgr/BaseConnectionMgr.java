@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
+import headers.NetworkHeader;
+
 /**
  * This class represents a BaseConnectionMgr that abstracts concepts like
  * Bluetooth, Websocket, and TCP type services that watch for new data connections.
@@ -141,10 +143,10 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
         }
     }
 
-    protected final void onMessage(IConnection srcConnection, ByteBuffer hdr,
-                                   ByteBuffer payloadBuff) {
+    protected final void onMessage(IConnection srcConnection, NetworkHeader networkHeader,
+                                   ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
         synchronized (m_Lock) {
-            m_Listeners.onMessage(srcConnection, hdr, payloadBuff);
+            m_Listeners.onMessage(srcConnection, networkHeader, hdrBuff, payloadBuff);
         }
     }
 }

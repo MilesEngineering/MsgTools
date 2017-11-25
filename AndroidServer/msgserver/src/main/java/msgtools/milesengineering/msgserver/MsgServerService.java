@@ -15,7 +15,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Hashtable;
 
-import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
+import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgr;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
@@ -31,6 +31,9 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     private static final String TAG = MsgServerService.class.getSimpleName();
 
     public static final String INTENT_ACTION = "msgtools.milesengineering.msgserver.MsgServerServiceAction";
+
+    private static final int REQUEST_ENABLE_BT = 1;
+
     private final static int TCP_PORT = 5678;
     private final static int WEBSOCKET_PORT = 5679;
 
@@ -96,7 +99,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         m_WebsocketConnectionMgr = new WebsocketConnectionMgr(new InetSocketAddress(WEBSOCKET_PORT), this);
         m_WebsocketConnectionMgr.start();
 
-        m_BluetoothConnectionMgr = new BluetoothConnectionMgr(this);
+        m_BluetoothConnectionMgr = new BluetoothConnectionMgr(this, null);
         m_BluetoothConnectionMgr.start();
     }
 
@@ -208,7 +211,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     }
 
     @Override
-    public void onMessage(IConnectionMgr mgr, IConnection srcConnection,
+    public void onMessage(IConnectionMgr mgr, IConnection srcConnection, NetworkHeader networkHeader,
                           ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
         synchronized (m_Lock) {
 
@@ -222,7 +225,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
             for(IConnection c : m_Connections.values()) {
                 try {
                     // Don't echo messages back to the sender
-                    if (c != srcConnection && c.sendMessage(hdrBuff, payloadBuff) == false) {
+                    if (c != srcConnection && c.sendMessage(networkHeader, hdrBuff,
+                            payloadBuff) == false) {
                         // TODO: When we have  a friendly connection name log it here
                         android.util.Log.w(TAG, "Message not sent by connection: ");
                     }
