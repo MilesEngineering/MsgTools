@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                     for (int i =0; i < servers.length(); i++) {
                         JSONObject obj = servers.getJSONObject(i);
                         sb.append(obj.get("protocol"));
-                        sb.append( ": " );
+                        sb.append( ":/" );
                         sb.append( obj.get("description"));
 
                         m_Servers.add(sb.toString());
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                     }
 
                     // Force a redraw...
-                    m_ListView.invalidate();
+                    m_ListAdapter.notifyDataSetChanged();
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
