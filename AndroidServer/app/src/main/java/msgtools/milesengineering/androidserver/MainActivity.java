@@ -8,19 +8,26 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
+import android.widget.ExpandableListView;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import msgtools.milesengineering.msgserver.MsgServerService;
 import msgtools.milesengineering.msgserver.MsgServerServiceAPI;
 
 public class MainActivity extends AppCompatActivity implements ServiceConnection {
     private static final String TAG = MainActivity.class.getSimpleName();
+
+    AppExpandableListAdapter m_ListAdapter;
+    ExpandableListView m_ListView;
+    List<String> m_ListHeaders;
+    HashMap<String, List<String>> m_ListChildren;
 
     private MsgServerServiceAPI m_MsgServerAPI;
     private BroadcastReceiver m_BroadcastReceiver;
@@ -51,14 +58,17 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        // Setup our list view
+        m_ListView = (ExpandableListView) findViewById(R.id.listview);
+
+        // TODO: Hack this out in favor of a request to the sevice
+        // followed by handling the resulting intent of content.
+        prepareListData();
+        m_ListAdapter = new AppExpandableListAdapter(this, m_ListHeaders, m_ListChildren);
+        m_ListView.setAdapter(m_ListAdapter);
+
+        m_ListView.expandGroup(0);
+        m_ListView.expandGroup(1);
 
         // Instantiate a broadcast receiver.  This class automatically
         // registers, and invokes calls on the activity.  Could
@@ -141,5 +151,34 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     public void onBindingDied(ComponentName name) {
         android.util.Log.i(TAG, "onBindingDied(...)");
         // TODO: Fill in what we need, if anything.
+    }
+
+    /*
+     * Preparing the list data
+     */
+    private void prepareListData() {
+
+        m_ListHeaders = new ArrayList<String>();
+        m_ListChildren = new HashMap<String, List<String>>();
+
+        // Adding child data
+        m_ListHeaders.add("Servers");
+        m_ListHeaders.add("Connections");
+
+        // Adding child data
+        List<String> servers = new ArrayList<String>();
+        servers.add("TCP: 192.168.0.10:5678");
+        servers.add("WS: 192.168.0.10:5679");
+        servers.add("BT: 00:00:00:00");
+
+        List<String> connections = new ArrayList<String>();
+        connections.add("TCP: 192.168.42.12");
+        connections.add("TCP: 192.168.42.13");
+        connections.add("WS: 192.168.42.13");
+        connections.add("BT: Goodyear <00:00:00:02>");
+
+
+        m_ListChildren.put(m_ListHeaders.get(0), servers); // Header, Child data
+        m_ListChildren.put(m_ListHeaders.get(1), connections);
     }
 }
