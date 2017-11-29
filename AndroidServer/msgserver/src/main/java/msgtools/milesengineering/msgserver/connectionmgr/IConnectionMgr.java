@@ -42,4 +42,20 @@ public interface IConnectionMgr {
      */
     boolean haltPending();
 
+    /**
+     * Retrieve a string representing the protocol this connection manager handles
+     * e.g. TCP, WS or Websocket, etc.
+     *
+     * @return A three chracter or less protocol indicator
+     */
+    String protocol();
+
+    /**
+     * Retrieve a description of the server - suggested descriptions might be the IP address of
+     * the server socket, or the MAC address of the host adapter.  Ideally some information that
+     * would be of use to an end user in using this server.
+     *
+     * @return A short string description
+     */
+    String description();
 }

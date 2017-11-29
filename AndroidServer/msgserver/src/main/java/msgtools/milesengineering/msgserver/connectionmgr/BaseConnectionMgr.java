@@ -131,6 +131,12 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
         return m_Listeners.removeListener(listener);
     }
 
+    @Override
+    public abstract String protocol();
+
+    @Override
+    public abstract String description();
+
     protected final void onNewConnection(IConnection newConnection) {
         synchronized (m_Lock) {
             m_Listeners.onNewConnection(newConnection);

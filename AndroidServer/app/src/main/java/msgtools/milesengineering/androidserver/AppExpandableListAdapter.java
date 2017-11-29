@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * Expandable list adapter for our data set.  Credit where due: Adapted from a tutorial
+ * Expandable list adapter for our data set.  Credit where due: Adopted from a tutorial
  * on Android hive at https://www.androidhive.info/2013/07/android-expandable-list-view-tutorial/
  */
 public class AppExpandableListAdapter extends BaseExpandableListAdapter {

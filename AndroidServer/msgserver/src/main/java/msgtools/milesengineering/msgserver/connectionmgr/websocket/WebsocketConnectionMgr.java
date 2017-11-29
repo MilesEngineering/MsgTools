@@ -8,6 +8,7 @@ import org.java_websocket.server.WebSocketServer;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Hashtable;
@@ -17,6 +18,7 @@ import msgtools.milesengineering.msgserver.connectionmgr.ConnectionListenerHelpe
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgr;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
+import msgtools.milesengineering.msgserver.connectionmgr.utils;
 
 /**
  * ConnectionMgr implementation for handling Websocket connections. We're basically
@@ -30,10 +32,12 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
             new Hashtable<WebSocket, WebsocketConnection>();
     private ConnectionListenerHelper m_Listeners;
     private boolean m_HaltPending;
+    private InetSocketAddress m_SocketAddress;
 
     public WebsocketConnectionMgr(InetSocketAddress addr, IConnectionMgrListener listener ) {
         super(addr);
         android.util.Log.i(TAG, "WebsocketConnectionMgr(...)");
+        m_SocketAddress = addr;
         this.setReuseAddr(true);
 
         m_Listeners = new ConnectionListenerHelper(TAG, this);
@@ -158,6 +162,15 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
     @Override
     public boolean haltPending() {
         return m_HaltPending;
+    }
+
+    @Override
+    public String protocol() { return "WS"; }
+
+    @Override
+    public String description() {
+        InetAddress ia = utils.getHostAddress();
+        return ia.toString() + ":" + m_SocketAddress.getPort();
     }
 
     //

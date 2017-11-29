@@ -2,6 +2,7 @@ package msgtools.milesengineering.msgserver.connectionmgr.tcp;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
@@ -17,6 +18,7 @@ import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
+import msgtools.milesengineering.msgserver.connectionmgr.utils;
 
 /**
  * This class opens a TCP server socket and listens for incoming
@@ -29,7 +31,7 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
     private ServerSocketChannel m_ServerChannel;
     private Selector m_Selector;
 
-    private SocketAddress m_SocketAddress;
+    private InetSocketAddress m_SocketAddress;
 
     /**
      * Private implementation of a IConnection specific to TCP Sockets.
@@ -135,6 +137,15 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
 
         // Don't start anything up until start is called...
         m_SocketAddress = addr;
+    }
+
+    @Override
+    public String protocol() { return "TCP"; }
+
+    @Override
+    public String description() {
+        InetAddress ia = utils.getHostAddress();
+        return ia.toString() + ":" + m_SocketAddress.getPort();
     }
 
     @Override

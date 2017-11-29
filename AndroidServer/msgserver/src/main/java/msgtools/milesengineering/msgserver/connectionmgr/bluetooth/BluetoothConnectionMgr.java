@@ -29,6 +29,13 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
         m_HostContext = new WeakReference<Context>(hostContext);
     }
 
+    @Override
+    public String protocol() { return "BT"; }
+
+    @Override
+    public String description() { return m_BluetoothAdapter == null ? "Bluetooth Not Supported" :
+            m_BluetoothAdapter.getAddress().toString(); }
+
     //
     // Base Connection Mgr methods...
     @Override

@@ -14,6 +14,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ExpandableListView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,8 +31,10 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
     AppExpandableListAdapter m_ListAdapter;
     ExpandableListView m_ListView;
-    List<String> m_ListHeaders;
-    HashMap<String, List<String>> m_ListChildren;
+
+    // Our data model of servers and connections
+    List<String> m_Servers = new ArrayList<String>();
+    List<String> m_Connections = new ArrayList<String>();
 
     private MsgServerServiceAPI m_MsgServerAPI;
     private BroadcastReceiver m_BroadcastReceiver;
@@ -47,6 +54,29 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         @Override
         public void onReceive(final Context context, final Intent intent) {
             android.util.Log.i(TAG, "AppBroadcastReceiver::onReceive(...)");
+            if (intent.getAction() == MsgServerService.INTENT_SEND_SERVERS) {
+                String json = (String) intent.getExtras().get(Intent.EXTRA_TEXT);
+                try {
+                    // Brute force unwind of the intent payload into a local dispay
+                    // string...
+                    JSONArray servers = (JSONArray) new JSONTokener(json).nextValue();
+                    StringBuilder sb = new StringBuilder();
+                    for (int i =0; i < servers.length(); i++) {
+                        JSONObject obj = servers.getJSONObject(i);
+                        sb.append(obj.get("protocol"));
+                        sb.append( ": " );
+                        sb.append( obj.get("description"));
+
+                        m_Servers.add(sb.toString());
+                        sb.setLength(0);
+                    }
+
+                    // Force a redraw...
+                    m_ListView.invalidate();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -60,15 +90,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
         // Setup our list view
         m_ListView = (ExpandableListView) findViewById(R.id.listview);
-
-        // TODO: Hack this out in favor of a request to the sevice
-        // followed by handling the resulting intent of content.
-        prepareListData();
-        m_ListAdapter = new AppExpandableListAdapter(this, m_ListHeaders, m_ListChildren);
-        m_ListView.setAdapter(m_ListAdapter);
-
-        m_ListView.expandGroup(0);
-        m_ListView.expandGroup(1);
+        prepareList();
 
         // Instantiate a broadcast receiver.  This class automatically
         // registers, and invokes calls on the activity.  Could
@@ -80,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
         // Register to receive intents from the MsgServer for UI updates...
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(MsgServerService.INTENT_ACTION);
+        intentFilter.addAction(MsgServerService.INTENT_SEND_SERVERS);
         registerReceiver(m_BroadcastReceiver, intentFilter);
 
         // Start the Server service
@@ -135,6 +157,10 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
         if ( m_MsgServerAPI == null ) {
             m_MsgServerAPI = new MsgServerServiceAPI(service);
+
+            // Immediately ask for all available servers
+            // From here we're going to assume the list is static...
+            m_MsgServerAPI.requestServers();
         }
         else {
             android.util.Log.e(TAG, "Unexpected service connection!");
@@ -156,29 +182,25 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     /*
      * Preparing the list data
      */
-    private void prepareListData() {
+    private void prepareList() {
+        List<String> listHeaders;
+        HashMap<String, List<String>> listData;
 
-        m_ListHeaders = new ArrayList<String>();
-        m_ListChildren = new HashMap<String, List<String>>();
+        listHeaders = new ArrayList<String>();
+        listData = new HashMap<String, List<String>>();
 
-        // Adding child data
-        m_ListHeaders.add("Servers");
-        m_ListHeaders.add("Connections");
+        // Setup headers
+        listHeaders.add("Servers");
+        listHeaders.add("Connections");
 
-        // Adding child data
-        List<String> servers = new ArrayList<String>();
-        servers.add("TCP: 192.168.0.10:5678");
-        servers.add("WS: 192.168.0.10:5679");
-        servers.add("BT: 00:00:00:00");
+        listData.put(listHeaders.get(0), m_Servers); // Header, Child data
+        listData.put(listHeaders.get(1), m_Connections);
 
-        List<String> connections = new ArrayList<String>();
-        connections.add("TCP: 192.168.42.12");
-        connections.add("TCP: 192.168.42.13");
-        connections.add("WS: 192.168.42.13");
-        connections.add("BT: Goodyear <00:00:00:02>");
+        m_ListAdapter = new AppExpandableListAdapter(this, listHeaders, listData);
+        m_ListView.setAdapter(m_ListAdapter);
 
-
-        m_ListChildren.put(m_ListHeaders.get(0), servers); // Header, Child data
-        m_ListChildren.put(m_ListHeaders.get(1), connections);
+        // Pre-expand
+        m_ListView.expandGroup(0);
+        m_ListView.expandGroup(1);
     }
 }

@@ -15,6 +15,11 @@ public class MsgServerServiceAPI {
     private Messenger m_Service;
 
     /**
+     * Request the active servers
+     */
+    public final static int ID_REQUEST_SERVERS = 1;
+
+    /**
      * New instance from a binder
      * @param service The IBinder interface returned from the service on bind request.
      */
@@ -41,7 +46,11 @@ public class MsgServerServiceAPI {
         return retVal;
     }
 
-    public void test() {
-        sendMessage( 0 );
+    /**
+     * Invoke to request that the MsgServerService respond with an intent
+     * that provides a list of active servers.
+     */
+    public void requestServers() {
+        sendMessage(ID_REQUEST_SERVERS);
     }
 }

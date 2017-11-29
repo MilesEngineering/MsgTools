@@ -11,8 +11,12 @@ import android.os.Messenger;
 import android.os.Process;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Hashtable;
 
 import headers.NetworkHeader;
@@ -30,16 +34,14 @@ import msgtools.milesengineering.msgserver.connectionmgr.websocket.WebsocketConn
 public class MsgServerService extends Service implements Handler.Callback, IConnectionMgrListener {
     private static final String TAG = MsgServerService.class.getSimpleName();
 
-    public static final String INTENT_ACTION = "msgtools.milesengineering.msgserver.MsgServerServiceAction";
-
-    private static final int REQUEST_ENABLE_BT = 1;
+    public static final String INTENT_SEND_SERVERS = "msgtools.milesengineering.msgserver.MsgServerServiceSendServers";
 
     private final static int TCP_PORT = 5678;
     private final static int WEBSOCKET_PORT = 5679;
 
     private final Object m_Lock = new Object();   // Sync object
-    private Messenger m_MsgHandler; // For external client binding
-    private Handler m_MsgServerHandler; // To pump messages on this service...
+    private Messenger m_MsgHandler;               // For external client binding
+    private Handler m_MsgServerHandler;           // To pump messages on this service...
 
     //
     // Connection Managers which handle connections on various transports for us.  Treated
@@ -48,6 +50,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     private IConnectionMgr m_TCPConnectionMgr;
     private IConnectionMgr m_WebsocketConnectionMgr;
     private IConnectionMgr m_BluetoothConnectionMgr;
+
+    private String m_ServersJSON = "";  // List of connection managers in JSON for when a client app asks
 
     // Keep a class local record of connections - you might be wondering why we don't just get a list
     // of connections from each manager.  Threadsafety is the simple answer.  Rather than making
@@ -65,6 +69,16 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         @Override
         public void handleMessage(Message msg) {
             switch(msg.what) {
+                case MsgServerServiceAPI.ID_REQUEST_SERVERS:
+                    android.util.Log.d(TAG, "Servers Request Received");
+
+                    Intent sendIntent = new Intent();
+                    sendIntent.setAction(MsgServerService.INTENT_SEND_SERVERS);
+                    sendIntent.putExtra(Intent.EXTRA_TEXT, m_ServersJSON);
+
+                    sendBroadcast(sendIntent);
+
+                    break;
                 default:
                     android.util.Log.w(TAG, "Unknown message type received by MsgServer.");
                     super.handleMessage(msg);
@@ -101,6 +115,11 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
 
         m_BluetoothConnectionMgr = new BluetoothConnectionMgr(this, null);
         m_BluetoothConnectionMgr.start();
+
+        // Build up a servers JSON list for when clients ask.  This is static for now since we
+        // hard code the servers.  If we move to dynamic model you might want to maintain a list
+        // and rebuild on the fly...
+        buildServersJSON();
     }
 
     @Override
@@ -123,18 +142,6 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         if (flags == START_FLAG_REDELIVERY) {
             return START_NOT_STICKY;
         }
-
-        // MODEBUG: Send a broadcast event to test App receipt
-        Intent sendIntent = new Intent();
-        sendIntent.setAction(MsgServerService.INTENT_ACTION);
-        sendIntent.putExtra(Intent.EXTRA_TEXT, "TEST SERVER");
-
-        sendBroadcast(sendIntent);
-
-        // MODEBUG: Send a message to test our message loop
-        Message msg = m_MsgServerHandler.obtainMessage();
-        msg.arg1 = startId;
-        m_MsgServerHandler.sendMessage(msg);
 
         return START_STICKY;
     }
@@ -170,14 +177,10 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     public boolean handleMessage(Message msg) {
         android.util.Log.i(TAG, "MessageHandler::handleMessage(...)");
 
-        // Normally we would do some work here, like download a file.
-        // For our sample, we just sleep for 5 seconds.
-        try {
-            // TODO: Insert message handling here - sleep for now
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            // Restore interrupt status.
-            Thread.currentThread().interrupt();
+        // This is where we process messages from our bound clients
+        switch(msg.what) {
+            default:
+                android.util.Log.w(TAG, "Received unknown message: " + msg.what);
         }
 
         return false;   // Keep going
@@ -242,5 +245,28 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         }
     }
 
+    //
+    // Misc utility methods
+    //
+
+
+    private void buildServersJSON() {
+        // Brute force method here - nothing fancy
+        IConnectionMgr[] managers = new IConnectionMgr[3];
+        managers[0] = m_BluetoothConnectionMgr;
+        managers[1] = m_TCPConnectionMgr;
+        managers[2] = m_WebsocketConnectionMgr;
+
+        JSONArray jarray = new JSONArray();
+        for( IConnectionMgr cm : managers ) {
+            Hashtable<String,String> map = new Hashtable<String,String>();
+            map.put("protocol", cm.protocol());
+            map.put("description", cm.description());
+
+            jarray.put(JSONObject.wrap(map));
+        }
+
+        m_ServersJSON = jarray.toString();
+    }
 
 }
