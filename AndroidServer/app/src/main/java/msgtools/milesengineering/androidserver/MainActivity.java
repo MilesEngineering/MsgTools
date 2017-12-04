@@ -39,46 +39,6 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     private MsgServerServiceAPI m_MsgServerAPI;
     private BroadcastReceiver m_BroadcastReceiver;
 
-    /**
-     * Simple utility class - designed to parse and invoke methods on
-     * the MainActivity
-     */
-    private class AppBroadcastReceiver extends BroadcastReceiver {
-        private MainActivity m_MainActivity;
-
-        public AppBroadcastReceiver(MainActivity activity) {
-            super();
-            m_MainActivity = activity;
-        }
-
-        @Override
-        public void onReceive(final Context context, final Intent intent) {
-            android.util.Log.i(TAG, "AppBroadcastReceiver::onReceive(...)");
-            if (intent.getAction() == MsgServerService.INTENT_SEND_SERVERS) {
-                String json = (String) intent.getExtras().get(Intent.EXTRA_TEXT);
-                try {
-                    // Brute force unwind of the intent payload into a local dispay
-                    // string...
-                    JSONArray servers = (JSONArray) new JSONTokener(json).nextValue();
-                    StringBuilder sb = new StringBuilder();
-                    for (int i =0; i < servers.length(); i++) {
-                        JSONObject obj = servers.getJSONObject(i);
-                        sb.append(obj.get("protocol"));
-                        sb.append( ":/" );
-                        sb.append( obj.get("description"));
-
-                        m_Servers.add(sb.toString());
-                        sb.setLength(0);
-                    }
-
-                    // Force a redraw...
-                    m_ListAdapter.notifyDataSetChanged();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,18 +52,9 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         m_ListView = (ExpandableListView) findViewById(R.id.listview);
         prepareList();
 
-        // Instantiate a broadcast receiver.  This class automatically
-        // registers, and invokes calls on the activity.  Could
-        // hand an interface in, instead of the MainActivity to make this
-        // more portable but it's a small amount of code and others can just copy
-        // and paste...
-
-        m_BroadcastReceiver = new AppBroadcastReceiver(this);
-
-        // Register to receive intents from the MsgServer for UI updates...
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(MsgServerService.INTENT_SEND_SERVERS);
-        registerReceiver(m_BroadcastReceiver, intentFilter);
+        // Instantiate a broadcast receiver.  This is where all the service intent
+        // handling, and list updating happens.
+        m_BroadcastReceiver = new AppBroadcastReceiver(this, m_Servers, m_Connections, m_ListAdapter);
 
         // Start the Server service
         Intent intent = new Intent(this, MsgServerService.class);
@@ -161,6 +112,9 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             // Immediately ask for all available servers
             // From here we're going to assume the list is static...
             m_MsgServerAPI.requestServers();
+
+            // Also ask for a list of all active connections
+            m_MsgServerAPI.requestConnections();
         }
         else {
             android.util.Log.e(TAG, "Unexpected service connection!");
@@ -192,6 +146,9 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         // Setup headers
         listHeaders.add("Servers");
         listHeaders.add("Connections");
+
+        m_Servers.add("None");
+        m_Connections.add("None");
 
         listData.put(listHeaders.get(0), m_Servers); // Header, Child data
         listData.put(listHeaders.get(1), m_Connections);

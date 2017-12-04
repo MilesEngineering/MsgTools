@@ -35,6 +35,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     private static final String TAG = MsgServerService.class.getSimpleName();
 
     public static final String INTENT_SEND_SERVERS = "msgtools.milesengineering.msgserver.MsgServerServiceSendServers";
+    public static final String INTENT_SEND_CONNECTIONS = "msgtools.milesengineering.msgserver.MsgServerServiceSendConnection";
 
     private final static int TCP_PORT = 5678;
     private final static int WEBSOCKET_PORT = 5679;
@@ -63,7 +64,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
 
 
     /**
-     * Private utility class that processes Messages from bound clients
+     * Private utility class that processes Messages from bound clients.  This is where our
+     * MsgServerServiceAPI messages are processed.
      */
     private class MsgServerAPIHandler extends Handler {
         @Override
@@ -71,13 +73,11 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
             switch(msg.what) {
                 case MsgServerServiceAPI.ID_REQUEST_SERVERS:
                     android.util.Log.d(TAG, "Servers Request Received");
-
-                    Intent sendIntent = new Intent();
-                    sendIntent.setAction(MsgServerService.INTENT_SEND_SERVERS);
-                    sendIntent.putExtra(Intent.EXTRA_TEXT, m_ServersJSON);
-
-                    sendBroadcast(sendIntent);
-
+                    sendServersIntent();
+                    break;
+                case MsgServerServiceAPI.ID_REQUEST_CONNECTIONS:
+                    android.util.Log.d(TAG, "Connections Request Received");
+                    sendConnectionsIntent();
                     break;
                 default:
                     android.util.Log.w(TAG, "Unknown message type received by MsgServer.");
@@ -246,9 +246,37 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     }
 
     //
-    // Misc utility methods
+    // MsgServerServiceAPI Handlers
     //
 
+
+    private void sendServersIntent() {
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(MsgServerService.INTENT_SEND_SERVERS);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, m_ServersJSON);
+
+        sendBroadcast(sendIntent);
+    }
+
+    private void sendConnectionsIntent() {
+        // Build up a full list of connections...going to again do brute force JSON
+        // conversion. Build up a list of connections...
+        JSONArray jarray = new JSONArray();
+        for( IConnection c : m_Connections.values() ) {
+            jarray.put(getConnectionJSON(c));
+        }
+
+        // Broadcast the list
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(MsgServerService.INTENT_SEND_CONNECTIONS);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, jarray.toString());
+
+        sendBroadcast(sendIntent);
+    }
+
+    //
+    // Misc utility methods
+    //
 
     private void buildServersJSON() {
         // Brute force method here - nothing fancy
@@ -269,4 +297,15 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         m_ServersJSON = jarray.toString();
     }
 
+    private JSONObject getConnectionJSON(IConnection conn) {
+        // TODO: Probably ought to create a utility class for this so clients
+        // can stay in sync...
+        Hashtable<String,String> map = new Hashtable<>();
+        map.put("id", Integer.toString(conn.hashCode()));
+        map.put("description", conn.getDescription());
+        map.put("recvCount", Integer.toString(conn.getMessagesReceived()));
+        map.put("sendCount", Integer.toString(conn.getMessagesSent()));
+
+        return (JSONObject)JSONObject.wrap(map);
+    }
 }

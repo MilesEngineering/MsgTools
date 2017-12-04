@@ -22,6 +22,13 @@ public interface IConnection {
     boolean sendMessage(NetworkHeader networkHeader, ByteBuffer hdrBuff, ByteBuffer payloadBuff);
 
     /**
+     * Get a simple string description for this connection. The description
+     * should indicate something about the connected client so apps can display
+     * something unique and meaningful.
+     */
+    String getDescription();
+
+    /**
      * Get the total number of messages sent
      *
      * @return int of total messages sent

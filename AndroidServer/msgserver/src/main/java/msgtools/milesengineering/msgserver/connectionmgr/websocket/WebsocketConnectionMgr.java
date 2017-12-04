@@ -105,6 +105,17 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
         }
 
         @Override
+        public String getDescription() {
+            String retVal = "Unknown client";
+            WebSocket ws = m_Websocket.get();
+
+            if ( ws != null )
+                retVal = ws.getRemoteSocketAddress().toString();
+
+            return retVal;
+        }
+
+        @Override
         public int getMessagesSent() {
             return m_SentCount;
         }

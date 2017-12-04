@@ -18,6 +18,7 @@ public class MsgServerServiceAPI {
      * Request the active servers
      */
     public final static int ID_REQUEST_SERVERS = 1;
+    public final static int ID_REQUEST_CONNECTIONS = 2;
 
     /**
      * New instance from a binder
@@ -53,4 +54,10 @@ public class MsgServerServiceAPI {
     public void requestServers() {
         sendMessage(ID_REQUEST_SERVERS);
     }
+
+    /**
+     * Invoke to request that the MsgServerService respond with an intent
+     * that provides a list of active connections.
+     */
+    public void requestConnections() { sendMessage(ID_REQUEST_CONNECTIONS); }
 }

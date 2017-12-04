@@ -100,6 +100,20 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         }
 
         @Override
+        public String getDescription() {
+            String retVal = "Unknown client";
+            SocketChannel chan = m_Channel.get();
+            if ( chan != null ) {
+                try {
+                    retVal = chan.getRemoteAddress().toString();
+                } catch( IOException ioe ) {
+                    retVal = ioe.getMessage();
+                }
+            }
+            return retVal;
+        }
+
+        @Override
         public int getMessagesSent() {
             return m_SentCount;
         }
