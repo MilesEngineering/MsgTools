@@ -10,6 +10,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import java.lang.reflect.Array;
+import java.util.Collections;
 import java.util.List;
 
 import msgtools.milesengineering.msgserver.MsgServerService;
@@ -44,6 +46,7 @@ class AppBroadcastReceiver extends BroadcastReceiver {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MsgServerService.INTENT_SEND_SERVERS);
         intentFilter.addAction(MsgServerService.INTENT_SEND_CONNECTIONS);
+        intentFilter.addAction(MsgServerService.INTENT_SEND_NEW_CONNECTION);
         activity.registerReceiver(this, intentFilter);
     }
 
@@ -61,6 +64,9 @@ class AppBroadcastReceiver extends BroadcastReceiver {
             handleServersIntent(intent);
         else if (intent.getAction().equals(MsgServerService.INTENT_SEND_CONNECTIONS)) {
             handleConnectionsIntent(intent);
+        }
+        else if (intent.getAction().equals(MsgServerService.INTENT_SEND_NEW_CONNECTION)) {
+            handleNewConnectionIntent(intent);
         }
     }
 
@@ -139,6 +145,39 @@ class AppBroadcastReceiver extends BroadcastReceiver {
             // new connections if we have to clear the "None" default list value
             // or not...
             m_NoConnections = false;
+        }
+
+        // Force a redraw...
+        m_ListAdapter.notifyDataSetChanged();
+    }
+
+    private void handleNewConnectionIntent(Intent intent) {
+        android.util.Log.i(TAG, "handleNewConnectionIntent");
+
+        String json = (String) intent.getExtras().get(Intent.EXTRA_TEXT);
+        try {
+            // Parse the new connection...
+            JSONObject connection = (JSONObject) new JSONTokener(json).nextValue();
+
+            // Build up a display string
+            // TODO: Would be prettier to do a custom list view with a protocol field
+            // or icon.  Just stringing it for now...
+            String description = connection.getString("description");
+            String protocol = connection.getString("protocol");
+            String displayText = protocol + ":/" + description;
+
+            // If this is our first connection then clear our placeholder item
+            if (m_NoConnections == true) {
+                m_ConnectionList.clear();
+                m_NoConnections = false;
+                m_ConnectionList.add(displayText);
+            }
+            else if (m_ConnectionList.contains(displayText) == false) {
+                m_ConnectionList.add(displayText);
+                Collections.sort(m_ConnectionList);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
         // Force a redraw...

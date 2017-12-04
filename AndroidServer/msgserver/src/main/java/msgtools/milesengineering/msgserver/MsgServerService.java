@@ -12,6 +12,7 @@ import android.os.Process;
 import android.widget.Toast;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.InetSocketAddress;
@@ -36,6 +37,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
 
     public static final String INTENT_SEND_SERVERS = "msgtools.milesengineering.msgserver.MsgServerServiceSendServers";
     public static final String INTENT_SEND_CONNECTIONS = "msgtools.milesengineering.msgserver.MsgServerServiceSendConnection";
+    public static final String INTENT_SEND_NEW_CONNECTION = "msgtools.milesengineering.msgserver.MsgServerServiceSendNewConnection";
 
     private final static int TCP_PORT = 5678;
     private final static int WEBSOCKET_PORT = 5679;
@@ -70,18 +72,20 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     private class MsgServerAPIHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
-            switch(msg.what) {
-                case MsgServerServiceAPI.ID_REQUEST_SERVERS:
-                    android.util.Log.d(TAG, "Servers Request Received");
-                    sendServersIntent();
-                    break;
-                case MsgServerServiceAPI.ID_REQUEST_CONNECTIONS:
-                    android.util.Log.d(TAG, "Connections Request Received");
-                    sendConnectionsIntent();
-                    break;
-                default:
-                    android.util.Log.w(TAG, "Unknown message type received by MsgServer.");
-                    super.handleMessage(msg);
+            synchronized (m_Lock) {
+                switch (msg.what) {
+                    case MsgServerServiceAPI.ID_REQUEST_SERVERS:
+                        android.util.Log.d(TAG, "Servers Request Received");
+                        sendServersIntent();
+                        break;
+                    case MsgServerServiceAPI.ID_REQUEST_CONNECTIONS:
+                        android.util.Log.d(TAG, "Connections Request Received");
+                        sendConnectionsIntent();
+                        break;
+                    default:
+                        android.util.Log.w(TAG, "Unknown message type received by MsgServer.");
+                        super.handleMessage(msg);
+                }
             }
         }
     }
@@ -194,7 +198,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     public void onNewConnection(IConnectionMgr mgr, IConnection newConnection) {
         synchronized (m_Lock) {
             if (m_Connections.put(newConnection, newConnection) == null) {
-                // TODO: Generate an intent for interested parties...
+                broadcastNewConnectionIntent(mgr, newConnection);
             } else {
                 android.util.Log.w(TAG, "Received a duplicate new connection event");
             }
@@ -305,7 +309,29 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         map.put("description", conn.getDescription());
         map.put("recvCount", Integer.toString(conn.getMessagesReceived()));
         map.put("sendCount", Integer.toString(conn.getMessagesSent()));
-
+    
         return (JSONObject)JSONObject.wrap(map);
+    }
+
+    //
+    // Broadcast Intent methods
+    //
+
+    private void broadcastNewConnectionIntent(IConnectionMgr mgr, IConnection newConnection) {
+        android.util.Log.i(TAG, "broadcastNewConnectionIntent");
+
+        try {
+            JSONObject jsonObject = getConnectionJSON(newConnection);
+            jsonObject.put("protocol", mgr.protocol());
+
+            // Broadcast the list
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(MsgServerService.INTENT_SEND_NEW_CONNECTION);
+            sendIntent.putExtra(Intent.EXTRA_TEXT, jsonObject.toString());
+
+            sendBroadcast(sendIntent);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 }
