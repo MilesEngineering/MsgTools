@@ -40,16 +40,11 @@ class SynchronousMsgClient:
                     hdr = self.msgLib.hdr(data)
                     # read body
                     data += self.sock.recv(hdr.GetDataLength())
-                    if len(msgIds) == 0:
-                        return data
-                    else:
-                        hdr = self.msgLib.hdr(data)
-                        id = hdr.GetMessageID()
-                        if id in msgIds:
-                            msg = self.msgLib.MsgFactory(hdr)
-                            return msg
-                        #else:
-                        #    print("throwing away " + str(id) + " msg")
+                    hdr = self.msgLib.hdr(data)
+                    id = hdr.GetMessageID()
+                    if len(msgIds) == 0 or id in msgIds:
+                        msg = self.msgLib.MsgFactory(hdr)
+                        return msg
             except socket.timeout:
                 return None
 

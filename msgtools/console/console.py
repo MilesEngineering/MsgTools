@@ -5,8 +5,8 @@
 #
 import os
 import sys
-from SynchronousMsgServer import SynchronousMsgServer
-from SynchronousMsgClient import SynchronousMsgClient
+from .SynchronousMsgServer import SynchronousMsgServer
+from .SynchronousMsgClient import SynchronousMsgClient
 
 # annoying stuff to start Messaging.
 # this should be simpler!
@@ -35,7 +35,7 @@ def main(args=None):
                 if cmd == "getmsg":
                     # this blocks until message received, or timeout occurs
                     timeout = 10.0 # value in seconds
-                    msg = connection.get_message(timeout, [msgLib.Messages.Network.Connect.ID, msgLib.Messages.Debug.AccelData.Status.ID])
+                    msg = connection.get_message(timeout, [msgLib.Messages.Network.Connect.ID, msgLib.Messages.Experimental.AccelData.Status.ID])
                     if msg:
                         # print as JSON for debug purposes
                         json = Messaging.toJson(msg)

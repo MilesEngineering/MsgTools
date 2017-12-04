@@ -22,28 +22,21 @@ class SynchronousMsgServer:
         t = Thread(target=self.start)
         t.start()
 
-    # how to send a message, from the outside world
     def send_message(self, msg):
         self.synchronous_tx_queue.sync_q.put(msg.rawBuffer().raw)
     
-    # how to get a message, from the outside world
     def get_message(self, timeout, msgIds=[]):
         while True:
             try:
                 data = self.synchronous_rx_queue.get(True, timeout)
-                if len(msgIds) == 0:
-                    return data
-                else:
-                    hdr = self.msgLib.hdr(data)
-                    id = hdr.GetMessageID()
-                    if id in msgIds:
-                        msg = self.msgLib.MsgFactory(hdr)
-                        return msg
-                    #else:
-                    #    print("throwing away " + str(id) + " msg")
+                hdr = self.msgLib.hdr(data)
+                id = hdr.GetMessageID()
+                if len(msgIds) == 0 or id in msgIds:
+                    msg = self.msgLib.MsgFactory(hdr)
+                    return msg
             except queue.Empty:
                 return None
-
+    
     def stop(self):
         for task in asyncio.Task.all_tasks():
             task.cancel()
