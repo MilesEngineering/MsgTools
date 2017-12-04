@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.28.4',
+    version='0.28.5',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -20,7 +20,7 @@ setup(name='msgtools',
                         'msggoodlistener=msgtools.goodlistener.goodlistener:main [gui]',
                         'msgplot=msgtools.lib.msgplot:main [gui]',
                         'msgbandwidthtestecho=msgtools.noisemaker.bandwidthtestecho:main [gui]',
-                        'msgbadwidthtester=msgtools.noisemaker.bandwidthtester:main [gui]',
+                        'msgbandwidthtester=msgtools.noisemaker.bandwidthtester:main [gui]',
                         'msgnoisemaker=msgtools.noisemaker.noisemaker:main [gui]',
                         'msglumberjack=msgtools.lumberjack.lumberjack:main [gui]'],
         'msgtools.parser.plugin': ['c=msgtools.parser.c.language',
