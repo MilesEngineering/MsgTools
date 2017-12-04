@@ -38,6 +38,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     public static final String INTENT_SEND_SERVERS = "msgtools.milesengineering.msgserver.MsgServerServiceSendServers";
     public static final String INTENT_SEND_CONNECTIONS = "msgtools.milesengineering.msgserver.MsgServerServiceSendConnection";
     public static final String INTENT_SEND_NEW_CONNECTION = "msgtools.milesengineering.msgserver.MsgServerServiceSendNewConnection";
+    public static final String INTENT_SEND_CLOSED_CONNECTION = "msgtools.milesengineering.msgserver.MsgServerServiceSendClosedConnection";
 
     private final static int TCP_PORT = 5678;
     private final static int WEBSOCKET_PORT = 5679;
@@ -211,7 +212,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         synchronized (m_Lock) {
             if ( m_Connections.remove(closedConnection) == null ) {
                 android.util.Log.w(TAG, "Attempted to remove a closed connection that is not being tracked");
-                // TODO: Generate an intent for interested parties
+                broadcastClosedConnectionIntent(mgr, closedConnection);
             }
         }
 
@@ -309,7 +310,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         map.put("description", conn.getDescription());
         map.put("recvCount", Integer.toString(conn.getMessagesReceived()));
         map.put("sendCount", Integer.toString(conn.getMessagesSent()));
-    
+
         return (JSONObject)JSONObject.wrap(map);
     }
 
@@ -319,14 +320,27 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
 
     private void broadcastNewConnectionIntent(IConnectionMgr mgr, IConnection newConnection) {
         android.util.Log.i(TAG, "broadcastNewConnectionIntent");
+        broadcastConnectionChangedIntent(MsgServerService.INTENT_SEND_NEW_CONNECTION,
+                mgr, newConnection);
+    }
+
+    private void broadcastClosedConnectionIntent(IConnectionMgr mgr, IConnection newConnection) {
+        android.util.Log.i(TAG, "broadcastNewConnectionIntent");
+        broadcastConnectionChangedIntent(MsgServerService.INTENT_SEND_CLOSED_CONNECTION,
+                mgr, newConnection);
+    }
+
+    private void broadcastConnectionChangedIntent(String action, IConnectionMgr mgr,
+                                                  IConnection connection) {
+        android.util.Log.d(TAG, "broadcastConnectionChangedIntent");
 
         try {
-            JSONObject jsonObject = getConnectionJSON(newConnection);
+            JSONObject jsonObject = getConnectionJSON(connection);
             jsonObject.put("protocol", mgr.protocol());
 
             // Broadcast the list
             Intent sendIntent = new Intent();
-            sendIntent.setAction(MsgServerService.INTENT_SEND_NEW_CONNECTION);
+            sendIntent.setAction(action);
             sendIntent.putExtra(Intent.EXTRA_TEXT, jsonObject.toString());
 
             sendBroadcast(sendIntent);

@@ -1,4 +1,13 @@
 
+# Design Notes
+
+## Assumptions
+The following assumptions have been made:
+* NetworkHeader is the de-facto header for all clients.  If you need to work with a different header then do that translation
+as part of your specific IConnection implementations.
+* All headers MUST have an ID and payload length.  To support any protocol you can comprise the ID out of any bits your want.
+They just need to be unique within the overall message space.  The length MUST be the number of payload bytes after the header.
+
 
 # Adding a new MessageService API and intent handler
 

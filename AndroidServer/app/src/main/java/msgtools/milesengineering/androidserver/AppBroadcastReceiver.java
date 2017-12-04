@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.support.annotation.NonNull;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -47,6 +48,7 @@ class AppBroadcastReceiver extends BroadcastReceiver {
         intentFilter.addAction(MsgServerService.INTENT_SEND_SERVERS);
         intentFilter.addAction(MsgServerService.INTENT_SEND_CONNECTIONS);
         intentFilter.addAction(MsgServerService.INTENT_SEND_NEW_CONNECTION);
+        intentFilter.addAction(MsgServerService.INTENT_SEND_CLOSED_CONNECTION);
         activity.registerReceiver(this, intentFilter);
     }
 
@@ -67,6 +69,9 @@ class AppBroadcastReceiver extends BroadcastReceiver {
         }
         else if (intent.getAction().equals(MsgServerService.INTENT_SEND_NEW_CONNECTION)) {
             handleNewConnectionIntent(intent);
+        }
+        else if (intent.getAction().equals(MsgServerService.INTENT_SEND_CLOSED_CONNECTION)) {
+            handleClosedConnectionIntent(intent);
         }
     }
 
@@ -162,9 +167,7 @@ class AppBroadcastReceiver extends BroadcastReceiver {
             // Build up a display string
             // TODO: Would be prettier to do a custom list view with a protocol field
             // or icon.  Just stringing it for now...
-            String description = connection.getString("description");
-            String protocol = connection.getString("protocol");
-            String displayText = protocol + ":/" + description;
+            String displayText = getDisplayString(connection);
 
             // If this is our first connection then clear our placeholder item
             if (m_NoConnections == true) {
@@ -183,4 +186,45 @@ class AppBroadcastReceiver extends BroadcastReceiver {
         // Force a redraw...
         m_ListAdapter.notifyDataSetChanged();
     }
+
+    private void handleClosedConnectionIntent(Intent intent) {
+        android.util.Log.i(TAG, "handleClosedConnectionIntent");
+
+        String json = (String) intent.getExtras().get(Intent.EXTRA_TEXT);
+        try {
+            // Parse the new connection...
+            JSONObject connection = (JSONObject) new JSONTokener(json).nextValue();
+
+            String displayText = getDisplayString(connection);
+
+            // Remove the string if we have it.  Always possible we can get out of
+            // sync somehow...
+            if (m_ConnectionList.contains(displayText) == true) {
+                m_ConnectionList.remove(displayText);
+
+                // If that was our last connection then fill in a default
+                // "None" entry.
+                if (m_ConnectionList.size() == 0) {
+                    m_NoConnections = true;
+                    m_ConnectionList.add("None");
+                }
+                else {
+                    Collections.sort(m_ConnectionList);
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        // Force a redraw...
+        m_ListAdapter.notifyDataSetChanged();
+    }
+
+    @NonNull
+    private String getDisplayString(JSONObject connection) throws JSONException {
+        String description = connection.getString("description");
+        String protocol = connection.getString("protocol");
+        return protocol + ":/" + description;
+    }
+
 }
