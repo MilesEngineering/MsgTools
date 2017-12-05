@@ -43,19 +43,19 @@ public interface IConnectionMgr {
     boolean haltPending();
 
     /**
-     * Retrieve a string representing the protocol this connection manager handles
+     * Retrieve a string representing the getProtocol this connection manager handles
      * e.g. TCP, WS or Websocket, etc.
      *
-     * @return A three chracter or less protocol indicator
+     * @return A three chracter or less getProtocol indicator
      */
-    String protocol();
+    String getProtocol();
 
     /**
-     * Retrieve a description of the server - suggested descriptions might be the IP address of
+     * Retrieve a getDescription of the server - suggested descriptions might be the IP address of
      * the server socket, or the MAC address of the host adapter.  Ideally some information that
      * would be of use to an end user in using this server.
      *
-     * @return A short string description
+     * @return A short string getDescription
      */
-    String description();
+    String getDescription();
 }

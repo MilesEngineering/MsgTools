@@ -12,12 +12,10 @@ import android.os.Process;
 import android.widget.Toast;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Hashtable;
 
 import headers.NetworkHeader;
@@ -35,6 +33,9 @@ import msgtools.milesengineering.msgserver.connectionmgr.websocket.WebsocketConn
 public class MsgServerService extends Service implements Handler.Callback, IConnectionMgrListener {
     private static final String TAG = MsgServerService.class.getSimpleName();
 
+    //
+    // Constants
+    //
     public static final String INTENT_SEND_SERVERS = "msgtools.milesengineering.msgserver.MsgServerServiceSendServers";
     public static final String INTENT_SEND_CONNECTIONS = "msgtools.milesengineering.msgserver.MsgServerServiceSendConnection";
     public static final String INTENT_SEND_NEW_CONNECTION = "msgtools.milesengineering.msgserver.MsgServerServiceSendNewConnection";
@@ -42,6 +43,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
 
     private final static int TCP_PORT = 5678;
     private final static int WEBSOCKET_PORT = 5679;
+    private final static int TIMER_INTERVAL = 1000; // ms for each RX/TX update
 
     private final Object m_Lock = new Object();   // Sync object
     private Messenger m_MsgHandler;               // For external client binding
@@ -65,6 +67,21 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     private Hashtable<IConnection,IConnection> m_Connections =
             new Hashtable<IConnection,IConnection>();
 
+    // Timer properties used to post RX/TX updates
+    private boolean m_MessageCountDirty = false;
+    private Handler m_TimerHandler = new Handler();
+    private Runnable m_TimerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            synchronized (m_Lock) {
+                if (m_MessageCountDirty == true) {
+                    sendConnectionsIntent();
+                    m_MessageCountDirty = false;
+                }
+            }
+            m_TimerHandler.postDelayed(this, TIMER_INTERVAL);
+        }
+    };
 
     /**
      * Private utility class that processes Messages from bound clients.  This is where our
@@ -125,6 +142,9 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         // hard code the servers.  If we move to dynamic model you might want to maintain a list
         // and rebuild on the fly...
         buildServersJSON();
+
+        // Kick off a 1 second timer which we will use to post RX/TX updates
+        m_TimerHandler.postDelayed(m_TimerRunnable, TIMER_INTERVAL);
     }
 
     @Override
@@ -132,12 +152,15 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         android.util.Log.i(TAG, "onDestroy()");
         Toast.makeText(this, "MsgServer Service Being Destroyed...", Toast.LENGTH_SHORT).show();
 
-        // TODO: Stop our message handling loop and close all connections etc.
         m_TCPConnectionMgr.requestHalt();
         m_MsgServerHandler.getLooper().quitSafely();
 
         m_TCPConnectionMgr = null;
         m_MsgServerHandler = null;
+
+        m_MsgServerHandler.getLooper().quitSafely();
+
+        m_TimerHandler.removeCallbacks(m_TimerRunnable);
     }
 
     @Override
@@ -228,6 +251,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
             if ( m_Connections.containsKey(srcConnection) == false ) {
                 android.util.Log.w(TAG, "Received message from unknown connection.");
                 m_Connections.put(srcConnection, srcConnection);
+                broadcastNewConnectionIntent(mgr, srcConnection);
             }
 
             for(IConnection c : m_Connections.values()) {
@@ -235,18 +259,19 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
                     // Don't echo messages back to the sender
                     if (c != srcConnection && c.sendMessage(networkHeader, hdrBuff,
                             payloadBuff) == false) {
-                        // TODO: When we have  a friendly connection name log it here
-                        android.util.Log.w(TAG, "Message not sent by connection: ");
+                        android.util.Log.w(TAG, "Message not sent by connection: " +
+                                c.getDescription());
                     }
                 }
                 catch(Exception e) {
-                    // TODO: When we have  a friendly connection name log it here
-                    android.util.Log.w(TAG, "Exception sending message on connection: ");
+                    android.util.Log.w(TAG, "Exception sending message on connection: " +
+                        c.getDescription());
                     android.util.Log.w(TAG, e.toString());
                 }
             }
 
-            // TODO: Generate an intent for interested parties
+            // Next time our timer fires post a RX/TX update to everyone
+            m_MessageCountDirty = true;
         }
     }
 
@@ -293,8 +318,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         JSONArray jarray = new JSONArray();
         for( IConnectionMgr cm : managers ) {
             Hashtable<String,String> map = new Hashtable<String,String>();
-            map.put("protocol", cm.protocol());
-            map.put("description", cm.description());
+            map.put("getProtocol", cm.getProtocol());
+            map.put("getDescription", cm.getDescription());
 
             jarray.put(JSONObject.wrap(map));
         }
@@ -307,9 +332,10 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         // can stay in sync...
         Hashtable<String,String> map = new Hashtable<>();
         map.put("id", Integer.toString(conn.hashCode()));
-        map.put("description", conn.getDescription());
+        map.put("getDescription", conn.getDescription());
         map.put("recvCount", Integer.toString(conn.getMessagesReceived()));
         map.put("sentCount", Integer.toString(conn.getMessagesSent()));
+        map.put("getProtocol", conn.getProtocol());
 
         return (JSONObject)JSONObject.wrap(map);
     }
@@ -334,18 +360,13 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
                                                   IConnection connection) {
         android.util.Log.d(TAG, "broadcastConnectionChangedIntent");
 
-        try {
-            JSONObject jsonObject = getConnectionJSON(connection);
-            jsonObject.put("protocol", mgr.protocol());
+        JSONObject jsonObject = getConnectionJSON(connection);
 
-            // Broadcast the list
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(action);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, jsonObject.toString());
+        // Broadcast the list
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(action);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, jsonObject.toString());
 
-            sendBroadcast(sendIntent);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        sendBroadcast(sendIntent);
     }
 }

@@ -118,6 +118,9 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
         }
 
         @Override
+        public String getProtocol() { return "WS"; }
+
+        @Override
         public int getMessagesSent() {
             return m_SentCount;
         }
@@ -178,10 +181,10 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
     }
 
     @Override
-    public String protocol() { return "WS"; }
+    public String getProtocol() { return "WS"; }
 
     @Override
-    public String description() {
+    public String getDescription() {
         InetAddress ia = utils.getHostAddress();
         String retVal = ia.toString() + ":" + m_SocketAddress.getPort();
         return retVal.substring(1);

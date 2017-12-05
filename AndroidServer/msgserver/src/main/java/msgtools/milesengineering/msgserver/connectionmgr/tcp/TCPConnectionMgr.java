@@ -115,6 +115,9 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         }
 
         @Override
+        public String getProtocol() { return "TCP"; }
+
+        @Override
         public int getMessagesSent() {
             return m_SentCount;
         }
@@ -155,10 +158,10 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
     }
 
     @Override
-    public String protocol() { return "TCP"; }
+    public String getProtocol() { return "TCP"; }
 
     @Override
-    public String description() {
+    public String getDescription() {
         InetAddress ia = utils.getHostAddress();
         String retVal = ia.toString() + ":" + m_SocketAddress.getPort();
         return retVal.substring(1);

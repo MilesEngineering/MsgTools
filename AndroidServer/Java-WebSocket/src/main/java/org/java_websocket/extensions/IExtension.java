@@ -39,7 +39,7 @@ public interface IExtension {
 	 * The resulting frame will be used in the application
 	 *
 	 * @param inputFrame the frame, which has do be decoded to be used in the application
-	 * @throws InvalidDataException Throw InvalidDataException if the received frame is not correctly implemented by the other endpoint or there are other protocol errors/decoding errors
+	 * @throws InvalidDataException Throw InvalidDataException if the received frame is not correctly implemented by the other endpoint or there are other getProtocol errors/decoding errors
 	 */
 	void decodeFrame( Framedata inputFrame ) throws InvalidDataException;
 

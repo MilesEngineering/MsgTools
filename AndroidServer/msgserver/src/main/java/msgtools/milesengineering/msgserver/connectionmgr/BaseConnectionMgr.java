@@ -132,10 +132,10 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
     }
 
     @Override
-    public abstract String protocol();
+    public abstract String getProtocol();
 
     @Override
-    public abstract String description();
+    public abstract String getDescription();
 
     protected final void onNewConnection(IConnection newConnection) {
         synchronized (m_Lock) {

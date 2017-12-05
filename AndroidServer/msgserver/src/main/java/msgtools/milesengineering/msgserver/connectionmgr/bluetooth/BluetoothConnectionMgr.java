@@ -30,10 +30,10 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
     }
 
     @Override
-    public String protocol() { return "BT"; }
+    public String getProtocol() { return "BT"; }
 
     @Override
-    public String description() { return m_BluetoothAdapter == null ? "Bluetooth Not Supported" :
+    public String getDescription() { return m_BluetoothAdapter == null ? "Bluetooth Not Supported" :
             m_BluetoothAdapter.getAddress().toString(); }
 
     //

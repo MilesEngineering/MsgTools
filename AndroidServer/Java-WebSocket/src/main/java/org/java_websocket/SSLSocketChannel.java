@@ -49,7 +49,7 @@ import java.util.concurrent.ExecutorService;
  * it requires the user to implement much of the communication establishment procedure himself.
  * More information about it can be found here: http://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#SSLEngine
  *
- * {@link SSLSocketChannel} implements the handshake protocol, required to establish a connection between two peers,
+ * {@link SSLSocketChannel} implements the handshake getProtocol, required to establish a connection between two peers,
  * which is common for both client and server and provides the abstract {@link SSLSocketChannel#read(ByteBuffer)} and
  * {@link SSLSocketChannel#write(ByteBuffer)} (String)} methods, that need to be implemented by the specific SSL/TLS peer
  * that is going to extend this class.
@@ -216,7 +216,7 @@ public class SSLSocketChannel implements WrappedByteChannel, ByteChannel {
 	}
 
 	/**
-	 * Implements the handshake protocol between two peers, required for the establishment of the SSL/TLS connection.
+	 * Implements the handshake getProtocol between two peers, required for the establishment of the SSL/TLS connection.
 	 * During the handshake, encryption configuration information - such as the list of available cipher suites - will be exchanged
 	 * and if the handshake is successful will lead to an established SSL/TLS session.
 	 * <p>

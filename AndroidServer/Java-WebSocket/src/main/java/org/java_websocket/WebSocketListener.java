@@ -47,12 +47,12 @@ public interface WebSocketListener {
 	/**
 	 * Called on the server side when the socket connection is first established, and the WebSocket
 	 * handshake has been received. This method allows to deny connections based on the received handshake.<br>
-	 * By default this method only requires protocol compliance.
+	 * By default this method only requires getProtocol compliance.
 	 * 
 	 * @param conn
 	 *            The WebSocket related to this event
 	 * @param draft
-	 *            The protocol draft the client uses to connect
+	 *            The getProtocol draft the client uses to connect
 	 * @param request
 	 *            The opening http message send by the client. Can be used to access additional fields like cookies.
 	 * @return Returns an incomplete handshake containing all optional fields

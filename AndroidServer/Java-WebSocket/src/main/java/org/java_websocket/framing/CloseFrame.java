@@ -49,7 +49,7 @@ public class CloseFrame extends ControlFrame {
     public static final int GOING_AWAY = 1001;
     /**
      * 1002 indicates that an endpoint is terminating the connection due
-     * to a protocol error.
+     * to a getProtocol error.
      */
     public static final int PROTOCOL_ERROR = 1002;
     /**

@@ -40,8 +40,8 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
         @Override
         public int compare(JSONObject o1, JSONObject o2) {
             try {
-                String o1description = o1.getString("description");
-                String o2description = o2.getString("description");
+                String o1description = o1.getString("getDescription");
+                String o2description = o2.getString("getDescription");
                 return o1description.compareTo(o2description);
             }
             catch( JSONException je ) {
@@ -83,8 +83,8 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
             JSONArray servers = (JSONArray) new JSONTokener(jsonServers).nextValue();
             for (int i =0; i < servers.length(); i++) {
                 JSONObject obj = servers.getJSONObject(i);
-                String displayText = String.format( "%s: %s", obj.optString("protocol", "???"),
-                        obj.optString("description", "UNKNOWN"));
+                String displayText = String.format( "%s: %s", obj.optString("getProtocol", "???"),
+                        obj.optString("getDescription", "UNKNOWN"));
                 m_Servers.add(displayText);
             }
 
@@ -251,8 +251,8 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
 
                 if (m_Connections.size() != 0) {
                     JSONObject connection = (JSONObject) getChild(groupPosition, childPosition);
-                    descriptionText = String.format( "%s: %s", connection.optString( "protocol", "???"),
-                            connection.optString("description", "UNKNOWN") );
+                    descriptionText = String.format( "%s: %s", connection.optString( "getProtocol", "???"),
+                            connection.optString("getDescription", "UNKNOWN") );
 
                     textView = (TextView) retVal.findViewById(R.id.lblTx);
                     String countText = "TX " + connection.optString("sentCount", "--");
@@ -263,7 +263,7 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
                     textView.setText(countText);
                 }
 
-                // Set the description last.
+                // Set the getDescription last.
                 textView = (TextView) retVal.findViewById(R.id.lblDescription);
                 textView.setText(descriptionText);
 

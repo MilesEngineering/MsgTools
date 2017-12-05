@@ -42,7 +42,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * Implementation for the RFC 6455 websocket protocol
+ * Implementation for the RFC 6455 websocket getProtocol
  * This is the recommended class for your websocket connection
  */
 public class Draft_6455 extends Draft {
@@ -78,14 +78,14 @@ public class Draft_6455 extends Draft {
 	private final Random reuseableRandom = new Random();
 
 	/**
-	 * Constructor for the websocket protocol specified by RFC 6455 with default extensions
+	 * Constructor for the websocket getProtocol specified by RFC 6455 with default extensions
 	 */
 	public Draft_6455() {
 		this( Collections.<IExtension>emptyList() );
 	}
 
 	/**
-	 * Constructor for the websocket protocol specified by RFC 6455 with custom extensions
+	 * Constructor for the websocket getProtocol specified by RFC 6455 with custom extensions
 	 *
 	 * @param inputExtension the extension which should be used for this draft
 	 */
@@ -94,7 +94,7 @@ public class Draft_6455 extends Draft {
 	}
 
 	/**
-	 * Constructor for the websocket protocol specified by RFC 6455 with custom extensions
+	 * Constructor for the websocket getProtocol specified by RFC 6455 with custom extensions
 	 *
 	 * @param inputExtensions the extensions which should be used for this draft
 	 */

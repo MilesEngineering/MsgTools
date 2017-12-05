@@ -22,11 +22,16 @@ public interface IConnection {
     boolean sendMessage(NetworkHeader networkHeader, ByteBuffer hdrBuff, ByteBuffer payloadBuff);
 
     /**
-     * Get a simple string description for this connection. The description
+     * Get a simple string getDescription for this connection. The getDescription
      * should indicate something about the connected client so apps can display
      * something unique and meaningful.
      */
     String getDescription();
+
+    /**
+     * Get up to a 3 character getProtocol getDescription e.g. TCP, WS, USB...
+     */
+    String getProtocol();
 
     /**
      * Get the total number of messages sent

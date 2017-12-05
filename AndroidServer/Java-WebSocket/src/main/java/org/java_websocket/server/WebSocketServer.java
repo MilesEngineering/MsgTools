@@ -83,7 +83,7 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
 	 */
 	private Selector selector;
 	/**
-	 * The Draft of the WebSocket protocol the Server is adhering to.
+	 * The Draft of the WebSocket getProtocol the Server is adhering to.
 	 */
 	private List<Draft> drafts;
 
@@ -137,8 +137,8 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
 	 * @param address
 	 *            The address (host:port) this server should listen on.
 	 * @param drafts
-	 *            The versions of the WebSocket protocol that this server
-	 *            instance should comply to. Clients that use an other protocol version will be rejected.
+	 *            The versions of the WebSocket getProtocol that this server
+	 *            instance should comply to. Clients that use an other getProtocol version will be rejected.
 	 *
 	 */
 	public WebSocketServer( InetSocketAddress address , List<Draft> drafts ) {
@@ -153,8 +153,8 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
 	 * @param decodercount
 	 *            The number of {@link WebSocketWorker}s that will be used to process the incoming network data. By default this will be <code>Runtime.getRuntime().availableProcessors()</code>
 	 * @param drafts
-	 *            The versions of the WebSocket protocol that this server
-	 *            instance should comply to. Clients that use an other protocol version will be rejected.
+	 *            The versions of the WebSocket getProtocol that this server
+	 *            instance should comply to. Clients that use an other getProtocol version will be rejected.
 
 	 */
 	public WebSocketServer( InetSocketAddress address , int decodercount , List<Draft> drafts ) {
@@ -170,8 +170,8 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
 	 * @param decodercount
 	 *            The number of {@link WebSocketWorker}s that will be used to process the incoming network data. By default this will be <code>Runtime.getRuntime().availableProcessors()</code>
 	 * @param drafts
-	 *            The versions of the WebSocket protocol that this server
-	 *            instance should comply to. Clients that use an other protocol version will be rejected.
+	 *            The versions of the WebSocket getProtocol that this server
+	 *            instance should comply to. Clients that use an other getProtocol version will be rejected.
 	 * 
 	 * @param connectionscontainer
 	 *            Allows to specify a collection that will be used to store the websockets in. <br>
@@ -732,7 +732,7 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
 	public abstract void onMessage( WebSocket conn, String message );
 	/**
 	 * Called when errors occurs. If an error causes the websocket connection to fail {@link #onClose(WebSocket, int, String, boolean)} will be called additionally.<br>
-	 * This method will be called primarily because of IO or protocol errors.<br>
+	 * This method will be called primarily because of IO or getProtocol errors.<br>
 	 * If the given exception is an RuntimeException that probably means that you encountered a bug.<br>
 	 * 
 	 * @param conn Can be null if there error does not belong to one specific websocket. For example if the servers port could not be bound.

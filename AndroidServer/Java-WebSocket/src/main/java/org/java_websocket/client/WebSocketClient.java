@@ -142,7 +142,7 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
 	}
 
 	/**
-	 * Returns the protocol version this channel uses.<br>
+	 * Returns the getProtocol version this channel uses.<br>
 	 * For more infos see https://github.com/TooTallNate/Java-WebSocket/wiki/Drafts
 	 * @return The draft used for this client
 	 */
