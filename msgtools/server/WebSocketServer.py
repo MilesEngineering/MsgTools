@@ -42,7 +42,7 @@ class WebSocketClientConnection(QObject):
         self.disconnected.emit(self)
 
     def sendMsg(self, msg):
-        self.webSocket.sendBinaryMessage(msg.rawBuffer())
+        self.webSocket.sendBinaryMessage(msg.rawBuffer().raw)
 
 class WebSocketServer(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
