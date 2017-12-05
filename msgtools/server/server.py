@@ -23,7 +23,7 @@ class MessageServer(QtWidgets.QMainWindow):
         self.logFile = None
         self.logFileType = None
         
-        self.msgLib = Messaging(None, 0, "NetworkHeader")
+        self.msgLib = Messaging(None, False, "NetworkHeader")
         self.networkMsgs = self.msgLib.Messages.Network
 
         self.clients = {}
@@ -146,10 +146,8 @@ class MessageServer(QtWidgets.QMainWindow):
                 logStatusMsg.SetLogFileName(self.logFile.fileName())
                 if self.logFileType == "JSON":
                     logStatusMsg.SetLogFileType("JSON")
-            buffer = bytearray(logStatusMsg.rawBuffer())
-            hdr = Messaging.hdr(buffer)
             for client in self.clients.values():
-                client.sendMsg(hdr)
+                client.sendMsg(logStatusMsg.hdr)
 
     def onLogButtonClicked(self):
         if self.logFile != None:
@@ -247,7 +245,7 @@ class MessageServer(QtWidgets.QMainWindow):
                     msgObj = Messaging.MsgFactory(hdr)
                     self.logFile.write(Messaging.toJson(msgObj).encode('utf-8'))
                 else:
-                    self.logFile.write(hdr.rawBuffer())
+                    self.logFile.write(hdr.rawBuffer().raw)
             for client in self.clients.values():
                 if client != c:
                     id = hdr.GetMessageID()

@@ -182,6 +182,9 @@ class App(QtWidgets.QMainWindow):
                 print("don't have full body, quitting")
                 return
             
+            # create a new header object with the appended body
+            hdr = Messaging.hdr(self.rxBuf)
+
             # if we got this far, we have a whole message! So, emit the signal
             self.RxMsg.emit(Messaging.MsgFactory(hdr))
             # then clear the buffer, so we start over on the next message
@@ -249,6 +252,7 @@ class App(QtWidgets.QMainWindow):
                 self.rxBuf += self.readBytesFn(bodyLen)
                 if(len(self.rxBuf) != Messaging.hdrSize + bodyLen): break
                 
+                # create a new header object with the appended body
                 hdr = Messaging.hdr(self.rxBuf)
 
                 # got a complete message, call the callback to process it

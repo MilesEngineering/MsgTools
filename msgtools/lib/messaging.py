@@ -12,6 +12,8 @@ from collections import OrderedDict
 import json
 
 from collections import namedtuple
+import ctypes
+import time
 
 # A decorator to specify units for fields
 def units(arg):
@@ -92,9 +94,12 @@ class Messaging:
                     # determine if we're at root of filesystem
                     if lastsrcdir == srcdir:
                         # if we're at root of filesystem, just give up!
+                        loadDir = None
+                        print("\nERROR! Auto-generated python code not found!")
+                        print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
                         return
                     loadDir = srcdir + "/obj/CodeGenerator/Python/"
-                    if 1: #if Messaging.debug:
+                    if Messaging.debug:
                         print("search for objdir in " + loadDir)
         sys.path.append(loadDir)
         sys.path.append(loadDir+"/headers")
@@ -387,8 +392,7 @@ class Messaging:
         return msg_route
 
     class HeaderTranslator:
-        import time
-        startTime = time.time() * 1000
+        startTime = int(time.time() * 1000)
 
         def __init__(self, hdr1, hdr2):
             # Make a list of fields in the headers that have matching names.
@@ -433,6 +437,8 @@ class Messaging:
             # if the message ID can't be expressed in the new header, return None,
             # because this message isn't translatable
             if fromHdr.GetMessageID() != toHdr.GetMessageID():
+                if Messaging.debug:
+                    print("message ID 0x" + hex(fromHdr.GetMessageID()) + " translated to 0x" + hex(toHdr.GetMessageID()) + ", throwing away")
                 return None
             # copy the body
             for i in range(0,fromHdr.GetDataLength()):
@@ -442,7 +448,7 @@ class Messaging:
             if toHdrInfo.timeField != None and fromHdrInfo.timeField != None and self.serialTimeFieldSize < self.networkTimeFieldSize:
                 # Detect time rolling
                 thisTimestamp = fromHdr.GetTime()
-                thisTime = time.time() * 1000
+                thisTime = int(time.time() * 1000)
                 timestampOffset = self.timestampOffset
                 if thisTimestamp < self.lastTimestamp:
                     # If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
@@ -455,13 +461,13 @@ class Messaging:
                 # need to handle different size timestamps!
                 toHdr.SetTime((timestampOffset << 16) + thisTimestamp)
             elif toHdrInfo.timeField != None and fromHdrInfo.timeField == None:
-                thisTime = time.time() * 1000
-                toHdr.SetTime(self.startTime.msecsTo(thisTime))
+                thisTime = int(time.time() * 1000)
+                toHdr.SetTime(thisTime - self.startTime)
 
             return toHdr
 
         def translate(self, fromHdr):
-            toHdr = translateHdrAndBody(fromHdr, fromHdr.rawBuffer()[type(fromHdr).SIZE:])
+            toHdr = self.translateHdrAndBody(fromHdr, fromHdr.rawBuffer()[type(fromHdr).SIZE:])
             return toHdr
 
 class BitFieldInfo(object):

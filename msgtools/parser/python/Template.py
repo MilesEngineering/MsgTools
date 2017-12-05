@@ -33,6 +33,14 @@ class <MSGNAME> :
         if messageBuffer == None:
             doInit = 1
             messageBuffer = ctypes.create_string_buffer(<MSGNAME>.MSG_OFFSET + <MSGNAME>.SIZE)
+        else:
+            try:
+                messageBuffer.raw
+            except AttributeError:
+                newbuf = ctypes.create_string_buffer(len(messageBuffer))
+                for i in range(0, len(messageBuffer)):
+                    newbuf[i] = messageBuffer[i]
+                messageBuffer = newbuf
         # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
         self.msg_buffer_wrapper = { "msg_buffer": messageBuffer }
 
