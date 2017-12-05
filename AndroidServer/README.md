@@ -1,5 +1,11 @@
-
 # Design Notes
+
+## TODO List
+* Add Tx/Rx Message counts - should broadcast on a 1 sec interval (for Hz) and build up a specialized list item view for decent formatting
+* Logging feature - start-stop(remote/local)/timestamp/base filename/entry of message version/JSON format
+* Make sure app sleep and wake works ok
+* Power optimizations
+* 
 
 ## Assumptions
 The following assumptions have been made:

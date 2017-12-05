@@ -109,8 +109,10 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
             String retVal = "Unknown client";
             WebSocket ws = m_Websocket.get();
 
-            if ( ws != null )
+            if ( ws != null ) {
                 retVal = ws.getRemoteSocketAddress().toString();
+                retVal = retVal.substring(1);
+            }
 
             return retVal;
         }
@@ -181,7 +183,8 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
     @Override
     public String description() {
         InetAddress ia = utils.getHostAddress();
-        return ia.toString() + ":" + m_SocketAddress.getPort();
+        String retVal = ia.toString() + ":" + m_SocketAddress.getPort();
+        return retVal.substring(1);
     }
 
     //

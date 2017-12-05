@@ -309,7 +309,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         map.put("id", Integer.toString(conn.hashCode()));
         map.put("description", conn.getDescription());
         map.put("recvCount", Integer.toString(conn.getMessagesReceived()));
-        map.put("sendCount", Integer.toString(conn.getMessagesSent()));
+        map.put("sentCount", Integer.toString(conn.getMessagesSent()));
 
         return (JSONObject)JSONObject.wrap(map);
     }

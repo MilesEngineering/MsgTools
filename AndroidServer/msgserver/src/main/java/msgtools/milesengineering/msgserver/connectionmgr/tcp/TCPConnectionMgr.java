@@ -106,6 +106,7 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
             if ( chan != null ) {
                 try {
                     retVal = chan.getRemoteAddress().toString();
+                    retVal = retVal.substring(1);
                 } catch( IOException ioe ) {
                     retVal = ioe.getMessage();
                 }
@@ -159,7 +160,8 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
     @Override
     public String description() {
         InetAddress ia = utils.getHostAddress();
-        return ia.toString() + ":" + m_SocketAddress.getPort();
+        String retVal = ia.toString() + ":" + m_SocketAddress.getPort();
+        return retVal.substring(1);
     }
 
     @Override

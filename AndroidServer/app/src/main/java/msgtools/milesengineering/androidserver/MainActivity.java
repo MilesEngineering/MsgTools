@@ -2,9 +2,7 @@ package msgtools.milesengineering.androidserver;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -14,10 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ExpandableListView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,10 +26,6 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
     AppExpandableListAdapter m_ListAdapter;
     ExpandableListView m_ListView;
-
-    // Our data model of servers and connections
-    List<String> m_Servers = new ArrayList<String>();
-    List<String> m_Connections = new ArrayList<String>();
 
     private MsgServerServiceAPI m_MsgServerAPI;
     private BroadcastReceiver m_BroadcastReceiver;
@@ -54,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
         // Instantiate a broadcast receiver.  This is where all the service intent
         // handling, and list updating happens.
-        m_BroadcastReceiver = new AppBroadcastReceiver(this, m_Servers, m_Connections, m_ListAdapter);
+        m_BroadcastReceiver = new AppBroadcastReceiver(this, m_ListAdapter);
 
         // Start the Server service
         Intent intent = new Intent(this, MsgServerService.class);
@@ -137,23 +128,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
      * Preparing the list data
      */
     private void prepareList() {
-        List<String> listHeaders;
-        HashMap<String, List<String>> listData;
-
-        listHeaders = new ArrayList<String>();
-        listData = new HashMap<String, List<String>>();
-
-        // Setup headers
-        listHeaders.add("Servers");
-        listHeaders.add("Connections");
-
-        m_Servers.add("None");
-        m_Connections.add("None");
-
-        listData.put(listHeaders.get(0), m_Servers); // Header, Child data
-        listData.put(listHeaders.get(1), m_Connections);
-
-        m_ListAdapter = new AppExpandableListAdapter(this, listHeaders, listData);
+        m_ListAdapter = new AppExpandableListAdapter(this);
         m_ListView.setAdapter(m_ListAdapter);
 
         // Pre-expand
