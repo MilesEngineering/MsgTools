@@ -15,8 +15,8 @@ import janus
 import queue
 
 class SynchronousMsgServer:
-    def __init__(self, msgLib):
-        self.msgLib = msgLib
+    def __init__(self, hdr):
+        self.hdr = hdr
         self.loop = asyncio.get_event_loop()
         from threading import Thread
         t = Thread(target=self.start)
@@ -29,11 +29,10 @@ class SynchronousMsgServer:
         while True:
             try:
                 data = self.synchronous_rx_queue.get(True, timeout)
-                hdr = self.msgLib.hdr(data)
+                hdr = self.hdr(data)
                 id = hdr.GetMessageID()
                 if len(msgIds) == 0 or id in msgIds:
-                    msg = self.msgLib.MsgFactory(hdr)
-                    return msg
+                    return hdr
             except queue.Empty:
                 return None
     
@@ -105,7 +104,7 @@ class SynchronousMsgServer:
     async def handle_tcp_client(self, client_reader):
         #print("handle_tcp_client")
         while True:
-            # we *should* read self.msgLib.hdr.SIZE bytes,
+            # we *should* read self.hdr.SIZE bytes,
             # then parse header to see body length,
             # then read those bytes.
             data = await client_reader.read(1024)
