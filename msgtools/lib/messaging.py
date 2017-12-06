@@ -426,6 +426,7 @@ class Messaging:
             # allocate the message to translate to
             toBuffer = ctypes.create_string_buffer(toHdrInfo.type.SIZE+fromHdr.GetDataLength())
             toHdr = toHdrInfo.type(toBuffer)
+            toHdr.initialize()
 
             # loop through fields using reflection, and transfer contents from
             # one header to the other

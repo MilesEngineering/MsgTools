@@ -48,8 +48,11 @@ class <MSGNAME> :
         if doInit:
             self.hdr.SetMessageID(<MSGNAME>.ID)
             self.hdr.SetDataLength(<MSGNAME>.SIZE)
-        
+            self.initialize()
+
+    def initialize(self):
             <INIT_CODE>
+            pass
 
     def rawBuffer(self):
         # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer

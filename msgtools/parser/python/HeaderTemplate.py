@@ -39,6 +39,9 @@ class <MSGNAME> :
         # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
         self.msg_buffer_wrapper = { "msg_buffer": messageBuffer }
         if doInit:
+            self.initialize()
+
+    def initialize(self):
             <INIT_CODE>
             pass
     
