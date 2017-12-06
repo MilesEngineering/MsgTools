@@ -5,6 +5,7 @@ import java.lang.ref.WeakReference;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketOptions;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedSelectorException;
@@ -241,6 +242,9 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
             // Register with our selector
             newConnection.configureBlocking(false);   // Must be non-blocking
             SelectionKey newKey = newConnection.register(m_Selector, SelectionKey.OP_READ, tcpConn);
+
+            // Enable keep alive to try and kill off zombie connections...
+            newConnection.setOption(StandardSocketOptions.SO_KEEPALIVE, new Boolean(true));
 
             // Notify listeners we have a new connection
             onNewConnection(tcpConn);
