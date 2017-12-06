@@ -277,9 +277,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
             // and add it to our local list.
             if ( m_Connections.containsKey(srcConnection) == false ) {
                 android.util.Log.w(TAG, "Received message from unknown connection.");
-// MODEBUG
-//                m_Connections.put(srcConnection, srcConnection);
-//                broadcastNewConnectionIntent(mgr, srcConnection);
+                m_Connections.put(srcConnection, srcConnection);
+                broadcastNewConnectionIntent(mgr, srcConnection);
             }
 
             for(IConnection c : m_Connections.values()) {
@@ -394,9 +393,6 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         android.util.Log.i(TAG, "broadcastNewConnectionIntent");
         broadcastConnectionChangedIntent(MsgServerService.INTENT_SEND_NEW_CONNECTION,
                 mgr, newConnection);
-
-        // MODEBUG - TEST
-        onClosedConnection(mgr, newConnection);
     }
 
     private void broadcastClosedConnectionIntent(IConnectionMgr mgr, IConnection closedConnection) {
