@@ -8,24 +8,35 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.inputmethod.EditorInfo;
+import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ExpandableListView;
+import android.widget.TextView;
+import android.widget.ToggleButton;
 
-import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 import msgtools.milesengineering.msgserver.MsgServerService;
 import msgtools.milesengineering.msgserver.MsgServerServiceAPI;
 
-public class MainActivity extends AppCompatActivity implements ServiceConnection {
+public class MainActivity extends AppCompatActivity implements ServiceConnection,
+        CompoundButton.OnCheckedChangeListener, TextView.OnEditorActionListener
+{
     private static final String TAG = MainActivity.class.getSimpleName();
 
     AppExpandableListAdapter m_ListAdapter;
     ExpandableListView m_ListView;
+    EditText m_FilenameEditText;
+    EditText m_MsgVersionEditText;
+    ToggleButton m_LoggingButton;
+
+    String m_LastBaseFilename = "";
 
     private MsgServerServiceAPI m_MsgServerAPI;
     private BroadcastReceiver m_BroadcastReceiver;
@@ -36,12 +47,19 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         android.util.Log.i(TAG, "onCreate(...)");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         // Setup our list view
-        m_ListView = (ExpandableListView) findViewById(R.id.listview);
-        prepareList();
+        m_ListView = (ExpandableListView)findViewById(R.id.listview);
+        setupExpandableList();
+
+        // Register for events from our logging widgets
+        m_FilenameEditText = (EditText)findViewById(R.id.editTextFilenaame);
+        m_MsgVersionEditText = (EditText)findViewById(R.id.editTextVersion);
+        m_LoggingButton = (ToggleButton)findViewById(R.id.toggleButton);
+
+        m_LoggingButton.setOnCheckedChangeListener(this);
 
         // Instantiate a broadcast receiver.  This is where all the service intent
         // handling, and list updating happens.
@@ -125,14 +143,63 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     }
 
     /*
-     * Preparing the list data
+     * Preparing the list
      */
-    private void prepareList() {
+    private void setupExpandableList() {
         m_ListAdapter = new AppExpandableListAdapter(this);
         m_ListView.setAdapter(m_ListAdapter);
 
         // Pre-expand
         m_ListView.expandGroup(0);
         m_ListView.expandGroup(1);
+    }
+
+    //
+    // UI Event handling - primarily logging management...
+    //
+    @Override
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        if ( isChecked == false ) {
+            m_MsgServerAPI.stopLogging();
+
+            m_FilenameEditText.setEnabled(true);
+            m_MsgVersionEditText.setEnabled(true);
+            m_FilenameEditText.setText(m_LastBaseFilename);
+        }
+        else {
+            // Build up a filename with date and time info appended
+            // It would be easier to use the Instant class but that isn't
+            // available until API 26 and we want to support older devices.
+            Date now = new Date();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            String timestampString = sdf.format(now);
+
+            String filename = m_FilenameEditText.getText().toString().trim();
+            m_LastBaseFilename = filename;
+
+            if ( filename.length() > 0 )
+                filename = String.format("%s_%s.log", filename, timestampString);
+            else
+                filename = timestampString;
+
+            String msgVersion = m_MsgVersionEditText.getText().toString();
+
+            m_FilenameEditText.setEnabled(false);
+            m_MsgVersionEditText.setEnabled(false);
+            m_FilenameEditText.setText(filename);   // Let the user know the full filename we're logging to
+
+            m_MsgServerAPI.startLogging(filename, msgVersion);
+        }
+    }
+
+    @Override
+    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+        if (actionId == EditorInfo.IME_ACTION_DONE) {
+            // Just hide the keyboard if the user hits done
+            v.clearFocus();
+            return true;
+        }
+        return false;
     }
 }

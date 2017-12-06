@@ -142,10 +142,9 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
             // Parse the new connection...
             JSONObject connection = (JSONObject) new JSONTokener(jsonConnection).nextValue();
 
+            // TODO: I'm 99% sure this contains won't work correctly - need to fix (not critical)
             if (m_Connections.contains(connection) == false) {
                 m_Connections.add(connection);
-
-                // TODO: Implement a JSON Object sort...
                 m_Connections.sort(new ConnectionComparator());
             }
         } catch (JSONException e) {
@@ -169,6 +168,8 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
 
             // Remove the string if we have it.  Always possible we can get out of
             // sync somehow...
+
+            // TODO: I'm 99% sure this contains won't work correctly - need to fix (not critical)
             if (m_Connections.contains(connection) == true) {
                 m_Connections.remove(connection);
 
@@ -190,7 +191,7 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
 
     @Override
     public Object getChild(int groupPosition, int childPosition) {
-        android.util.Log.d(TAG, "getChild(...)");
+        android.util.Log.v(TAG, "getChild(...)");
 
         Object retVal = null;
         if (groupPosition == 0) {
@@ -205,14 +206,14 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
 
     @Override
     public long getChildId(int groupPosition, int childPosition) {
-        android.util.Log.d(TAG, "setChildId(...)");
+        android.util.Log.v(TAG, "setChildId(...)");
         return childPosition;
     }
 
     @Override
     public View getChildView(int groupPosition, final int childPosition,
                              boolean isLastChild, View convertView, ViewGroup parent) {
-        android.util.Log.d(TAG, "getChildView(...)");
+        android.util.Log.v(TAG, "getChildView(...)");
 
         View retVal = convertView;
 
@@ -277,7 +278,7 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
 
     @Override
     public int getChildrenCount(int groupPosition) {
-        android.util.Log.d(TAG, "getChildrenCount(...)");
+        android.util.Log.v(TAG, "getChildrenCount(...)");
 
         int retVal = 0;
         switch(groupPosition) {
@@ -298,26 +299,26 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
 
     @Override
     public Object getGroup(int groupPosition) {
-        android.util.Log.d(TAG, "getGroup(...)");
+        android.util.Log.v(TAG, "getGroup(...)");
         return m_ListHeaders.get(groupPosition);
     }
 
     @Override
     public int getGroupCount() {
-        android.util.Log.d(TAG, "getGroupCount(...)");
+        android.util.Log.v(TAG, "getGroupCount(...)");
         return m_ListHeaders.size();
     }
 
     @Override
     public long getGroupId(int groupPosition) {
-        android.util.Log.d(TAG, "getGroupId(...)");
+        android.util.Log.v(TAG, "getGroupId(...)");
         return groupPosition;
     }
 
     @Override
     public View getGroupView(int groupPosition, boolean isExpanded,
                              View convertView, ViewGroup parent) {
-        android.util.Log.d(TAG, "getGroupView(...)");
+        android.util.Log.v(TAG, "getGroupView(...)");
 
         String headerTitle = (String)getGroup(groupPosition);
         if (convertView == null) {
@@ -336,13 +337,13 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
 
     @Override
     public boolean hasStableIds() {
-        android.util.Log.d(TAG, "hasStableIds(...)");
+        android.util.Log.v(TAG, "hasStableIds(...)");
         return false;
     }
 
     @Override
     public boolean isChildSelectable(int groupPosition, int childPosition) {
-        android.util.Log.d(TAG, "isChildSelectable(...)");
+        android.util.Log.v(TAG, "isChildSelectable(...)");
         return false;
     }
 }
