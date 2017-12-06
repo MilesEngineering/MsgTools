@@ -12,7 +12,9 @@ import android.os.Process;
 import android.widget.Toast;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -40,10 +42,12 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     public static final String INTENT_SEND_CONNECTIONS = "msgtools.milesengineering.msgserver.MsgServerServiceSendConnection";
     public static final String INTENT_SEND_NEW_CONNECTION = "msgtools.milesengineering.msgserver.MsgServerServiceSendNewConnection";
     public static final String INTENT_SEND_CLOSED_CONNECTION = "msgtools.milesengineering.msgserver.MsgServerServiceSendClosedConnection";
+    public static final String INTENT_SEND_LOGGING_STATUS = "msgtools.milesengineering.msgserver.MsgServerServiceSendLoggingStatus";
 
     private final static int TCP_PORT = 5678;
     private final static int WEBSOCKET_PORT = 5679;
     private final static int TIMER_INTERVAL = 1000; // ms for each RX/TX update
+    public final static String LOG_DIRECTORY = "MessageServer";
 
     private final Object m_Lock = new Object();   // Sync object
     private Messenger m_MsgHandler;               // For external client binding
@@ -83,6 +87,9 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         }
     };
 
+    // Message Logging
+    private MessageLogger m_MsgLogger;
+
     /**
      * Private utility class that processes Messages from bound clients.  This is where our
      * MsgServerServiceAPI messages are processed.
@@ -100,6 +107,21 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
                         android.util.Log.d(TAG, "Connections Request Received");
                         sendConnectionsIntent();
                         break;
+                    case MsgServerServiceAPI.ID_REQUEST_START_LOGGING:
+                        android.util.Log.d(TAG, "Start Logging Request");
+                        try {
+                            String json = (String) msg.obj;
+                            JSONObject jsonObj = (JSONObject) new JSONTokener(json).nextValue();
+                            startLogging(jsonObj.getString("filename"), jsonObj.getString("msgVersion"));
+                        }
+                        catch(JSONException je) {
+                            broadcastLoggingStatusIntent(je.getMessage());
+                        }
+                        break;
+                    case MsgServerServiceAPI.ID_REQUEST_STOP_LOGGING:
+                        android.util.Log.d(TAG, "Stop Logging Request");
+                        stopLogging();
+                        break;
                     default:
                         android.util.Log.w(TAG, "Unknown message type received by MsgServer.");
                         super.handleMessage(msg);
@@ -116,6 +138,9 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     public void onCreate() {
         android.util.Log.i(TAG, "onCreate()");
         Toast.makeText(this, "MsgServer Service Starting...", Toast.LENGTH_SHORT).show();
+
+        // Create a new logger
+        m_MsgLogger = new MessageLogger(LOG_DIRECTORY);
 
         // Setup a binding message handler for any client bind requests
         m_MsgHandler = new Messenger(new MsgServerAPIHandler());
@@ -151,6 +176,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     public void onDestroy() {
         android.util.Log.i(TAG, "onDestroy()");
         Toast.makeText(this, "MsgServer Service Being Destroyed...", Toast.LENGTH_SHORT).show();
+
+        m_MsgLogger.stopLogging();
 
         m_TCPConnectionMgr.requestHalt();
         m_MsgServerHandler.getLooper().quitSafely();
@@ -272,6 +299,9 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
 
             // Next time our timer fires post a RX/TX update to everyone
             m_MessageCountDirty = true;
+
+            // And finally log
+            m_MsgLogger.log((int)networkHeader.GetID(), hdrBuff, payloadBuff);
         }
     }
 
@@ -302,6 +332,16 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         sendIntent.putExtra(Intent.EXTRA_TEXT, jarray.toString());
 
         sendBroadcast(sendIntent);
+    }
+
+    private void startLogging(String filename, String msgVersion) {
+        String errorMsg = m_MsgLogger.startLogging(filename, msgVersion);
+        broadcastLoggingStatusIntent(errorMsg);
+    }
+
+    private void stopLogging() {
+        String errorMsg = m_MsgLogger.stopLogging();
+        broadcastLoggingStatusIntent(errorMsg);
     }
 
     //
@@ -341,7 +381,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     }
 
     //
-    // Broadcast Intent methods
+    // Broadcast Intent methods - our reverse API of sorts...
     //
 
     private void broadcastNewConnectionIntent(IConnectionMgr mgr, IConnection newConnection) {
@@ -366,6 +406,34 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         Intent sendIntent = new Intent();
         sendIntent.setAction(action);
         sendIntent.putExtra(Intent.EXTRA_TEXT, jsonObject.toString());
+
+        sendBroadcast(sendIntent);
+    }
+    private void broadcastLoggingStatusIntent(String error) {
+        android.util.Log.d(TAG, "broadcastLoggingStatusIntent");
+
+        JSONObject jsonObj = new JSONObject();
+        try {
+            jsonObj.put("enabled", m_MsgLogger.isEnabled());
+            if (m_MsgLogger.isEnabled() == true) {
+                if ( m_MsgLogger.getFilename() != null )
+                    jsonObj.put("filename", m_MsgLogger.getFilename());
+
+                if ( m_MsgLogger.getMsgVersion() != null )
+                    jsonObj.put("msgVersion", m_MsgLogger.getMsgVersion());
+            }
+
+            if (error != null)
+                jsonObj.put("error", error);
+        }
+        catch( JSONException je ) {
+            // Should never happen.
+            je.printStackTrace();
+        }
+
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(INTENT_SEND_LOGGING_STATUS);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, jsonObj.toString());
 
         sendBroadcast(sendIntent);
     }
