@@ -262,10 +262,10 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         synchronized (m_Lock) {
             if ( m_Connections.remove(closedConnection) == null ) {
                 android.util.Log.w(TAG, "Attempted to remove a closed connection that is not being tracked");
-                broadcastClosedConnectionIntent(mgr, closedConnection);
             }
+            else
+                broadcastClosedConnectionIntent(mgr, closedConnection);
         }
-
     }
 
     @Override
@@ -277,8 +277,9 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
             // and add it to our local list.
             if ( m_Connections.containsKey(srcConnection) == false ) {
                 android.util.Log.w(TAG, "Received message from unknown connection.");
-                m_Connections.put(srcConnection, srcConnection);
-                broadcastNewConnectionIntent(mgr, srcConnection);
+// MODEBUG
+//                m_Connections.put(srcConnection, srcConnection);
+//                broadcastNewConnectionIntent(mgr, srcConnection);
             }
 
             for(IConnection c : m_Connections.values()) {
@@ -358,8 +359,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         JSONArray jarray = new JSONArray();
         for( IConnectionMgr cm : managers ) {
             Hashtable<String,String> map = new Hashtable<String,String>();
-            map.put("getProtocol", cm.getProtocol());
-            map.put("getDescription", cm.getDescription());
+            map.put("protocol", cm.getProtocol());
+            map.put("description", cm.getDescription());
 
             jarray.put(JSONObject.wrap(map));
         }
@@ -370,14 +371,19 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     private JSONObject getConnectionJSON(IConnection conn) {
         // TODO: Probably ought to create a utility class for this so clients
         // can stay in sync...
-        Hashtable<String,String> map = new Hashtable<>();
-        map.put("id", Integer.toString(conn.hashCode()));
-        map.put("getDescription", conn.getDescription());
-        map.put("recvCount", Integer.toString(conn.getMessagesReceived()));
-        map.put("sentCount", Integer.toString(conn.getMessagesSent()));
-        map.put("getProtocol", conn.getProtocol());
+        JSONObject jsonObj = new JSONObject();
+        try {
+            jsonObj.put("id", conn.hashCode());
+            jsonObj.put("description", conn.getDescription());
+            jsonObj.put("recvCount", conn.getMessagesReceived());
+            jsonObj.put("sendCount", conn.getMessagesSent());
+            jsonObj.put("protocol", conn.getProtocol());
+        }
+        catch( JSONException je ) {
+            je.printStackTrace();
+        }
 
-        return (JSONObject)JSONObject.wrap(map);
+        return jsonObj;
     }
 
     //
@@ -388,12 +394,15 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         android.util.Log.i(TAG, "broadcastNewConnectionIntent");
         broadcastConnectionChangedIntent(MsgServerService.INTENT_SEND_NEW_CONNECTION,
                 mgr, newConnection);
+
+        // MODEBUG - TEST
+        onClosedConnection(mgr, newConnection);
     }
 
-    private void broadcastClosedConnectionIntent(IConnectionMgr mgr, IConnection newConnection) {
-        android.util.Log.i(TAG, "broadcastNewConnectionIntent");
+    private void broadcastClosedConnectionIntent(IConnectionMgr mgr, IConnection closedConnection) {
+        android.util.Log.i(TAG, "broadcastClosedConnectionIntent");
         broadcastConnectionChangedIntent(MsgServerService.INTENT_SEND_CLOSED_CONNECTION,
-                mgr, newConnection);
+                mgr, closedConnection);
     }
 
     private void broadcastConnectionChangedIntent(String action, IConnectionMgr mgr,

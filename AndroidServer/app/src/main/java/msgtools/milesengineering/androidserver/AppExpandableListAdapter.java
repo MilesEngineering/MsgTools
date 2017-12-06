@@ -30,25 +30,54 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
     private Context m_Context;
     private List<String> m_ListHeaders = new ArrayList<String>(); // header titles
     private List<String> m_Servers = new ArrayList<String>();
-    private List<JSONObject> m_Connections = new ArrayList<JSONObject>();
+    private List<Connection> m_Connections = new ArrayList<Connection>();
 
     /**
      * Utility method for connection sorting...
      */
-    private class ConnectionComparator implements Comparator<JSONObject> {
+    private class ConnectionComparator implements Comparator<Connection> {
 
         @Override
-        public int compare(JSONObject o1, JSONObject o2) {
-            try {
-                String o1description = o1.getString("getDescription");
-                String o2description = o2.getString("getDescription");
-                return o1description.compareTo(o2description);
-            }
-            catch( JSONException je ) {
-                je.printStackTrace();
+        public int compare(Connection o1, Connection o2) {
+            return o1.m_Description.compareTo(o2.m_Description);
+        }
+    }
+
+    /**
+     * Internal data representation of a connection...
+     */
+    public class Connection {
+        private int m_Id;
+        public String m_Description;
+        public String m_Protocol;
+        public int m_RecvCount;
+        public int m_SendCount;
+
+        public Connection(JSONObject json) throws JSONException {
+            m_Id = json.getInt("id");
+            m_Description = json.getString("description");
+            m_Protocol = json.getString("protocol");
+            m_RecvCount = json.getInt("recvCount");
+            m_SendCount = json.getInt("sendCount");
+        }
+
+        @Override
+        public int hashCode() {
+            return m_Id;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            boolean retVal = false;
+            if ( obj instanceof Connection == true ) {
+                Connection c = (Connection)obj;
+                if(c.m_Id == m_Id && c.m_Description.equals(m_Description) &&
+                        c.m_Protocol.equals(m_Protocol) ) {
+                    retVal = true;
+                }
             }
 
-            return -1;
+            return retVal;
         }
     }
 
@@ -83,8 +112,8 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
             JSONArray servers = (JSONArray) new JSONTokener(jsonServers).nextValue();
             for (int i =0; i < servers.length(); i++) {
                 JSONObject obj = servers.getJSONObject(i);
-                String displayText = String.format( "%s: %s", obj.optString("getProtocol", "???"),
-                        obj.optString("getDescription", "UNKNOWN"));
+                String displayText = String.format( "%s: %s", obj.optString("protocol", "???"),
+                        obj.optString("description", "UNKNOWN"));
                 m_Servers.add(displayText);
             }
 
@@ -106,7 +135,7 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
      * Set the connections en masse.  This method clears any existing connection data in favor
      * of the new array passed in.
      *
-     * @param jsonConnections JSON string for an array of connetions.
+     * @param jsonConnections JSON string for an array of connections.
      */
     public void setConnections(String jsonConnections) {
         android.util.Log.i(TAG, "setConnections(...)");
@@ -120,7 +149,7 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
             JSONArray connections = (JSONArray) new JSONTokener(jsonConnections).nextValue();
             for (int i =0; i < connections.length(); i++) {
                 JSONObject obj = connections.getJSONObject(i);
-                m_Connections.add(obj);
+                m_Connections.add(new Connection(obj));
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -140,9 +169,8 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
 
         try {
             // Parse the new connection...
-            JSONObject connection = (JSONObject) new JSONTokener(jsonConnection).nextValue();
-
-            // TODO: I'm 99% sure this contains won't work correctly - need to fix (not critical)
+            Connection connection =
+                    new Connection((JSONObject)new JSONTokener(jsonConnection).nextValue());
             if (m_Connections.contains(connection) == false) {
                 m_Connections.add(connection);
                 m_Connections.sort(new ConnectionComparator());
@@ -164,12 +192,12 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
         android.util.Log.d(TAG, "removeClosedConnection(...)");
         try {
             // Parse the new connection...
-            JSONObject connection = (JSONObject) new JSONTokener(jsonConnection).nextValue();
+            Connection connection =
+                    new Connection((JSONObject)new JSONTokener(jsonConnection).nextValue());
 
             // Remove the string if we have it.  Always possible we can get out of
             // sync somehow...
 
-            // TODO: I'm 99% sure this contains won't work correctly - need to fix (not critical)
             if (m_Connections.contains(connection) == true) {
                 m_Connections.remove(connection);
 
@@ -248,26 +276,25 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
                 }
 
                 String descriptionText = "None";
+                String txText = "";
+                String rxText = "";
                 TextView textView;
 
                 if (m_Connections.size() != 0) {
-                    JSONObject connection = (JSONObject) getChild(groupPosition, childPosition);
-                    descriptionText = String.format( "%s: %s", connection.optString( "getProtocol", "???"),
-                            connection.optString("getDescription", "UNKNOWN") );
-
-                    textView = (TextView) retVal.findViewById(R.id.lblTx);
-                    String countText = "TX " + connection.optString("sentCount", "--");
-                    textView.setText(countText);
-
-                    textView = (TextView) retVal.findViewById(R.id.lblRx);
-                    countText = "RX " + connection.optString("recvCount", "--");
-                    textView.setText(countText);
+                    Connection connection = (Connection) getChild(groupPosition, childPosition);
+                    descriptionText = String.format( "%s: %s", connection.m_Protocol,
+                            connection.m_Description );
+                    txText = "TX " + connection.m_SendCount;
+                    rxText = "RX " + connection.m_RecvCount;
                 }
 
                 // Set the getDescription last.
                 textView = (TextView) retVal.findViewById(R.id.lblDescription);
                 textView.setText(descriptionText);
-
+                textView = (TextView) retVal.findViewById(R.id.lblTx);
+                textView.setText(txText);
+                textView = (TextView) retVal.findViewById(R.id.lblRx);
+                textView.setText(rxText);
                 break;
             default:
                 android.util.Log.e(TAG, "Unknown group requested");
