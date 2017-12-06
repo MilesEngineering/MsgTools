@@ -259,8 +259,7 @@ class MessageServer(QtWidgets.QMainWindow):
                             else:
                                 client.sendMsg(hdr)
                         except Exception as ex:
-                            if Messaging.debug:
-                                print(ex)
+                            self.onStatusUpdate("Exception in server.py while sending to client " + client.name + ": ["  +str(ex)+"]")
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())
