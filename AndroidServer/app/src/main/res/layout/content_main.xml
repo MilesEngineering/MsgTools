@@ -28,8 +28,8 @@
         android:focusedByDefault="false"
         android:hint="Base Filename"
         android:inputType="textPersonName"
-        android:focusable="false"
-        android:focusableInTouchMode="false"/>
+        android:focusable="true"
+        android:focusableInTouchMode="true"/>
 
     <EditText
         android:id="@+id/editTextVersion"
@@ -40,8 +40,8 @@
         android:ems="10"
         android:hint="Msg Version"
         android:inputType="textPersonName"
-        android:focusable="false"
-        android:focusableInTouchMode="false"/>
+        android:focusable="true"
+        android:focusableInTouchMode="true"/>
 
     <ToggleButton
         android:id="@+id/toggleButton"
@@ -63,5 +63,6 @@
         android:id="@+id/listview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/space" />
+        android:layout_below="@+id/space"
+        android:focusable="true" />
 </RelativeLayout>
