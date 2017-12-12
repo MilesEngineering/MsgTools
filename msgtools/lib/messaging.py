@@ -95,15 +95,17 @@ class Messaging:
                     if lastsrcdir == srcdir:
                         # if we're at root of filesystem, just give up!
                         loadDir = None
-                        print("\nERROR! Auto-generated python code not found!")
-                        print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
-                        return
+                        #print("\nERROR! Auto-generated python code not found!")
+                        #print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
+                        break
                     loadDir = srcdir + "/obj/CodeGenerator/Python/"
                     if Messaging.debug:
                         print("search for objdir in " + loadDir)
         sys.path.append(loadDir)
-        sys.path.append(loadDir+"/headers")
+        sys.path.append(str(loadDir)+"/headers")
         
+        # if we didn't find valid auto-generated code, this will cause an import error!
+        # the fix is to point to valid auto-generated code!
         headerModule = __import__(headerName)
 
         # Set the global header name

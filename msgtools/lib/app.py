@@ -59,7 +59,11 @@ class App(QtWidgets.QMainWindow):
         # initialize the read function to None, so it's not accidentally called
         self.readBytesFn = None
 
-        self.msgLib = Messaging(None, 0, headerName)
+        try:
+            self.msgLib = Messaging(None, 0, headerName)
+        except ImportError:
+            print("\nERROR! Auto-generated python code not found!")
+            print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
         
         self.OpenConnection()
 
