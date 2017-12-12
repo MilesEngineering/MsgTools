@@ -19,8 +19,8 @@ class SynchronousMsgServer:
         self.hdr = hdr
         self.loop = asyncio.get_event_loop()
         from threading import Thread
-        t = Thread(target=self.start)
-        t.start()
+        self.t = Thread(target=self.start)
+        self.t.start()
 
     def send_message(self, msg):
         self.synchronous_tx_queue.sync_q.put(msg.rawBuffer().raw)
@@ -39,11 +39,9 @@ class SynchronousMsgServer:
     def stop(self):
         for task in asyncio.Task.all_tasks():
             task.cancel()
-        #self.stop()
         self.tcp_server.close()
-        self.loop.stop()
-        # Some thread hangs and sys.exit doesn't return, perhaps?
-        sys.exit(0)
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.t.join()
 
     # Implementation details from here down
     def start(self):
