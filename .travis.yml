@@ -9,7 +9,7 @@ matrix:
     android:
       components:
         - tools
-        - android-25
-        - build-tools-25.0.3
+        - android-26
+        - build-tools-26.0.2
     before_script: cd AndroidServer
     script: ./gradlew build connectedCheck
