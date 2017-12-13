@@ -11,5 +11,5 @@ matrix:
         - tools
         - android-25
         - build-tools-25.0.3
-    before_script: cd android/AppName
+    before_script: cd AndroidServer
     script: ./gradlew build connectedCheck
