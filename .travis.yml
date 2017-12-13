@@ -1,24 +1,8 @@
-jobs:
-  include:
-    - stage: test
-      language: python
-      python:
-        - "3.5"
-      install:
-        - "pip install pyyaml"
-      # command to run tests
-      script:
-        - make test
-    - stage: android_server
-      language: android
-      android:
-        components:
-          - build-tools-18.1.1
-          - android-18
-          - extra
-      script:
-        - cd AndroidServer ; ./gradlew build
-before_install:
-  - sudo add-apt-repository --yes ppa:ubuntu-sdk-team/ppa
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo apt-get update -qq
+language: python
+python:
+  - "3.5"
+# command to run tests
+install:
+  - "pip install pyyaml"
+script:
+  - make test
