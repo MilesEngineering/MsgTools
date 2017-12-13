@@ -5,17 +5,17 @@ matrix:
     install: "pip install pyyaml"
     script: make test
   - language: android
-  jdk: oraclejdk8
-  before_install:
-    - sudo apt-get install python3 pip3
-    - sudo pip3 install pyyaml
-  install:
-    - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2"
-    - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
-  android:
-    components:
-      - tools
-      - android-26
-        - build-tools-26.0.2
-  before_script: 
-  script: make test && make android
+    jdk: oraclejdk8
+    before_install:
+      - sudo apt-get install python3 pip3
+      - sudo pip3 install pyyaml
+    install:
+      - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2"
+      - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
+    android:
+      components:
+        - tools
+        - android-26
+          - build-tools-26.0.2
+    before_script: 
+    script: make test && make android
