@@ -4,16 +4,11 @@ jobs:
       language: python
       python:
         - "3.5"
-      # command to run tests
       install:
         - "pip install pyyaml"
+      # command to run tests
       script:
         - make test
-
-      before_install:
-        - sudo add-apt-repository --yes ppa:ubuntu-sdk-team/ppa
-        - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-        - sudo apt-get update -qq
     - stage: android_server
       language: android
       android:
@@ -23,3 +18,7 @@ jobs:
           - extra
       script:
         - cd AndroidServer ; ./gradlew build
+before_install:
+  - sudo add-apt-repository --yes ppa:ubuntu-sdk-team/ppa
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update -qq
