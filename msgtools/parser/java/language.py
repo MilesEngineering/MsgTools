@@ -29,7 +29,7 @@ def fieldCastType(field):
 
 def fieldPromotionFn(field):
     fieldTypeDict = \
-    {"uint64":"error", "uint32":"Integer.toUnsignedLong", "uint16": "Short.toUnsignedInt", "uint8": "Byte.toUnsignedInt"}
+    {"uint64":"error", "uint32":"FieldAccess.toUnsignedLong", "uint16": "FieldAccess.toUnsignedInt", "uint8": "FieldAccess.toUnsignedInt"}
     typeStr = str.lower(field["Type"])
     return fieldTypeDict[typeStr]
 
@@ -70,7 +70,7 @@ public %s Get%s(%s)
 
 def setFn(field, offset):
     paramType = fieldType(field)
-    valueString = setMath("value", field, fieldType(field), 'f')
+    valueString = setMath("value", field, '('+fieldType(field)+')', 'f')
     if "Offset" in field or "Scale" in field:
         paramType = typeForScaledInt(field)
     #elif "Enum" in field:
@@ -111,7 +111,7 @@ public %s Get%s()
 def setBitsFn(field, bits, offset, bitOffset, numBits):
     paramType = fieldType(field)
     intType = paramType
-    valueString = setMath("value", bits, fieldType(field), 'f')
+    valueString = setMath("value", bits, '('+fieldType(field)+')', 'f')
     if "Offset" in bits or "Scale" in bits:
         paramType = typeForScaledInt(bits)
     #elif "Enum" in bits:
@@ -159,18 +159,20 @@ def languageConst(value):
     return ret
 
 def initField(field):
+    type = fieldType(field)
     if "Default" in field:
         if MsgParser.fieldCount(field) > 1:
             ret = "for (int i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
-            ret += "    Set" + field["Name"] + "(" + languageConst(field["Default"]) + ", i);" 
+            ret += "    Set%s((%s)%s, i);" % (field["Name"], type, languageConst(field["Default"])) 
             return ret;
         else:
-            return  "Set" + field["Name"] + "(" + languageConst(field["Default"]) + ");"
+            return  "Set%s((%s)%s);" % (field["Name"],type, languageConst(field["Default"]))
     return ""
 
 def initBitfield(field, bits):
+    type = fieldType(field)
     if "Default" in bits:
-        return  "Set" + MsgParser.BitfieldName(field, bits) + "(" +str(bits["Default"]) + ");"
+        return  "Set%s((%s)%s);" % (MsgParser.BitfieldName(field, bits), type, str(bits["Default"]))
     return ""
 
 def initCode(msg):
@@ -255,11 +257,13 @@ def reflection(msg):
 def fieldMin(field):
     val = MsgParser.fieldMin(field)
     ret = str(val)
-    if "Scale" in field or "Offset" in field:
-        ret += 'f'
+    if ret == 'DBL_MIN':
+        ret = 'Double.MIN_VALUE'
+    elif ret == 'FLT_MIN':
+        ret = 'Float.MIN_VALUE'
     else:
         try:
-            if val > fieldStorageMax("int32"):
+            if val > fieldStorageMax("uint32"):
                 ret += 'L'
         except TypeError:
             pass
@@ -268,8 +272,10 @@ def fieldMin(field):
 def fieldMax(field):
     val = MsgParser.fieldMax(field)
     ret = str(val)
-    if "Scale" in field or "Offset" in field:
-        ret += 'f'
+    if ret == 'DBL_MAX':
+        ret = 'Double.MAX_VALUE'
+    elif ret == 'FLT_MAX':
+        ret = 'Float.MAX_VALUE'
     else:
         try:
             if val > fieldStorageMax("int32"):
@@ -280,17 +286,17 @@ def fieldMax(field):
 
 def genericInfo(field, type, offset):
     loc = str(offset)
-    params  = '    static final int loc   = ' + loc + ';\n'
-    params += '    static final '+type+' max   = ' + fieldMax(field) + ';\n'
-    params += '    static final '+type+' min   = ' + fieldMin(field) + ';\n'
+    params  = '    static final int loc = ' + loc + ';\n'
+    params += '    static final %s max = (%s)%s;\n' % (type, type, fieldMax(field))
+    params += '    static final %s min = (%s)%s;\n' % (type, type, fieldMin(field))
     params += '    static final String units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
     params += '    static final int count = ' + str(MsgParser.fieldCount(field)) + ';\n'
     if "Default" in field:
-        params += '    static final '+type+' defaultValue = ' + languageConst(field["Default"]) + ";\n" 
+        params += '    static final %s defaultValue = (%s)%s;\n' % (type, type, languageConst(field["Default"]))
     if "Scale" in field:
-        params += '    static final int scale = ' + str(field["Scale"]) + ';\n'
+        params += '    static final float scale = (float)' + str(field["Scale"]) + ';\n'
     if "Offset" in field:
-        params += '    static final int offset = ' + str(field["Offset"]) + ';\n'
+        params += '    static final float offset = (float)' + str(field["Offset"]) + ';\n'
     return params
     
 def fieldInfo(field, offset):

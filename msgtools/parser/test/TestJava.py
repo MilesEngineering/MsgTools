@@ -20,7 +20,7 @@ class TestJava(unittest.TestCase):
 //  m/s, (0 to 4294967295)
 public long GetFieldA()
 {
-    return (long)Integer.toUnsignedLong(m_data.getInt(0));
+    return (long)FieldAccess.toUnsignedLong(m_data.getInt(0));
 }""")
         expected.append("""\
 //  , (0 to 2147483647)
@@ -32,19 +32,19 @@ public long GetFABitsA()
 //  , (0 to 65535)
 public int GetFieldB()
 {
-    return (int)Short.toUnsignedInt(m_data.getShort(4));
+    return (int)FieldAccess.toUnsignedInt(m_data.getShort(4));
 }""")
         expected.append("""\
 //  , (0 to 255)
 public short GetFieldC(int idx)
 {
-    return (short)Byte.toUnsignedInt(m_data.get(6+idx*1));
+    return (short)FieldAccess.toUnsignedInt(m_data.get(6+idx*1));
 }""")
         expected.append("""\
 //  , (0 to 255)
 public short GetFieldD()
 {
-    return (short)Byte.toUnsignedInt(m_data.get(11));
+    return (short)FieldAccess.toUnsignedInt(m_data.get(11));
 }""")
         expected.append("""\
 //  , (0.0 to 215.355)
@@ -74,7 +74,7 @@ public float GetFieldE()
 //  , (1.828 to 176946.328)
 public float GetFieldF()
 {
-    return (((float)((int)Short.toUnsignedInt(m_data.getShort(16))) * 2.7f) + 1.828f);
+    return (((float)((int)FieldAccess.toUnsignedInt(m_data.getShort(16))) * 2.7f) + 1.828f);
 }""")
         expected.append("""\
 //  m/s, (0 to 4294967295)
@@ -110,7 +110,7 @@ public void SetFieldD(short value)
 //  , (0.0 to 215.355)
 public void SetBitsA(float value)
 {
-    SetFieldD((short)((GetFieldD() & ~(0xf << 0)) | ((short(value / 14.357f) & 0xf) << 0)));
+    SetFieldD((short)((GetFieldD() & ~(0xf << 0)) | (((short)(value / 14.357f) & 0xf) << 0)));
 }""")
         expected.append("""\
 //  , (0 to 7)
@@ -134,7 +134,7 @@ public void SetFieldE(float value)
 //  , (1.828 to 176946.328)
 public void SetFieldF(float value)
 {
-    m_data.putShort(16, (short)int((value - 1.828f) / 2.7f));
+    m_data.putShort(16, (short)(int)((value - 1.828f) / 2.7f));
 }""")
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
@@ -173,13 +173,13 @@ public void SetFieldF(float value)
     
     def test_initCode(self):
         expected = []
-        expected.append("SetFieldA(1);")
-        expected.append("SetFieldB(2);")
-        expected.append("for (int i=0; i<5; i++)\n    SetFieldC(3, i);")
-        expected.append("SetBitsA(7.1);")
-        expected.append("SetBitsC(1);")
-        expected.append("SetFieldE(3.14159);")
-        expected.append("SetFieldF(3.14);")
+        expected.append("SetFieldA((long)1);")
+        expected.append("SetFieldB((int)2);")
+        expected.append("for (int i=0; i<5; i++)\n    SetFieldC((short)3, i);")
+        expected.append("SetBitsA((short)7.1);")
+        expected.append("SetBitsC((short)1);")
+        expected.append("SetFieldE((float)3.14159);")
+        expected.append("SetFieldF((int)3.14);")
         expCount = len(expected)
         observed = language.initCode(MsgParser.Messages(self.msgDict)[0])
         obsCount = len(observed)

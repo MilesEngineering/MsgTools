@@ -153,6 +153,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
             msg["ids"] = ids
             try:
                 msg["commonSubdir"] = CommonSubdir(inputFilename, outDir+"/fake")
+                msg["commonSubdir"] = msg["commonSubdir"].replace( '/', '.');
 
                 if oneOutputFilePerMsg:
                     outputFilename, outFile = OutputFile(inputFilename, msgShortName(msg), outDir)
@@ -182,7 +183,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<INPUTFILENAME>"] = inputFilename
                 replacements["<TEMPLATEFILENAME>"] = templateFilename
                 replacements["<LANGUAGEFILENAME>"] = languageFilename
-                replacements["<MESSAGE_SUBDIR>"] = msg["commonSubdir"]
+                replacements["<MESSAGE_PACKAGE>"] = msg["commonSubdir"]
                 replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg)
                 replacements["<DATE>"] = currentDateTime
                 for line in template:

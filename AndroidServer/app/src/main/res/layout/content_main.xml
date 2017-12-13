@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="msgtools.milesengineering.androidserver.MainActivity"
+    tools:showIn="@layout/activity_main">
+
+    <LinearLayout
+        android:id="@+id/linear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/logging_background"
+        android:padding="5dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textViewLogging"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:paddingLeft="5dp"
+            android:paddingTop="5dp"
+            android:background="@color/colorPrimaryDark"
+            android:text="Logging"
+            android:textAppearance="@style/TextAppearance.AppCompat.Title"
+            android:textColor="@android:color/background_light" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <EditText
+                android:id="@+id/editTextFilenaame"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.80"
+                android:ems="10"
+                android:focusedByDefault="false"
+                android:hint="Base Filename"
+                android:inputType="textPersonName"
+                android:imeOptions="actionDone"/>
+
+            <EditText
+                android:id="@+id/editTextVersion"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.20"
+                android:ems="10"
+                android:hint="Msg Ver"
+                android:inputType="textPersonName"
+                android:imeOptions="actionDone"/>
+
+        </LinearLayout>
+
+        <ToggleButton
+            android:id="@+id/toggleButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="ToggleButton"
+            android:textOff="Start Logging"
+            android:textOn="Stop Logging" />
+    </LinearLayout>
+
+    <Space
+        android:id="@+id/space"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_below="@id/linear" />
+
+    <ExpandableListView
+        android:id="@+id/listview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/space"
+        android:padding="5dp"
+        android:background="@drawable/logging_background" />
+</RelativeLayout>

@@ -1,0 +1,56 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 26
+    buildToolsVersion "26.0.2"
+
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+
+    // The base app in MsgTools relies on MsgApp java files included with MsgTools as well
+    // as a generated headers for message transport. As a general rule the app should NEVER
+    // reference a specific message.  The only exception is we will create headers appropriate
+    // to the transport and use the .GetDataLength() method to retrieve the payload length.
+    // The app also uses the <HEADER>.SIZE constant to determine how many header bytes to read.
+    // All headers MUST supply these fields at minimum, and MsgTools will generally take care
+    // of these for you.
+
+    // make test in the root of MsgTools will create an obj directory one level above MsgTools with
+    // sample headers that can be used to build and run the app.  You will want to update the
+    // obj/CodeGenerator/java directory below to be rooted appropriate to your instance
+    // of this application.  If your messages are relatively stable you may instead want to create
+    // a JAR file and modify the project to use that instead.
+
+    // This path should reference your local working version of MsgTools
+    String MsgAppDir = '../../MsgApp/java'
+
+    // This path should reference the location of your generated messages
+    String GeneratedMsgDir = '../../../obj/CodeGenerator/java'
+
+    sourceSets {
+        main { java.srcDirs = ['src/main/java', MsgAppDir, GeneratedMsgDir,'../Java-WebSocket/src/main/java'] }
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:26.+'
+    testCompile 'junit:junit:4.12'
+}
