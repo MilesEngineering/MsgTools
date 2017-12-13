@@ -34,8 +34,15 @@ android {
     // obj/CodeGenerator/java directory below to be rooted appropriate to your instance
     // of this application.  If your messages are relatively stable you may instead want to create
     // a JAR file and modify the project to use that instead.
+
+    // This path should reference your local working version of MsgTools
+    String MsgAppDir = '../../MsgApp/java'
+
+    // This path should reference the location of your generated messages
+    String GeneratedMsgDir = '../../../obj/CodeGenerator/java'
+
     sourceSets {
-        main { java.srcDirs = ['src/main/java', '../../MsgApp/java', '../../../obj/CodeGenerator/java','../Java-WebSocket/src/main/java'] }
+        main { java.srcDirs = ['src/main/java', MsgAppDir, GeneratedMsgDir,'../Java-WebSocket/src/main/java'] }
     }
 }
 

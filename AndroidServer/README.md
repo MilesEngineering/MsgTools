@@ -7,7 +7,7 @@ The app requires some setup before you can run it, however the overall steps for
    your own messages.
 3. Fire up Android studio and build.  You may need to download appropriate SDKs and build tools, but there is otherwise nothing special.
 
-Note: There are some code generator bugs in MsgTools.  YOu can get around these by deleting all the test case and taxonomy messages in your test obj directory.
+Note: There are some code generator bugs in MsgTools.  You can get around these by deleting all the test case and taxonomy messages (both the Taxonomy directory, and the TaxonomyHeader in the headers folder) in your test obj directory.
 
 # Customizing the App for your own Messages
 Normally you will define your own YAML specifications and generate your own messages and code.  The app is designed to be completely agnostic to everything
