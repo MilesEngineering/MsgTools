@@ -1,8 +1,15 @@
-language: python
-python:
-  - "3.5"
-# command to run tests
-install:
-  - "pip install pyyaml"
-script:
-  - make test
+matrix:
+  include:
+  - language: python
+    python: "3.5"
+    install: "pip install pyyaml"
+    script: make test
+  - language: android
+    jdk: oraclejdk8
+    android:
+      components:
+        - tools
+        - android-25
+        - build-tools-25.0.3
+    before_script: cd android/AppName
+    script: ./gradlew build connectedCheck
