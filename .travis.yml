@@ -21,3 +21,5 @@ jobs:
           - build-tools-18.1.1
           - android-18
           - extra
+      script:
+        - cd AndroidServer ; ./gradlew build
