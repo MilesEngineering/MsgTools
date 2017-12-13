@@ -1,18 +1,15 @@
-matrix:
-  include:
-  - language: python
-    python: "3.5"
-    install: "pip install pyyaml"
-    script: make test
-  - language: android
-    jdk: oraclejdk8
-    install:
-      - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2"
-      - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
-    android:
-      components:
-        - tools
-        - android-26
-          - build-tools-26.0.2
-    before_script: cd AndroidServer
-    script: ./gradlew build connectedCheck
+language: android
+jdk: oraclejdk8
+before_install:
+  - sudo apt-get install python3
+  - sudo pip install pyyaml
+install:
+  - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2"
+  - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
+android:
+  components:
+    - tools
+    - android-26
+      - build-tools-26.0.2
+before_script: 
+script: make test && make android
