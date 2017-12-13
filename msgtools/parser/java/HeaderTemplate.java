@@ -38,7 +38,7 @@ public class <MSGNAME>
     }
     public int GetMessageID()
     {
-        return <GETMSGID>;
+        return (int)<GETMSGID>;
     }
     <ACCESSORS>
     private ByteBuffer m_data;
