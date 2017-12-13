@@ -11,6 +11,10 @@ import importlib
 from collections import OrderedDict
 import json
 
+from collections import namedtuple
+import ctypes
+import time
+
 # A decorator to specify units for fields
 def units(arg):
     def _units(fcn):
@@ -90,13 +94,18 @@ class Messaging:
                     # determine if we're at root of filesystem
                     if lastsrcdir == srcdir:
                         # if we're at root of filesystem, just give up!
-                        return
+                        loadDir = None
+                        #print("\nERROR! Auto-generated python code not found!")
+                        #print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
+                        break
                     loadDir = srcdir + "/obj/CodeGenerator/Python/"
-                    if 1: #if Messaging.debug:
+                    if Messaging.debug:
                         print("search for objdir in " + loadDir)
         sys.path.append(loadDir)
-        sys.path.append(loadDir+"/headers")
+        sys.path.append(str(loadDir)+"/headers")
         
+        # if we didn't find valid auto-generated code, this will cause an import error!
+        # the fix is to point to valid auto-generated code!
         headerModule = __import__(headerName)
 
         # Set the global header name
@@ -383,6 +392,86 @@ class Messaging:
         except AttributeError:
             pass
         return msg_route
+
+    class HeaderTranslator:
+        startTime = int(time.time() * 1000)
+
+        def __init__(self, hdr1, hdr2):
+            # Make a list of fields in the headers that have matching names.
+            self._correspondingFields = []
+            for fieldInfo1 in hdr1.fields:
+                if len(fieldInfo1.bitfieldInfo) == 0:
+                    fieldInfo2 = Messaging.findFieldInfo(hdr2.fields, fieldInfo1.name)
+                    if fieldInfo2 != None:
+                        self._correspondingFields.append([fieldInfo1, fieldInfo2])
+                else:
+                    for bitfieldInfo1 in fieldInfo1.bitfieldInfo:
+                        fieldInfo2 = Messaging.findFieldInfo(hdr2.fields, bitfieldInfo1.name)
+                        if fieldInfo2 != None:
+                            self._correspondingFields.append([bitfieldInfo1, fieldInfo2])
+            
+            HdrInfo = namedtuple('HdrInfo', 'type infoIndex timeField')
+            self._hdr1Info = HdrInfo(hdr1, 0, Messaging.findFieldInfo(hdr1.fields, "Time"))
+            self._hdr2Info = HdrInfo(hdr2, 1, Messaging.findFieldInfo(hdr2.fields, "Time"))
+
+        def translateHdrAndBody(self, fromHdr, body):
+            # figure out which direction to translate
+            if isinstance(fromHdr, self._hdr1Info.type):
+                fromHdrInfo = self._hdr1Info
+                toHdrInfo = self._hdr2Info
+            elif isinstance(fromHdr, self._hdr2Info.type):
+                fromHdrInfo = self._hdr2Info
+                toHdrInfo = self._hdr1Info
+            else:
+                raise TypeError
+            
+            # allocate the message to translate to
+            toBuffer = ctypes.create_string_buffer(toHdrInfo.type.SIZE+fromHdr.GetDataLength())
+            toHdr = toHdrInfo.type(toBuffer)
+            toHdr.initialize()
+
+            # loop through fields using reflection, and transfer contents from
+            # one header to the other
+            for pair in self._correspondingFields:
+                fromFieldInfo = pair[fromHdrInfo.infoIndex]
+                toFieldInfo = pair[toHdrInfo.infoIndex]
+                Messaging.set(toHdr, toFieldInfo, Messaging.get(fromHdr, fromFieldInfo))
+            
+            # if the message ID can't be expressed in the new header, return None,
+            # because this message isn't translatable
+            if fromHdr.GetMessageID() != toHdr.GetMessageID():
+                if Messaging.debug:
+                    print("message ID 0x" + hex(fromHdr.GetMessageID()) + " translated to 0x" + hex(toHdr.GetMessageID()) + ", throwing away")
+                return None
+            # copy the body
+            for i in range(0,fromHdr.GetDataLength()):
+                toHdr.rawBuffer()[toHdr.SIZE+i] = body[i]
+            
+            # do special timestamp stuff
+            if toHdrInfo.timeField != None and fromHdrInfo.timeField != None and self.serialTimeFieldSize < self.networkTimeFieldSize:
+                # Detect time rolling
+                thisTimestamp = fromHdr.GetTime()
+                thisTime = int(time.time() * 1000)
+                timestampOffset = self.timestampOffset
+                if thisTimestamp < self.lastTimestamp:
+                    # If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
+                    # and do not wrap again.
+                    if thisTime > self.lastWrapTime.addSecs(30):
+                        self.lastWrapTime = thisTime
+                        self.timestampOffset+=1
+                        timestampOffset = self.timestampOffset
+                self.lastTimestamp = thisTimestamp
+                # need to handle different size timestamps!
+                toHdr.SetTime((timestampOffset << 16) + thisTimestamp)
+            elif toHdrInfo.timeField != None and fromHdrInfo.timeField == None:
+                thisTime = int(time.time() * 1000)
+                toHdr.SetTime(thisTime - self.startTime)
+
+            return toHdr
+
+        def translate(self, fromHdr):
+            toHdr = self.translateHdrAndBody(fromHdr, fromHdr.rawBuffer()[type(fromHdr).SIZE:])
+            return toHdr
 
 class BitFieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum):

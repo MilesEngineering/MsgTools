@@ -5,8 +5,8 @@
 #
 import os
 import sys
-from SynchronousMsgServer import SynchronousMsgServer
-from SynchronousMsgClient import SynchronousMsgClient
+from .SynchronousMsgServer import SynchronousMsgServer
+from .SynchronousMsgClient import SynchronousMsgClient
 
 # annoying stuff to start Messaging.
 # this should be simpler!
@@ -22,9 +22,18 @@ def main(args=None):
     msgLib = Messaging(None, 0, "NetworkHeader")
 
     if len(sys.argv) > 1 and sys.argv[1] == "server":
-        connection = SynchronousMsgServer(msgLib)
+        connection = SynchronousMsgServer(NetworkHeader)
     else:
-        connection = SynchronousMsgClient(msgLib, "CLI")
+        connection = SynchronousMsgClient(NetworkHeader)
+        # say my name
+        connectMsg = msgLib.Messages.Network.Connect()
+        connectMsg.SetName("CLI")
+        connection.send_message(connectMsg)
+        
+        # do default subscription to get *everything*
+        subscribeMsg = msgLib.Messages.Network.MaskedSubscription()
+        connection.send_message(subscribeMsg)
+        
 
     _cmd = ""
     try:
@@ -35,8 +44,9 @@ def main(args=None):
                 if cmd == "getmsg":
                     # this blocks until message received, or timeout occurs
                     timeout = 10.0 # value in seconds
-                    msg = connection.get_message(timeout, [msgLib.Messages.Network.Connect.ID, msgLib.Messages.Debug.AccelData.Status.ID])
-                    if msg:
+                    hdr = connection.get_message(timeout, [msgLib.Messages.Network.Connect.ID, msgLib.Messages.Experimental.AccelData.Status.ID])
+                    if hdr:
+                        msg = msgLib.MsgFactory(hdr)
                         # print as JSON for debug purposes
                         json = Messaging.toJson(msg)
                         print(json)

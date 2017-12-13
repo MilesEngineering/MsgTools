@@ -53,7 +53,7 @@ if __name__ == '__main__':
         
     for language in languages:
         if language == 'check':
-            #python.exe MsgCheck.py C:/svn/AD-DataCollection/AD-BmapCommon/obj/CodeGenerator/MsgDigest.txt ../../messages
+            #python.exe MsgCheck.py obj/CodeGenerator/MsgDigest.txt ../../messages
             invoke = runCheck + " " + digestFile + " " + msgDir
             print(invoke)
             subprocess.call(invoke)

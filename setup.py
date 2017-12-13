@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.28.1',
+    version='0.28.14',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -20,7 +20,7 @@ setup(name='msgtools',
                         'msggoodlistener=msgtools.goodlistener.goodlistener:main [gui]',
                         'msgplot=msgtools.lib.msgplot:main [gui]',
                         'msgbandwidthtestecho=msgtools.noisemaker.bandwidthtestecho:main [gui]',
-                        'msgbadwidthtester=msgtools.noisemaker.bandwidthtester:main [gui]',
+                        'msgbandwidthtester=msgtools.noisemaker.bandwidthtester:main [gui]',
                         'msgnoisemaker=msgtools.noisemaker.noisemaker:main [gui]',
                         'msglumberjack=msgtools.lumberjack.lumberjack:main [gui]'],
         'msgtools.parser.plugin': ['c=msgtools.parser.c.language',
@@ -33,9 +33,9 @@ setup(name='msgtools',
                                    'swift=msgtools.parser.swift.language'],
         'msgtools.server.plugin': ['serial=msgserver.serial:serial']
     },
-    install_requires={
+    install_requires=[
         'pyyaml'
-    },
+    ],
     extras_require={
         'gui':  ["pyqt5", "pyqtgraph"],
         'serverserial': ["pyqtserial"],

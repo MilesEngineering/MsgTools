@@ -23,7 +23,7 @@ class MessageServer(QtWidgets.QMainWindow):
         self.logFile = None
         self.logFileType = None
         
-        self.msgLib = Messaging(None, 0, "NetworkHeader")
+        self.msgLib = Messaging(None, False, "NetworkHeader")
         self.networkMsgs = self.msgLib.Messages.Network
 
         self.clients = {}
@@ -129,12 +129,25 @@ class MessageServer(QtWidgets.QMainWindow):
         fileInfo = QtCore.QFileInfo(logFileName)
         self.settings.setValue("logging/filename", fileInfo.dir().absolutePath())
         self.logButton.setText("Stop " + fileInfo.fileName())
+        self.queryLog()
     
     def stopLog(self):
         if self.logFile != None:
             self.logFile.close()
             self.logFile = None
             self.logButton.setText("Start Logging")
+            self.queryLog()
+
+    def queryLog(self):
+        if hasattr(self.networkMsgs, 'LogStatus'):
+            logStatusMsg = self.networkMsgs.LogStatus()
+            if self.logFile != None:
+                logStatusMsg.SetLogOpen(1)
+                logStatusMsg.SetLogFileName(self.logFile.fileName())
+                if self.logFileType == "JSON":
+                    logStatusMsg.SetLogFileType("JSON")
+            for client in self.clients.values():
+                client.sendMsg(logStatusMsg.hdr)
 
     def onLogButtonClicked(self):
         if self.logFile != None:
@@ -210,6 +223,8 @@ class MessageServer(QtWidgets.QMainWindow):
             self.startLog(logFileName)
         elif hasattr(self.networkMsgs, 'StopLog') and hdr.GetMessageID() == self.networkMsgs.StopLog.ID:
             self.stopLog()
+        elif hasattr(self.networkMsgs, 'QueryLog') and hdr.GetMessageID() == self.networkMsgs.QueryLog.ID:
+            self.queryLog()
         elif hasattr(self.networkMsgs, 'PrivateSubscriptionList') and  hdr.GetMessageID() == self.networkMsgs.PrivateSubscriptionList.ID:
             subListMsg = self.networkMsgs.PrivateSubscriptionList(hdr.rawBuffer())
             privateSubs = []
@@ -230,7 +245,7 @@ class MessageServer(QtWidgets.QMainWindow):
                     msgObj = Messaging.MsgFactory(hdr)
                     self.logFile.write(Messaging.toJson(msgObj).encode('utf-8'))
                 else:
-                    self.logFile.write(hdr.rawBuffer())
+                    self.logFile.write(hdr.rawBuffer().raw)
             for client in self.clients.values():
                 if client != c:
                     id = hdr.GetMessageID()
@@ -244,8 +259,7 @@ class MessageServer(QtWidgets.QMainWindow):
                             else:
                                 client.sendMsg(hdr)
                         except Exception as ex:
-                            if Messaging.debug:
-                                print(ex)
+                            self.onStatusUpdate("Exception in server.py while sending to client " + client.name + ": ["  +str(ex)+"]")
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())

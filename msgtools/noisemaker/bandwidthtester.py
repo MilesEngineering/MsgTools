@@ -24,7 +24,10 @@ class BandwidthTester(msgtools.lib.gui.Gui):
         self.rxBytesPerSec = 0
         self.txBytesPerSec = 0
         
-        self.bandwidthTestMsgClass = Messaging.MsgClassFromName["Debug.BandwidthTest"]
+        for msgClassName in Messaging.MsgClassFromName:
+            if "BandwidthTest" in msgClassName:
+                self.bandwidthTestMsgClass = Messaging.MsgClassFromName[msgClassName]
+                break
         self.maxSeq = int(Messaging.findFieldInfo(self.bandwidthTestMsgClass.fields, "SequenceNumber").maxVal)
         self.maxLen = Messaging.findFieldInfo(self.bandwidthTestMsgClass.fields, "TestData").count
         

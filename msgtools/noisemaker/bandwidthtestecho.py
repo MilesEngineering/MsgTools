@@ -18,7 +18,10 @@ class BandwidthTestEcho(msgtools.lib.gui.Gui):
         self.msgCount = 0
         self.dropPercent = 0
         
-        self.bandwidthTestMsgClass = Messaging.MsgClassFromName["Debug.BandwidthTest"]
+        for msgClassName in Messaging.MsgClassFromName:
+            if "BandwidthTest" in msgClassName:
+                self.bandwidthTestMsgClass = Messaging.MsgClassFromName[msgClassName]
+                break
         
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -47,7 +50,7 @@ class BandwidthTestEcho(msgtools.lib.gui.Gui):
         if type(msg) == self.bandwidthTestMsgClass:
             self.msgCount += 1
             if self.msgCount >= self.dropPercent:
-                self.sendBytesFn(msg.rawBuffer())
+                self.sendBytesFn(msg.rawBuffer().raw)
             if self.msgCount >= 100:
                 self.msgCount = 0
 

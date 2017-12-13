@@ -283,7 +283,7 @@ def msgDescriptor(msg):
     if name.startswith(subdir+"_"):
         return name.replace("_", ".")
     if subdir:
-        return subdir+"."+name
+        return subdir+"."+name.replace("_", ".")
     return name
 
 def addShift(base, value, shiftValue):

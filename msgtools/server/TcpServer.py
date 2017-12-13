@@ -52,6 +52,9 @@ class TcpClientConnection(QObject):
 
                 self.rxBuffer += inputStream.readRawData(Messaging.hdrSize + bodyLen - len(self.rxBuffer))
 
+                # create a new header object with the appended body
+                hdr = Messaging.hdr(self.rxBuffer)
+
                 # if we got this far, we have a whole message! So, emit the signal
                 self.messagereceived.emit(hdr)
 
@@ -62,7 +65,7 @@ class TcpClientConnection(QObject):
         self.disconnected.emit(self)
 
     def sendMsg(self, msg):
-        self.tcpSocket.write(msg.rawBuffer())
+        self.tcpSocket.write(msg.rawBuffer().raw)
 
 class TcpServer(QObject):
     statusUpdate = QtCore.pyqtSignal(str)

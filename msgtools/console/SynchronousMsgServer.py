@@ -15,43 +15,33 @@ import janus
 import queue
 
 class SynchronousMsgServer:
-    def __init__(self, msgLib):
-        self.msgLib = msgLib
+    def __init__(self, hdr):
+        self.hdr = hdr
         self.loop = asyncio.get_event_loop()
         from threading import Thread
-        t = Thread(target=self.start)
-        t.start()
+        self.t = Thread(target=self.start)
+        self.t.start()
 
-    # how to send a message, from the outside world
     def send_message(self, msg):
         self.synchronous_tx_queue.sync_q.put(msg.rawBuffer().raw)
     
-    # how to get a message, from the outside world
     def get_message(self, timeout, msgIds=[]):
         while True:
             try:
                 data = self.synchronous_rx_queue.get(True, timeout)
-                if len(msgIds) == 0:
-                    return data
-                else:
-                    hdr = self.msgLib.hdr(data)
-                    id = hdr.GetMessageID()
-                    if id in msgIds:
-                        msg = self.msgLib.MsgFactory(hdr)
-                        return msg
-                    #else:
-                    #    print("throwing away " + str(id) + " msg")
+                hdr = self.hdr(data)
+                id = hdr.GetMessageID()
+                if len(msgIds) == 0 or id in msgIds:
+                    return hdr
             except queue.Empty:
                 return None
-
+    
     def stop(self):
         for task in asyncio.Task.all_tasks():
             task.cancel()
-        #self.stop()
         self.tcp_server.close()
-        self.loop.stop()
-        # Some thread hangs and sys.exit doesn't return, perhaps?
-        sys.exit(0)
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.t.join()
 
     # Implementation details from here down
     def start(self):
@@ -112,7 +102,7 @@ class SynchronousMsgServer:
     async def handle_tcp_client(self, client_reader):
         #print("handle_tcp_client")
         while True:
-            # we *should* read self.msgLib.hdr.SIZE bytes,
+            # we *should* read self.hdr.SIZE bytes,
             # then parse header to see body length,
             # then read those bytes.
             data = await client_reader.read(1024)

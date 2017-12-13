@@ -8,21 +8,12 @@ import sys
 import socket
 
 class SynchronousMsgClient:
-    def __init__(self, msgLib, name):
+    def __init__(self, hdr):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect(("127.0.0.1", 5678))
         self.timeout = 0
-        self.msgLib = msgLib
+        self.hdr = hdr
         
-        # say my name
-        connectMsg = self.msgLib.Messages.Network.Connect()
-        connectMsg.SetName(name)
-        self.send_message(connectMsg)
-        
-        # do default subscription to get *everything*
-        subscribeMsg = self.msgLib.Messages.Network.MaskedSubscription()
-        self.send_message(subscribeMsg)
-
     def send_message(self, msg):
         self.sock.send(msg.rawBuffer().raw)
     
@@ -33,23 +24,17 @@ class SynchronousMsgClient:
         while True:
             try:
                 # see if there's enough for header
-                data = self.sock.recv(self.msgLib.hdr.SIZE, socket.MSG_PEEK)
-                if len(data) == self.msgLib.hdr.SIZE:
+                data = self.sock.recv(self.hdr.SIZE, socket.MSG_PEEK)
+                if len(data) == self.hdr.SIZE:
                     # read header
-                    data = self.sock.recv(self.msgLib.hdr.SIZE)
-                    hdr = self.msgLib.hdr(data)
+                    data = self.sock.recv(self.hdr.SIZE)
+                    hdr = self.hdr(data)
                     # read body
                     data += self.sock.recv(hdr.GetDataLength())
-                    if len(msgIds) == 0:
-                        return data
-                    else:
-                        hdr = self.msgLib.hdr(data)
-                        id = hdr.GetMessageID()
-                        if id in msgIds:
-                            msg = self.msgLib.MsgFactory(hdr)
-                            return msg
-                        #else:
-                        #    print("throwing away " + str(id) + " msg")
+                    hdr = self.hdr(data)
+                    id = hdr.GetMessageID()
+                    if len(msgIds) == 0 or id in msgIds:
+                        return hdr
             except socket.timeout:
                 return None
 

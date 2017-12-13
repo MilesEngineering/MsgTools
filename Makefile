@@ -18,3 +18,4 @@ develop:
 
 undevelop:
 	python3 setup.py develop --user --uninstall
+	rm $(HOME)/.local/bin/msg*
