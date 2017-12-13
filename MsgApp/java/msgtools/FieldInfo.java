@@ -1,4 +1,4 @@
-package MsgApp;
+package msgtools;
 
 public class FieldInfo
 {

@@ -110,7 +110,7 @@ public void SetFieldD(short value)
 //  , (0.0 to 215.355)
 public void SetBitsA(float value)
 {
-    SetFieldD((short)((GetFieldD() & ~(0xf << 0)) | ((short(value / 14.357f) & 0xf) << 0)));
+    SetFieldD((short)((GetFieldD() & ~(0xf << 0)) | (((short)(value / 14.357f) & 0xf) << 0)));
 }""")
         expected.append("""\
 //  , (0 to 7)
@@ -134,7 +134,7 @@ public void SetFieldE(float value)
 //  , (1.828 to 176946.328)
 public void SetFieldF(float value)
 {
-    m_data.putShort(16, (short)int((value - 1.828f) / 2.7f));
+    m_data.putShort(16, (short)(int)((value - 1.828f) / 2.7f));
 }""")
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])

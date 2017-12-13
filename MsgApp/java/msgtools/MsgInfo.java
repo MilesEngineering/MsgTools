@@ -1,4 +1,4 @@
-package MsgApp;
+package msgtools;
 
 import java.util.Hashtable;
 import java.util.List;

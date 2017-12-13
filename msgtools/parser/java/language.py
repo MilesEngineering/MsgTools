@@ -70,7 +70,7 @@ public %s Get%s(%s)
 
 def setFn(field, offset):
     paramType = fieldType(field)
-    valueString = setMath("value", field, fieldType(field), 'f')
+    valueString = setMath("value", field, '('+fieldType(field)+')', 'f')
     if "Offset" in field or "Scale" in field:
         paramType = typeForScaledInt(field)
     #elif "Enum" in field:
@@ -111,7 +111,7 @@ public %s Get%s()
 def setBitsFn(field, bits, offset, bitOffset, numBits):
     paramType = fieldType(field)
     intType = paramType
-    valueString = setMath("value", bits, fieldType(field), 'f')
+    valueString = setMath("value", bits, '('+fieldType(field)+')', 'f')
     if "Offset" in bits or "Scale" in bits:
         paramType = typeForScaledInt(bits)
     #elif "Enum" in bits:

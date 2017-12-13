@@ -13,9 +13,9 @@ package <MESSAGE_SUBDIR>;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import MsgApp.*;
+import msgtools.FieldInfo;
 
-public class <MSGSHORTNAME> extends Message
+public class <MSGSHORTNAME> extends msgtools.Message
 {
     public static final int MSG_ID = (int)<MSGID>;
     public static final int MSG_SIZE = <MSGSIZE>;
@@ -38,10 +38,10 @@ public class <MSGSHORTNAME> extends Message
     <FIELDINFOS>
     <ACCESSORS>
 
-    public static MsgInfo msgInfo;
+    public static msgtools.MsgInfo msgInfo;
     static
     {
-        msgInfo = new MsgInfo(<MSGSHORTNAME>.class, MSG_ID, "<MSGDESCRIPTION>", MSG_SIZE);
+        msgInfo = new msgtools.MsgInfo(<MSGSHORTNAME>.class, MSG_ID, "<MSGDESCRIPTION>", MSG_SIZE);
         msgInfo.AddField(new <REFLECTION>);
     }
 };

@@ -1,4 +1,4 @@
-package MsgApp;
+package msgtools;
 
 import java.lang.Class;
 import java.lang.reflect.*;
