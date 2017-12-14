@@ -21,4 +21,4 @@ undevelop:
 	rm $(HOME)/.local/bin/msg*
 
 android:
-	cd AndroidServer && ./gradlew build connectedCheck
+	cd AndroidServer && make
