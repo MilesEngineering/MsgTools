@@ -1,0 +1,27 @@
+Messages:
+  - Name: BluetoothHeader
+    Description: Header for bluetooth
+    Fields:
+      - Name: Source
+        Type: uint8
+        Default: 0
+      - Name: Destination
+        Type: uint8
+        Default: 0
+      - Name: ID
+        Type: uint16
+        Default: 0
+        IDBits: 16
+      - Name: PackedField
+        Type: uint16
+        Units: ""
+        Description: To hold bitfields
+        Bitfields:
+            - Name: Priority
+              NumBits: 2
+              Default: 0
+              Units: ""
+            - Name: DataLength
+              NumBits: 14
+              Default: 0
+              Units: ""

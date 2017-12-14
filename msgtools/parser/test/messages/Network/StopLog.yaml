@@ -1,0 +1,4 @@
+Messages:
+  - Name: StopLog
+    ID: 0xFFFFFF06
+    Description: Stop a log.

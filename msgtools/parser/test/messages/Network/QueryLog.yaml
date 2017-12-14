@@ -1,0 +1,4 @@
+Messages:
+  - Name: QueryLog
+    ID: 0xFFFFFF09
+    Description: Query status of logging
