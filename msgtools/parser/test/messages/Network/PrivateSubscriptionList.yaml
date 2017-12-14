@@ -1,0 +1,9 @@
+Messages:
+  - Name: PrivateSubscriptionList
+    ID: 0xFFFFFF04
+    Description: A list of subscriptions for private messages.  Any client can designate a message as private, and then it will only be sent between clients that also have done so, and hardware links.
+    Fields:
+      - Name: IDs
+        Type: uint32
+        Count: 16
+        Description: The IDs of the messages you'd like to be made private.

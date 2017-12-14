@@ -1,0 +1,23 @@
+Enums:
+    - Name: LogFileTypes
+      Options:
+      - Name: Binary
+        Value: 0
+      - Name: JSON
+        Value: 1
+Messages:
+  - Name: LogStatus
+    ID: 0xFFFFFF08
+    Description: Status of logging
+    Fields:
+      - Name: LogOpen
+        Type: uint8
+        Units: Boolean
+      - Name: LogFileType
+        Type: uint8
+        Enum: LogFileTypes
+      - Name: LogFileName
+        Type: uint8
+        Count: 64
+        Units: ASCII
+        Description: The name of the log file.

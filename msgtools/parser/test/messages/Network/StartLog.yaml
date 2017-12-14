@@ -1,0 +1,20 @@
+Enums:
+    - Name: LogFileTypes
+      Options:
+      - Name: Binary
+        Value: 0
+      - Name: JSON
+        Value: 1
+Messages:
+  - Name: StartLog
+    ID: 0xFFFFFF05
+    Description: Start a log.
+    Fields:
+      - Name: LogFileType
+        Type: uint8
+        Enum: LogFileTypes
+      - Name: LogFileName
+        Type: uint8
+        Count: 64
+        Units: ASCII
+        Description: The name of the log file.  Use default if unspecified.

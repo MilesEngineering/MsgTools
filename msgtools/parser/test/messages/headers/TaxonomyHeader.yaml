@@ -21,7 +21,10 @@ Messages:
       - Name: Family
         Type: uint8
         Enum: Families
+        IDBits: 8
       - Name: Genus
         Type: uint8
+        IDBits: 8
       - Name: Species
         Type: uint16
+        IDBits: 16
