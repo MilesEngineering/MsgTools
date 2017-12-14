@@ -39,7 +39,7 @@ android {
     String MsgAppDir = '../../MsgApp/java'
 
     // This path should reference the location of your generated messages
-    String GeneratedMsgDir = '../../../obj/CodeGenerator/java'
+    String GeneratedMsgDir = '../../../obj/CodeGenerator/Java'
 
     sourceSets {
         main { java.srcDirs = ['src/main/java', MsgAppDir, GeneratedMsgDir,'../Java-WebSocket/src/main/java'] }
