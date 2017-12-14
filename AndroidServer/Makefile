@@ -1,2 +1,2 @@
 all:
-	./gradlew build connectedCheck
+	./gradlew build -x lint
