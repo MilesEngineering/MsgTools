@@ -27,6 +27,10 @@ public class <MSGNAME>
     {
         m_data = buffer;
     }
+    public ByteBuffer GetBuffer() 
+    { 
+        return m_data; 
+    }
     void Init()
     {
         <INIT_CODE>
