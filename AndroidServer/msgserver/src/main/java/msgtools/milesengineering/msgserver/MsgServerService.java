@@ -301,7 +301,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
             m_MessageCountDirty = true;
 
             // And finally log
-            m_MsgLogger.log((int)networkHeader.GetID(), hdrBuff, payloadBuff);
+            m_MsgLogger.log((int)networkHeader.GetMessageID(), hdrBuff, payloadBuff);
         }
     }
 
