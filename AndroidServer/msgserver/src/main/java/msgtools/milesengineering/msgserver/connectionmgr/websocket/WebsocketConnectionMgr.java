@@ -253,8 +253,11 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
                         payload = msg.slice();
                     }
 
+                    wsc.incrementReceived();
+
                     // Let everybody know about it...
                     m_Listeners.onMessage(wsc, nh, hdrBuff, payload);
+
 
                 } else {
                     android.util.Log.w(TAG, "Received message shorter than the header! Dropping it...");
