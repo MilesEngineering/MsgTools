@@ -2,7 +2,7 @@ package msgtools.milesengineering.msgserver.connectionmgr;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.util.HashSet;
 
 import headers.NetworkHeader;
 
@@ -16,8 +16,7 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
 
     private Object m_Lock = new Object();   // Used as a private sync object for thread safety
     private ConnectionListenerHelper m_Listeners;
-    private ArrayList<IConnection> m_ActiveConnections = new ArrayList<IConnection>();
-
+    private HashSet<IConnection> m_ActiveConnections = new HashSet<IConnection>();
 
     private BaseConnectionMgr() {
         m_Listeners = new ConnectionListenerHelper(TAG, this);
@@ -144,15 +143,20 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
     @Override
     public abstract String getDescription();
 
+    //
+    // Convenience methods for invoking listeners
+    //
     protected final void onNewConnection(IConnection newConnection) {
         synchronized (m_Lock) {
             m_Listeners.onNewConnection(newConnection);
+            addConnection(newConnection);
         }
     }
 
     protected final void onClosedConnection(IConnection closedConnection) {
         synchronized (m_Lock) {
             m_Listeners.onClosedConnection(closedConnection);
+            removeConnection(closedConnection);
         }
     }
 
@@ -160,6 +164,31 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
                                    ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
         synchronized (m_Lock) {
             m_Listeners.onMessage(srcConnection, networkHeader, hdrBuff, payloadBuff);
+        }
+    }
+
+    /**
+     * Add a connection to the list of connections being tracked.  Doing so will
+     * automatically close them when the connection manager is halted.  Invoking
+     * onNewConnection will automatically add the connection to the list for you.
+     *
+     * @param connection connection to add
+     */
+    protected final void addConnection(IConnection connection) {
+        synchronized (m_Lock) {
+            m_ActiveConnections.add(connection);
+        }
+    }
+
+    /**
+     * Remove a connection from the list of connections.  onClosedConnection will
+     * automatically remove the connection from the list as well.
+     *
+     * @param connection connection to remove
+     */
+    protected final void removeConnection(IConnection connection) {
+        synchronized (m_Lock) {
+            m_ActiveConnections.remove(connection);
         }
     }
 }
