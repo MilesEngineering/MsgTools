@@ -2,6 +2,7 @@ package msgtools.milesengineering.msgserver.connectionmgr.bluetooth;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.content.Context;
 import android.content.Intent;
@@ -9,6 +10,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.Set;
 import java.util.UUID;
 
 import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
@@ -22,8 +24,10 @@ import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
 
 public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnectionMgr {
     private static final String TAG = BluetoothConnectionMgr.class.getSimpleName();
-    private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private static final String SERVER_NAME = "AndroidServer";
+
+    // Setup a constant with the well known SPP UUID
+    private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     private String m_Description = "Uninitialized";
     private BluetoothAdapter m_BluetoothAdapter;
@@ -49,8 +53,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
                         Toast.LENGTH_LONG).show();
             }
             requestHalt();
-        } else if (m_BluetoothAdapter.isEnabled()) {
-            // Device does not support Bluetooth
+        } else if (m_BluetoothAdapter.isEnabled() == false) {
             android.util.Log.e(TAG, "Bluetooth not enabled!");
             m_Description = "Not Enabled";
             if(hostContext != null) {
@@ -59,14 +62,24 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             }
             requestHalt();
         } else {
+            m_Description = String.format("%s <%s>", m_BluetoothAdapter.getName(),
+                    m_BluetoothAdapter.getAddress() );
             m_HostContext = new WeakReference<Context>(hostContext);
 
             try {
-                // MY_UUID is the app's UUID string, also used by the client code
+                // SPP_UUID is the app's UUID string and also a well known SPP value
                 m_ServerSocket = m_BluetoothAdapter.listenUsingRfcommWithServiceRecord(SERVER_NAME, SPP_UUID);
             } catch (IOException e) {
                 m_Description = e.getMessage();
             }
+        }
+
+        // MODEBUG: Get and print the list of devices and try to connect to everything...
+        Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
+        for( BluetoothDevice dev : devs ) {
+            BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
+                    getListeners());
+            connection.start();
         }
     }
 

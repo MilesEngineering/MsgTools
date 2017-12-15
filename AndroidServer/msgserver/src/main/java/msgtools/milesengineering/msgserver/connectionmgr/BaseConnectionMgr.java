@@ -92,6 +92,13 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
     }
 
     /**
+     * Get the listener helper used to broadcast connection events.
+     *
+     * @return ConnectionListenerHelper of listeners
+     */
+    protected ConnectionListenerHelper getListeners() { return m_Listeners; }
+
+    /**
      * Override this method to do any pre-execution setup.  For instance
      * setup server sockets, managers, or whatever...
      * <p>
