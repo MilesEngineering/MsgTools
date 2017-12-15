@@ -234,7 +234,9 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                 // it in one go.  This is definitely inefficient.
                 ByteBuffer hdr = bth.GetBuffer();
                 ByteBuffer sendBuf = ByteBuffer.allocate( hdr.capacity() + payloadBuff.capacity() );
+                hdr.position(0);
                 sendBuf.put(hdr);
+                payloadBuff.position(0);
                 sendBuf.put(payloadBuff);
 
                 try {
