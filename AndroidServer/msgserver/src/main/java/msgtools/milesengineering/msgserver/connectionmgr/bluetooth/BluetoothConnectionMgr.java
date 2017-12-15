@@ -1,28 +1,47 @@
 package msgtools.milesengineering.msgserver.connectionmgr.bluetooth;
 
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.content.Context;
-import android.content.Intent;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.UUID;
 
+import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
+import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgr;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
 
 /**
  * This is a Bluetooth SPP oriented connection manager.  It does not handle pairing, or discovery.
- * It only looks for new connections and tries to establish an SPP profile for data exchange.
+ * It only looks for bonded connections and tries to establish an SPP connection for data exchange.
+ *
+ * This class is threaded a bit differently than other connection managers because Bluetooth
+ * sockets don't implement a selectable interface.  Therefore each connection is spun up on its
+ * own thread, and sends listener events directly for connection etc.
+ *
+ * The main loop of this class is presently empty.  In the future we can put a retry on bonded devices
+ * host a server socket, and other things in the loop.  Meantime it's just snoozing and burning
+ * unnecessary CPU. This choice was made to allow us to leverage the BaseConnectionMgr class as
+ * it provides more than just a processing thread for us.
+ *
+ * It's nice to have this class cleanup all the connections it's spawned.  To do that
+ * we're making this class a connection event listener itself to maintain an internal
+ * list of Bluetooth only connections.  Making this class look a little weird.
+ *
+ * The other weirdity is we're interested in broadcast Bluetooth intents, which require a top level
+ * activity or similar to capture.  Thus we spin up a utility class to receive intents and
+ * invoke APIs on this class as a shim.
  */
 
-public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnectionMgr {
+public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnectionMgr,
+        IConnectionMgrListener {
     private static final String TAG = BluetoothConnectionMgr.class.getSimpleName();
     private static final String SERVER_NAME = "AndroidServer";
 
@@ -37,6 +56,9 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
 
     public BluetoothConnectionMgr(IConnectionMgrListener listener, Context hostContext) {
         super(listener);
+
+        // Add ourself as a listener as well so we can keep tabs on our own device list
+        addListener(this);
 
         m_HostContext = new WeakReference<Context>(hostContext);
 
@@ -74,7 +96,9 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             }
         }
 
-        // MODEBUG: Get and print the list of devices and try to connect to everything...
+        // Get a list of all bonded devices and try to establish an SPP connection
+        // We'll probably want something more controlled and elegant in the future
+        // but this brute force method will work fine for now.
         Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
         for( BluetoothDevice dev : devs ) {
             BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
@@ -115,5 +139,28 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
     @Override
     protected void cleanup() {
         android.util.Log.i(TAG, "cleanup()");
+    }
+
+    //
+    // Connection manager listener interface
+    //
+    @Override
+    public void onNewConnection(IConnectionMgr mgr, IConnection newConnection) {
+        // If our thread connected then add the new connection to the base class tracking
+        // so it's automatically cleaned up when the connection manager is halted.
+        if (newConnection instanceof BluetoothConnectionThread)
+            addConnection(newConnection);
+    }
+
+    @Override
+    public void onClosedConnection(IConnectionMgr mgr, IConnection closedConnection) {
+        // If our thread disconnected then remove the connection from the base class tracking
+        if (closedConnection instanceof BluetoothConnectionThread)
+            removeConnection(closedConnection);
+    }
+
+    @Override
+    public void onMessage(IConnectionMgr mgr, IConnection srcConnection, NetworkHeader networkHeader, ByteBuffer header, ByteBuffer payload) {
+        // Do nothing
     }
 }
