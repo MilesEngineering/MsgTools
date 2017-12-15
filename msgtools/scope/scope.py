@@ -228,6 +228,8 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             messageTreeWidgetItem.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, msg):
+        if not self.connected:
+            self.OpenConnection()
         self.SendMsg(msg)
     
     def onRxMessageFieldSelected(self, rxWidgetItem):
