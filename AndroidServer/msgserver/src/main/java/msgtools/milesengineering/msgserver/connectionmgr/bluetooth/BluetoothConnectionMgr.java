@@ -60,6 +60,11 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
         // Add ourself as a listener as well so we can keep tabs on our own device list
         addListener(this);
 
+        // Init a broadcast receiver that will invoke APIs on this class to get stuff
+        // done in response to Bluetooth events...
+        new BluetoothBroadcastReceiver(hostContext, this);
+
+        // TODO: Reconsider storing the context - don't think we need to keep it around
         m_HostContext = new WeakReference<Context>(hostContext);
 
         // We require Bluetooth so make sure it's supported and enabled.
@@ -86,24 +91,12 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
         } else {
             m_Description = String.format("%s <%s>", m_BluetoothAdapter.getName(),
                     m_BluetoothAdapter.getAddress() );
-            m_HostContext = new WeakReference<Context>(hostContext);
-
             try {
                 // SPP_UUID is the app's UUID string and also a well known SPP value
                 m_ServerSocket = m_BluetoothAdapter.listenUsingRfcommWithServiceRecord(SERVER_NAME, SPP_UUID);
             } catch (IOException e) {
                 m_Description = e.getMessage();
             }
-        }
-
-        // Get a list of all bonded devices and try to establish an SPP connection
-        // We'll probably want something more controlled and elegant in the future
-        // but this brute force method will work fine for now.
-        Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
-        for( BluetoothDevice dev : devs ) {
-            BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
-                    getListeners());
-            connection.start();
         }
     }
 
@@ -119,12 +112,18 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
     protected void setup() throws IOException {
         android.util.Log.i(TAG, "setup()");
 
+        // Get a list of all bonded devices and try to establish an SPP connection
+        // We'll probably want something more controlled and elegant in the future
+        // but this brute force method will work fine for now.
 
-        // MODEBUG
-        // Handy page - file:///Users/mosminer/Library/Android/sdk/docs/guide/topics/connectivity/bluetooth.html#QueryingPairedDevices
-
-        // Once we have confirmed BT is available get a list of bonded devices
-        // and look for the one that is connected.
+        // We'll rely on broadcast intents to handle disconnects, new bonded devices,
+        // Bluetooth being enabled/disabled, etc...
+        Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
+        for( BluetoothDevice dev : devs ) {
+            BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
+                    getListeners());
+            connection.start();
+        }
     }
 
     @Override
