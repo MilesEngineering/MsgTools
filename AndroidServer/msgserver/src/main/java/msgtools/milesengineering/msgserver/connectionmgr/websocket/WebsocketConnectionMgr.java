@@ -77,18 +77,24 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
                     try {
                         WebSocket ws = m_Websocket.get();
 
-                        hdrBuff.position(0);
-                        payloadBuff.position(0);
-
                         // We need to be sure to send one buffer to properly frame the Websocket
                         // message for parsing on the other side.  So pack the hdr and payload
-                        // into one buffer.
-                        ByteBuffer sendBuf =
-                                ByteBuffer.allocate(hdrBuff.capacity() + payloadBuff.capacity());
-                        sendBuf.put(hdrBuff);
-                        sendBuf.put(payloadBuff);
-                        sendBuf.position(0);
+                        // into one buffer.  It is a perfectly valid case to have a null payload.
+                        // So be sure to check and handle that!
+                        int totalLength = hdrBuff.capacity() + (payloadBuff == null ? 0 :
+                                payloadBuff.capacity());
 
+                        ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
+
+                        hdrBuff.position(0);
+                        sendBuf.put(hdrBuff);
+
+                        if (payloadBuff != null ) {
+                            payloadBuff.position(0);
+                            sendBuf.put(payloadBuff);
+                        }
+
+                        sendBuf.position(0);
                         ws.send(sendBuf);
 
                         m_SentCount++;
@@ -253,8 +259,11 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
                         payload = msg.slice();
                     }
 
+                    wsc.incrementReceived();
+
                     // Let everybody know about it...
                     m_Listeners.onMessage(wsc, nh, hdrBuff, payload);
+
 
                 } else {
                     android.util.Log.w(TAG, "Received message shorter than the header! Dropping it...");

@@ -33,8 +33,14 @@ That said, where possible we have reduced the number of threads in the applicati
 You must always assume the service is being called by multiple treads and protect it accordingly.
 
 ## TODO List
-* Implement and test BT manager
+* Improve the Gradle setup to point the app at your own version of MsgTools/MsgApp and generated code.
+* Performance evaluation - the app basically tries to be single threaded right now.  Strong doubt performance is stellar as a result...
+* Add Bluetooth broadcast intent handlers for the following cases and improve overall connectivity algorithm.  Right now it's brute force attempt to connect to whatever bonded devices we have:
+    * ACTION_BOND_STATE_CHANGED -> Attempt to connect if just bonded
+    * ACTION_STATE_CHANGED -> Attempt to connect to bonded devices
 * Add support for reconnect (enabled/disabled, device drops, etc)
+* Add remote start/stop logging handling
+* Stop the service when done.  Need to figure out what done means.  Could be when the last app/client unbinds.  Could be when the last connection is dropped.  Could be...???
 * Make sure app sleep and wake works ok - did some prelim testing and it seems ok
 * Power optimizations (see next item for a major one, but there are sure to be others)
 * Look into better ways to detect and correct lost TCP connections.  It would appear the Selector thread automatically selects when the connection is lost 
@@ -50,6 +56,7 @@ The following assumptions have been made:
 * NetworkHeader is the de-facto header for all clients.  If you need to work with a different header then do that translation
 as part of your specific IConnection implementations.
 * All headers MUST have an GetDataLength() and SIZE.  The length MUST be the number of payload bytes after the header.
+* All NetworkHeaders MUST  have a Time field.  The app stuff ms since server startup into this field on Bluetooth messages.  It otherwise leaves this field alone assuming the sender set the Time.
 
 
 # Adding a new MessageService API and intent handler
@@ -71,4 +78,4 @@ of APIs isn't anticipated so a lot of time wasn't spent designing something more
 # Potential Performance Improvements
 * All message recv and routing is done on the thread for the message receiver (connection).  And we lock the MainService (which is the router).  It may be more performant to quickly post messages to the service and let a separate handler thread route each message. The infrasructure is in place vis a vis a MessageHandler.
 * Logging may take substantial time with all the JSON conversions etc. We could also put logging on it's own queue and thread to avoid blocking the message send/recv code.
-* Little attention was paid to how message buffers are allocated and managed.  We may be able to optimize by using memory pools and other tecniques.
+* Little attention was paid to how message buffers are allocated and managed.  We may be able to optimize by using memory pools and other techniques.

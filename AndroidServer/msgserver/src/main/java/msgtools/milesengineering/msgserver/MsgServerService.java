@@ -160,7 +160,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         m_WebsocketConnectionMgr = new WebsocketConnectionMgr(new InetSocketAddress(WEBSOCKET_PORT), this);
         m_WebsocketConnectionMgr.start();
 
-        m_BluetoothConnectionMgr = new BluetoothConnectionMgr(this, null);
+        m_BluetoothConnectionMgr = new BluetoothConnectionMgr(this, this);
         m_BluetoothConnectionMgr.start();
 
         // Build up a servers JSON list for when clients ask.  This is static for now since we
@@ -301,7 +301,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
             m_MessageCountDirty = true;
 
             // And finally log
-            m_MsgLogger.log((int)networkHeader.GetID(), hdrBuff, payloadBuff);
+            m_MsgLogger.log((int)networkHeader.GetMessageID(), hdrBuff, payloadBuff);
         }
     }
 
