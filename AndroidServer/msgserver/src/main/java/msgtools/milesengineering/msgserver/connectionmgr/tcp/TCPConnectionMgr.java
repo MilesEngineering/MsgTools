@@ -68,16 +68,23 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                 SocketChannel channel = m_Channel.get();
                 if ( channel != null && channel.isConnected() == true ) {
                     try {
-                        hdrBuff.position(0);
-                        payloadBuff.position(0);
-
                         // TODO: MessageScope doesn't handle two independent write requests correctly
                         // It treats them as two messages.  GitHub issue #18.
                         // Stacking the two buffers into one to get around this.  We'll want to remove this
                         // later as it's just wasting CPU and thrashing memory.
-                        ByteBuffer sendBuf = ByteBuffer.allocate(hdrBuff.capacity()+payloadBuff.capacity());
+
+                        // Be wary of null payloads - this is a valid case!  e.g. ProductInfo->BMAP version
+                        int totalLength = hdrBuff.capacity() + (payloadBuff == null ? 0 :
+                                payloadBuff.capacity());
+                        ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
+
+                        hdrBuff.position(0);
                         sendBuf.put(hdrBuff);
-                        sendBuf.put(payloadBuff);
+
+                        if ( payloadBuff != null ) {
+                            payloadBuff.position(0);
+                            sendBuf.put(payloadBuff);
+                        }
 
                         sendBuf.position(0);
                         while (sendBuf.remaining() > 0)
@@ -87,8 +94,10 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
 //                        while(hdrBuff.remaining() > 0)
 //                            channel.write(hdrBuff);
 //
-//                        while( payloadBuff.remaining() > 0)
-//                            channel.write(payloadBuff);
+//                          if (payloadBuff != null ) {
+//                              while (payloadBuff.remaining() > 0)
+//                                  channel.write(payloadBuff);
+//                          }
 
                         m_SentCount++;
                     } catch (IOException ioe) {
