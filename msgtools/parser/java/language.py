@@ -192,13 +192,19 @@ def initCode(msg):
 
     return ret
 
+def optionValue(option):
+    ret = int(option["Value"])
+    if ret > 2**31:
+        return str(ret)+"L"
+    return str(ret)
+
 def enums(e):
     ret = ""
     for enum in e:
         ret +=  "public enum " + enum["Name"]+" {\n"
         ret += "    "
         for option in enum["Options"]:
-            ret += option["Name"]+"("+str(option["Value"]) + '), '
+            ret += OptionName(option)+"("+str(optionValue(option)) + '), '
         ret = ret[:-2]
         ret += ";\n"
         ret += '''\
@@ -392,3 +398,5 @@ def setMsgID(msg):
                         setStr = "("+type+")("+setStr+")"
                         ret +=  "Set"+bitfield["Name"]+"("+setStr+")"
     return ret
+
+oneOutputFilePerMsg = True

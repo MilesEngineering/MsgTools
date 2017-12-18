@@ -142,6 +142,7 @@ def fieldDescription(field):
     if not ret:
         ret = ""
     ret = ret.replace('\n', ' ')
+    ret = ret.replace('\\', ' ')
     return ret
 
 def fieldDefault(field):
@@ -356,6 +357,10 @@ def Enums(inputData):
         for data in inputData["includes"]:
             enumList = enumList + Enums(data)
     return enumList
+
+# sanitize the option name, to have valid identifier characters
+def OptionName(option):
+    return option["Name"].replace("/", "_or_").replace(" ", "_").replace("-", "_")
 
 # return a list of all IDs in this input file, or anything it includes
 def MsgIDs(inputData):

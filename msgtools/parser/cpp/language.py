@@ -204,7 +204,7 @@ def enums(e):
     for enum in e:
         ret +=  "enum " + enumClass + namespace + enum["Name"]+" {"
         for option in enum["Options"]:
-            optionName = option["Name"]
+            optionName = OptionName(option)
             if enumNamespace != 0:
                 optionName = "<MSGNAME>"+"_"+enum["Name"] + "_" + optionName
             ret += optionName+" = "+str(option["Value"]) + ', '
