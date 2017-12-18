@@ -31,6 +31,9 @@ class App(QtWidgets.QMainWindow):
         
         self.allowedMessages = []
         self.keyFields = {}
+        
+        # flag that indicates if we're connected
+        self.connected = False
 
         # need better handling of command line arguments for case when there is only one arg and it's a filename
         if(len(argv) == 3 and argv[2].lower().endswith((".txt",".log"))):
@@ -126,6 +129,7 @@ class App(QtWidgets.QMainWindow):
         self.connection;
     
     def onConnected(self):
+        self.connected = True
         self.connectionChanged.emit(True)
         # send a connect message
         connectMsg = self.msgLib.Messages.Network.Connect()
@@ -143,10 +147,12 @@ class App(QtWidgets.QMainWindow):
             self.onAppConnected()
     
     def onDisconnect(self):
+        self.connected = False
         self.connectionChanged.emit(False)
         #self.statusUpdate.emit('NOT Connected')
     
     def displayConnectError(self, socketError):
+        self.connected = False
         self.connectionChanged.emit(False)
         self.statusUpdate.emit('Not Connected('+str(socketError)+'), '+self.connection.errorString())
 
