@@ -9,6 +9,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 
@@ -53,6 +54,8 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
     private BluetoothServerSocket m_ServerSocket;
 
     private WeakReference<Context> m_HostContext;
+
+    private long m_StartupTime = new Date().getTime(); // To keep time within 32 bits we'll send a delta from server start
 
     public BluetoothConnectionMgr(IConnectionMgrListener listener, Context hostContext) {
         super(listener);
@@ -121,7 +124,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
         Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
         for( BluetoothDevice dev : devs ) {
             BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
-                    getListeners());
+                    getListeners(), m_StartupTime);
             connection.start();
         }
     }

@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.util.Date;
 import java.util.UUID;
 
 import headers.BluetoothHeader;
@@ -52,10 +53,13 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private BluetoothHeader m_BluetoothHeader;
     private ByteBuffer m_Payload;
 
-    public BluetoothConnectionThread(BluetoothDevice device, ConnectionListenerHelper listeners) {
+    private long m_BaseTime;
+
+    public BluetoothConnectionThread(BluetoothDevice device, ConnectionListenerHelper listeners, long baseTime) {
         android.util.Log.d(TAG, "BluetoothConnectionThread(...)");
         m_Device = device;
         m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
+        m_BaseTime = baseTime;
     }
 
     /**
@@ -228,29 +232,42 @@ class BluetoothConnectionThread extends Thread implements IConnection {
             if (m_Connected == true) {
                 // Convert to a BluetoothHeader
                 BluetoothHeader bth = getBluetoothHeader(networkHeader);
-                
-                // Some implementations aren't happy if you send the header and payload in two
-                // writes.  Concatenate the hdr and payload into a single array so we can write
-                // it in one go.  This is definitely inefficient.
-                ByteBuffer hdr = bth.GetBuffer();
-                ByteBuffer sendBuf = ByteBuffer.allocate( hdr.capacity() + payloadBuff.capacity() );
-                hdr.position(0);
-                sendBuf.put(hdr);
-                payloadBuff.position(0);
-                sendBuf.put(payloadBuff);
 
-                try {
-                    if (m_Output != null) {
-                        // Write out data.
-                        m_Output.write(sendBuf.array());
+                // No header? Then we can't do a translation so drop the message and move on
+                if (bth != null) {
 
-                        retVal = true;
-                        m_MessagesSent++;
+                    // Some implementations aren't happy if you send the header and payload in two
+                    // writes.  Concatenate the hdr and payload into a single array so we can write
+                    // it in one go.  This is definitely inefficient.
+
+                    // It's also possible to have a message without a payload so be wary of a null
+                    // payload buffer
+                    int totalLength = hdrBuff.capacity() + (payloadBuff == null ? 0 :
+                            payloadBuff.capacity());
+                    ByteBuffer hdr = bth.GetBuffer();
+                    ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
+                    hdr.position(0);
+                    sendBuf.put(hdr);
+
+                    if ( payloadBuff != null ) {
+                        payloadBuff.position(0);
+                        sendBuf.put(payloadBuff);
                     }
-                } catch (IOException e) {
-                    android.util.Log.i(TAG, "Error writing message to BT socket.  Socket assumed closed...");
-                    e.printStackTrace();
-                    requestHalt();
+
+                    try {
+                        if (m_Output != null) {
+                            // Write out data.
+                            m_Output.write(sendBuf.array());
+                            m_Output.flush();
+
+                            retVal = true;
+                            m_MessagesSent++;
+                        }
+                    } catch (IOException e) {
+                        android.util.Log.i(TAG, "Error writing message to BT socket.  Socket assumed closed...");
+                        e.printStackTrace();
+                        requestHalt();
+                    }
                 }
             }
         }
@@ -308,6 +325,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         NetworkHeader retVal = new NetworkHeader();
         retVal.SetMessageID(bluetoothHeader.GetMessageID());
         retVal.SetDataLength(bluetoothHeader.GetDataLength());
+        retVal.SetTime(new Date().getTime() - m_BaseTime);
 
         // TODO: Use reflection to copy all like named fields
 
@@ -317,6 +335,11 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private BluetoothHeader getBluetoothHeader(NetworkHeader networkHeader) {
         BluetoothHeader retVal = new BluetoothHeader();
         retVal.SetMessageID(networkHeader.GetMessageID());
+
+        // No match?  No send...
+        if (retVal.GetMessageID() != networkHeader.GetMessageID() )
+            retVal = null;
+
         retVal.SetDataLength(networkHeader.GetDataLength());
 
         // TODO: Use reflection to copy all like named fields
