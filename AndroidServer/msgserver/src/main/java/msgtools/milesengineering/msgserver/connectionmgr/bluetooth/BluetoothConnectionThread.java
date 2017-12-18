@@ -340,7 +340,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         if (retVal.GetMessageID() != networkHeader.GetMessageID() )
             retVal = null;
 
-        retVal.SetDataLength(networkHeader.GetDataLength());
+        retVal.SetDataLength((int)networkHeader.GetDataLength());
 
         // TODO: Use reflection to copy all like named fields
 
