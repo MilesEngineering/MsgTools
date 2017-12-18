@@ -38,8 +38,6 @@ You must always assume the service is being called by multiple treads and protec
 * Add Bluetooth broadcast intent handlers for the following cases and improve overall connectivity algorithm.  Right now it's brute force attempt to connect to whatever bonded devices we have:
     * ACTION_BOND_STATE_CHANGED -> Attempt to connect if just bonded
     * ACTION_STATE_CHANGED -> Attempt to connect to bonded devices
-    * ACTION_DISCOVERY_FINISHED -> Attempt to connect to new bonded devices
-    * ACTION_CONNECTION_STATE_CHANGED -> Cleanup if disconnected
 * Add support for reconnect (enabled/disabled, device drops, etc)
 * Add remote start/stop logging handling
 * Stop the service when done.  Need to figure out what done means.  Could be when the last app/client unbinds.  Could be when the last connection is dropped.  Could be...???
