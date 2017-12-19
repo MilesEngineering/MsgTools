@@ -30,6 +30,7 @@ public class Message
         // \todo How to set 32-bit rolling ms counter?
         hdr.SetTime(0);
     }*/
+    public ByteBuffer GetBuffer() { return m_data; }
 
     protected NetworkHeader hdr;
     protected ByteBuffer m_data;
