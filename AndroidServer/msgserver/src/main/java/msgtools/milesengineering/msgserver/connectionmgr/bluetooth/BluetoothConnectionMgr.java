@@ -121,11 +121,13 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
 
         // We'll rely on broadcast intents to handle disconnects, new bonded devices,
         // Bluetooth being enabled/disabled, etc...
-        Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
-        for( BluetoothDevice dev : devs ) {
-            BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
-                    getListeners(), m_StartupTime);
-            connection.start();
+        if (m_BluetoothAdapter != null) {
+            Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
+            for (BluetoothDevice dev : devs) {
+                BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
+                        getListeners(), m_StartupTime);
+                connection.start();
+            }
         }
     }
 
