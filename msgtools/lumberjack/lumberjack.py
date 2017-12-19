@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 try:
@@ -71,7 +72,7 @@ in that directory.''')
             # \todo Detect time rolling.  this only matters when we're processing a log file
             # with insufficient timestamp size, such that time rolls over from a large number
             # to a small one, during the log.
-            thisTimestamp = msg.hdr.GetTime(msg)
+            thisTimestamp = msg.hdr.GetTime()
             if thisTimestamp < self._lastTimestamp:
                 self._timestampOffset+=1
 
