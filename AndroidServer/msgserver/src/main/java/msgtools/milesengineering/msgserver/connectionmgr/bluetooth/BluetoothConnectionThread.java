@@ -357,8 +357,10 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         retVal.SetMessageID(networkHeader.GetMessageID());
 
         // No match?  No send...
-        if (retVal.GetMessageID() != networkHeader.GetMessageID() )
+        if (retVal.GetMessageID() != networkHeader.GetMessageID() ) {
+            android.util.Log.w(TAG, "MessageIDs don't match - filtering");
             retVal = null;
+        }
 
         // java is being difficult about type casts!
         int len = networkHeader.GetDataLength();
