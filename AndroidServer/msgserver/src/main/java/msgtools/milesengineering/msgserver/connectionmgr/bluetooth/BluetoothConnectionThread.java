@@ -262,9 +262,9 @@ class BluetoothConnectionThread extends Thread implements IConnection {
 
                     // It's also possible to have a message without a payload so be wary of a null
                     // payload buffer
-                    int totalLength = hdrBuff.capacity() + (payloadBuff == null ? 0 :
-                            payloadBuff.capacity());
                     ByteBuffer hdr = bth.GetBuffer();
+                    int totalLength = hdr.capacity() + (payloadBuff == null ? 0 :
+                            payloadBuff.capacity());
                     ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
                     hdr.position(0);
                     sendBuf.put(hdr);
@@ -277,7 +277,8 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                     try {
                         if (m_Output != null) {
                             // Write out data.
-                            m_Output.write(sendBuf.array());
+                            byte[] buf = sendBuf.array();
+                            m_Output.write(buf);
                             m_Output.flush();
 
                             retVal = true;
@@ -364,7 +365,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         else {
             // java is being difficult about type casts!
             int len = networkHeader.GetDataLength();
-            if (len < Short.MAX_VALUE) {
+            if (len < 255) {
                 // I *have* to cast to the smallest type that any Bluetooth Header might
                 // use, or I get a compile error.  There's no way to cast to the type that
                 // BluetoothHeader.GetDataLength returns!
@@ -372,6 +373,13 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                 // anyone to use Short.  If anyone ever uses Char, this won't be sufficient, but
                 // it'll be problematic to always cast to Char, because that limits size to 255 bytes!
                 retVal.SetDataLength((short) len);
+
+                long nhLen = networkHeader.GetDataLength();
+                long btLen = retVal.GetDataLength();
+                if ( networkHeader.GetDataLength() != retVal.GetDataLength() ) {
+                    android.util.Log.e(TAG, "Data lengths don't match");
+                    retVal = null;
+                }
             } else {
                 android.util.Log.w(TAG, "Message length too long!!!");
                 retVal = null;
