@@ -24,7 +24,6 @@ import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
  * Keep this in mind when making modifications.
  */
 
-// TODO: This class needs to be threadsafe...
 class BluetoothConnectionThread extends Thread implements IConnection {
     private final static String TAG = BluetoothConnectionThread.class.getSimpleName();
     private final Object m_SocketLock = new Object();   // Lock for socket management
@@ -37,6 +36,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private WeakReference<ConnectionListenerHelper> m_Listeners;
     private BluetoothDevice m_Device;
     private BluetoothSocket m_Socket;
+    private BluetoothSocket m_WrapSocket;
 
     // Properties used for reading input
     private InputStream m_Input;
@@ -56,8 +56,16 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private long m_BaseTime;
 
     public BluetoothConnectionThread(BluetoothDevice device, ConnectionListenerHelper listeners, long baseTime) {
-        android.util.Log.d(TAG, "BluetoothConnectionThread(...)");
+        android.util.Log.d(TAG, "BluetoothConnectionThread(device, ...)");
         m_Device = device;
+        m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
+        m_BaseTime = baseTime;
+    }
+
+    public BluetoothConnectionThread(BluetoothSocket connection, ConnectionListenerHelper listeners, long baseTime) {
+        android.util.Log.d(TAG, "BluetoothConnectionThread(connection, ...)");
+        m_Device = connection.getRemoteDevice();
+        m_WrapSocket = connection;
         m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
         m_BaseTime = baseTime;
     }
@@ -87,37 +95,49 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         android.util.Log.d(TAG, "setup()");
 
         try {
-            // Initialize an SPP socket
-            m_Socket = m_Device.createRfcommSocketToServiceRecord(SPP_UUID);
+            // Initialize an SPP socket - if we were passed a socket to wrap in the ctor
+            // then just initialize our IO streams etc.  If not then try to connect to the
+            // device we're mapped to...
+            BluetoothSocket newSocket = m_WrapSocket;
 
-            synchronized (m_SocketLock) {
-                // Connect to the remote device.  This will block until connection, or about
-                // 12 seconds elapse.
-                m_Socket.connect();
+            if (newSocket == null) {
+                newSocket = m_Device.createRfcommSocketToServiceRecord(SPP_UUID);
 
-                // Setup our IO...
-                m_Input = m_Socket.getInputStream();
-
-                synchronized (m_OutputLock) {
-                    m_Output = m_Socket.getOutputStream();
-                }
-                m_ReadBuffer = new byte[INITIAL_READBUF_SIZE];
-
-                m_Connected = true;
+                // Connect to the remote device.  This will block until connection, for up to about
+                // 12 seconds, or until we connect.
+                newSocket.connect();
             }
 
-            // Notify everyone we've connected
-            ConnectionListenerHelper listeners = m_Listeners.get();
-            if ( listeners != null )
-                listeners.onNewConnection(this);
+            setSocket(newSocket);
 
         } catch (IOException ioe) {
             android.util.Log.d(TAG, ioe.getMessage());
             android.util.Log.i(TAG, "BluetoothSocket unable to connect!");
             requestHalt();
         }
+    }
 
+    private void setSocket(BluetoothSocket newSocket) throws IOException {
+        synchronized (m_SocketLock) {
 
+            m_Socket = newSocket;
+
+            // Setup our IO...
+            m_Input = m_Socket.getInputStream();
+
+            synchronized (m_OutputLock) {
+                m_Output = m_Socket.getOutputStream();
+            }
+
+            m_ReadBuffer = new byte[INITIAL_READBUF_SIZE];
+
+            m_Connected = true;
+        }
+
+        // Notify everyone we've connected
+        ConnectionListenerHelper listeners = m_Listeners.get();
+            if ( listeners != null )
+            listeners.onNewConnection(this);
     }
 
     private void execute() {

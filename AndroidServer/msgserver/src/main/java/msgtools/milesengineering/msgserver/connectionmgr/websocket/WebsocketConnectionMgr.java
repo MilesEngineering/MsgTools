@@ -191,8 +191,12 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
 
     @Override
     public String getDescription() {
-        InetAddress ia = utils.getHostAddress();
-        String retVal = ia.toString() + ":" + m_SocketAddress.getPort();
+        String retVal = "Not Listening";
+        if ( m_SocketAddress != null ) {
+            InetAddress ia = utils.getHostAddress();
+            retVal = ia.toString() + ":" + m_SocketAddress.getPort();
+        }
+
         return retVal.substring(1);
     }
 
