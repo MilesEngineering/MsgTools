@@ -94,6 +94,10 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             }
             requestHalt();
         } else {
+            // Note: As of Android 6.0/Marshmallow this will always return an MAC of
+            // 02:00:00:00:00:00 for "added security".  A user can still get the MAC in
+            // Settings->About->Status.  More details here...
+            // https://developer.android.com/about/versions/marshmallow/android-6.0-changes.html#behavior-hardware-id
             m_Description = String.format("%s <%s>", m_BluetoothAdapter.getName(),
                     m_BluetoothAdapter.getAddress() );
         }
