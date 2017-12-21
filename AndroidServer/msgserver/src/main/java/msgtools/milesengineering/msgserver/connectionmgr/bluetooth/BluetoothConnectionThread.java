@@ -361,28 +361,25 @@ class BluetoothConnectionThread extends Thread implements IConnection {
             android.util.Log.w(TAG, "MessageIDs don't match - filtering");
             retVal = null;
         }
+        else {
+            // java is being difficult about type casts!
+            int len = networkHeader.GetDataLength();
+            if (len < Short.MAX_VALUE) {
+                // I *have* to cast to the smallest type that any Bluetooth Header might
+                // use, or I get a compile error.  There's no way to cast to the type that
+                // BluetoothHeader.GetDataLength returns!
+                // This means we have a hard-coded limit of always using Short, to allow
+                // anyone to use Short.  If anyone ever uses Char, this won't be sufficient, but
+                // it'll be problematic to always cast to Char, because that limits size to 255 bytes!
+                retVal.SetDataLength((short) len);
+            } else {
+                android.util.Log.w(TAG, "Message length too long!!!");
+                retVal = null;
+            }
 
-        // java is being difficult about type casts!
-        int len = networkHeader.GetDataLength();
-        if (len < Short.MAX_VALUE)
-        {
-            // I *have* to cast to the smallest type that any Bluetooth Header might
-            // use, or I get a compile error.  There's no way to cast to the type that
-            // BluetoothHeader.GetDataLength returns!
-            // This means we have a hard-coded limit of always using Short, to allow
-            // anyone to use Short.  If anyone ever uses Char, this won't be sufficient, but
-            // it'll be problematic to always cast to Char, because that limits size to 255 bytes!
-            retVal.SetDataLength((short)len);
+            // TODO: Use reflection to copy all like named fields - or maybe a different way
         }
-        else
-        {
-            retVal = null;
-        }
-            
-
-        // TODO: Use reflection to copy all like named fields
 
         return retVal;
     }
-
 }
