@@ -8,13 +8,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-import java.util.Date;
 import java.util.UUID;
 
 import headers.BluetoothHeader;
 import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.ConnectionListenerHelper;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
+
+import msgplugin.MessageHandler;
 
 /**
  * Thread for managing Bluetooth SPP connections. This class is threadsafe, but due to the
@@ -26,6 +27,7 @@ import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 
 // TODO: This class needs to be threadsafe...
 class BluetoothConnectionThread extends Thread implements IConnection {
+    private MessageHandler messageHandler; // plugin for handling bluetooth and network messages
     private final static String TAG = BluetoothConnectionThread.class.getSimpleName();
     private final Object m_SocketLock = new Object();   // Lock for socket management
     private final Object m_OutputLock = new Object();   // Lock for socket management
@@ -53,13 +55,11 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private BluetoothHeader m_BluetoothHeader;
     private ByteBuffer m_Payload;
 
-    private long m_BaseTime;
-
     public BluetoothConnectionThread(BluetoothDevice device, ConnectionListenerHelper listeners, long baseTime) {
         android.util.Log.d(TAG, "BluetoothConnectionThread(...)");
         m_Device = device;
         m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
-        m_BaseTime = baseTime;
+        messageHandler = new MessageHandler(baseTime);
     }
 
     /**
@@ -174,7 +174,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                 m_MessagesReceived++;
 
                 // All messages should be in NetworkHeader format, so do that conversion...
-                NetworkHeader nh = getNetworkHeader(new BluetoothHeader(m_HeaderBuf));
+                NetworkHeader nh = messageHandler.getNetworkHeader(new BluetoothHeader(m_HeaderBuf));
 
                 // Notify everyone we have a new message
                 ConnectionListenerHelper listeners = m_Listeners.get();
@@ -231,7 +231,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         synchronized (m_OutputLock) {
             if (m_Connected == true) {
                 // Convert to a BluetoothHeader
-                BluetoothHeader bth = getBluetoothHeader(networkHeader);
+                BluetoothHeader bth = messageHandler.getBluetoothHeader(networkHeader);
 
                 // No header? Then we can't do a translation so drop the message and move on
                 if (bth != null) {
@@ -319,48 +319,6 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         }
 
         requestHalt();
-    }
-
-    private NetworkHeader getNetworkHeader(BluetoothHeader bluetoothHeader) {
-        NetworkHeader retVal = new NetworkHeader();
-        retVal.SetMessageID(bluetoothHeader.GetMessageID());
-        retVal.SetDataLength(bluetoothHeader.GetDataLength());
-        retVal.SetTime(new Date().getTime() - m_BaseTime);
-
-        // TODO: Use reflection to copy all like named fields
-
-        return retVal;
-    }
-
-    private BluetoothHeader getBluetoothHeader(NetworkHeader networkHeader) {
-        BluetoothHeader retVal = new BluetoothHeader();
-        retVal.SetMessageID(networkHeader.GetMessageID());
-
-        // No match?  No send...
-        if (retVal.GetMessageID() != networkHeader.GetMessageID() )
-            retVal = null;
-
-        // java is being difficult about type casts!
-        int len = networkHeader.GetDataLength();
-        if (len < Short.MAX_VALUE)
-        {
-            // I *have* to cast to the smallest type that any Bluetooth Header might
-            // use, or I get a compile error.  There's no way to cast to the type that
-            // BluetoothHeader.GetDataLength returns!
-            // This means we have a hard-coded limit of always using Short, to allow
-            // anyone to use Short.  If anyone ever uses Char, this won't be sufficient, but
-            // it'll be problematic to always cast to Char, because that limits size to 255 bytes!
-            retVal.SetDataLength((short)len);
-        }
-        else
-        {
-            retVal = null;
-        }
-            
-
-        // TODO: Use reflection to copy all like named fields
-
-        return retVal;
     }
 
 }
