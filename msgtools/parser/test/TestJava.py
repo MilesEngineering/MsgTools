@@ -156,16 +156,16 @@ public void SetFieldF(float value)
     def test_enums(self):
         expected = '''public enum EnumA {
     OptionA(1), OptionB(2), OptionC(4), OptionD(5);
-    private final int id;
-    EnumA(int id) { this.id = id; }
-    static Map<Integer, EnumA> map = new HashMap<>();
+    private final long id;
+    EnumA(long id) { this.id = id; }
+    static Map<Long, EnumA> map = new HashMap<>();
     static {
         for (EnumA key : EnumA.values()) {
             map.put(key.id, key);
         }
     }
-    public int intValue() { return id; }
-    public static EnumA construct(int value) { return map.get(value); }
+    public long intValue() { return id; }
+    public static EnumA construct(long value) { return map.get(value); }
 }
 '''
         observed = language.enums(MsgParser.Enums(self.msgDict))

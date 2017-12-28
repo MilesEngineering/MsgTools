@@ -208,16 +208,16 @@ def enums(e):
         ret = ret[:-2]
         ret += ";\n"
         ret += '''\
-    private final int id;
-    {0}(int id) {{ this.id = id; }}
-    static Map<Integer, {0}> map = new HashMap<>();
+    private final long id;
+    {0}(long id) {{ this.id = id; }}
+    static Map<Long, {0}> map = new HashMap<>();
     static {{
         for ({0} key : {0}.values()) {{
             map.put(key.id, key);
         }}
     }}
-    public int intValue() {{ return id; }}
-    public static {0} construct(int value) {{ return map.get(value); }}
+    public long intValue() {{ return id; }}
+    public static {0} construct(long value) {{ return map.get(value); }}
 }}\n'''.format(enum["Name"])
     return ret
 
@@ -292,17 +292,17 @@ def fieldMax(field):
 
 def genericInfo(field, type, offset):
     loc = str(offset)
-    params  = '    static final int loc = ' + loc + ';\n'
-    params += '    static final %s max = (%s)%s;\n' % (type, type, fieldMax(field))
-    params += '    static final %s min = (%s)%s;\n' % (type, type, fieldMin(field))
-    params += '    static final String units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
-    params += '    static final int count = ' + str(MsgParser.fieldCount(field)) + ';\n'
+    params  = '    public static final int loc = ' + loc + ';\n'
+    params += '    public static final %s max = (%s)%s;\n' % (type, type, fieldMax(field))
+    params += '    public static final %s min = (%s)%s;\n' % (type, type, fieldMin(field))
+    params += '    public static final String units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
+    params += '    public static final int count = ' + str(MsgParser.fieldCount(field)) + ';\n'
     if "Default" in field:
-        params += '    static final %s defaultValue = (%s)%s;\n' % (type, type, languageConst(field["Default"]))
+        params += '    public static final %s defaultValue = (%s)%s;\n' % (type, type, languageConst(field["Default"]))
     if "Scale" in field:
-        params += '    static final float scale = (float)' + str(field["Scale"]) + ';\n'
+        params += '    public static final float scale = (float)' + str(field["Scale"]) + ';\n'
     if "Offset" in field:
-        params += '    static final float offset = (float)' + str(field["Offset"]) + ';\n'
+        params += '    public static final float offset = (float)' + str(field["Offset"]) + ';\n'
     return params
     
 def fieldInfo(field, offset):
@@ -310,7 +310,7 @@ def fieldInfo(field, offset):
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
 
-    params  = 'class ' + field["Name"] + 'FieldInfo {\n'
+    params  = 'public class ' + field["Name"] + 'FieldInfo {\n'
     params += genericInfo(field, retType, offset)
     params += '};\n'
     return params
@@ -320,10 +320,10 @@ def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
 
-    params  = 'class ' + bits["Name"] + 'FieldInfo {\n'
+    params  = 'public class ' + bits["Name"] + 'FieldInfo {\n'
     params += genericInfo(bits, retType, offset)
-    params += '    static final int bitOffset = ' + str(bitOffset) + ';\n'
-    params += '    static final int numBits   = ' + str(numBits) + ';\n'
+    params += '    public static final int bitOffset = ' + str(bitOffset) + ';\n'
+    params += '    public static final int numBits   = ' + str(numBits) + ';\n'
     params += '};\n'
     return params
 
