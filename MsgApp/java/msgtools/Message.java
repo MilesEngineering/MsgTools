@@ -23,6 +23,10 @@ public class Message
         buffer.position(NetworkHeader.SIZE);
         m_data = buffer.slice();
     }
+    public Message(ByteBuffer header, ByteBuffer payload) {
+        hdr = new NetworkHeader(header);
+        m_data = payload;
+    }
     public void SetMessageID(int id){ hdr.SetMessageID(id); }
     public long GetMessageID() { return hdr.GetMessageID(); }
     /*void InitializeTime()
@@ -31,6 +35,7 @@ public class Message
         hdr.SetTime(0);
     }*/
     public ByteBuffer GetBuffer() { return m_data; }
+    public NetworkHeader GetHeader() { return hdr; }
 
     protected NetworkHeader hdr;
     protected ByteBuffer m_data;

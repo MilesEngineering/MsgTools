@@ -30,7 +30,7 @@ public class MessageHandler {
             retVal = null;
 
         // java is being difficult about type casts!
-        int len = networkHeader.GetDataLength();
+        int len = (int)networkHeader.GetDataLength();
         if (len < Short.MAX_VALUE)
         {
             // I *have* to cast to the smallest type that any Bluetooth Header might

@@ -31,6 +31,10 @@ public class <MSGSHORTNAME> extends msgtools.Message
     {
         super(buffer);
     }
+    public <MSGSHORTNAME>(ByteBuffer header, ByteBuffer payload)
+    {
+        super(header, payload);
+    }
     void Init()
     {
         <INIT_CODE>
