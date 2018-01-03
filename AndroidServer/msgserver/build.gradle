@@ -29,7 +29,7 @@ android {
     // All headers MUST supply these fields at minimum, and MsgTools will generally take care
     // of these for you.
 
-    // make test in the root of MsgTools will create an obj directory one level above MsgTools with
+    // "make test" in the root of MsgTools will create an obj directory one level above MsgTools with
     // sample headers that can be used to build and run the app.  You will want to update the
     // obj/CodeGenerator/java directory below to be rooted appropriate to your instance
     // of this application.  If your messages are relatively stable you may instead want to create
@@ -40,9 +40,12 @@ android {
 
     // This path should reference the location of your generated messages
     String GeneratedMsgDir = project.hasProperty('msgdir') ? project.getProperty('msgdir') : '../../../obj/CodeGenerator/Java'
+    
+    // This path should reference the location of your customer-specific plugins
+    String MsgPluginDir = project.hasProperty('plugindir') ? project.getProperty('plugindir') : '../baseplugin'
 
     sourceSets {
-        main { java.srcDirs = ['src/main/java', MsgAppDir, GeneratedMsgDir,'../Java-WebSocket/src/main/java'] }
+        main { java.srcDirs = ['src/main/java', MsgPluginDir, MsgAppDir, GeneratedMsgDir,'../Java-WebSocket/src/main/java'] }
     }
 }
 
