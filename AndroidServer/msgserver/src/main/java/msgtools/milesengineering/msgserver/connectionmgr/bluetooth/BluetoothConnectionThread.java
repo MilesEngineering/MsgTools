@@ -67,7 +67,6 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         m_Device = connection.getRemoteDevice();
         m_WrapSocket = connection;
         m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
-        m_BaseTime = baseTime;
     }
 
     /**
@@ -221,7 +220,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         // Close the socket, and send out a closure event if we connected
         synchronized(m_SocketLock) {
             try {
-                if (m_Socket != null)
+                if (m_Socket != null && m_Socket.isConnected())
                     m_Socket.close();
             } catch (IOException e) {
                 android.util.Log.i(TAG, e.getMessage());
@@ -328,7 +327,8 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         if ( m_Connected == true ) {
             synchronized (m_SocketLock) {
                 try {
-                    m_Socket.close();
+                    if (m_Socket.isConnected())
+                        m_Socket.close();
                     // Don't set m_Connected to false - we want to
                     // handle that in the cleanup method so we fire off
                     // a connection closed event to all listeners

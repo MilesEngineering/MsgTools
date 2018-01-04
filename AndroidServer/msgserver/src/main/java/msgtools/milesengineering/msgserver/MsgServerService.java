@@ -20,6 +20,14 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Hashtable;
 
+import Network.Connect;
+import Network.LogStatus;
+import Network.MaskedSubscription;
+import Network.PrivateSubscriptionList;
+import Network.QueryLog;
+import Network.StartLog;
+import Network.StopLog;
+import Network.SubscriptionList;
 import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgr;
@@ -112,7 +120,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
                         try {
                             String json = (String) msg.obj;
                             JSONObject jsonObj = (JSONObject) new JSONTokener(json).nextValue();
-                            startLogging(jsonObj.getString("filename"), jsonObj.getString("msgVersion"));
+                            startLogging(jsonObj.getString("filename"), jsonObj.getString("msgVersion"), null);
                         }
                         catch(JSONException je) {
                             broadcastLoggingStatusIntent(je.getMessage());
@@ -120,7 +128,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
                         break;
                     case MsgServerServiceAPI.ID_REQUEST_STOP_LOGGING:
                         android.util.Log.d(TAG, "Stop Logging Request");
-                        stopLogging();
+                        stopLogging(null);
                         break;
                     default:
                         android.util.Log.w(TAG, "Unknown message type received by MsgServer.");
@@ -281,34 +289,94 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
                 broadcastNewConnectionIntent(mgr, srcConnection);
             }
 
-            for(IConnection c : m_Connections.values()) {
-                try {
-                    // Don't echo messages back to the sender
-                    if (c != srcConnection && c.sendMessage(networkHeader, hdrBuff,
-                            payloadBuff) == false) {
-                        android.util.Log.w(TAG, "Message not sent by connection: " +
-                                c.getDescription());
+            // Check to see if this is a special purpose message (Start/Stop Log, LogStatus, etc)
+            // and handle the message as appropriate.  Don't route these messages out
+            int msgId = networkHeader.GetMessageID();
+            switch( msgId ) {
+                case StartLog.MSG_ID:
+                    StartLog msg = new StartLog(hdrBuff, payloadBuff);
+                    StringBuilder sb = new StringBuilder();
+
+                    for(int i = 0; i < StartLog.LogFileNameFieldInfo.count; i++) {
+                        char nextChar = (char)msg.GetLogFileName(i);
+                        if ( nextChar != 0x0 )
+                            sb.append( nextChar );
+                        else
+                            break;
                     }
-                }
-                catch(Exception e) {
-                    android.util.Log.w(TAG, "Exception sending message on connection: " +
-                        c.getDescription());
-                    android.util.Log.w(TAG, e.toString());
+
+                    String logFilename = sb.toString();
+
+                    if ( logFilename.length() > 0)
+                        startLogging( logFilename, "", srcConnection );
+
+                    break;
+
+                case StopLog.MSG_ID:
+                    stopLogging(srcConnection);
+                    break;
+
+                case QueryLog.MSG_ID:
+                    sendLogStatus(srcConnection);
+                    break;
+
+                case LogStatus.MSG_ID:
+                case Connect.MSG_ID:
+                case MaskedSubscription.MSG_ID:
+                case SubscriptionList.MSG_ID:
+                case PrivateSubscriptionList.MSG_ID:
+                    // Unsupported at present
+                    break;
+                default:
+                    routeMessage(srcConnection, networkHeader, hdrBuff, payloadBuff);
+            }
+        }
+    }
+
+    private void routeMessage(IConnection srcConnection, NetworkHeader networkHeader, ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
+        for(IConnection c : m_Connections.values()) {
+            try {
+                // Don't echo messages back to the sender
+                if (c != srcConnection && c.sendMessage(networkHeader, hdrBuff,
+                        payloadBuff) == false) {
+                    android.util.Log.w(TAG, "Message not sent by connection: " +
+                            c.getDescription());
                 }
             }
-
-            // Next time our timer fires post a RX/TX update to everyone
-            m_MessageCountDirty = true;
-
-            // And finally log
-            m_MsgLogger.log(hdrBuff, payloadBuff);
+            catch(Exception e) {
+                android.util.Log.w(TAG, "Exception sending message on connection: " +
+                        c.getDescription());
+                android.util.Log.w(TAG, e.toString());
+            }
         }
+
+        // Next time our timer fires post a RX/TX update to everyone
+        m_MessageCountDirty = true;
+
+        // And finally log
+        m_MsgLogger.log(hdrBuff, payloadBuff);
+    }
+
+    private void sendLogStatus(IConnection destination) {
+        LogStatus status = new LogStatus();
+
+        if ( m_MsgLogger.isEnabled() == true ) {
+            status.SetLogOpen( (short)1 );
+
+            byte[] logFilename = m_MsgLogger.getFilename().getBytes();
+            for (int i = 0; i < logFilename.length; i++)
+                status.SetLogFileName(logFilename[i], i);
+            status.SetLogFileType((short) LogStatus.LogFileTypes.Binary.intValue());
+        }
+        else
+            status.SetLogOpen( (short)0 );
+
+        destination.sendMessage( status.GetHeader(), status.GetHeader().GetBuffer(), status.GetBuffer() );
     }
 
     //
     // MsgServerServiceAPI Handlers
     //
-
 
     private void sendServersIntent() {
         Intent sendIntent = new Intent();
@@ -334,14 +402,22 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         sendBroadcast(sendIntent);
     }
 
-    private void startLogging(String filename, String msgVersion) {
+    private void startLogging(String filename, String msgVersion, IConnection srcConnection) {
         String errorMsg = m_MsgLogger.startLogging(filename, msgVersion);
         broadcastLoggingStatusIntent(errorMsg);
+
+        // If our log request came from a remote client, echo our new status to confirm...
+        if ( srcConnection != null )
+            sendLogStatus(srcConnection);
     }
 
-    private void stopLogging() {
+    private void stopLogging(IConnection srcConnection) {
         String errorMsg = m_MsgLogger.stopLogging();
         broadcastLoggingStatusIntent(errorMsg);
+
+        // If our log request came from a remote client, echo our new status to confirm...
+        if ( srcConnection != null )
+            sendLogStatus(srcConnection);
     }
 
     //
