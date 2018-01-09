@@ -1,6 +1,7 @@
 package msgtools.milesengineering.msgserver;
 
 import android.os.Environment;
+import android.os.StatFs;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,7 +29,7 @@ import Network.StartLog;
  * that this holds things up too much and spin up a new thread to process the messages.
  * We're starting simple and we'll see where this goes...
  */
-class MessageLogger {
+public class MessageLogger {
     private static final String TAG = MessageLogger.class.getSimpleName();
 
     private String m_LogPath = null;
@@ -36,6 +37,8 @@ class MessageLogger {
     private String m_Filename = null;
     private String m_MsgVersion = null;
     private OutputStream m_LogWriter;
+    private long m_FileBlockSize = 4096;
+    private long m_BytesLogged = 0;
 
     /**
      * ctor - creates a directory at the root of storage using the given name
@@ -49,6 +52,10 @@ class MessageLogger {
         if (logDir.exists() == false)
             if (logDir.mkdirs() == false)
                 android.util.Log.e(TAG, "Unable to create storage folder!");
+
+        File file = Environment.getExternalStorageDirectory();
+        StatFs stat = new StatFs(file.getPath());
+        m_FileBlockSize = stat.getBlockSizeLong();
     }
 
     /**
@@ -94,10 +101,12 @@ class MessageLogger {
                 if ( logFile.exists() == false )
                     logFile.createNewFile();
 
-                m_LogWriter = new BufferedOutputStream(new FileOutputStream( logFile ));
+                m_LogWriter = new BufferedOutputStream(new FileOutputStream( logFile ),
+                        (int)m_FileBlockSize);
                 m_Filename = filename;
                 m_MsgVersion = msgVersion;
                 m_IsEnabled = true;
+                m_BytesLogged = 0;
 
                 retVal = writeHeader();
             } catch (IOException e) {
@@ -146,9 +155,14 @@ class MessageLogger {
 
         try {
             m_LogWriter.write(header.array());
+            m_BytesLogged += header.limit();
 
-            if (payload != null )
+            if (payload != null ) {
                 m_LogWriter.write(payload.array());
+                m_BytesLogged += payload.limit();
+            }
+
+
         }
         catch(IOException ioe) {
             ioe.printStackTrace();

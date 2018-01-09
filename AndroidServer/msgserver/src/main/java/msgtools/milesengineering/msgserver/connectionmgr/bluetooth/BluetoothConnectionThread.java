@@ -10,6 +10,7 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+import Network.LogStatus;
 import headers.BluetoothHeader;
 import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.ConnectionListenerHelper;
@@ -26,7 +27,7 @@ import msgplugin.MessageHandler;
  */
 
 class BluetoothConnectionThread extends Thread implements IConnection {
-    private MessageHandler messageHandler; // plugin for handling bluetooth and network messages
+    private MessageHandler m_MessageHandler; // plugin for handling bluetooth and network messages
     private final static String TAG = BluetoothConnectionThread.class.getSimpleName();
     private final Object m_SocketLock = new Object();   // Lock for socket management
     private final Object m_OutputLock = new Object();   // Lock for socket management
@@ -59,7 +60,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         android.util.Log.d(TAG, "BluetoothConnectionThread(device, ...)");
         m_Device = device;
         m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
-        messageHandler = new MessageHandler(baseTime);
+        m_MessageHandler = new MessageHandler(baseTime);
     }
 
     public BluetoothConnectionThread(BluetoothSocket connection, ConnectionListenerHelper listeners, long baseTime) {
@@ -67,6 +68,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         m_Device = connection.getRemoteDevice();
         m_WrapSocket = connection;
         m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
+        m_MessageHandler = new MessageHandler(baseTime);
     }
 
     /**
@@ -193,7 +195,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                 m_MessagesReceived++;
 
                 // All messages should be in NetworkHeader format, so do that conversion...
-                NetworkHeader nh = messageHandler.getNetworkHeader(new BluetoothHeader(m_HeaderBuf));
+                NetworkHeader nh = m_MessageHandler.getNetworkHeader(new BluetoothHeader(m_HeaderBuf));
 
                 // Notify everyone we have a new message
                 ConnectionListenerHelper listeners = m_Listeners.get();
@@ -249,8 +251,10 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         boolean retVal = false;
         synchronized (m_OutputLock) {
             if (m_Connected == true) {
+
+
                 // Convert to a BluetoothHeader
-                BluetoothHeader bth = messageHandler.getBluetoothHeader(networkHeader);
+                BluetoothHeader bth = m_MessageHandler.getBluetoothHeader(networkHeader);
 
                 // No header? Then we can't do a translation so drop the message and move on
                 if (bth != null) {
@@ -262,8 +266,8 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                     // It's also possible to have a message without a payload so be wary of a null
                     // payload buffer
                     ByteBuffer hdr = bth.GetBuffer();
-                    int totalLength = hdr.capacity() + (payloadBuff == null ? 0 :
-                            payloadBuff.capacity());
+                    int totalLength = hdr.limit() + (payloadBuff == null ? 0 :
+                            payloadBuff.limit());
                     ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
                     hdr.position(0);
                     sendBuf.put(hdr);

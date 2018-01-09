@@ -328,8 +328,13 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
                     // Unsupported at present
                     break;
                 default:
+                    android.util.Log.d(TAG, String.format("SEQUENCE=%d", (short)(0x000000FF & payloadBuff.get(0))));
                     routeMessage(srcConnection, networkHeader, hdrBuff, payloadBuff);
+                    m_MsgLogger.log(hdrBuff, payloadBuff);
             }
+
+            // Next time our timer fires post a RX/TX update to everyone
+            m_MessageCountDirty = true;
         }
     }
 
@@ -349,12 +354,6 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
                 android.util.Log.w(TAG, e.toString());
             }
         }
-
-        // Next time our timer fires post a RX/TX update to everyone
-        m_MessageCountDirty = true;
-
-        // And finally log
-        m_MsgLogger.log(hdrBuff, payloadBuff);
     }
 
     private void sendLogStatus(IConnection destination) {
@@ -371,7 +370,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         else
             status.SetLogOpen( (short)0 );
 
-        destination.sendMessage( status.GetHeader(), status.GetHeader().GetBuffer(), status.GetBuffer() );
+            destination.sendMessage( status.GetHeader(), status.GetHeader().GetBuffer(), status.GetBuffer() );
     }
 
     //

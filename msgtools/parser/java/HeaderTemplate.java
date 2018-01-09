@@ -25,7 +25,7 @@ public class <MSGNAME>
     }
     public <MSGNAME>(ByteBuffer buffer)
     {
-        m_data = buffer;
+        m_data = ByteBuffer.wrap( buffer.array(), 0, SIZE );
     }
     public ByteBuffer GetBuffer() 
     { 
