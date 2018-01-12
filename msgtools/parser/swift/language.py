@@ -42,14 +42,20 @@ def typeForScaledInt(field):
 
 def enumLookup(field):
     lookup  = "if("+ str(field["Enum"])+"Enum.keys.contains(value))\n"
+    lookup += "    {\n"
     lookup += "        value = "+ str(field["Enum"])+"Enum[value];\n"
+    lookup += "    }\n"
     lookup += "    "
     return lookup
 
 def reverseEnumLookup(field):
     lookup = "if(!enumAsInt)\n"
+    lookup += "{\n"
     lookup += "        if(Reverse"+ str(field["Enum"])+"Enum.keys.contains(value))\n"
+    lookup += "        {\n"
     lookup += "            value = Reverse" + str(field["Enum"]) + "Enum[value];\n    "
+    lookup += "        }\n"
+    lookup += "}\n"
     return lookup
 
 def getFn(field, offset):
@@ -57,11 +63,11 @@ def getFn(field, offset):
     param = ""
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
-        param += "idx"
+        param += "_ idx: Int"
     if "Enum" in field:
         if param != "":
             param += ", "
-        param += "enumAsInt=false"
+        param += "_ enumAsInt:Bool=false"
     access = "(m_data.get%s(%s))" % (fieldType(field), loc)
     access = getMath(access, field, "")
     cleanup = ""
@@ -69,7 +75,7 @@ def getFn(field, offset):
         cleanup = reverseEnumLookup(field)
     ret = '''\
 %s
-open func Get%s(%s) -> %s
+public func Get%s(%s) -> %s
 {
     var value = %s;
     %sreturn value;
@@ -77,14 +83,16 @@ open func Get%s(%s) -> %s
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
 %s
-open func Get%sString() -> String
+public func Get%sString() -> String
 {
-    var value = '';
-    for(i=0; i<%s && i<hdr.GetDataLength()-%s; i++)
+    var value = "";
+    for(var i=0; i<%s && i<hdr.GetDataLength()-%s; i++)
     {
-        nextChar = String.fromCharCode(Get%s(i));
-        if(nextChar == '\\0')
+        var nextChar = String.fromCharCode(Get%s(i));
+        if(nextChar == "\\0")
+        {
             break;
+        }
         value += nextChar;
     }
     return value;
@@ -97,27 +105,26 @@ def setFn(field, offset):
     if "Enum" in field:
         # find index that corresponds to string input param
         lookup = enumLookup(field)        
-    param = "value"
+    param = "_ value: " + paramType(field)
     loc = str(offset)
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
-        param += ", idx"
+        param += ", _ idx: Int"
     ret = '''\
 %s
-open func Set%s(%s)
+public func Set%s(%s)
 {
     %sm_data.set%s(%s, %s);
 };''' % (fnHdr(field), field["Name"], param, lookup, fieldType(field), loc, valueString)
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
 %s
-open func Set%sString(value)
+public func Set%sString(value: String)
 {
-    for(i=0; i<%s && i<value.length; i++)
+    for(var i=0; i<%s && i<value.length; i++)
     {
         Set%s(value[i].charCodeAt(0), i);
     }
-    return value;
 };''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), field["Name"])
     return ret
 
@@ -126,13 +133,13 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
     access = getMath(access, bits, "")
     param = ""
     if "Enum" in bits:
-        param += "enumAsInt=false"
+        param += "_ enumAsInt:Bool=false"
     cleanup = ""
     if "Enum" in bits:
         cleanup = reverseEnumLookup(bits)
     ret = '''\
 %s
-open func Get%s(%s) -> %s
+public func Get%s(%s) -> %s
 {
     var value = %s;
     %sreturn value;
@@ -145,12 +152,13 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
     if "Enum" in bits:
         # find index that corresponds to string input param
         lookup = enumLookup(bits)
+    param = "_ value: " + bitParamType(field, bits)
     ret = '''\
 %s
-open func Set%s(value)
+public func Set%s(%s)
 {
     %sSet%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
-};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), lookup, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, lookup, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -177,7 +185,9 @@ def initField(field):
     if "Default" in field:
         if MsgParser.fieldCount(field) > 1:
             ret = "for (i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
+            ret += "{\n"
             ret += "    Set" + field["Name"] + "(" + str(field["Default"]) + ", i);" 
+            ret += "}\n"
             return ret;
         else:
             return  "Set" + field["Name"] + "(" + str(field["Default"]) + ");"
@@ -209,20 +219,20 @@ def enums(e):
     ret = ""
     for enum in e:
         # enum
-        fwd = "open enum " + enum["Name"]+"Values: Int {\n"
+        fwd = "public enum " + enum["Name"]+"Values: Int {\n"
         for option in enum["Options"]:
             fwd += "    case "+str(option["Name"]) + " = "+str(option["Value"])+";\n"
         fwd += "}\n"
 
         # forward map
-        fwd += "open let "+enum["Name"]+"Enum = ["
+        fwd += "public let "+enum["Name"]+"Enum = ["
         for option in enum["Options"]:
-            fwd += str(option["Name"]) +': '+str(option["Value"]) + ', '
+            fwd += '"'+str(option["Name"])+'"' +': '+str(option["Value"]) + ', '
         fwd = fwd[:-2]
         fwd += "]\n"
         
         # Reverse map
-        back = "open let Reverse" + enum["Name"]+"Enum = ["
+        back = "public let Reverse" + enum["Name"]+"Enum = ["
         for option in enum["Options"]:
             back += str(option["Value"]) +': "'+str(option["Name"]) + '", '
         back = back[:-2]
@@ -258,18 +268,18 @@ def bitsReflectionInterfaceType(field):
 def bitfieldReflection(msg, field, bits):
     name = bits["Name"]
     ret = "["+\
-              'name:"'+name + '",'+\
-              'type:"'+bitsReflectionInterfaceType(bits) + '",'+\
-              'units:"'+MsgParser.fieldUnits(bits) + '",'+\
-              'minVal:"'+str(MsgParser.fieldMin(bits)) + '",'+\
-              'maxVal:"'+str(MsgParser.fieldMax(bits)) + '",'+\
-              'description:"'+MsgParser.fieldDescription(bits) + '",'+\
-              'get:"Get' + name + '",'+\
-              'set:"Set' + name  + '", '
+              '"name":"'+name + '",'+\
+              '"type":"'+bitsReflectionInterfaceType(bits) + '",'+\
+              '"units":"'+MsgParser.fieldUnits(bits) + '",'+\
+              '"minVal":"'+str(MsgParser.fieldMin(bits)) + '",'+\
+              '"maxVal":"'+str(MsgParser.fieldMax(bits)) + '",'+\
+              '"description":"'+MsgParser.fieldDescription(bits) + '",'+\
+              '"get":"Get' + name + '",'+\
+              '"set":"Set' + name  + '", '
     if "Enum" in bits:
-        ret += "enumLookup : ["+  bits["Enum"]+"Enum, " + "Reverse" + bits["Enum"]+"Enum]]"
+        ret += '"enumLookup" : ['+  bits["Enum"]+"Enum, " + "Reverse" + bits["Enum"]+"Enum]]"
     else:
-        ret += "enumLookup : []]"
+        ret += '"enumLookup" : []]'
     return ret
 
 def fieldReflection(msg, field):
@@ -279,26 +289,26 @@ def fieldReflection(msg, field):
         fieldFnName = field["Name"]+"String"
         fieldCount = 1
     fieldInfo = "["+\
-                  'name:"'+field["Name"] + '",'+\
-                  'type:"'+reflectionInterfaceType(field) + '",'+\
-                  'units:"'+MsgParser.fieldUnits(field) + '",'+\
-                  'minVal:"'+str(MsgParser.fieldMin(field)) + '",'+\
-                  'maxVal:"'+str(MsgParser.fieldMax(field)) + '",'+\
-                  'description:"'+MsgParser.fieldDescription(field) + '",'+\
-                  'get:"Get' + fieldFnName + '",'+\
-                  'set:"Set' + fieldFnName  + '",'+\
-                  'count:'+str(fieldCount) + ', '
+                  '"name":"'+field["Name"] + '",'+\
+                  '"type":"'+reflectionInterfaceType(field) + '",'+\
+                  '"units":"'+MsgParser.fieldUnits(field) + '",'+\
+                  '"minVal":"'+str(MsgParser.fieldMin(field)) + '",'+\
+                  '"maxVal":"'+str(MsgParser.fieldMax(field)) + '",'+\
+                  '"description":"'+MsgParser.fieldDescription(field) + '",'+\
+                  '"get":"Get' + fieldFnName + '",'+\
+                  '"set":"Set' + fieldFnName  + '",'+\
+                  '"count":'+str(fieldCount) + ', '
     if "Bitfields" in field:
         bitfieldInfo = []
         for bits in field["Bitfields"]:
             bitfieldInfo.append("    " + bitfieldReflection(msg, field, bits))
-        fieldInfo += "bitfieldInfo : [\n" + ",\n".join(bitfieldInfo) + "], "
+        fieldInfo += '"bitfieldInfo" : [\n' + ",\n".join(bitfieldInfo) + "], "
     else:
-        fieldInfo += "bitfieldInfo : [], "
+        fieldInfo += '"bitfieldInfo" : [], '
     if "Enum" in field:
-        fieldInfo += "enumLookup : [" + field["Enum"]+"Enum, " + "Reverse" + field["Enum"]+"Enum]]"
+        fieldInfo += '"enumLookup" : [' + field["Enum"]+"Enum, " + "Reverse" + field["Enum"]+"Enum]]"
     else:
-        fieldInfo += "enumLookup : []]"
+        fieldInfo += '"enumLookup" : []]'
     return fieldInfo
 
 def reflection(msg):
@@ -388,7 +398,7 @@ def structUnpacking(msg):
                     else:
                         ret.append('try { ret["'+field["Name"] + '"] = []; } catch (err) {}')
                         ret.append('try { ')
-                        ret.append("    for(i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
+                        ret.append("    for(var i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
                         ret.append('        ret["'+field["Name"] + '"][i] = Get' + field["Name"] + "(i);")
                         ret.append('} catch (err) {}')
             

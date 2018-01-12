@@ -17,5 +17,15 @@ testPython:
 testJava:
 	$(PYTHON) TestJava.py
 
-include $(MK_DIR)/codegen.mk
+testSwift: swiftmsgs
+	cd swift && swift build
 
+swiftmsgs:
+	msgparser messages swift/Sources/messages swift  Template.swift HeaderTemplate.swift
+
+clean :: cleanswift
+
+cleanswift:
+	rm -rf swift/Sources/messages
+
+include $(MK_DIR)/codegen.mk
