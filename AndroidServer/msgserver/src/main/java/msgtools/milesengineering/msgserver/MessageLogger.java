@@ -3,21 +3,12 @@ package msgtools.milesengineering.msgserver;
 import android.os.Environment;
 import android.os.StatFs;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Calendar;
-import java.util.TimeZone;
-
-import Network.StartLog;
 
 /**
  * This class logs messages in binary format to a file on the expanded/public storage space
@@ -31,6 +22,7 @@ import Network.StartLog;
  */
 public class MessageLogger {
     private static final String TAG = MessageLogger.class.getSimpleName();
+    private final Object m_Lock = new Object(); // Lock object
 
     private String m_LogPath = null;
     private boolean m_IsEnabled = false;
@@ -39,6 +31,16 @@ public class MessageLogger {
     private OutputStream m_LogWriter;
     private long m_FileBlockSize = 4096;
     private long m_BytesLogged = 0;
+
+    /**
+     * Utility class for returning status in a concurrent manner
+     */
+    public class LogStatus {
+        public boolean enabled;
+        public String filename;
+        public String version;
+        public long bytesLogged;
+    }
 
     /**
      * ctor - creates a directory at the root of storage using the given name
@@ -58,28 +60,16 @@ public class MessageLogger {
         m_FileBlockSize = stat.getBlockSizeLong();
     }
 
-    /**
-     * Check to see if logging is enabled
-     * @return true if enabled
-     */
-    public boolean isEnabled() {
-        return m_IsEnabled;
-    }
+    public LogStatus getStatus() {
+        LogStatus status = new LogStatus();
+        synchronized (m_Lock) {
+            status.enabled = m_IsEnabled;
+            status.filename = m_Filename == null ? null : new String(m_Filename);
+            status.version = m_MsgVersion == null ? null : new String(m_MsgVersion);
+            status.bytesLogged = m_BytesLogged;
+        }
 
-    /**
-     * Get the filename we're currently logging to
-     * @return Filename or null if logging isn't enabled
-     */
-    public String getFilename() {
-        return m_IsEnabled == true ? m_Filename : null;
-    }
-
-    /**
-     * Get the current msgVersion we've dumped to the log
-     * @return Message version or null if logging isn't enabled
-     */
-    public String getMsgVersion() {
-        return m_IsEnabled == true ? m_MsgVersion : null;
+        return status;
     }
 
     /**
@@ -95,26 +85,29 @@ public class MessageLogger {
         android.util.Log.d(TAG, "startLogging()");
         String retVal = null;
 
-        if (m_IsEnabled == false ) {
-            File logFile = new File( m_LogPath, filename );
-            try {
-                if ( logFile.exists() == false )
-                    logFile.createNewFile();
+        synchronized(m_Lock) {
 
-                m_LogWriter = new BufferedOutputStream(new FileOutputStream( logFile ),
-                        (int)m_FileBlockSize);
-                m_Filename = filename;
-                m_MsgVersion = msgVersion;
-                m_IsEnabled = true;
-                m_BytesLogged = 0;
+            if (m_IsEnabled == false) {
+                File logFile = new File(m_LogPath, filename);
+                try {
+                    if (logFile.exists() == false)
+                        logFile.createNewFile();
 
-                retVal = writeHeader();
-            } catch (IOException e) {
-                retVal = e.getMessage();
-            }
+                    m_LogWriter = new BufferedOutputStream(new FileOutputStream(logFile),
+                            (int) m_FileBlockSize);
+                    m_Filename = filename;
+                    m_MsgVersion = msgVersion;
+                    m_BytesLogged = 0;
+
+                    retVal = writeHeader();
+
+                    m_IsEnabled = true;
+                } catch (IOException e) {
+                    retVal = e.getMessage();
+                }
+            } else
+                retVal = "Logging already started!";
         }
-        else
-            retVal = "Logging already started!";
 
         return retVal;
     }
@@ -127,22 +120,22 @@ public class MessageLogger {
         android.util.Log.d(TAG, "stopLogging()");
         String retVal = null;
 
-        if ( m_IsEnabled == true ) {
-            try {
-                m_LogWriter.flush();
-                m_LogWriter.close();
-            }
-            catch(IOException ioe) {
-                retVal = ioe.getMessage();
-            }
+        synchronized(m_Lock) {
+            if (m_IsEnabled == true) {
+                try {
+                    m_LogWriter.flush();
+                    m_LogWriter.close();
+                } catch (IOException ioe) {
+                    retVal = ioe.getMessage();
+                }
 
-            m_LogWriter = null;
-            m_Filename = null;
-            m_MsgVersion = null;
-            m_IsEnabled = false;
+                m_LogWriter = null;
+                m_Filename = null;
+                m_MsgVersion = null;
+                m_IsEnabled = false;
+            } else
+                retVal = "Logging not enabled!";
         }
-        else
-            retVal = "Logging not enabled!";
 
         return retVal;
     }
@@ -150,22 +143,23 @@ public class MessageLogger {
     public void log(ByteBuffer header, ByteBuffer payload) {
         android.util.Log.d(TAG, "log()");
 
-        if(m_IsEnabled == false)
-            return;
+        synchronized(m_Lock) {
+            if (m_IsEnabled == false)
+                return;
 
-        try {
-            m_LogWriter.write(header.array());
-            m_BytesLogged += header.limit();
+            try {
+                m_LogWriter.write(header.array());
+                m_BytesLogged += header.limit();
 
-            if (payload != null ) {
-                m_LogWriter.write(payload.array());
-                m_BytesLogged += payload.limit();
+                if (payload != null) {
+                    m_LogWriter.write(payload.array());
+                    m_BytesLogged += payload.limit();
+                }
+
+
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
             }
-
-
-        }
-        catch(IOException ioe) {
-            ioe.printStackTrace();
         }
     }
 
