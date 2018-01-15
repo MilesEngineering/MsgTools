@@ -90,22 +90,7 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
                     int msgId = msg.hdr.GetMessageID();
                     switch( msgId ) {
                         case StartLog.MSG_ID:
-                            StartLog startMsg = new StartLog(msg.hdrBuf, msg.pldBuf);
-                            StringBuilder sb = new StringBuilder();
-
-                            for(int i = 0; i < StartLog.LogFileNameFieldInfo.count; i++) {
-                                char nextChar = (char)startMsg.GetLogFileName(i);
-                                if ( nextChar != 0x0 )
-                                    sb.append( nextChar );
-                                else
-                                    break;
-                            }
-
-                            String logFilename = sb.toString();
-
-                            if ( logFilename.length() > 0)
-                                startLogging( logFilename, "", msg.src );
-
+                            startLogging(msg);
                             break;
 
                         case StopLog.MSG_ID:
@@ -123,8 +108,12 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
                         case PrivateSubscriptionList.MSG_ID:
                             // Unsupported at present
                             break;
+
                         default:
                             routeMessage(msg);
+                            if ( m_BlockingQueue.size() > 100 ) {
+                                android.util.Log.w(TAG, "MsgQueue over 100");
+                            }
                     }
                 }
             }
@@ -138,28 +127,49 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
         for (IConnection c : m_Connections.values()) {
             try {
                 // Don't echo messages back to the sender
-                if (c != msg.src && c.sendMessage(msg.hdr, msg.hdrBuf, msg.pldBuf) == false) {
-                    android.util.Log.w(TAG, "Message not sent by connection: " +
-                            c.getDescription());
+                if (c != msg.src ) {
+                    if (c.sendMessage(msg.hdr, msg.hdrBuf, msg.pldBuf) == false) {
+                        android.util.Log.w(TAG, "Message not sent by connection: " +
+                                c.getDescription());
+                    }
+//                    else
+//                        android.util.Log.d(TAG, "SEQUENCE: " + (0x000000FF & msg.pldBuf.get(0)));
                 }
-                else
-                    m_MsgsSent = true;
             } catch (Exception e) {
                 android.util.Log.w(TAG, "Exception sending message on connection: " +
                         c.getDescription());
                 android.util.Log.w(TAG, e.toString());
             }
         }
+
+        m_MsgsSent = true;
     }
 
-    private void startLogging(String filename, String msgVersion, IConnection srcConnection) {
+    private void startLogging(Message msg) {
         android.util.Log.d(TAG, "startLogging");
-        m_MsgLogger.startLogging(filename, msgVersion);
+        StartLog startMsg = new StartLog(msg.hdrBuf, msg.pldBuf);
+        StringBuilder sb = new StringBuilder();
+
+        for(int i = 0; i < StartLog.LogFileNameFieldInfo.count; i++) {
+            char nextChar = (char)startMsg.GetLogFileName(i);
+            if ( nextChar != 0x0 )
+                sb.append( nextChar );
+            else
+                break;
+        }
+
+        String logFilename = sb.toString();
+
+        if ( logFilename.length() > 0)
+            m_MsgLogger.startLogging(logFilename, "");
+
+        sendLogStatus(msg.src);
     }
 
     private void stopLogging(IConnection srcConnection) {
         android.util.Log.d(TAG, "stopLogging");
         m_MsgLogger.stopLogging();
+        sendLogStatus(srcConnection);
     }
 
     private void sendLogStatus(IConnection destination) {
