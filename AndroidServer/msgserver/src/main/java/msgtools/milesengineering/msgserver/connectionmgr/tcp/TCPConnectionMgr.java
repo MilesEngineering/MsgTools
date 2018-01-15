@@ -61,8 +61,8 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                                    ByteBuffer payloadBuff) {
             boolean retVal = true;
 
-            android.util.Log.d(TAG, "TCPConnection:sendMessage(hdrBuffLen=" + hdrBuff.capacity() +
-                    ", payloadBuffLen="+payloadBuff.capacity());
+            android.util.Log.d(TAG, "TCPConnection:sendMessage(hdrBuffLen=" + hdrBuff.limit() +
+                    ", payloadBuffLen="+payloadBuff.limit());
 
             if ( m_Channel != null ) {
                 SocketChannel channel = m_Channel.get();
@@ -74,8 +74,8 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                         // later as it's just wasting CPU and thrashing memory.
 
                         // Be wary of null payloads - this is a valid case!  e.g. ProductInfo->BMAP version
-                        int totalLength = hdrBuff.capacity() + (payloadBuff == null ? 0 :
-                                payloadBuff.capacity());
+                        int totalLength = hdrBuff.limit() + (payloadBuff == null ? 0 :
+                                payloadBuff.limit());
                         ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
 
                         hdrBuff.position(0);
@@ -112,15 +112,19 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         @Override
         public String getDescription() {
             String retVal = "Unknown client";
-            SocketChannel chan = m_Channel.get();
-            if ( chan != null ) {
+
+            SocketChannel chan = null;
+            if ( m_Channel != null && (chan = m_Channel.get()) != null ) {
                 try {
                     retVal = chan.getRemoteAddress().toString();
                     retVal = retVal.substring(1);
-                } catch( IOException ioe ) {
+                } catch (IOException ioe) {
                     retVal = ioe.getMessage();
                 }
             }
+            else
+                retVal = "Disconnected";
+
             return retVal;
         }
 
@@ -162,6 +166,8 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
     public TCPConnectionMgr(InetSocketAddress addr, IConnectionMgrListener listener) {
         super(listener);
         android.util.Log.i(TAG, "TCPConnectionMgr ctor");
+
+        setName(TAG);
 
         // Don't start anything up until start is called...
         m_SocketAddress = addr;

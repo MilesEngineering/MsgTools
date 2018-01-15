@@ -81,8 +81,8 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
                         // message for parsing on the other side.  So pack the hdr and payload
                         // into one buffer.  It is a perfectly valid case to have a null payload.
                         // So be sure to check and handle that!
-                        int totalLength = hdrBuff.capacity() + (payloadBuff == null ? 0 :
-                                payloadBuff.capacity());
+                        int totalLength = hdrBuff.limit() + (payloadBuff == null ? 0 :
+                                payloadBuff.limit());
 
                         ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
 
@@ -191,8 +191,12 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
 
     @Override
     public String getDescription() {
-        InetAddress ia = utils.getHostAddress();
-        String retVal = ia.toString() + ":" + m_SocketAddress.getPort();
+        String retVal = "Not Listening";
+        if ( m_SocketAddress != null ) {
+            InetAddress ia = utils.getHostAddress();
+            retVal = ia.toString() + ":" + m_SocketAddress.getPort();
+        }
+
         return retVal.substring(1);
     }
 

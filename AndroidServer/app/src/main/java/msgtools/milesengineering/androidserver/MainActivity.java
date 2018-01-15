@@ -355,7 +355,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             if ( filename.length() > 0 )
                 filename = String.format("%s_%s.log", filename, timestampString);
             else
-                filename = timestampString;
+                filename = String.format("%s.log", timestampString);
 
             String msgVersion = m_MsgVersionEditText.getText().toString();
             m_LastMsgVersion = msgVersion;

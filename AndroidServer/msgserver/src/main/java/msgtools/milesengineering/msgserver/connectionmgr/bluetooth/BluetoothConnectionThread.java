@@ -10,6 +10,7 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+import Network.LogStatus;
 import headers.BluetoothHeader;
 import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.ConnectionListenerHelper;
@@ -25,9 +26,8 @@ import msgplugin.MessageHandler;
  * Keep this in mind when making modifications.
  */
 
-// TODO: This class needs to be threadsafe...
 class BluetoothConnectionThread extends Thread implements IConnection {
-    private MessageHandler messageHandler; // plugin for handling bluetooth and network messages
+    private MessageHandler m_MessageHandler; // plugin for handling bluetooth and network messages
     private final static String TAG = BluetoothConnectionThread.class.getSimpleName();
     private final Object m_SocketLock = new Object();   // Lock for socket management
     private final Object m_OutputLock = new Object();   // Lock for socket management
@@ -39,6 +39,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private WeakReference<ConnectionListenerHelper> m_Listeners;
     private BluetoothDevice m_Device;
     private BluetoothSocket m_Socket;
+    private BluetoothSocket m_WrapSocket;
 
     // Properties used for reading input
     private InputStream m_Input;
@@ -56,10 +57,18 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private ByteBuffer m_Payload;
 
     public BluetoothConnectionThread(BluetoothDevice device, ConnectionListenerHelper listeners, long baseTime) {
-        android.util.Log.d(TAG, "BluetoothConnectionThread(...)");
+        android.util.Log.d(TAG, "BluetoothConnectionThread(device, ...)");
         m_Device = device;
         m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
-        messageHandler = new MessageHandler(baseTime);
+        m_MessageHandler = new MessageHandler(baseTime);
+    }
+
+    public BluetoothConnectionThread(BluetoothSocket connection, ConnectionListenerHelper listeners, long baseTime) {
+        android.util.Log.d(TAG, "BluetoothConnectionThread(connection, ...)");
+        m_Device = connection.getRemoteDevice();
+        m_WrapSocket = connection;
+        m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
+        m_MessageHandler = new MessageHandler(baseTime);
     }
 
     /**
@@ -87,37 +96,49 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         android.util.Log.d(TAG, "setup()");
 
         try {
-            // Initialize an SPP socket
-            m_Socket = m_Device.createRfcommSocketToServiceRecord(SPP_UUID);
+            // Initialize an SPP socket - if we were passed a socket to wrap in the ctor
+            // then just initialize our IO streams etc.  If not then try to connect to the
+            // device we're mapped to...
+            BluetoothSocket newSocket = m_WrapSocket;
 
-            synchronized (m_SocketLock) {
-                // Connect to the remote device.  This will block until connection, or about
-                // 12 seconds elapse.
-                m_Socket.connect();
+            if (newSocket == null) {
+                newSocket = m_Device.createRfcommSocketToServiceRecord(SPP_UUID);
 
-                // Setup our IO...
-                m_Input = m_Socket.getInputStream();
-
-                synchronized (m_OutputLock) {
-                    m_Output = m_Socket.getOutputStream();
-                }
-                m_ReadBuffer = new byte[INITIAL_READBUF_SIZE];
-
-                m_Connected = true;
+                // Connect to the remote device.  This will block until connection, for up to about
+                // 12 seconds, or until we connect.
+                newSocket.connect();
             }
 
-            // Notify everyone we've connected
-            ConnectionListenerHelper listeners = m_Listeners.get();
-            if ( listeners != null )
-                listeners.onNewConnection(this);
+            setSocket(newSocket);
 
         } catch (IOException ioe) {
             android.util.Log.d(TAG, ioe.getMessage());
             android.util.Log.i(TAG, "BluetoothSocket unable to connect!");
             requestHalt();
         }
+    }
 
+    private void setSocket(BluetoothSocket newSocket) throws IOException {
+        synchronized (m_SocketLock) {
 
+            m_Socket = newSocket;
+
+            // Setup our IO...
+            m_Input = m_Socket.getInputStream();
+
+            synchronized (m_OutputLock) {
+                m_Output = m_Socket.getOutputStream();
+            }
+
+            m_ReadBuffer = new byte[INITIAL_READBUF_SIZE];
+
+            m_Connected = true;
+        }
+
+        // Notify everyone we've connected
+        ConnectionListenerHelper listeners = m_Listeners.get();
+            if ( listeners != null )
+            listeners.onNewConnection(this);
     }
 
     private void execute() {
@@ -174,7 +195,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                 m_MessagesReceived++;
 
                 // All messages should be in NetworkHeader format, so do that conversion...
-                NetworkHeader nh = messageHandler.getNetworkHeader(new BluetoothHeader(m_HeaderBuf));
+                NetworkHeader nh = m_MessageHandler.getNetworkHeader(new BluetoothHeader(m_HeaderBuf));
 
                 // Notify everyone we have a new message
                 ConnectionListenerHelper listeners = m_Listeners.get();
@@ -201,7 +222,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         // Close the socket, and send out a closure event if we connected
         synchronized(m_SocketLock) {
             try {
-                if (m_Socket != null)
+                if (m_Socket != null && m_Socket.isConnected())
                     m_Socket.close();
             } catch (IOException e) {
                 android.util.Log.i(TAG, e.getMessage());
@@ -230,8 +251,10 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         boolean retVal = false;
         synchronized (m_OutputLock) {
             if (m_Connected == true) {
+
+
                 // Convert to a BluetoothHeader
-                BluetoothHeader bth = messageHandler.getBluetoothHeader(networkHeader);
+                BluetoothHeader bth = m_MessageHandler.getBluetoothHeader(networkHeader);
 
                 // No header? Then we can't do a translation so drop the message and move on
                 if (bth != null) {
@@ -242,9 +265,9 @@ class BluetoothConnectionThread extends Thread implements IConnection {
 
                     // It's also possible to have a message without a payload so be wary of a null
                     // payload buffer
-                    int totalLength = hdrBuff.capacity() + (payloadBuff == null ? 0 :
-                            payloadBuff.capacity());
                     ByteBuffer hdr = bth.GetBuffer();
+                    int totalLength = hdr.limit() + (payloadBuff == null ? 0 :
+                            payloadBuff.limit());
                     ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
                     hdr.position(0);
                     sendBuf.put(hdr);
@@ -257,7 +280,8 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                     try {
                         if (m_Output != null) {
                             // Write out data.
-                            m_Output.write(sendBuf.array());
+                            byte[] buf = sendBuf.array();
+                            m_Output.write(buf);
                             m_Output.flush();
 
                             retVal = true;
@@ -307,7 +331,8 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         if ( m_Connected == true ) {
             synchronized (m_SocketLock) {
                 try {
-                    m_Socket.close();
+                    if (m_Socket.isConnected())
+                        m_Socket.close();
                     // Don't set m_Connected to false - we want to
                     // handle that in the cleanup method so we fire off
                     // a connection closed event to all listeners
@@ -320,5 +345,4 @@ class BluetoothConnectionThread extends Thread implements IConnection {
 
         requestHalt();
     }
-
 }

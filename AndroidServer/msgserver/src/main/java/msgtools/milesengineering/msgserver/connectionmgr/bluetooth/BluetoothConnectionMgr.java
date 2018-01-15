@@ -3,6 +3,7 @@ package msgtools.milesengineering.msgserver.connectionmgr.bluetooth;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.widget.Toast;
 
@@ -45,6 +46,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
         IConnectionMgrListener {
     private static final String TAG = BluetoothConnectionMgr.class.getSimpleName();
     private static final String SERVER_NAME = "AndroidServer";
+    private static final int ACCEPT_TIMEOUT = 1000;
 
     // Setup a constant with the well known SPP UUID
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -92,14 +94,12 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             }
             requestHalt();
         } else {
+            // Note: As of Android 6.0/Marshmallow this will always return an MAC of
+            // 02:00:00:00:00:00 for "added security".  A user can still get the MAC in
+            // Settings->About->Status.  More details here...
+            // https://developer.android.com/about/versions/marshmallow/android-6.0-changes.html#behavior-hardware-id
             m_Description = String.format("%s <%s>", m_BluetoothAdapter.getName(),
                     m_BluetoothAdapter.getAddress() );
-            try {
-                // SPP_UUID is the app's UUID string and also a well known SPP value
-                m_ServerSocket = m_BluetoothAdapter.listenUsingRfcommWithServiceRecord(SERVER_NAME, SPP_UUID);
-            } catch (IOException e) {
-                m_Description = e.getMessage();
-            }
         }
     }
 
@@ -121,20 +121,40 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
 
         // We'll rely on broadcast intents to handle disconnects, new bonded devices,
         // Bluetooth being enabled/disabled, etc...
-        Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
-        for( BluetoothDevice dev : devs ) {
-            BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
-                    getListeners(), m_StartupTime);
-            connection.start();
+        if (m_BluetoothAdapter != null) {
+            Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
+            for (BluetoothDevice dev : devs) {
+                BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
+                        getListeners(), m_StartupTime);
+                connection.start();
+            }
+
+            // Setup an SPP server socket to accept incoming connections.
+            try {
+                // SPP_UUID is the app's UUID string and also a well known SPP value
+                m_ServerSocket = m_BluetoothAdapter.listenUsingRfcommWithServiceRecord(SERVER_NAME, SPP_UUID);
+            } catch (IOException e) {
+                m_Description = e.getMessage();
+            }
         }
     }
 
     @Override
     protected void execute() throws IOException {
         try {
-            Thread.sleep(1000); // Temporary until we fill this in
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            // All we're going to do here is listen for incoming connections
+            // and spawn off receiver conections
+            BluetoothSocket newConnection = null;
+            newConnection = m_ServerSocket.accept( ACCEPT_TIMEOUT );
+
+            BluetoothConnectionThread connection = new BluetoothConnectionThread(newConnection,
+                    getListeners(), m_StartupTime);
+            connection.start();
+
+
+        } catch (IOException ioe) {
+            // Assuming we just timed out here and this is ok - may need to revisit this if we find
+            // other IOException cases are common...
         }
     }
 
