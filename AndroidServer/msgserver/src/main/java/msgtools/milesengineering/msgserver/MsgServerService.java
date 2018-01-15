@@ -55,6 +55,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     private Handler m_MsgServerHandler;           // To pump messages on this service...
     private MessageRouterThread m_RouterThread;   // Routes our incoming messages and handles special messages like StartLog
     private boolean m_LastLogState;               // Track our last known log state so we can post updates...
+    private int m_BindingCount;                   // Track how many clients are bound to us
     //
     // Connection Managers which handle connections on various transports for us.  Treated
     // as Singletons by this class
@@ -202,9 +203,8 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         m_BluetoothConnectionMgr = null;
         m_RouterThread = null;
 
-        m_MsgServerHandler = null;
-
         m_MsgServerHandler.getLooper().quitSafely();
+        m_MsgServerHandler = null;
     }
 
     @Override
@@ -225,18 +225,28 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     @Override
     public IBinder onBind(Intent intent) {
         android.util.Log.i(TAG, "onBind(...)");
+        m_BindingCount++;
         return m_MsgHandler.getBinder();
     }
 
     @Override
     public void onRebind(Intent intent) {
         android.util.Log.i(TAG, "onRebind(...)");
+        m_BindingCount++;
         // TODO: reset any state based on binding if needed
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
         android.util.Log.i(TAG, "onUnbind(...)");
+
+        m_BindingCount--;
+
+        if ( m_BindingCount <= 0  ) {
+            android.util.Log.i(TAG, "Last client unbound - shutting down service...");
+            stopSelf();
+        }
+
         return super.onUnbind(intent);
     }
 

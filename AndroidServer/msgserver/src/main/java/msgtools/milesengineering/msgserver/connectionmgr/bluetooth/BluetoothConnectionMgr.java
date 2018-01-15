@@ -54,6 +54,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
     private String m_Description = "Uninitialized";
     private BluetoothAdapter m_BluetoothAdapter;
     private BluetoothServerSocket m_ServerSocket;
+    private BluetoothBroadcastReceiver m_BluetoothBroadcastReceiver;
 
     private WeakReference<Context> m_HostContext;
 
@@ -67,7 +68,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
 
         // Init a broadcast receiver that will invoke APIs on this class to get stuff
         // done in response to Bluetooth events...
-        new BluetoothBroadcastReceiver(hostContext, this);
+        m_BluetoothBroadcastReceiver = new BluetoothBroadcastReceiver(hostContext, this);
 
         // TODO: Reconsider storing the context - don't think we need to keep it around
         m_HostContext = new WeakReference<Context>(hostContext);
@@ -101,6 +102,17 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             m_Description = String.format("%s <%s>", m_BluetoothAdapter.getName(),
                     m_BluetoothAdapter.getAddress() );
         }
+    }
+
+    @Override
+    public void requestHalt() {
+        android.util.Log.i(TAG, "requestHalt()");
+        super.requestHalt();
+
+        // Stop receiving BT intents...
+        Context context = m_HostContext.get();
+        if (context != null)
+            m_BluetoothBroadcastReceiver.unregister(context);
     }
 
     @Override
