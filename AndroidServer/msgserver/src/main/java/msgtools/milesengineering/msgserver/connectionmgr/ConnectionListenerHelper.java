@@ -35,7 +35,7 @@ public class ConnectionListenerHelper {
 
     public void onNewConnection(IConnection newConnection) {
         synchronized (m_Lock) {
-            android.util.Log.i(m_LogTag, "oNewConnection(...)");
+            android.util.Log.i(m_LogTag, "onNewConnection(...)");
             IConnectionMgr mgr = m_Mgr.get();
             if ( mgr != null ) {
                 for (IConnectionMgrListener l : m_Listeners) {
@@ -47,7 +47,7 @@ public class ConnectionListenerHelper {
 
     public void onClosedConnection(IConnection closedConnection) {
         synchronized (m_Lock) {
-            android.util.Log.i(m_LogTag, "oClosedConnection(...)");
+            android.util.Log.i(m_LogTag, "onClosedConnection(...)");
             IConnectionMgr mgr = m_Mgr.get();
             if ( mgr != null ) {
                 for (IConnectionMgrListener l : m_Listeners) {
@@ -60,7 +60,7 @@ public class ConnectionListenerHelper {
     public void onMessage(IConnection srcConnection, NetworkHeader networkHeader,
                           ByteBuffer header, ByteBuffer payload) {
         synchronized (m_Lock) {
-            android.util.Log.i(m_LogTag, "onMessage(...)");
+            //android.util.Log.i(m_LogTag, "onMessage(...)");
             IConnectionMgr mgr = m_Mgr.get();
             if ( mgr != null ) {
                 for (IConnectionMgrListener l : m_Listeners) {
