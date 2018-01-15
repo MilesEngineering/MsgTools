@@ -19,8 +19,14 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver {
         m_ConnectionMgr = new WeakReference<BluetoothConnectionMgr>(connectionMgr);
 
         IntentFilter filter = new IntentFilter();
+
         // TOOD: Register for all intents of interest here...
+
         context.registerReceiver(this, filter);
+    }
+
+    public void unregister(Context context) {
+        context.unregisterReceiver(this);
     }
 
     @Override

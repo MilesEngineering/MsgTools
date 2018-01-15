@@ -116,8 +116,9 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
             WebSocket ws = m_Websocket.get();
 
             if ( ws != null ) {
-                retVal = ws.getRemoteSocketAddress().toString();
-                retVal = retVal.substring(1);
+                InetSocketAddress addr = ws.getRemoteSocketAddress();
+                if ( addr != null )
+                    retVal = addr.toString().substring(1);
             }
 
             return retVal;
