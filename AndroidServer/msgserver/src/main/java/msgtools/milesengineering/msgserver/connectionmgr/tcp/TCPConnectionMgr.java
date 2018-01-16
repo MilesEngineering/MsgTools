@@ -61,9 +61,6 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                                    ByteBuffer payloadBuff) {
             boolean retVal = true;
 
-            android.util.Log.d(TAG, "TCPConnection:sendMessage(hdrBuffLen=" + hdrBuff.limit() +
-                    ", payloadBuffLen="+payloadBuff.limit());
-
             if ( m_Channel != null ) {
                 SocketChannel channel = m_Channel.get();
                 if ( channel != null && channel.isConnected() == true ) {
