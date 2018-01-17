@@ -1,6 +1,9 @@
 package msgtools.milesengineering.msgserver.connectionmgr;
 
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -159,6 +162,16 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
         }
 
         String logFilename = sb.toString();
+
+        // No filename - no problem - just use the current time
+        if (logFilename.length() == 0 ) {
+            Date now = new Date();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            String timestampString = sdf.format(now);
+
+            logFilename = String.format("%s.log", timestampString);
+        }
 
         if ( logFilename.length() > 0)
             m_MsgLogger.startLogging(logFilename, "");
