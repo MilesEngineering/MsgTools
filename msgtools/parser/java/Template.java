@@ -16,7 +16,7 @@ import java.util.Map;
 import msgtools.FieldInfo;
 import msgtools.FieldAccess;
 
-public class <MSGSHORTNAME> extends msgtools.Message
+public class <MSGSHORTNAME> extends msgplugin.Message
 {
     public static final int MSG_ID = (int)<MSGID>;
     public static final int MSG_SIZE = <MSGSIZE>;
