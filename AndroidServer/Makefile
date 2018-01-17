@@ -4,3 +4,6 @@ all:
 install:
 	adb install ./app/build/outputs/apk/app-debug.apk
 
+clean:
+	./gradlew clean
+
