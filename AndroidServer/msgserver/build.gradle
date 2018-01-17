@@ -44,6 +44,12 @@ android {
     // This path should reference the location of your customer-specific plugins
     String MsgPluginDir = project.hasProperty('plugindir') ? project.getProperty('plugindir') : '../baseplugin'
 
+    println '\n===================== MSG PATHS ==========================='
+    println 'MsgAppDir=' + file(MsgAppDir).absolutePath
+    println 'GeneratedMsgDir=' + file(GeneratedMsgDir).absolutePath
+    println 'MsgPluginDir=' + file(MsgPluginDir).absolutePath
+    println '===========================================================\n'
+
     sourceSets {
         main { java.srcDirs = ['src/main/java', MsgPluginDir, MsgAppDir, GeneratedMsgDir,'../Java-WebSocket/src/main/java'] }
     }

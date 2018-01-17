@@ -1,5 +1,7 @@
 package msgtools;
 
+import msgplugin.Message;
+
 public class FieldInfo
 {
     public FieldInfo(String n, String d, String u, int c)
@@ -33,7 +35,7 @@ public class FieldInfo
             return ret;
         }
     }
-    public void set(Message message, String value) throws  java.lang.reflect.InvocationTargetException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException
+    public void set(Message message, String value) throws  java.lang.reflect.InvocationTargetException, NoSuchMethodException, java.lang.IllegalArgumentException, java.lang.IllegalAccessException
     {
         Class<?> c = message.getClass();
         java.lang.reflect.Method method = c.getMethod("Set" + name);

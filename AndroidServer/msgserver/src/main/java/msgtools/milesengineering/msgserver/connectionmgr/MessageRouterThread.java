@@ -84,6 +84,7 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
 
     @Override
     public void run() {
+        int queueHighwaterCount = 0;
         try {
             while (m_HaltRequested == false) {
                 Message msg = m_BlockingQueue.poll(POLL_TIMEOUT, TimeUnit.SECONDS);
@@ -114,8 +115,14 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
 
                         default:
                             routeMessage(msg);
-                            if ( m_BlockingQueue.size() > 100 ) {
+                            int queueSize = m_BlockingQueue.size();
+                            if ( queueSize > 100 && queueHighwaterCount <= 100 ) {
                                 android.util.Log.w(TAG, "MsgQueue over 100");
+                            }
+
+                            if (queueSize > queueHighwaterCount ) {
+                                android.util.Log.i(TAG, "New queue high water count: " + queueHighwaterCount);
+                                queueHighwaterCount = queueSize;
                             }
                     }
                 }
