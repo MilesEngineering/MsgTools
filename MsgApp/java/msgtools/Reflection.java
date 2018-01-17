@@ -2,10 +2,12 @@ package msgtools;
 
 import java.lang.Class;
 import java.lang.reflect.*;
+import java.lang.IllegalAccessException;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.ArrayList;
 import java.nio.ByteBuffer;
+import msgplugin.Message;
 
 import headers.NetworkHeader;
 
