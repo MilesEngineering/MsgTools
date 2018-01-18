@@ -238,6 +238,11 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
             android.util.Log.e(TAG, cse.toString());
             requestHalt();
         }
+        catch(IOException e) {
+            android.util.Log.e(TAG, e.toString());
+            // This is usually caused by a socket getting closed from under us
+            // TODO: Any way to determine which socket so we can emit a connection closed?
+        }
     }
 
     private void acceptNewConnection() throws IOException {

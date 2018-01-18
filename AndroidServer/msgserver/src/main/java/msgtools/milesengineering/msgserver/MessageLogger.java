@@ -141,7 +141,7 @@ public class MessageLogger {
     }
 
     public void log(ByteBuffer header, ByteBuffer payload) {
-        android.util.Log.d(TAG, "log()");
+//        android.util.Log.d(TAG, "log()");
 
         synchronized(m_Lock) {
             if (m_IsEnabled == false)

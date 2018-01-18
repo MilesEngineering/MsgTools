@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
          */
         @Override
         public void onReceive(final Context context, final Intent intent) {
-            android.util.Log.i(TAG, "AppBroadcastReceiver::onReceive(...)");
+            android.util.Log.d(TAG, "AppBroadcastReceiver::onReceive(...)");
             if (intent.getAction().equals(MsgServerService.INTENT_SEND_SERVERS))
                 handleServersIntent(intent);
             else if (intent.getAction().equals(MsgServerService.INTENT_SEND_CONNECTIONS)) {
@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
          * @param intent the intent to handle...
          */
         private void handleServersIntent(Intent intent) {
-            android.util.Log.i(TAG, "handleServersIntent");
+            android.util.Log.d(TAG, "handleServersIntent");
             String json = (String) intent.getExtras().get(Intent.EXTRA_TEXT);
             m_ListAdapter.setServers(json);
         }
@@ -129,7 +129,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
          * @param intent Intent with the list of connections
          */
         private void handleConnectionsIntent(Intent intent) {
-            android.util.Log.i(TAG, "handleConnectionsIntent");
+            android.util.Log.d(TAG, "handleConnectionsIntent");
             String json = (String) intent.getExtras().get(Intent.EXTRA_TEXT);
             m_ListAdapter.setConnections(json);
         }
@@ -147,6 +147,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             String json = (String) intent.getExtras().get(Intent.EXTRA_TEXT);
             m_ListAdapter.removeClosedConnection(json);
         }
+
         private void handleLoggingStatusIntent(Intent intent) {
             android.util.Log.i(TAG, "handleLoggingStatusIntent");
 
