@@ -10,7 +10,7 @@ public class Message
     {
         ByteBuffer buffer = ByteBuffer.allocate(NetworkHeader.SIZE+datalen);
         hdr = new NetworkHeader(buffer);
-        hdr.SetDataLength((short)datalen);
+        hdr.SetDataLength(datalen);
 
         // move the ByteBuffer to after the header, *before* doing slice!
         // slice gives a new ByteBuffer that starts at current position of first buffer.
