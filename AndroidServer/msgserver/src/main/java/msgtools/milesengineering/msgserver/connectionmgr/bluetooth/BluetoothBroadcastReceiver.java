@@ -26,7 +26,12 @@ class BluetoothBroadcastReceiver extends BroadcastReceiver {
     }
 
     public void unregister(Context context) {
-        context.unregisterReceiver(this);
+        try {
+            context.unregisterReceiver(this);
+        }
+        catch( Exception e ) {
+
+        }
     }
 
     @Override

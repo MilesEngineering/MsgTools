@@ -115,6 +115,9 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
 
                         default:
                             routeMessage(msg);
+
+                            m_MsgLogger.log(msg.hdrBuf, msg.pldBuf);
+
                             int queueSize = m_BlockingQueue.size();
                             if ( queueSize > 100 && queueHighwaterCount <= 100 ) {
                                 android.util.Log.w(TAG, "MsgQueue over 100");
