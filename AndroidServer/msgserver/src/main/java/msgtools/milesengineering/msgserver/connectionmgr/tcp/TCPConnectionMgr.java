@@ -246,8 +246,6 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
     }
 
     private void acceptNewConnection() throws IOException {
-        android.util.Log.d(TAG, "Acceptable...");
-
         // Accept new connections - keep in mind we're non-blocking here
         SocketChannel newConnection = m_ServerChannel.accept();
 
