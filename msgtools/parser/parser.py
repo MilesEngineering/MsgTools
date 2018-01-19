@@ -38,7 +38,7 @@ def optionalReplace(line, pattern, fn, param):
 # all tags in the hash table), and saw no performance improvement.
 # In fact, application timing doesn't change even if *no* replacements
 # are made.  Perhaps timing is dominated by YAML parsing?
-def DoReplacements(line, msg, replacements):
+def DoReplacements(line, msg, replacements, firstTime):
     ret = line + '\n'
     for tag in replacements:
         ret = replace(ret, tag, replacements[tag])
@@ -57,6 +57,11 @@ def DoReplacements(line, msg, replacements):
     # might insert it while doing other replacements.
     ret = replace(ret, "<MSGNAME>", replacements["<MSGNAME>"])
     ret = replace(ret, "<MSGSHORTNAME>", replacements["<MSGSHORTNAME>"])
+    if "<ONCE>" in ret:
+        if firstTime:
+            ret = ret.replace("<ONCE>", "")
+        else:
+            ret = ""
     return ret
 
 def CommonSubdir(f1, f2):
@@ -148,6 +153,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
     
+    firstTime = True
     if "Messages" in inputData:
         for msg in Messages(inputData):
             msg["ids"] = ids
@@ -186,10 +192,12 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg)
                 replacements["<DATE>"] = currentDateTime
                 for line in template:
-                    line = DoReplacements(line, msg, replacements)
+                    line = DoReplacements(line, msg, replacements, firstTime)
                     outFile.write(line)
                 if oneOutputFilePerMsg:
                     outFile.close()
+                else:
+                    firstTime = False
 
             except MessageException as e:
                 sys.stderr.write(str(e)+'\n')
