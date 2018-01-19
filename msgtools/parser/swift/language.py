@@ -1,14 +1,6 @@
 import msgtools.parser.parser as MsgParser
 from msgtools.parser.MsgUtils import *
 
-def fieldType(field):
-    fieldTypeDict = \
-    {"uint64":"long", "uint32":"long","uint16": "int",   "uint8": "short",
-     "int64":"long",   "int32":"int",  "int16": "short",  "int8": "char",
-      "float64":"double", "float32":"float"}
-    typeStr = str.lower(field["Type"])
-    return field["Type"].capitalize()
-
 def paramType(field):
     typeStr = field["Type"]
     # need to capitalize first 1-2 letters
@@ -23,6 +15,9 @@ def paramType(field):
     if str.lower(typeStr) == "float64":
         return "Double";
     return "?"
+
+def fieldType(field):
+    return paramType(field)
 
 def bitParamType(field, bitfield):
     ret = paramType(field)
@@ -70,23 +65,19 @@ def getFn(field, offset):
         param += "_ enumAsInt:Bool=false"
     access = "(m_data.get%s(%s))" % (fieldType(field), loc)
     access = getMath(access, field, "")
-    cleanup = ""
-    if "Enum" in field:
-        cleanup = reverseEnumLookup(field)
     ret = '''\
 %s
 public func Get%s(%s) -> %s
 {
-    var value = %s;
-    %sreturn value;
-};''' % (fnHdr(field), field["Name"], param, paramType(field), access, cleanup)
+    return %s;
+};''' % (fnHdr(field), field["Name"], param, paramType(field), access)
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
 %s
 public func Get%sString() -> String
 {
     var value = "";
-    for(var i=0; i<%s && i<hdr.GetDataLength()-%s; i++)
+    for i in 0 ..< min(%s, hdr.GetDataLength()-%s)
     {
         var nextChar = String.fromCharCode(Get%s(i));
         if(nextChar == "\\0")
@@ -101,10 +92,6 @@ public func Get%sString() -> String
 
 def setFn(field, offset):
     valueString = setMath("value", field, "")
-    lookup = ""
-    if "Enum" in field:
-        # find index that corresponds to string input param
-        lookup = enumLookup(field)        
     param = "_ value: " + paramType(field)
     loc = str(offset)
     if MsgParser.fieldCount(field) > 1:
@@ -114,14 +101,14 @@ def setFn(field, offset):
 %s
 public func Set%s(%s)
 {
-    %sm_data.set%s(%s, %s);
-};''' % (fnHdr(field), field["Name"], param, lookup, fieldType(field), loc, valueString)
+    m_data.set%s(%s, %s);
+};''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString)
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
 %s
 public func Set%sString(value: String)
 {
-    for(var i=0; i<%s && i<value.length; i++)
+    for i in 0 ..< min(%s, value.characters.count)
     {
         Set%s(value[i].charCodeAt(0), i);
     }
@@ -134,31 +121,23 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
     param = ""
     if "Enum" in bits:
         param += "_ enumAsInt:Bool=false"
-    cleanup = ""
-    if "Enum" in bits:
-        cleanup = reverseEnumLookup(bits)
     ret = '''\
 %s
 public func Get%s(%s) -> %s
 {
-    var value = %s;
-    %sreturn value;
-};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, bitParamType(field, bits), access, cleanup)
+    return %s;
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, bitParamType(field, bits), access)
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
     valueString = setMath("value", bits, "")
-    lookup = ""
-    if "Enum" in bits:
-        # find index that corresponds to string input param
-        lookup = enumLookup(bits)
     param = "_ value: " + bitParamType(field, bits)
     ret = '''\
 %s
 public func Set%s(%s)
 {
-    %sSet%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
-};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, lookup, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
+    Set%s((Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
@@ -375,11 +354,72 @@ def fieldInfos(msg):
 def declarations(msg):
     return []
 
+def swiftGetMsgID(prefix, baseParam, castEnums, enumAsIntParam, msg):
+    ret = ""
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            if "IDBits" in field:
+                numBits = field["IDBits"]
+                param = baseParam
+                if "Enum" in field and enumAsIntParam:
+                    if param != "":
+                        param += ", "
+                    param += "1"
+                getStr = prefix+"Get"+field["Name"]+"("+param+")"
+                if "Enum" in field and castEnums:
+                    getStr = "uint32_t("+getStr+")"
+                ret =  addShift(ret, getStr, numBits)
+            if "Bitfields" in field:
+                for bitfield in field["Bitfields"]:
+                    if "IDBits" in bitfield:
+                        numBits = bitfield["IDBits"]
+                        param = baseParam
+                        if "Enum" in bitfield and enumAsIntParam:
+                            if param != "":
+                                param += ", "
+                            param += "1"
+                        getStr = prefix+"Get"+BitfieldName(field, bitfield)+"("+param+")"
+                        if "Enum" in bitfield and castEnums:
+                            getStr = "uint32_t("+getStr+")"
+                        ret =  addShift(ret, getStr, numBits)
+    return ret
+    
+def swiftSetMsgID(prefix, param, castEnums, enumAsIntParam, msg):
+    ret = ""
+    numBits = 0
+    if "Fields" in msg:
+        for field in reversed(msg["Fields"]):
+            if "IDBits" in field:
+                if numBits != 0:
+                    ret += "\nret = ret >> " + str(numBits)+"\n"
+                numBits = field["IDBits"]
+                setStr = "ret & "+Mask(numBits)
+                if "Enum" in field and castEnums:
+                    setStr = field["Enum"]+"("+setStr+")"
+                setStr = fieldType(field)+"("+setStr+")"
+                ret +=  prefix+"Set"+field["Name"]+"("+param+setStr+")"
+            if "Bitfields" in field:
+                for bitfield in reversed(field["Bitfields"]):
+                    if "IDBits" in bitfield:
+                        if numBits != 0:
+                            ret += "\nid = ret >> " + str(numBits)+"\n"
+                        numBits = bitfield["IDBits"]
+                        setStr = "ret & "+Mask(numBits)
+                        if "Enum" in bitfield and castEnums:
+                            setStr = bitfield["Enum"]+"("+setStr+")"
+                        setStr = fieldType(field)+"("+setStr+")"
+                        ret +=  prefix+"Set"+bitfield["Name"]+"("+param+setStr+")"
+    if ret.count('\n') > 1:
+        ret = "var ret = id\n" + ret
+    else:
+        ret = "let ret = id\n" + ret
+    return ret
+
 def getMsgID(msg):
-    return baseGetMsgID("", "", 0, 1, msg)
+    return swiftGetMsgID("", "", False, True, msg)
     
 def setMsgID(msg):
-    return baseSetMsgID("", "", 0, 1, msg)
+    return swiftSetMsgID("", "", False, True, msg)
 
 def structUnpacking(msg):
     ret = []
@@ -398,6 +438,7 @@ def structUnpacking(msg):
                     else:
                         ret.append('try { ret["'+field["Name"] + '"] = []; } catch (err) {}')
                         ret.append('try { ')
+                        ret.append("    for i in 0 ..<"+str(MsgParser.fieldCount(field)))
                         ret.append("    for(var i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
                         ret.append('        ret["'+field["Name"] + '"][i] = Get' + field["Name"] + "(i);")
                         ret.append('} catch (err) {}')
