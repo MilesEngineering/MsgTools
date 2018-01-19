@@ -10,32 +10,43 @@ function buf2hex(buffer) { // buffer is an ArrayBuffer
   return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
 }
 
+function getWebsocketURLParams() {
+    var url = new URL(window.location)
+    var ws = "127.0.0.1"
+    var port = 5679
+    if (url.searchParams.has('ws'))
+        ws = url.searchParams.get('ws')
+    if (url.searchParams.has('port'))
+        port = url.searchParams.get('port')
+
+    return {websocketServer: ws, websocketPort:port}    
+}
+
 var MessageDictionary = {};
     
-var MessagingClient = function(name) {
+var MessagingClient = function(name, websocketServer="127.0.0.1", websocketPort=5679) {
     this.clientName = name
-    var urlParams = new URLSearchParams(window.location.search);
+    this.webSocket = null
     
-    // use default localhost, or else address specified in URL
-    websocketServer = "127.0.0.1";
-    if(urlParams.has('ws'))
-    {
-        websocketServer = urlParams.get("ws")
-    }
+    this.connect(websocketServer, websocketPort)   
+}
 
-    // use default port, or else port specified in URL
-    websocketPort = "5679";
-    if(urlParams.has('port'))
-    {
-        websocketPort = urlParams.get("port")
-    }
-    
+MessagingClient.prototype.connect = function(server, port) {
+    this.disconnect()
+
     // don't specify subprotocol, our Qt Websocket server doesn't support that
-    this.webSocket = new WebSocket("ws://"+websocketServer+":" + websocketPort); //, "BMAP");
+    this.webSocket = new WebSocket("ws://"+server+":" + port);
     this.webSocket.binaryType = 'arraybuffer';
     this.webSocket.onopen = this.onopen.bind(this);
     this.webSocket.onclose = this.onclose.bind(this);
     this.webSocket.onmessage = this.onmessage.bind(this);
+}
+
+MessagingClient.prototype.disconnect = function() {
+    if (this.webSocket != null) {
+        this.webSocket.close()
+        this.webSocket = null
+    }
 }
 
 MessagingClient.prototype.onopen = function (event) {
@@ -56,9 +67,9 @@ MessagingClient.prototype.onopen = function (event) {
 
 MessagingClient.prototype.onclose = function(event) {
     console.log("Websocket closed");    
-    if(typeof this.onconnect === "function")
+    if(typeof this.onclosed === "function")
     {
-        this.onclose();
+        this.onclosed();
     }
 };
 

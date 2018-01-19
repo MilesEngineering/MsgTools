@@ -2,7 +2,8 @@
 //console.log(MessageDictionary);
 
 // create a connection
-var msgSocket = new MessagingClient("Web Console");
+var params = getWebsocketURLParams()
+var msgSocket = new MessagingClient("Web Console", params.websocketServer, params.websocketPort);
 
 //  this is an example of how to iterate over the fields of a message, getting metadata about each field
 // (and bitfield), and getting the value of the field using the get function called with bracket notation obj[fnName](), instead of obj.fn()
