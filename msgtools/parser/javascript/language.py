@@ -100,7 +100,6 @@ def setFn(field, offset):
     {
         this.Set%s(value[i].charCodeAt(0), i);
     }
-    return value;
 };''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), field["Name"])
     return ret
 
