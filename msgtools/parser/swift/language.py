@@ -66,10 +66,6 @@ def getFn(field, offset):
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "_ idx: Int"
-    if "Enum" in field:
-        if param != "":
-            param += ", "
-        param += "_ enumAsInt:Bool=false"
     ret = '''\
 %s
 public func Get%s(%s) -> %s
@@ -223,27 +219,31 @@ def initCode(msg):
 def enums(e):
     ret = ""
     for enum in e:
-        # enum
-        fwd = "public enum " + enum["Name"]+"Values: Int {\n"
-        for option in enum["Options"]:
-            fwd += "    case "+str(option["Name"]) + " = "+str(option["Value"])+";\n"
-        fwd += "}\n"
+        if enum["Name"] == "IDs":
+            for option in enum["Options"]:
+                ret += "static let MSG_ID_" + option["Name"] + " = "+str(option["Value"])+";\n"
+        else:
+            # enum
+            fwd = "public enum " + enum["Name"]+"Values: Int {\n"
+            for option in enum["Options"]:
+                fwd += "    case "+str(option["Name"]) + " = "+str(option["Value"])+";\n"
+            fwd += "}\n"
 
-        # forward map
-        fwd += "public static let "+enum["Name"]+"Enum = ["
-        for option in enum["Options"]:
-            fwd += '"'+str(option["Name"])+'"' +': '+str(option["Value"]) + ', '
-        fwd = fwd[:-2]
-        fwd += "]\n"
-        
-        # Reverse map
-        back = "public static let Reverse" + enum["Name"]+"Enum = ["
-        for option in enum["Options"]:
-            back += str(option["Value"]) +': "'+str(option["Name"]) + '", '
-        back = back[:-2]
-        back += "]\n"
+            # forward map
+            fwd += "public static let "+enum["Name"]+"Enum = ["
+            for option in enum["Options"]:
+                fwd += '"'+str(option["Name"])+'"' +': '+str(option["Value"]) + ', '
+            fwd = fwd[:-2]
+            fwd += "]\n"
+            
+            # Reverse map
+            back = "public static let Reverse" + enum["Name"]+"Enum = ["
+            for option in enum["Options"]:
+                back += str(option["Value"]) +': "'+str(option["Name"]) + '", '
+            back = back[:-2]
+            back += "]\n"
 
-        ret += fwd+back
+            ret += fwd+back
     return ret
 
 def reflectionInterfaceType(field):
