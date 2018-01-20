@@ -40,9 +40,10 @@ public class <MSGNAME>
     <ACCESSORS>
 
     // Reflection information
+    /*
     public static let fields = [
         <REFLECTION>
-    ]
+    ]*/
 };
 
 // add our class to the dictionary
