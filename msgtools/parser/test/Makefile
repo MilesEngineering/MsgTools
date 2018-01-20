@@ -18,14 +18,15 @@ testJava:
 	$(PYTHON) TestJava.py
 
 testSwift: swiftmsgs
-	cd swift && swift build
+	cd swiftObj && swift build
 
 swiftmsgs:
-	msgparser messages swift/Sources/messages swift  Template.swift HeaderTemplate.swift
+	msgparser messages swiftObj/Sources/messages swift  Template.swift HeaderTemplate.swift
+	cp ../../../MsgApp/FieldAccess.swift swiftObj/Sources/messages
 
 clean :: cleanswift
 
 cleanswift:
-	rm -rf swift/Sources/messages
+	rm -rf swiftObj/Sources swiftObj/.build
 
 include $(MK_DIR)/codegen.mk

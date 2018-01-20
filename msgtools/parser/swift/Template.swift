@@ -12,17 +12,17 @@ import Foundation
 
 public class <MSGNAME>
 {
-    public static let MSG_ID = <MSGID>;
+    public static let MSG_ID = UInt32(<MSGID>);
     public static let MSG_SIZE = <MSGSIZE>;
     public static let MSG_NAME = "<MSGDESCRIPTOR>";
     var hdr: NetworkHeader;
     var m_data: NSMutableData;
     init()
     {
-        m_data = NSMutableData(capacity: NetworkHeader.MSG_SIZE + <MSGNAME>.MSG_SIZE);
+        m_data = NSMutableData(length: NetworkHeader.MSG_SIZE + <MSGNAME>.MSG_SIZE)!;
         hdr = NetworkHeader(buffer: m_data);
         hdr.SetMessageID(<MSGNAME>.MSG_ID);
-        hdr.SetDataLength(<MSGNAME>.MSG_SIZE);
+        hdr.SetDataLength(UInt32(<MSGNAME>.MSG_SIZE));
         //InitializeTime();
         Initialize();
     }
@@ -40,7 +40,7 @@ public class <MSGNAME>
     <ACCESSORS>
 
     // Reflection information
-    public let fields = [
+    public static let fields = [
         <REFLECTION>
     ]
 };

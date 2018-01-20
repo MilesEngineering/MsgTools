@@ -18,7 +18,7 @@ public class <MSGNAME>
     
     init()
     {
-        m_data = NSMutableData(capacity: <MSGNAME>.MSG_SIZE);
+        m_data = NSMutableData(length: <MSGNAME>.MSG_SIZE)!;
         Initialize();
     }
     init(buffer: NSMutableData)
@@ -30,13 +30,13 @@ public class <MSGNAME>
         <INIT_CODE>
     }
 
-    public func SetMessageID(_ id: Int)
+    public func SetMessageID(_ id: UInt32)
     {
         <SETMSGID>;
     };
-    public func GetMessageID() -> Int
+    public func GetMessageID() -> UInt32
     {
-        return Int(<GETMSGID>);
+        <GETMSGID>
     };
 
     <ENUMERATIONS>
