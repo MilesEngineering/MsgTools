@@ -17,6 +17,7 @@ class BandwidthTestEcho(msgtools.lib.gui.Gui):
         
         self.msgCount = 0
         self.dropPercent = 0
+        self.rxBytesPerSec = 0
         
         for msgClassName in Messaging.MsgClassFromName:
             if "BandwidthTest" in msgClassName:
@@ -43,6 +44,17 @@ class BandwidthTestEcho(msgtools.lib.gui.Gui):
         hbox.addWidget(dropPercentSlider)
         hbox.addWidget(dropPercentLabel)
 
+        hbox = QtWidgets.QHBoxLayout()
+        vbox.addLayout(hbox)
+        hbox.addWidget(QtWidgets.QLabel("Bytes/sec"))
+        self.rxBytesPerSecLabel = QtWidgets.QLabel("")
+        hbox.addWidget(self.rxBytesPerSecLabel)
+
+        self.displayTimer = QtCore.QTimer(self)
+        self.displayTimer.setInterval(1000)
+        self.displayTimer.timeout.connect(self.updateDisplay)
+        self.displayTimer.start()
+
     def setDropPercent(self, dropPercent):
         self.dropPercent = dropPercent
 
@@ -51,8 +63,13 @@ class BandwidthTestEcho(msgtools.lib.gui.Gui):
             self.msgCount += 1
             if self.msgCount >= self.dropPercent:
                 self.sendBytesFn(msg.rawBuffer().raw)
+                self.rxBytesPerSec += msg.hdr.GetDataLength()
             if self.msgCount >= 100:
                 self.msgCount = 0
+
+    def updateDisplay(self):
+        self.rxBytesPerSecLabel.setText(str(self.rxBytesPerSec))
+        self.rxBytesPerSec = 0
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
