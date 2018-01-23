@@ -138,7 +138,7 @@ public class AppExpandableListAdapter extends BaseExpandableListAdapter {
      * @param jsonConnections JSON string for an array of connections.
      */
     public void setConnections(String jsonConnections) {
-        android.util.Log.i(TAG, "setConnections(...)");
+        android.util.Log.d(TAG, "setConnections(...)");
 
         m_Connections.clear();
 

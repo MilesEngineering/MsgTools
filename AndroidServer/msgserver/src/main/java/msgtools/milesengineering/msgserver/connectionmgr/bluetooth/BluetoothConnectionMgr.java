@@ -42,8 +42,7 @@ import msgtools.milesengineering.msgserver.connectionmgr.IConnectionMgrListener;
  * invoke APIs on this class as a shim.
  */
 
-public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnectionMgr,
-        IConnectionMgrListener {
+public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnectionMgr {
     private static final String TAG = BluetoothConnectionMgr.class.getSimpleName();
     private static final String SERVER_NAME = "AndroidServer";
     private static final int ACCEPT_TIMEOUT = 1000;
@@ -58,13 +57,8 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
 
     private WeakReference<Context> m_HostContext;
 
-    private long m_StartupTime = new Date().getTime(); // To keep time within 32 bits we'll send a delta from server start
-
     public BluetoothConnectionMgr(IConnectionMgrListener listener, Context hostContext) {
         super(listener);
-
-        // Add ourself as a listener as well so we can keep tabs on our own device list
-        addListener(this);
 
         // Init a broadcast receiver that will invoke APIs on this class to get stuff
         // done in response to Bluetooth events...
@@ -137,7 +131,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
             for (BluetoothDevice dev : devs) {
                 BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
-                        getListeners(), m_StartupTime);
+                        this);
                 connection.start();
             }
 
@@ -160,7 +154,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             newConnection = m_ServerSocket.accept( ACCEPT_TIMEOUT );
 
             BluetoothConnectionThread connection = new BluetoothConnectionThread(newConnection,
-                    getListeners(), m_StartupTime);
+                    this);
             connection.start();
 
 
@@ -176,25 +170,23 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
     }
 
     //
-    // Connection manager listener interface
+    // Proxy methods for the BT thread.  This allows us to proxy events into
+    // the general manager architecture and leverage our base class code.  Important
+    // because there is some plugin logic and other stuff in the base class
+    // that we want to retain as common
     //
-    @Override
-    public void onNewConnection(IConnectionMgr mgr, IConnection newConnection) {
-        // If our thread connected then add the new connection to the base class tracking
-        // so it's automatically cleaned up when the connection manager is halted.
-        if (newConnection instanceof BluetoothConnectionThread)
-            addConnection(newConnection);
+    void newConnection(IConnection newConnection) {
+        // Keep in mind - this is coming in off a Bluetooth Connection Thread
+        this.onNewConnection(newConnection);
     }
 
-    @Override
-    public void onClosedConnection(IConnectionMgr mgr, IConnection closedConnection) {
-        // If our thread disconnected then remove the connection from the base class tracking
-        if (closedConnection instanceof BluetoothConnectionThread)
-            removeConnection(closedConnection);
+    void closeConnection(IConnection closedConnection) {
+        // Keep in mind - this is coming in off a Bluetooth Connection Thread
+        this.onClosedConnection(closedConnection);
     }
 
-    @Override
-    public void onMessage(IConnectionMgr mgr, IConnection srcConnection, NetworkHeader networkHeader, ByteBuffer header, ByteBuffer payload) {
-        // Do nothing
+    void newMessage(IConnection srcConnection, NetworkHeader networkHeader, ByteBuffer header, ByteBuffer payload) {
+        // Keep in mind - this is coming in off a Bluetooth Connection Thread
+        this.onMessage(srcConnection, networkHeader, header, payload);
     }
 }

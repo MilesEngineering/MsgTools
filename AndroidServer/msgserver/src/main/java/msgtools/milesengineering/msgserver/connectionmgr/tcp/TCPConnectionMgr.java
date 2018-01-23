@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.SocketOptions;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedSelectorException;
@@ -69,6 +67,10 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                         // It treats them as two messages.  GitHub issue #18.
                         // Stacking the two buffers into one to get around this.  We'll want to remove this
                         // later as it's just wasting CPU and thrashing memory.
+
+//                        // MODEBUG - Timestamp the message on the way out
+//                        MessageHandler mh = MessageHandler.getInstance();
+//                        mh.onMessage(this, networkHeader, hdrBuff, payloadBuff);
 
                         // Be wary of null payloads - this is a valid case!  e.g. ProductInfo->BMAP version
                         int totalLength = hdrBuff.limit() + (payloadBuff == null ? 0 :
@@ -196,7 +198,6 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         m_Selector = Selector.open();
 
         m_ServerChannel.register( m_Selector, m_ServerChannel.validOps() );
-
     }
 
     @Override
@@ -242,6 +243,9 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
             android.util.Log.e(TAG, e.toString());
             // This is usually caused by a socket getting closed from under us
             // TODO: Any way to determine which socket so we can emit a connection closed?
+        }
+        catch(Exception e) {
+            android.util.Log.e(TAG, e.toString());
         }
     }
 
