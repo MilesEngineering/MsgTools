@@ -1,0 +1,12 @@
+Messages:
+  - Name: BandwidthTest
+    ID: 13
+    Description: Used to display debug information as strings.
+    Fields:
+      - Name: SequenceNumber
+        Type: uint8
+        Description: SequenceNumber
+      - Name: TestData
+        Type: uint32
+        Count: 30
+        Description: Any relevant test data, such as timestamps.

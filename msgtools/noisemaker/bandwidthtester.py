@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 from PyQt5 import QtGui, QtWidgets, QtCore
+import time
 
 try:
     from msgtools.lib.messaging import Messaging
@@ -12,6 +13,7 @@ except ImportError:
 import msgtools.lib.gui
 
 class BandwidthTester(msgtools.lib.gui.Gui):
+    startTime = int(time.time() * 1000)
     def __init__(self, argv, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Bandwidth Tester 0.1", argv, [], parent)
         
@@ -23,13 +25,14 @@ class BandwidthTester(msgtools.lib.gui.Gui):
         self.rxByteCount = 0
         self.rxBytesPerSec = 0
         self.txBytesPerSec = 0
+        self.totalLatency = 0
+        self.latencySamples = 0
         
         for msgClassName in Messaging.MsgClassFromName:
             if "BandwidthTest" in msgClassName:
                 self.bandwidthTestMsgClass = Messaging.MsgClassFromName[msgClassName]
                 break
-        self.maxSeq = int(Messaging.findFieldInfo(self.bandwidthTestMsgClass.fields, "SequenceNumber").maxVal)
-        self.maxLen = Messaging.findFieldInfo(self.bandwidthTestMsgClass.fields, "TestData").count
+        self.maxSeq = int(self.bandwidthTestMsgClass.GetSequenceNumber.maxVal)
         
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -65,6 +68,13 @@ class BandwidthTester(msgtools.lib.gui.Gui):
         hbox.addWidget(QtWidgets.QLabel("Rx bytes/sec"))
         self.rxBytesPerSecLabel = QtWidgets.QLabel()
         hbox.addWidget(self.rxBytesPerSecLabel)
+        
+        hbox = QtWidgets.QHBoxLayout()
+        vbox.addLayout(hbox)
+        self.latencyLabel = QtWidgets.QLabel()
+        hbox.addWidget(QtWidgets.QLabel("Round-trip latency"))
+        hbox.addWidget(self.latencyLabel)
+        hbox.addWidget(QtWidgets.QLabel("ms"))
 
         clearBtn = QtWidgets.QPushButton(self)
         clearBtn.setText('Clear')
@@ -99,10 +109,10 @@ class BandwidthTester(msgtools.lib.gui.Gui):
         txDataLenSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
         txDataLenSlider.valueChanged.connect(self.setTxLen)
         txDataLenLabel = QtWidgets.QLabel()
-        txDataLenSlider.valueChanged.connect(lambda newVal: txDataLenLabel.setText(str(newVal-1)+" bytes"))
-        txDataLenSlider.setMinimum(1)
-        txDataLenSlider.setMaximum(self.maxLen)
-        txDataLenSlider.setValue(10)
+        txDataLenSlider.valueChanged.connect(lambda newVal: txDataLenLabel.setText(str(newVal*int(self.bandwidthTestMsgClass.GetTestData.size)+int(self.bandwidthTestMsgClass.GetTestData.offset))+" bytes"))
+        txDataLenSlider.setMinimum(0)
+        txDataLenSlider.setMaximum(int(self.bandwidthTestMsgClass.GetTestData.count))
+        txDataLenSlider.setValue(3)
         hbox = QtWidgets.QHBoxLayout()
         vbox.addLayout(hbox)
         hbox.addWidget(QtWidgets.QLabel("Msg Len"))
@@ -138,10 +148,10 @@ class BandwidthTester(msgtools.lib.gui.Gui):
             if self.lastTxSequence > self.maxSeq:
                 self.lastTxSequence = 0
             msg.SetSequenceNumber(self.lastTxSequence)
-            msgLen = 1
-            for i in range(0, self.txLen-1):
-                msg.SetTestData(i,i)
-                msgLen += 1
+            msgLen = int(msg.SetTestData.offset) + int(msg.SetTestData.size)*self.txLen
+            if(self.txLen >= 1):
+                sendTime = int(time.time() * 1000)-self.startTime
+                msg.SetTestData(sendTime,0)
             msg.hdr.SetDataLength(msgLen)
             self.txByteCount += msgLen
             self.txBytesPerSec += msgLen
@@ -154,14 +164,17 @@ class BandwidthTester(msgtools.lib.gui.Gui):
             if desiredSeq > self.maxSeq:
                 desiredSeq = 0
             if msg.GetSequenceNumber() == desiredSeq:
-                self.rxByteCount += 1 # 1 byte for sequence count
-                self.rxBytesPerSec += 1
-                for i in range(0, msg.hdr.GetDataLength()-1):
-                    if i != msg.GetTestData(i):
-                        print("ERROR! TestData["+str(i)+"] == " + str( msg.GetTestData(i)))
-                    else:
-                        self.rxByteCount += 1
-                        self.rxBytesPerSec += 1
+                self.rxByteCount += int(msg.SetSequenceNumber.size) # size of sequence count sequence count
+                self.rxBytesPerSec += int(msg.SetSequenceNumber.size)
+                
+                if msg.hdr.GetDataLength() >= int(msg.GetTestData.offset)+int(msg.GetTestData.size):
+                    sendTime = msg.GetTestData(0)
+                    recvTime = int(time.time() * 1000)-self.startTime
+                    latency = recvTime - sendTime
+                    self.totalLatency += latency
+                    self.latencySamples += 1
+                self.rxByteCount += msg.hdr.GetDataLength()
+                self.rxBytesPerSec += msg.hdr.GetDataLength()
             else:
                 print("ERROR!  Got sequence " + str(msg.GetSequenceNumber()) + ", but wanted " + str(self.lastRxSequence))
             self.lastRxSequence = msg.GetSequenceNumber()
@@ -170,14 +183,24 @@ class BandwidthTester(msgtools.lib.gui.Gui):
     def clearStats(self):
         self.txByteCount = 0
         self.rxByteCount = 0
+        self.totalLatency = 0
+        self.latencySamples = 0
         self.txByteCountLabel.setText("0")
         self.rxByteCountLabel.setText("0")
+        self.latencyLabel.setText("")
+
     
     def updateDisplay(self):
         self.rxBytesPerSecLabel.setText(str(self.rxBytesPerSec))
         self.txBytesPerSecLabel.setText(str(self.txBytesPerSec))
+        if self.latencySamples > 0:
+            self.latencyLabel.setText('%.2f' % (self.totalLatency / self.latencySamples))
+        else:
+            self.latencyLabel.setText("undef")
         self.rxBytesPerSec = 0
         self.txBytesPerSec = 0
+        self.totalLatency = 0
+        self.latencySamples = 0
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
