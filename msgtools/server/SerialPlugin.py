@@ -87,7 +87,6 @@ class SerialConnection(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     messagereceived = QtCore.pyqtSignal(object)
     disconnected = QtCore.pyqtSignal(object)
-    startTime = QDateTime.currentDateTime()
 
     def __init__(self, hdr, portName):
         super(SerialConnection, self).__init__(None)
@@ -137,8 +136,6 @@ class SerialConnection(QObject):
             self.hdrCrcRegion = int(hdr.GetHeaderChecksum.offset)
         except AttributeError:
             self.hdrCrcRegion = None
-        self.serialTimeField = Messaging.findFieldInfo(hdr.fields, "Time")
-        self.networkTimeField = Messaging.findFieldInfo(NetworkHeader.fields, "Time")
         self.tmpRxHdr = ctypes.create_string_buffer(0)
 
     def widget(self, index):
