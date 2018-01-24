@@ -3,11 +3,9 @@ package msgplugin;
 import headers.BluetoothHeader;
 import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
-import test.BandwidthTest;
 
 import java.nio.ByteBuffer;
 import java.util.Date;
-
 
 /**
  * This is a base MessageHandler that allows you to customize connection and message behavior within
@@ -111,16 +109,16 @@ public class MessageHandler {
     public boolean onMessage(IConnection srcConnection, NetworkHeader header, ByteBuffer hdrBuf,
                              ByteBuffer payloadBuf)
     {
-        if (header.GetMessageID() == BandwidthTest.MSG_ID) {
-            BandwidthTest msg = new BandwidthTest(hdrBuf, payloadBuf);
-            for (int i = 0; i < BandwidthTest.TestDataFieldInfo.count; i++) {
-                if (msg.GetTestData(i) == 0) {
-                    msg.SetTestData((int) (new Date().getTime() - m_BaseTime), i);
-                    break;
-                }
-            }
-        }
-
+//        if (header.GetMessageID() == BandwidthTest.MSG_ID) {
+//            BandwidthTest msg = new BandwidthTest(hdrBuf, payloadBuf);
+//            for (int i = 0; i < BandwidthTest.TestDataFieldInfo.count; i++) {
+//                if (msg.GetTestData(i) == 0) {
+//                    msg.SetTestData((int) (new Date().getTime() - m_BaseTime), i);
+//                    break;
+//                }
+//            }
+//        }
+//
         return false;
     }
 
