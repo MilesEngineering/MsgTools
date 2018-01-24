@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 
 import headers.NetworkHeader;
+import msgplugin.Message;
+import msgplugin.MessageHandler;
 
 /**
  * This class represents a BaseConnectionMgr that abstracts concepts like
@@ -21,6 +23,8 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
     private BaseConnectionMgr() {
         m_Listeners = new ConnectionListenerHelper(TAG, this);
     }
+
+    private MessageHandler m_MsgHandler = MessageHandler.getInstance();
 
     /**
      * Base constructor
@@ -162,8 +166,11 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
 
     protected final void onMessage(IConnection srcConnection, NetworkHeader networkHeader,
                                    ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
-        synchronized (m_Lock) {
-            m_Listeners.onMessage(srcConnection, networkHeader, hdrBuff, payloadBuff);
+
+        if (m_MsgHandler.onMessage(srcConnection, networkHeader, hdrBuff, payloadBuff ) == false) {
+            synchronized (m_Lock) {
+                m_Listeners.onMessage(srcConnection, networkHeader, hdrBuff, payloadBuff);
+            }
         }
     }
 

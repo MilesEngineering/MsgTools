@@ -32,6 +32,7 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
     private boolean m_HaltRequested;
     private boolean m_MsgsSent;
     private MessageLogger m_MsgLogger;
+    private int m_HighWaterCount = 0;
 
     private ConcurrentHashMap<IConnection,IConnection> m_Connections =
             new ConcurrentHashMap<IConnection,IConnection>();
@@ -56,6 +57,7 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
 
     public MessageRouterThread( MessageLogger logger ) {
         android.util.Log.d(TAG, "ctor");
+        setName(TAG);
         m_MsgLogger = logger;
     }
 
@@ -84,7 +86,6 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
 
     @Override
     public void run() {
-        int queueHighwaterCount = 0;
         try {
             while (m_HaltRequested == false) {
                 Message msg = m_BlockingQueue.poll(POLL_TIMEOUT, TimeUnit.SECONDS);
@@ -117,16 +118,6 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
                             routeMessage(msg);
 
                             m_MsgLogger.log(msg.hdrBuf, msg.pldBuf);
-
-                            int queueSize = m_BlockingQueue.size();
-                            if ( queueSize > 100 && queueHighwaterCount <= 100 ) {
-                                android.util.Log.w(TAG, "MsgQueue over 100");
-                            }
-
-                            if (queueSize > queueHighwaterCount ) {
-                                android.util.Log.i(TAG, "New queue high water count: " + queueHighwaterCount);
-                                queueHighwaterCount = queueSize;
-                            }
                     }
                 }
             }
@@ -232,5 +223,16 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
         Message newMsg = new Message(mgr, srcConnection, networkHeader, header, payload );
         if ( m_BlockingQueue.offer(newMsg) == false )
             android.util.Log.e(TAG, "Msg queue overflow!!!");
+
+        int queueSize = m_BlockingQueue.size();
+        if ( queueSize > 100 && m_HighWaterCount <= 100 ) {
+            android.util.Log.w(TAG, "MsgQueue over 100");
+        }
+
+        if (queueSize > m_HighWaterCount ) {
+            android.util.Log.i(TAG, "New queue high water count: " + m_HighWaterCount);
+            m_HighWaterCount = queueSize;
+        }
+
     }
 }

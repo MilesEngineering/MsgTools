@@ -10,13 +10,11 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import Network.LogStatus;
 import headers.BluetoothHeader;
 import headers.NetworkHeader;
+import msgplugin.MessageHandler;
 import msgtools.milesengineering.msgserver.connectionmgr.ConnectionListenerHelper;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
-
-import msgplugin.MessageHandler;
 
 /**
  * Thread for managing Bluetooth SPP connections. This class is threadsafe, but due to the
@@ -27,7 +25,6 @@ import msgplugin.MessageHandler;
  */
 
 class BluetoothConnectionThread extends Thread implements IConnection {
-    private MessageHandler m_MessageHandler; // plugin for handling bluetooth and network messages
     private final static String TAG = BluetoothConnectionThread.class.getSimpleName();
     private final Object m_SocketLock = new Object();   // Lock for socket management
     private final Object m_OutputLock = new Object();   // Lock for socket management
@@ -36,7 +33,8 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private static final int INITIAL_READBUF_SIZE = BluetoothHeader.SIZE;   // Always guarantee we can read a header
 
-    private WeakReference<ConnectionListenerHelper> m_Listeners;
+    private WeakReference<BluetoothConnectionMgr> m_BluetoothConnectionMgr;
+    private MessageHandler m_MessageHandler = MessageHandler.getInstance(); // Handler plugin
     private BluetoothDevice m_Device;
     private BluetoothSocket m_Socket;
     private BluetoothSocket m_WrapSocket;
@@ -56,19 +54,17 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private BluetoothHeader m_BluetoothHeader;
     private ByteBuffer m_Payload;
 
-    public BluetoothConnectionThread(BluetoothDevice device, ConnectionListenerHelper listeners, long baseTime) {
+    public BluetoothConnectionThread(BluetoothDevice device, BluetoothConnectionMgr bcm) {
         android.util.Log.d(TAG, "BluetoothConnectionThread(device, ...)");
         m_Device = device;
-        m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
-        m_MessageHandler = new MessageHandler(baseTime);
+        m_BluetoothConnectionMgr = new WeakReference<BluetoothConnectionMgr>(bcm);
     }
 
-    public BluetoothConnectionThread(BluetoothSocket connection, ConnectionListenerHelper listeners, long baseTime) {
+    public BluetoothConnectionThread(BluetoothSocket connection, BluetoothConnectionMgr bcm) {
         android.util.Log.d(TAG, "BluetoothConnectionThread(connection, ...)");
         m_Device = connection.getRemoteDevice();
         m_WrapSocket = connection;
-        m_Listeners = new WeakReference<ConnectionListenerHelper>(listeners);
-        m_MessageHandler = new MessageHandler(baseTime);
+        m_BluetoothConnectionMgr = new WeakReference<BluetoothConnectionMgr>(bcm);
     }
 
     /**
@@ -136,9 +132,9 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         }
 
         // Notify everyone we've connected
-        ConnectionListenerHelper listeners = m_Listeners.get();
-            if ( listeners != null )
-            listeners.onNewConnection(this);
+        BluetoothConnectionMgr bcm = m_BluetoothConnectionMgr.get();
+            if ( bcm != null )
+                bcm.newConnection(this);
     }
 
     private void execute() {
@@ -197,10 +193,10 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                 // All messages should be in NetworkHeader format, so do that conversion...
                 NetworkHeader nh = m_MessageHandler.getNetworkHeader(new BluetoothHeader(m_HeaderBuf));
 
-                // Notify everyone we have a new message
-                ConnectionListenerHelper listeners = m_Listeners.get();
-                if ( listeners != null )
-                    listeners.onMessage(this, nh, nh.GetBuffer(), m_PayloadBuf);
+                // Notify everyone we have a new message - message Handler has first shot
+                BluetoothConnectionMgr bcm = m_BluetoothConnectionMgr.get();
+                if (bcm != null)
+                    bcm.newMessage(this, nh, nh.GetBuffer(), m_PayloadBuf);
 
                 // Reset for the next message - you might be tempted to optimize and
                 // set the position on the header buf to 0.  DON'T!  You have no
@@ -232,9 +228,9 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                     m_Connected = false;
 
                     // Notify everyone we've closed
-                    ConnectionListenerHelper listeners = m_Listeners.get();
-                    if (listeners != null)
-                        listeners.onClosedConnection(this);
+                    BluetoothConnectionMgr bcm = m_BluetoothConnectionMgr.get();
+                    if (bcm != null)
+                        bcm.closeConnection(this);
                 }
             }
         }
