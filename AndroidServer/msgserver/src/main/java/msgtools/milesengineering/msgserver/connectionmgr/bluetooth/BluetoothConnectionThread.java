@@ -9,6 +9,8 @@ import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import headers.BluetoothHeader;
 import headers.NetworkHeader;
@@ -27,7 +29,6 @@ import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 class BluetoothConnectionThread extends Thread implements IConnection {
     private final static String TAG = BluetoothConnectionThread.class.getSimpleName();
     private final Object m_SocketLock = new Object();   // Lock for socket management
-    private final Object m_OutputLock = new Object();   // Lock for socket management
 
     // Setup a constant with the well known SPP UUID
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -54,14 +55,16 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private BluetoothHeader m_BluetoothHeader;
     private ByteBuffer m_Payload;
 
+    private BTSendThread m_SendThread;
+
     public BluetoothConnectionThread(BluetoothDevice device, BluetoothConnectionMgr bcm) {
-        android.util.Log.d(TAG, "BluetoothConnectionThread(device, ...)");
+        android.util.Log.i(TAG, "BluetoothConnectionThread(device, ...)");
         m_Device = device;
         m_BluetoothConnectionMgr = new WeakReference<BluetoothConnectionMgr>(bcm);
     }
 
     public BluetoothConnectionThread(BluetoothSocket connection, BluetoothConnectionMgr bcm) {
-        android.util.Log.d(TAG, "BluetoothConnectionThread(connection, ...)");
+        android.util.Log.i(TAG, "BluetoothConnectionThread(connection, ...)");
         m_Device = connection.getRemoteDevice();
         m_WrapSocket = connection;
         m_BluetoothConnectionMgr = new WeakReference<BluetoothConnectionMgr>(bcm);
@@ -71,14 +74,14 @@ class BluetoothConnectionThread extends Thread implements IConnection {
      * Stop processing this connection and close it.  Same as close.
      */
     public void requestHalt() {
-        android.util.Log.d(TAG, "requestHalt()");
+        android.util.Log.i(TAG, "requestHalt()");
         m_HaltRequested = true;
     }
 
 
     @Override
     public void run() {
-        android.util.Log.d(TAG, "run()");
+        android.util.Log.i(TAG, "run()");
 
         setup();
 
@@ -89,7 +92,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     }
 
     private void setup() {
-        android.util.Log.d(TAG, "setup()");
+        android.util.Log.i(TAG, "setup()");
 
         try {
             // Initialize an SPP socket - if we were passed a socket to wrap in the ctor
@@ -121,14 +124,17 @@ class BluetoothConnectionThread extends Thread implements IConnection {
 
             // Setup our IO...
             m_Input = m_Socket.getInputStream();
-
-            synchronized (m_OutputLock) {
-                m_Output = m_Socket.getOutputStream();
-            }
+            m_Output = m_Socket.getOutputStream();
 
             m_ReadBuffer = new byte[INITIAL_READBUF_SIZE];
 
             m_Connected = true;
+
+            setName(m_Socket.getRemoteDevice().getName());
+
+            // Spin up a send thread
+            m_SendThread = new BTSendThread("BT Socket: " + m_Socket.getRemoteDevice().getName());
+            m_SendThread.start();
         }
 
         // Notify everyone we've connected
@@ -215,6 +221,12 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private void cleanup() {
         android.util.Log.d(TAG, "cleanup()");
 
+        // Shutdown our send thread.  This is done here so all thread ops are on
+        // the connection thread - that way don't have to sweat external threadsafety!
+        if (m_SendThread != null )
+            m_SendThread.requestHalt();
+
+
         // Close the socket, and send out a closure event if we connected
         synchronized(m_SocketLock) {
             try {
@@ -243,60 +255,20 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     @Override
     public boolean sendMessage(NetworkHeader networkHeader, ByteBuffer hdrBuff,
                                ByteBuffer payloadBuff) {
-        android.util.Log.d(TAG, "sendMessage(...)");
-        boolean retVal = false;
-        synchronized (m_OutputLock) {
-            if (m_Connected == true) {
+        // android.util.Log.v(TAG, "sendMessage(...)");
+        boolean retVal = m_SendThread.sendMessage(networkHeader, payloadBuff);
 
-
-                // Convert to a BluetoothHeader
-                BluetoothHeader bth = m_MessageHandler.getBluetoothHeader(networkHeader);
-
-                // No header? Then we can't do a translation so drop the message and move on
-                if (bth != null) {
-
-                    // Some implementations aren't happy if you send the header and payload in two
-                    // writes.  Concatenate the hdr and payload into a single array so we can write
-                    // it in one go.  This is definitely inefficient.
-
-                    // It's also possible to have a message without a payload so be wary of a null
-                    // payload buffer
-                    ByteBuffer hdr = bth.GetBuffer();
-                    int totalLength = hdr.limit() + (payloadBuff == null ? 0 :
-                            payloadBuff.limit());
-                    ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
-                    hdr.position(0);
-                    sendBuf.put(hdr);
-
-                    if ( payloadBuff != null ) {
-                        payloadBuff.position(0);
-                        sendBuf.put(payloadBuff);
-                    }
-
-                    try {
-                        if (m_Output != null) {
-                            // Write out data.
-                            byte[] buf = sendBuf.array();
-                            m_Output.write(buf);
-                            m_Output.flush();
-
-                            retVal = true;
-                            m_MessagesSent++;
-                        }
-                    } catch (IOException e) {
-                        android.util.Log.i(TAG, "Error writing message to BT socket.  Socket assumed closed...");
-                        e.printStackTrace();
-                        requestHalt();
-                    }
-                }
-            }
+        if (retVal == false) {
+            android.util.Log.e(TAG, "BT Socket send queue full - assuming overload or dead connection. Closing.");
+            requestHalt();
         }
+
         return retVal;
     }
 
     @Override
     public String getDescription() {
-        android.util.Log.d(TAG, "getDescription()");
+        android.util.Log.v(TAG, "getDescription()");
 
         String retVal = "Uninitialized";
         if (m_Device != null)
@@ -307,7 +279,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
 
     @Override
     public String getProtocol() {
-        android.util.Log.d(TAG, "getProtocol()");
+        android.util.Log.v(TAG, "getProtocol()");
 
         return "BT-SPP";
     }
@@ -324,6 +296,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
 
     @Override
     public void close() throws IOException {
+        android.util.Log.i(TAG, getName() + " close()");
         if ( m_Connected == true ) {
             synchronized (m_SocketLock) {
                 try {
@@ -340,5 +313,107 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         }
 
         requestHalt();
+    }
+
+    /**
+     * Helper class for pumping a queue of messages onto a BT socket on it's own thread
+     */
+    private class BTSendThread extends Thread {
+        private final int MAX_QUEUE_DEPTH = 100;
+        private LinkedBlockingQueue<BTSendThread.Message> m_BlockingQueue =
+                new LinkedBlockingQueue<BTSendThread.Message>(MAX_QUEUE_DEPTH);
+        private boolean m_HaltRequested = false;
+        private int m_HighwaterMark = 0;
+
+        public class Message {
+            public Message(NetworkHeader header, ByteBuffer payloadBuff) {
+                this.networkHeader = header;
+                this.payloadBuff = payloadBuff;
+            }
+
+            public NetworkHeader networkHeader;
+            public ByteBuffer payloadBuff;
+        }
+
+
+        BTSendThread(String name) {
+            setName(name);
+        }
+
+        public boolean sendMessage(NetworkHeader header, ByteBuffer payloadBuff) {
+            BTSendThread.Message msg = new BTSendThread.Message(header, payloadBuff);
+            return m_BlockingQueue.offer(msg);
+        }
+
+        public void requestHalt() { m_HaltRequested = true; }
+
+        @Override
+        public void run() {
+            android.util.Log.i(TAG, getName() + " running");
+            while( m_HaltRequested == false ) {
+                // android.util.Log.v(TAG, "sendMessage(...)");
+
+                try {
+                    BTSendThread.Message msg = m_BlockingQueue.poll(1, TimeUnit.SECONDS);
+
+                    if ( m_BlockingQueue.size() > m_HighwaterMark ) {
+                        m_HighwaterMark = m_BlockingQueue.size();
+                        android.util.Log.i(TAG, String.format("BT: %s - new high water mark = %d", getName(), m_HighwaterMark));
+                    }
+
+                    if (msg != null && m_Connected == true) {
+
+                        // Convert to a BluetoothHeader
+                        BluetoothHeader bth = m_MessageHandler.getBluetoothHeader(msg.networkHeader);
+
+                        // No header? Then we can't do a translation so drop the message and move on
+                        if (bth != null) {
+
+                            // Some implementations aren't happy if you send the header and payload in two
+                            // writes.  Concatenate the hdr and payload into a single array so we can write
+                            // it in one go.  This is definitely inefficient.
+
+                            // It's also possible to have a message without a payload so be wary of a null
+                            // payload buffer
+                            ByteBuffer hdr = bth.GetBuffer();
+                            int totalLength = hdr.limit() + (msg.payloadBuff == null ? 0 :
+                                    msg.payloadBuff.limit());
+                            ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
+                            hdr.position(0);
+                            sendBuf.put(hdr);
+
+                            if (msg.payloadBuff != null) {
+                                msg.payloadBuff.position(0);
+                                sendBuf.put(msg.payloadBuff);
+                            }
+
+                            try {
+                                if (m_Output != null) {
+                                    // Write out data.
+                                    byte[] buf = sendBuf.array();
+                                    m_Output.write(buf);
+                                    m_Output.flush();
+
+                                    m_MessagesSent++;
+                                }
+                            }
+                            catch (IOException e) {
+                                android.util.Log.i(TAG, "Error writing message to BT socket.  Socket assumed closed...");
+                                e.printStackTrace();
+                                requestHalt();
+                            }
+                            catch (Exception e) {
+                                android.util.Log.w(TAG, e.toString());
+                            }
+                        }
+                    }
+                }
+                catch(InterruptedException ie) {
+                    android.util.Log.i(TAG, ie.toString());
+                    requestHalt();
+                }
+            }
+            android.util.Log.i(TAG, getName() + " halting");
+        }
     }
 }
