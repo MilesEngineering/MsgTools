@@ -137,4 +137,13 @@ public class MessageHandler {
 
         return retVal;
     }
+
+    /**
+     * Invoked when a new connection is made - this is done before any others are notified
+     *
+     * @param newConnection - the new connection.
+     */
+    public void onNewConnection(IConnection newConnection) {
+        
+    }
 }
