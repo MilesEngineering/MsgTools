@@ -17,7 +17,6 @@ import headers.NetworkHeader;
 import msgplugin.MessageHandler;
 import msgtools.milesengineering.msgserver.connectionmgr.ConnectionListenerHelper;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
-import msgtools.milesengineering.msgserver.connectionmgr.MessageRouterThread;
 
 /**
  * Thread for managing Bluetooth SPP connections. This class is threadsafe, but due to the

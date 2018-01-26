@@ -302,6 +302,9 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         catch(Exception e) {
             android.util.Log.e(TAG, e.toString());
         }
+        catch(Exception e) {
+            android.util.Log.e(TAG, e.toString());
+        }
     }
 
     private void acceptNewConnection() throws IOException {
