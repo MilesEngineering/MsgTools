@@ -138,9 +138,12 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             // Setup an SPP server socket to accept incoming connections.
             try {
                 // SPP_UUID is the app's UUID string and also a well known SPP value
+                android.util.Log.i(TAG, "Setting up server socket...");
                 m_ServerSocket = m_BluetoothAdapter.listenUsingRfcommWithServiceRecord(SERVER_NAME, SPP_UUID);
             } catch (IOException e) {
                 m_Description = e.getMessage();
+                android.util.Log.e(TAG, e.getMessage());
+                android.util.Log.e(TAG, e.getStackTrace().toString());
             }
         }
     }
@@ -151,7 +154,10 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             // All we're going to do here is listen for incoming connections
             // and spawn off receiver conections
             BluetoothSocket newConnection = null;
+            android.util.Log.v(TAG, "accept()");
             newConnection = m_ServerSocket.accept( ACCEPT_TIMEOUT );
+
+            android.util.Log.i(TAG, "Accepting connection to " + newConnection.getRemoteDevice().getName());
 
             BluetoothConnectionThread connection = new BluetoothConnectionThread(newConnection,
                     this);
@@ -161,6 +167,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
         } catch (IOException ioe) {
             // Assuming we just timed out here and this is ok - may need to revisit this if we find
             // other IOException cases are common...
+            android.util.Log.v(TAG, "Accept timeout");
         }
     }
 

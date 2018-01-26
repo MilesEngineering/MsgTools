@@ -12,6 +12,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.BaseConnectionMgr;
@@ -36,9 +38,23 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
      * Private implementation of a IConnection specific to TCP Sockets.
      */
     private class TCPConnection implements IConnection {
+
+        private class Message {
+            public Message(ByteBuffer hdrBuf, ByteBuffer payloadBuf) {
+                this.hdrBuf = hdrBuf;
+                this.payloadBuf = payloadBuf;
+            }
+
+            public ByteBuffer hdrBuf;
+            public ByteBuffer payloadBuf;
+        }
+
+        private final int MAX_QUEUE_DEPTH = 150;
         private int m_SentCount = 0;
         private int m_RecvdCount = 0;
         private WeakReference<SocketChannel> m_Channel;
+        private WeakReference<TCPConnectionMgr> m_TCPManager;
+        private LinkedBlockingQueue<TCPConnection.Message> m_BlockingQueue = new LinkedBlockingQueue<TCPConnection.Message>(MAX_QUEUE_DEPTH);
 
         //
         // Buffers for pulling header and payload bytes.
@@ -50,44 +66,66 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         public ByteBuffer m_HeaderBuff;
         public ByteBuffer m_PayloadBuff;
 
-        public TCPConnection(SocketChannel channel, int headerSize) {
+        public TCPConnection(SocketChannel channel, int headerSize, TCPConnectionMgr tcpManager) {
             m_Channel = new WeakReference<SocketChannel>(channel);
+            m_TCPManager = new WeakReference<TCPConnectionMgr>(tcpManager);
         }
 
         @Override
-        public boolean sendMessage(NetworkHeader networkHeader, ByteBuffer hdrBuff,
-                                   ByteBuffer payloadBuff) {
-            boolean retVal = true;
+        public boolean sendMessage(NetworkHeader networkHeader, ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
+            boolean retVal = false;
+            Message msg = new Message(hdrBuff, payloadBuff);
 
+            // TODO: Should add some overflow detection and handling?
+            if( m_BlockingQueue.offer(msg) == false ) {
+                android.util.Log.e(TAG, "Queue full - closing channel");
+                try {
+                    close();
+                }
+                catch( IOException ioe ) {
+                    android.util.Log.i(TAG, ioe.toString());
+                }
+            }
+            else
+                // TODO: Add writeability interest to the selector
+                retVal = true;
+
+            return retVal;
+        }
+
+        public void sendNextMessage() {
             if ( m_Channel != null ) {
                 SocketChannel channel = m_Channel.get();
                 if ( channel != null && channel.isConnected() == true ) {
                     try {
-                        // TODO: MessageScope doesn't handle two independent write requests correctly
-                        // It treats them as two messages.  GitHub issue #18.
-                        // Stacking the two buffers into one to get around this.  We'll want to remove this
-                        // later as it's just wasting CPU and thrashing memory.
+                        Message msg = m_BlockingQueue.poll(0, TimeUnit.NANOSECONDS);
+                        // TODO: Remove writeability interest to the selector
 
-//                        // MODEBUG - Timestamp the message on the way out
-//                        MessageHandler mh = MessageHandler.getInstance();
-//                        mh.onMessage(this, networkHeader, hdrBuff, payloadBuff);
+                        if ( msg != null ) {
+                            ByteBuffer hdrBuff = msg.hdrBuf;
+                            ByteBuffer payloadBuff = msg.payloadBuf;
 
-                        // Be wary of null payloads - this is a valid case!  e.g. ProductInfo->BMAP version
-                        int totalLength = hdrBuff.limit() + (payloadBuff == null ? 0 :
-                                payloadBuff.limit());
-                        ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
+                            // TODO: MessageScope doesn't handle two independent write requests correctly
+                            // It treats them as two messages.  GitHub issue #18.
+                            // Stacking the two buffers into one to get around this.  We'll want to remove this
+                            // later as it's just wasting CPU and thrashing memory.
 
-                        hdrBuff.position(0);
-                        sendBuf.put(hdrBuff);
+                            // Be wary of null payloads - this is a valid case!  e.g. ProductInfo->BMAP version
+                            int totalLength = hdrBuff.limit() + (payloadBuff == null ? 0 :
+                                    payloadBuff.limit());
+                            ByteBuffer sendBuf = ByteBuffer.allocate(totalLength);
 
-                        if ( payloadBuff != null ) {
-                            payloadBuff.position(0);
-                            sendBuf.put(payloadBuff);
-                        }
+                            hdrBuff.position(0);
+                            sendBuf.put(hdrBuff);
 
-                        sendBuf.position(0);
-                        while (sendBuf.remaining() > 0)
-                            channel.write(sendBuf);
+                            if (payloadBuff != null) {
+                                payloadBuff.position(0);
+                                sendBuf.put(payloadBuff);
+                            }
+
+                            sendBuf.position(0);
+                            while (sendBuf.remaining() > 0)
+                                channel.write(sendBuf);
 
 // TODO: Put this back in when Issue #18 is fixed - per above
 //                        while(hdrBuff.remaining() > 0)
@@ -98,14 +136,17 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
 //                                  channel.write(payloadBuff);
 //                          }
 
-                        m_SentCount++;
-                    } catch (IOException ioe) {
-                        retVal = false;
+                            m_SentCount++;
+                        }
+                    }
+                    catch (IOException ioe) {
+                        // TODO: Close the connection - most likely cause
+                    }
+                    catch(InterruptedException ie) {
+                        android.util.Log.w(TAG, ie.toString());
                     }
                 }
             }
-
-            return retVal;
         }
 
         @Override
@@ -144,8 +185,19 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         public void close() throws IOException {
             if (m_Channel != null) {
                 m_Channel.get().close();
+
+                // Pull this channel from the selector
+                SelectionKey key = m_Channel.get().keyFor(m_Selector);
+                key.cancel();
+
+                // Make sure everybody gets notified and managemen gets cleaned up
+                TCPConnectionMgr mgr = m_TCPManager.get();
+                if ( mgr != null )
+                    mgr.onClosedConnection(this);
+
                 m_Channel = null;
             }
+
         }
 
         /**
@@ -225,8 +277,12 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
                         if (key.isAcceptable() == true) {
                             acceptNewConnection();
 
-                        } else if (key.isReadable() == true) {
+                        }
+                        else if (key.isReadable() == true) {
                             readMessageData(key);
+                        }
+                        else if (key.isWritable() == true) {
+                            sendNextMessage(key);
                         }
 
                     }
@@ -241,8 +297,7 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         }
         catch(IOException e) {
             android.util.Log.e(TAG, e.toString());
-            // This is usually caused by a socket getting closed from under us
-            // TODO: Any way to determine which socket so we can emit a connection closed?
+            // TODO: Close the connection - most likely cause
         }
         catch(Exception e) {
             android.util.Log.e(TAG, e.toString());
@@ -258,11 +313,11 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
         // Also create a new TCPConnection object for our own tracking purposes.
         if (newConnection != null) {
             android.util.Log.d(TAG, "New Connection");
-            TCPConnection tcpConn = new TCPConnection(newConnection, NetworkHeader.SIZE);
+            TCPConnection tcpConn = new TCPConnection(newConnection, NetworkHeader.SIZE, this);
 
             // Register with our selector
             newConnection.configureBlocking(false);   // Must be non-blocking
-            SelectionKey newKey = newConnection.register(m_Selector, SelectionKey.OP_READ, tcpConn);
+            SelectionKey newKey = newConnection.register(m_Selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, tcpConn);
 
             // Enable keep alive to try and kill off zombie connections...
             newConnection.setOption(StandardSocketOptions.SO_KEEPALIVE, new Boolean(true));
@@ -331,6 +386,11 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
             }
 
         }
+    }
+
+    private void sendNextMessage(SelectionKey key) {
+        TCPConnection tcpConn = (TCPConnection) key.attachment();
+        tcpConn.sendNextMessage();
     }
 
     @Override
