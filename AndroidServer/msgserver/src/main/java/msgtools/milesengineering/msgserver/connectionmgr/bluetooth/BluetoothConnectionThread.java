@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
 import headers.BluetoothHeader;
 import headers.NetworkHeader;
 import msgplugin.MessageHandler;
-import msgtools.milesengineering.msgserver.connectionmgr.ConnectionListenerHelper;
 import msgtools.milesengineering.msgserver.connectionmgr.IConnection;
 
 /**

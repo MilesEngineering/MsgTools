@@ -151,6 +151,15 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
     // Convenience methods for invoking listeners
     //
     protected final void onNewConnection(IConnection newConnection) {
+        try {
+            m_MsgHandler.onNewConnection(newConnection);
+        }
+        catch(Exception e) {
+            android.util.Log.w(TAG, "Exception in onNewConnectionPlugin");
+            android.util.Log.w(TAG, e.getMessage());
+            android.util.Log.w(TAG, e.getStackTrace().toString());
+        }
+
         synchronized (m_Lock) {
             m_Listeners.onNewConnection(newConnection);
             addConnection(newConnection);
@@ -166,7 +175,6 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
 
     protected final void onMessage(IConnection srcConnection, NetworkHeader networkHeader,
                                    ByteBuffer hdrBuff, ByteBuffer payloadBuff) {
-
         if (m_MsgHandler.onMessage(srcConnection, networkHeader, hdrBuff, payloadBuff ) == false) {
             synchronized (m_Lock) {
                 m_Listeners.onMessage(srcConnection, networkHeader, hdrBuff, payloadBuff);
