@@ -35,7 +35,11 @@ MessagingClient.prototype.connect = function(server, port) {
     this.disconnect()
 
     // don't specify subprotocol, our Qt Websocket server doesn't support that
-    this.webSocket = new WebSocket("ws://"+server+":" + port);
+    var protocol = 'ws://'
+    if (location.protocol === 'https:') 
+        protocol='wss://'
+
+    this.webSocket = new WebSocket(protocol+server+":" + port);
     this.webSocket.binaryType = 'arraybuffer';
     this.webSocket.onopen = this.onopen.bind(this);
     this.webSocket.onclose = this.onclose.bind(this);
