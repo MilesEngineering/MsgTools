@@ -32,24 +32,16 @@ class MessageServer(QtWidgets.QMainWindow):
 
         self.initializeGui()
 
-        self.tcpServer = TcpServer()
-        self.tcpServer.statusUpdate.connect(self.onStatusUpdate)
-        self.tcpServer.newConnection.connect(self.onNewConnection)
-
-        self.wsServer = WebSocketServer()
-        self.wsServer.statusUpdate.connect(self.onStatusUpdate)
-        self.wsServer.newConnection.connect(self.onNewConnection)
-
         # need a way to make serial= and serial both work!
         try:
-            tmpOptions = ['serial=', 'bluetoothSPP=', 'plugin=']
+            tmpOptions = ['serial=', 'bluetoothSPP=', 'plugin=', 'port=']
             self.optlist, args = getopt.getopt(sys.argv[1:], '', tmpOptions)
         except getopt.GetoptError:
             pass
         else:
             options = tmpOptions
         try:
-            tmpOptions = ['serial', 'bluetoothSPP=', 'plugin=']
+            tmpOptions = ['serial', 'bluetoothSPP=', 'plugin=', 'port=']
             self.optlist, args = getopt.getopt(sys.argv[1:], '', tmpOptions)
         except getopt.GetoptError:
             pass
@@ -57,9 +49,14 @@ class MessageServer(QtWidgets.QMainWindow):
             options = tmpOptions
 
         self.pluginPort = None
+        tcpport = 5678
+        wsport = 5679
 
         for opt in self.optlist:
-            if opt[0] == '--serial':
+            if opt[0] == '--port':
+                tcpport = int(opt[1])
+                wsport = tcpport+1
+            elif opt[0] == '--serial':
                 from SerialHeader import SerialHeader
                 from msgtools.server.SerialPlugin import SerialConnection
                 serialPortName = opt[1]
@@ -90,6 +87,14 @@ class MessageServer(QtWidgets.QMainWindow):
                 self.pluginPort.statusUpdate.connect(self.onStatusUpdate)
                 self.pluginPort.newConnection.connect(self.onNewConnection)
                 self.pluginPort.start()
+
+        self.tcpServer = TcpServer(tcpport)
+        self.tcpServer.statusUpdate.connect(self.onStatusUpdate)
+        self.tcpServer.newConnection.connect(self.onNewConnection)
+
+        self.wsServer = WebSocketServer(wsport)
+        self.wsServer.statusUpdate.connect(self.onStatusUpdate)
+        self.wsServer.newConnection.connect(self.onNewConnection)
 
         self.tcpServer.start()
         self.wsServer.start()
