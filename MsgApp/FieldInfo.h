@@ -1,6 +1,7 @@
 #ifndef FIELD_INFO_H
 #define FIELD_INFO_H
 
+#include <QString>
 #include <QHash>
 #include "FieldAccess.h"
 
