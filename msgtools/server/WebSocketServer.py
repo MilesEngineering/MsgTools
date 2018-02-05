@@ -48,10 +48,10 @@ class WebSocketServer(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     newConnection = QtCore.pyqtSignal(object)
 
-    def __init__(self):
+    def __init__(self, portNumber):
         super(WebSocketServer, self).__init__(None)
 
-        self.portNumber = 5679
+        self.portNumber = portNumber
         self.webSocketServer = QWebSocketServer("MsgServer", QWebSocketServer.NonSecureMode)
         self.webSocketServer.newConnection.connect(self.onNewConnection)
 

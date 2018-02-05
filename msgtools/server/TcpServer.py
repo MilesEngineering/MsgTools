@@ -71,10 +71,10 @@ class TcpServer(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     newConnection = QtCore.pyqtSignal(object)
 
-    def __init__(self):
+    def __init__(self, portNumber):
         super(TcpServer, self).__init__(None)
 
-        self.portNumber = 5678
+        self.portNumber = portNumber
         self.tcpServer = QtNetwork.QTcpServer()
         self.tcpServer.newConnection.connect(self.onNewTcpConnection)
 

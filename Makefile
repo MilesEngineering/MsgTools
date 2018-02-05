@@ -1,4 +1,4 @@
-SUBDIRS := msgtools MsgApp WebConsole
+SUBDIRS := ThirdParty msgtools MsgApp WebConsole
 
 include makefile.inc
 include $(MK_DIR)/subdir.mk

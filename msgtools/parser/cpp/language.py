@@ -286,8 +286,6 @@ def fieldBitsReflection(field, bits, offset, bitOffset, numBits):
     params += ', "' + MsgParser.fieldDescription(bits) + '"'
     params += ', "' + MsgParser.fieldUnits(bits) + '"'
     params += ", " + loc
-    params += ", " + str(bitOffset)
-    params += ", " + str(numBits)
     params += ", " + str(MsgParser.fieldSize(field))
     params += ", " + str(MsgParser.fieldCount(bits))
     if "Offset" in bits or "Scale" in bits:
@@ -299,6 +297,8 @@ def fieldBitsReflection(field, bits, offset, bitOffset, numBits):
             params += ", " + str(bits["Offset"])
         else:
             params += ", 0.0"
+    params += ", " + str(bitOffset)
+    params += ", " + str(numBits)
     params += ")"
     return params
 

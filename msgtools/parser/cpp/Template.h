@@ -38,7 +38,7 @@ class <MSGNAME>Message : public Message
         <ENUMERATIONS>
         <FIELDINFOS>
         <ACCESSORS>
-#ifndef DISABLE_REFLECTION
+#ifdef ENABLE_REFLECTION
         static MsgInfo* ReflectionInfo()
         {
             static bool firstTime = true;
@@ -53,4 +53,15 @@ class <MSGNAME>Message : public Message
 #endif
 };
 
+#ifdef ENABLE_REFLECTION
+class <MSGNAME>MessageReflection
+{
+public:
+    <MSGNAME>MessageReflection()
+    {
+        Reflection::AddMsg(<MSGNAME>Message::ReflectionInfo());
+    }
+};
+static <MSGNAME>MessageReflection reflection_<MSGNAME>Message;
+#endif
 #endif
