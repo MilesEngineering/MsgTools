@@ -4,8 +4,6 @@ matrix:
     python: "3.5"
     before_install:
       - sudo apt-get install -y qt5-default qttools5-dev-tools
-      - qmake --version
-      - g++ --version
     install: "pip install pyyaml"
     script: make test
   - language: android
