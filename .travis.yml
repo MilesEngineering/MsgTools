@@ -8,7 +8,9 @@ matrix:
       - sudo apt-get install -qq qt5-qmake qtbase5-dev qtdeclarative5-dev libqt5webkit5-dev libsqlite3-dev qt5-default
       - sudo apt-get install -qq gcc-4.8 g++-4.8 
       # We want to compile with g++ 4.8 when rather than the default g++
-      - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
+      #- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
+      qmake --version
+      g++ --version
     install: "pip install pyyaml"
     script: make test
   - language: android
