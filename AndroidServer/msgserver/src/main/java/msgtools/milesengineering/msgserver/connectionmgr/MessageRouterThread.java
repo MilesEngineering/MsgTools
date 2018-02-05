@@ -90,34 +90,41 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
             while (m_HaltRequested == false) {
                 Message msg = m_BlockingQueue.poll(POLL_TIMEOUT, TimeUnit.SECONDS);
                 if (msg != null) {
-                    // Check to see if this is a special purpose message (Start/Stop Log, LogStatus, etc)
-                    // and handle the message as appropriate.  Don't route these messages out
-                    int msgId = msg.hdr.GetMessageID();
-                    switch( msgId ) {
-                        case StartLog.MSG_ID:
-                            startLogging(msg);
-                            break;
+                    try {
+                        // Check to see if this is a special purpose message (Start/Stop Log, LogStatus, etc)
+                        // and handle the message as appropriate.  Don't route these messages out
+                        int msgId = msg.hdr.GetMessageID();
+                        switch (msgId) {
+                            case StartLog.MSG_ID:
+                                startLogging(msg);
+                                break;
 
-                        case StopLog.MSG_ID:
-                            stopLogging(msg.src);
-                            break;
+                            case StopLog.MSG_ID:
+                                stopLogging(msg.src);
+                                break;
 
-                        case QueryLog.MSG_ID:
-                            sendLogStatus(msg.src);
-                            break;
+                            case QueryLog.MSG_ID:
+                                sendLogStatus(msg.src);
+                                break;
 
-                        case LogStatus.MSG_ID:
-                        case Connect.MSG_ID:
-                        case MaskedSubscription.MSG_ID:
-                        case SubscriptionList.MSG_ID:
-                        case PrivateSubscriptionList.MSG_ID:
-                            // Unsupported at present
-                            break;
+                            case LogStatus.MSG_ID:
+                            case Connect.MSG_ID:
+                            case MaskedSubscription.MSG_ID:
+                            case SubscriptionList.MSG_ID:
+                            case PrivateSubscriptionList.MSG_ID:
+                                // Unsupported at present
+                                break;
 
-                        default:
-                            routeMessage(msg);
+                            default:
+                                routeMessage(msg);
 
-                            m_MsgLogger.log(msg.hdrBuf, msg.pldBuf);
+                                m_MsgLogger.log(msg.hdrBuf, msg.pldBuf);
+                        }
+                    }
+                    catch(Exception e) {
+                        android.util.Log.w(TAG, "Exception in routing thread");
+                        android.util.Log.w(TAG, e.getMessage());
+                        android.util.Log.w(TAG, e.getStackTrace().toString());
                     }
                 }
             }
@@ -136,8 +143,6 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
                         android.util.Log.w(TAG, "Message not sent by connection: " +
                                 c.getDescription());
                     }
-//                    else
-//                        android.util.Log.d(TAG, "SEQUENCE: " + (0x000000FF & msg.pldBuf.get(0)));
                 }
             } catch (Exception e) {
                 android.util.Log.w(TAG, "Exception sending message on connection: " +
