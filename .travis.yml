@@ -20,4 +20,4 @@ matrix:
         - android-26
           - build-tools-26.0.2
     before_script: 
-    script: make test && make android
+    script: (cd msgtools ; make test) && make android
