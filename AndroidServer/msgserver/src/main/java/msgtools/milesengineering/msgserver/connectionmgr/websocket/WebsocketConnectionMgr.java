@@ -1,17 +1,29 @@
 package msgtools.milesengineering.msgserver.connectionmgr.websocket;
 
-import android.net.Network;
-
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
+import org.java_websocket.server.DefaultSSLWebSocketServerFactory;
 import org.java_websocket.server.WebSocketServer;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.Hashtable;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 import headers.NetworkHeader;
 import msgtools.milesengineering.msgserver.connectionmgr.ConnectionListenerHelper;
@@ -26,6 +38,8 @@ import msgtools.milesengineering.msgserver.connectionmgr.utils;
  */
 public class WebsocketConnectionMgr extends WebSocketServer implements IConnectionMgr {
     private static final String TAG = WebsocketConnectionMgr.class.getSimpleName();
+    private static final String CERTIFICATE_FILENAME = "/sdcard/MessageServer/androidserver.p12";
+    private static final String PASSWORD_FILENAME = "/sdcard/MessageServer/password.txt";
     private final Object m_Lock = new Object();
 
     private Hashtable<WebSocket, WebsocketConnection> m_Connections =
@@ -33,10 +47,60 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
     private ConnectionListenerHelper m_Listeners;
     private boolean m_HaltPending;
     private InetSocketAddress m_SocketAddress;
+    private boolean m_SecureSockets = false;
 
     public WebsocketConnectionMgr(InetSocketAddress addr, IConnectionMgrListener listener ) {
         super(addr);
         android.util.Log.i(TAG, "WebsocketConnectionMgr(...)");
+
+        // Enable SSL with a self signed cert
+        try {
+
+            FileInputStream keyfile = new FileInputStream(CERTIFICATE_FILENAME);
+            String passStr = new BufferedReader(new InputStreamReader(new FileInputStream(PASSWORD_FILENAME))).readLine();
+            char[] password = passStr.toCharArray();
+
+            // Load a keystore - we're assuming a cert and private key are present and the
+            // store is in PKCS12 format
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
+            keyStore.load(keyfile, password);
+
+            // Initialize a key manager from the KeyStore
+            String defaultAlg = KeyManagerFactory.getDefaultAlgorithm();
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(defaultAlg);
+            kmf.init(keyStore, password);
+
+            // Initialize a TrustManager from the keystore
+            defaultAlg = TrustManagerFactory.getDefaultAlgorithm();
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(defaultAlg);
+            tmf.init(keyStore);
+
+            // Setup our SSL context
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+            setWebSocketFactory(new DefaultSSLWebSocketServerFactory(sslContext));
+            m_SecureSockets = true;
+
+        } catch (KeyManagementException e) {
+            android.util.Log.w(TAG, "Unable to setup TLS Key Management");
+            android.util.Log.w(TAG, e.getMessage());
+        } catch (NoSuchAlgorithmException e) {
+            android.util.Log.w(TAG, "Unable to find TLS Algorithm");
+            android.util.Log.w(TAG, e.getMessage());
+        } catch (CertificateException e) {
+            android.util.Log.w(TAG, "Invalid certificate");
+            android.util.Log.w(TAG, e.getMessage());
+        } catch (KeyStoreException e) {
+            android.util.Log.w(TAG, "Exception initializing key store - bad password?");
+            android.util.Log.w(TAG, e.getMessage());
+        } catch (IOException e) {
+            android.util.Log.w(TAG, "Didn't find a certificate file - setting up for non-SSL sockets");
+            android.util.Log.w(TAG, e.getMessage());
+        } catch (UnrecoverableKeyException e) {
+            android.util.Log.w(TAG, "Key lost");
+            android.util.Log.w(TAG, e.getMessage());
+        }
+
         m_SocketAddress = addr;
         this.setReuseAddr(true);
 
@@ -125,7 +189,7 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
         }
 
         @Override
-        public String getProtocol() { return "WS"; }
+        public String getProtocol() { return m_SecureSockets ? "WSS":"WS"; }
 
         @Override
         public int getMessagesSent() {
@@ -146,7 +210,7 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
                 }
             }
         }
-    }
+    } // End of WebsocketConnection helper class
 
     //
     // IConnectionMgr Methods
@@ -188,7 +252,7 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
     }
 
     @Override
-    public String getProtocol() { return "WS"; }
+    public String getProtocol() { return m_SecureSockets ? "WSS":"WS"; }
 
     @Override
     public String getDescription() {
