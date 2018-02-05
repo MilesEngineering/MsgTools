@@ -2,6 +2,8 @@ matrix:
   include:
   - language: python
     python: "3.5"
+    before_install:
+      - sudo apt-get install -y qt5-default qttools5-dev-tools
     install: "pip install pyyaml"
     script: make test
   - language: android
@@ -18,4 +20,4 @@ matrix:
         - android-26
           - build-tools-26.0.2
     before_script: 
-    script: make test && make android
+    script: (cd msgtools ; make test) && make android
