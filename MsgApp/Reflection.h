@@ -2,6 +2,7 @@
 #define REFLECTION_H
 
 #include <QSharedPointer>
+#include <QStringList>
 
 class Reflection
 {
