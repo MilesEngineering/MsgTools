@@ -7,7 +7,7 @@ include(../../../mk/qtcommon.pri)
 
 INCLUDEPATH += .
 
-QT       += core testlib
+QT       += testlib
 
 TARGET = TestMsgApp
 TEMPLATE = app

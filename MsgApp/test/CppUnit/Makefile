@@ -15,4 +15,4 @@ testCpp :
 	$(OBJ_DIR)/TestMsgApp
 
 clean clobber::
-	rm -rf obj
+	rm -rf $(OBJ_DIR)

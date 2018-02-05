@@ -7,8 +7,6 @@ include(../../../mk/qtcommon.pri)
 
 INCLUDEPATH += .
 
-QT       += core testlib
-
 TARGET = CppExampleGui
 TEMPLATE = app
 
