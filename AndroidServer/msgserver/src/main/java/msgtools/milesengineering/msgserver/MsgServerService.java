@@ -45,6 +45,7 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
     public static final String INTENT_SEND_NEW_CONNECTION = "msgtools.milesengineering.msgserver.MsgServerServiceSendNewConnection";
     public static final String INTENT_SEND_CLOSED_CONNECTION = "msgtools.milesengineering.msgserver.MsgServerServiceSendClosedConnection";
     public static final String INTENT_SEND_LOGGING_STATUS = "msgtools.milesengineering.msgserver.MsgServerServiceSendLoggingStatus";
+    public static final String INTENT_SEND_CLEARLOGS_STATUS = "msgtools.milesengineering.msgserver.MsgServerServiceClearLogsStatus";
 
     private final static int TCP_PORT = 5678;
     private final static int WEBSOCKET_PORT = 5679;
@@ -123,6 +124,9 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
                     android.util.Log.d(TAG, "Stop Logging Request");
                     stopLogging(null);
                     break;
+                case MsgServerServiceAPI.ID_REQUEST_CLEAR_LOGS:
+                    android.util.Log.d(TAG, "Clear logs request");
+                    clearLogs();
                 default:
                     android.util.Log.w(TAG, "Unknown message type received by MsgServer.");
                     super.handleMessage(msg);
@@ -334,6 +338,11 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
         broadcastLoggingStatusIntent(errorMsg);
     }
 
+    private void clearLogs() {
+        String errorMsg = m_MsgLogger.clearLogs();
+        broadcastClearLogsIntent(errorMsg);
+    }
+
     //
     // Misc utility methods
     //
@@ -438,5 +447,13 @@ public class MsgServerService extends Service implements Handler.Callback, IConn
 
             m_LastLogState = status.enabled;
         }
+    }
+
+    private void broadcastClearLogsIntent(String error) {
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(INTENT_SEND_CLEARLOGS_STATUS);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, error);
+
+        sendBroadcast(sendIntent);
     }
 }

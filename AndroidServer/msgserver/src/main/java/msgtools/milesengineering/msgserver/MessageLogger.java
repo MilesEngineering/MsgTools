@@ -6,6 +6,7 @@ import android.os.StatFs;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -161,6 +162,38 @@ public class MessageLogger {
                 ioe.printStackTrace();
             }
         }
+    }
+
+    public String clearLogs() {
+        String retVal = null;
+
+        synchronized (m_Lock ) {
+            try {
+                if (m_LogPath != null) {
+                    // Get a list of all logs
+                    int filesDeleted = 0;
+                    File[] files = new File(m_LogPath).listFiles();
+                    for (int i = 0; i < files.length; i++) {
+                        if (files[i].isFile() && files[i].getName().endsWith(".log") ) {
+                            String filename = files[i].getName();
+                            if (!filename.equals(m_Filename)) {
+                                files[i].delete();
+                                filesDeleted++;
+                                android.util.Log.d(TAG, files[i].getName() + " deleted");
+                            }
+                        }
+                    }
+
+                    retVal = String.format("%d logs deleted", filesDeleted);
+                } else
+                    // Should never happen but just in case...
+                    retVal = "No log path";
+            } catch (Exception e) {
+                retVal = e.getMessage();
+            }
+        }
+
+        return retVal;
     }
 
     private String writeHeader() {
