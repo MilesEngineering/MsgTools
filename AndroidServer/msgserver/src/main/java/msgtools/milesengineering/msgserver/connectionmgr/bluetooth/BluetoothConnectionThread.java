@@ -341,7 +341,23 @@ class BluetoothConnectionThread extends Thread implements IConnection {
 
         public boolean sendMessage(NetworkHeader header, ByteBuffer payloadBuff) {
             BTSendThread.Message msg = new BTSendThread.Message(header, payloadBuff);
-            return m_BlockingQueue.offer(msg);
+            boolean retVal = m_BlockingQueue.offer(msg);
+
+            if ( m_BlockingQueue.size() > m_HighwaterMark ) {
+                m_HighwaterMark = m_BlockingQueue.size();
+                android.util.Log.i(TAG, String.format("BT: %s - new high water mark = %d", getName(), m_HighwaterMark));
+            }
+
+            if ( retVal == false ) {
+                android.util.Log.w(TAG, String.format("BT: %s - send queue full - flushing", getName()));
+                m_BlockingQueue.clear();
+                m_HighwaterMark = 0;
+
+                // try again...
+                retVal = m_BlockingQueue.offer(msg);
+            }
+
+            return retVal;
         }
 
         public void requestHalt() { m_HaltRequested = true; }
@@ -354,11 +370,6 @@ class BluetoothConnectionThread extends Thread implements IConnection {
 
                 try {
                     BTSendThread.Message msg = m_BlockingQueue.poll(1, TimeUnit.SECONDS);
-
-                    if ( m_BlockingQueue.size() > m_HighwaterMark ) {
-                        m_HighwaterMark = m_BlockingQueue.size();
-                        android.util.Log.i(TAG, String.format("BT: %s - new high water mark = %d", getName(), m_HighwaterMark));
-                    }
 
                     if (msg != null && m_Connected == true) {
 
