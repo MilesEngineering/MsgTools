@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import Network.ClearLogs;
 import Network.Connect;
 import Network.LogStatus;
 import Network.MaskedSubscription;
@@ -105,6 +106,10 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
 
                             case QueryLog.MSG_ID:
                                 sendLogStatus(msg.src);
+                                break;
+
+                            case ClearLogs.MSG_ID:
+                                clearLogs();
                                 break;
 
                             case LogStatus.MSG_ID:
@@ -208,6 +213,11 @@ public class MessageRouterThread extends Thread implements IConnectionMgrListene
             status.SetLogOpen( (short)0 );
 
         destination.sendMessage( status.GetHeader(), status.GetHeader().GetBuffer(), status.GetBuffer() );
+    }
+
+    private void clearLogs() {
+        android.util.Log.d(TAG, "sendLogStatus");
+        android.util.Log.i(TAG, m_MsgLogger.clearLogs() );
     }
 
     @Override

@@ -1,0 +1,4 @@
+Messages:
+  - Name: ClearLogs
+    ID: 0xFFFFFF0A
+    Description: Request that all .log files be deleted

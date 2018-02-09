@@ -24,6 +24,7 @@ public class MsgServerServiceAPI {
     public final static int ID_REQUEST_CONNECTIONS = 2;
     public final static int ID_REQUEST_START_LOGGING = 3;
     public final static int ID_REQUEST_STOP_LOGGING = 4;
+    public final static int ID_REQUEST_CLEAR_LOGS = 5;
 
     /**
      * New instance from a binder
@@ -76,8 +77,20 @@ public class MsgServerServiceAPI {
      */
     public void requestConnections() { sendMessage(ID_REQUEST_CONNECTIONS); }
 
+    /**
+     * Invoke to request msg server stops logging
+     */
     public void stopLogging() { sendMessage(ID_REQUEST_STOP_LOGGING); }
 
+    /**
+     * Invoke to request msg server stops logging - provide a filename
+     * and message version (to help you know what set of YAML files built
+     * the messages in the log.
+     *
+     * @param filename - base filename to prefix logs with - logs are always postfixed with
+     *                 a time string
+     * @param msgVersion - the version of YAML files
+     */
     public void startLogging(String filename, String msgVersion) {
         try {
             JSONObject jsonObj = new JSONObject();
@@ -89,4 +102,10 @@ public class MsgServerServiceAPI {
             je.printStackTrace();
         }
     }
+
+    /**
+     * Delete all log files on the sdcard.  Will not clear the currently active log
+     * file if logging is enabled.
+     */
+    public void clearLogs() { sendMessage(ID_REQUEST_CLEAR_LOGS);}
 }

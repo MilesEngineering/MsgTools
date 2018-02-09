@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -13,13 +14,16 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
@@ -40,8 +44,7 @@ import msgtools.milesengineering.msgserver.MsgServerService;
 import msgtools.milesengineering.msgserver.MsgServerServiceAPI;
 
 public class MainActivity extends AppCompatActivity implements ServiceConnection,
-        CompoundButton.OnCheckedChangeListener, TextView.OnEditorActionListener
-{
+        CompoundButton.OnCheckedChangeListener, TextView.OnEditorActionListener, View.OnClickListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     AppExpandableListAdapter m_ListAdapter;
@@ -49,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     EditText m_FilenameEditText;
     EditText m_MsgVersionEditText;
     ToggleButton m_LoggingButton;
+    Button m_ClearLogsButton;
 
     String m_LastBaseFilename = "";
     String m_LastMsgVersion = "";
@@ -85,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             intentFilter.addAction(MsgServerService.INTENT_SEND_NEW_CONNECTION);
             intentFilter.addAction(MsgServerService.INTENT_SEND_CLOSED_CONNECTION);
             intentFilter.addAction(MsgServerService.INTENT_SEND_LOGGING_STATUS);
+            intentFilter.addAction(MsgServerService.INTENT_SEND_CLEARLOGS_STATUS);
             activity.registerReceiver(this, intentFilter);
         }
 
@@ -111,6 +116,9 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             }
             else if (intent.getAction().equals(MsgServerService.INTENT_SEND_LOGGING_STATUS)) {
                 handleLoggingStatusIntent(intent);
+            }
+            else if (intent.getAction().equals(MsgServerService.INTENT_SEND_CLEARLOGS_STATUS)) {
+                handleClearLogStatusIntent(intent);
             }
         }
 
@@ -185,8 +193,19 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                 }
             }
         }
-    }
 
+        private void handleClearLogStatusIntent(Intent intent) {
+            android.util.Log.i(TAG, "handleClearLogsStatusIntent");
+
+            String msg = (String) intent.getExtras().get(Intent.EXTRA_TEXT);
+            if (msg == null)
+                msg = "Logs successfully cleared!";
+
+            Toast toast = Toast.makeText(m_Activity, msg, Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER, 0, 0);
+            toast.show();
+        }
+    }
 
 
     @Override
@@ -217,8 +236,10 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         m_FilenameEditText = (EditText)findViewById(R.id.editTextFilenaame);
         m_MsgVersionEditText = (EditText)findViewById(R.id.editTextVersion);
         m_LoggingButton = (ToggleButton)findViewById(R.id.toggleButton);
+        m_ClearLogsButton = (Button)findViewById(R.id.buttonClearLog);
 
         m_LoggingButton.setOnCheckedChangeListener(this);
+        m_ClearLogsButton.setOnClickListener(this);
 
         // Instantiate a broadcast receiver.  This is where all the service intent
         // handling, and list updating happens.
@@ -377,5 +398,35 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (v == m_ClearLogsButton ) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+            builder.setTitle("Confirm");
+            builder.setMessage("Are you sure?");
+
+            builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                    m_MsgServerAPI.clearLogs();
+                }
+            });
+
+            builder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    // Do nothing
+                    dialog.dismiss();
+                }
+            });
+
+            AlertDialog alert = builder.create();
+            alert.show();
+        }
     }
 }
