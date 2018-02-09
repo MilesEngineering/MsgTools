@@ -259,7 +259,7 @@ public class WebsocketConnectionMgr extends WebSocketServer implements IConnecti
         String retVal = "Not Listening";
         if ( m_SocketAddress != null ) {
             InetAddress ia = utils.getHostAddress();
-            retVal = ia.toString() + ":" + m_SocketAddress.getPort();
+            retVal = ia==null ? "/127.0.0.1:5679" : ia.toString() + ":" + m_SocketAddress.getPort();
         }
 
         return retVal.substring(1);

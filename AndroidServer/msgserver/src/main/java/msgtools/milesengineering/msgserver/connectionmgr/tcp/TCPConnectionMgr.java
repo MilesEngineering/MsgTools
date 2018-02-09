@@ -230,7 +230,7 @@ public class TCPConnectionMgr extends BaseConnectionMgr {
     @Override
     public String getDescription() {
         InetAddress ia = utils.getHostAddress();
-        String retVal = ia.toString() + ":" + m_SocketAddress.getPort();
+        String retVal = ia == null ? "/127.0.0.1:5678" : ia.toString() + ":" + m_SocketAddress.getPort();
         return retVal.substring(1);
     }
 
