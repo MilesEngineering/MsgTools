@@ -112,6 +112,12 @@ MessagingClient.prototype.startlogging = function ()
 
 MessagingClient.prototype.stoplogging = function ()
 {
-        sl = new StopLog();
-        this.send(sl);
+    sl = new StopLog();
+    this.send(sl);
+}
+
+MessagingClient.prototype.clearLogs = function () 
+{
+    sl = new ClearLogs();
+    this.send(sl);
 }
