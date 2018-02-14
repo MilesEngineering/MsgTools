@@ -56,7 +56,7 @@ def fieldInfos(msg):
     return ret
 
 def getMsgID(msg):
-    return baseGetMsgID("<MSGNAME>_", "m_data", 0, 0, msg)
+    return baseGetMsgID("<MSGNAME>_", "m_data", "CAST_ALL", 0, msg)
     
 def setMsgID(msg):
     return baseSetMsgID("<MSGNAME>_", "m_data, ", 0, 0, msg)

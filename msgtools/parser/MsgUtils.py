@@ -293,7 +293,7 @@ def addShift(base, value, shiftValue):
         ret = "(("+base+")<<"+str(shiftValue)+")"+"+"+value
     return ret
     
-def baseGetMsgID(prefix, baseParam, castEnums, enumAsIntParam, msg):
+def baseGetMsgID(prefix, baseParam, typecast, enumAsIntParam, msg):
     ret = ""
     if "Fields" in msg:
         for field in msg["Fields"]:
@@ -305,8 +305,8 @@ def baseGetMsgID(prefix, baseParam, castEnums, enumAsIntParam, msg):
                         param += ", "
                     param += "1"
                 getStr = prefix+"Get"+field["Name"]+"("+param+")"
-                if "Enum" in field and castEnums:
-                    getStr = "uint32_t("+getStr+")"
+                if typecast == "CAST_ALL" or ("Enum" in field and typecast != 0):
+                    getStr = "(uint32_t)("+getStr+")"
                 ret =  addShift(ret, getStr, numBits)
             if "Bitfields" in field:
                 for bitfield in field["Bitfields"]:
@@ -318,8 +318,8 @@ def baseGetMsgID(prefix, baseParam, castEnums, enumAsIntParam, msg):
                                 param += ", "
                             param += "1"
                         getStr = prefix+"Get"+BitfieldName(field, bitfield)+"("+param+")"
-                        if "Enum" in bitfield and castEnums:
-                            getStr = "uint32_t("+getStr+")"
+                        if typecast == "CAST_ALL" or ("Enum" in bitfield and typecast != 0):
+                            getStr = "(uint32_t)("+getStr+")"
                         ret =  addShift(ret, getStr, numBits)
     return ret
     

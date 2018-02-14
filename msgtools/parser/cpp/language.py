@@ -450,7 +450,7 @@ def declarations(msg):
     return ret
 
 def getMsgID(msg):
-    return baseGetMsgID("", "", 1, 0, msg)
+    return baseGetMsgID("", "", "CAST_ENUMS", 0, msg)
     
 def setMsgID(msg):
     return baseSetMsgID("", "", 1, 0, msg)
