@@ -231,6 +231,7 @@ class MessageItem(QTreeWidgetItem):
 
     def set_msg_buffer(self, msg_buffer):
         self.msg.msg_buffer_wrapper["msg_buffer"] = msg_buffer
+        self.msg.hdr.msg_buffer_wrapper["msg_buffer"] = msg_buffer
         self.repaintAll()
 
     def setup_fields(self, tree_widget, child_constructor, child_array_constructor, child_bitfield_constructor):
