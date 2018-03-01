@@ -41,23 +41,33 @@ class App(QtWidgets.QMainWindow):
             self.connectionName = argv[2]
         else:
             allOptions = options
-            options += ['connectionType=', 'connectionName=', 'msg=']
+            options += ['connectionType=', 'connectionName=', 'msg=','ip=','port=']
             self.optlist, args = getopt.getopt(sys.argv[1:], '', allOptions)
             # connection modes
             self.connectionType = "qtsocket"
             self.connectionName = "127.0.0.1:5678"
+            ip = ""
+            port = ""
 
             for opt in self.optlist:
                 if opt[0] == '--connectionType':
                     self.connectionType = opt[1]
                 if opt[0] == '--connectionName':
                     self.connectionName = opt[1]
+                if opt[0] == '--ip':
+                    ip = opt[1]
+                if opt[0] == '--port':
+                    port = opt[1]
                 if opt[0] == '--msg':
                     option = opt[1].split('/')
                     self.allowedMessages.append(option[0])
                     if len(option) > 1:
                         self.keyFields[option[0]] = option[1]
                     print("only allowing msg " + str(option))
+            
+            # if either --ip or --port were used, override connectionName
+            if ip or port:
+                self.connectionName = str(ip)+":"+str(port)
         
         # initialize the read function to None, so it's not accidentally called
         self.readBytesFn = None
@@ -87,20 +97,28 @@ class App(QtWidgets.QMainWindow):
 
         if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
             if "ws:" in self.connectionName:
+                connectionName = self.connectionName.replace("ws://","")
+                (ip, port) = connectionName.split(":")
+                if ip == None or ip == "":
+                    ip = "127.0.0.1"
+
+                if port == None or port == "":
+                    port = "5679"
+                connectionName = "ws://"+ip+":"+port
                 from PyQt5.QtWebSockets import QWebSocket
                 from PyQt5.QtCore import QUrl
                 self.connection = QWebSocket()
-                #print("opening websocket " + self.connectionName)
-                self.connection.open(QUrl(self.connectionName))
+                print("opening websocket " + connectionName)
+                self.connection.open(QUrl(connectionName))
                 self.connection.binaryMessageReceived.connect(self.processBinaryMessage)
                 self.sendBytesFn = self.connection.sendBinaryMessage
             else:
                 #print("opening TCP socket " + self.connectionName)
                 (ip, port) = self.connectionName.split(":")
-                if(ip == None):
+                if ip == None or ip == "":
                     ip = "127.0.0.1"
 
-                if(port == None):
+                if port == None or port == "":
                     port = "5678"
                 
                 port = int(port)
