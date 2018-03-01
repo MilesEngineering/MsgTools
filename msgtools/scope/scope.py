@@ -269,8 +269,12 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                     plotName = rxWidgetItem.msg.MsgName()
                     if plottingLoaded:
                         msgPlot = MsgPlot(type(rxWidgetItem.msg), fieldInfo, fieldIndex)
-                        # add a tab for new plot
-                        self.addDockWidget(Qt.RightDockWidgetArea, ClosableDockWidget(plotName, self, msgPlot.plotWidget, msgPlot, plotListForID))
+                        # add a dock widget for new plot
+                        dockWidget = ClosableDockWidget(plotName, self, msgPlot.plotWidget, msgPlot, plotListForID)
+                        self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
+                        # Change title when plot is paused/resumed
+                        msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
+                        
                         plotListForID.append(msgPlot)
                         msgPlot.addData(rxWidgetItem.msg)
         except AttributeError:

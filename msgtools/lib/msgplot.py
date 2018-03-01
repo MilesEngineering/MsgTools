@@ -35,9 +35,11 @@ def elapsedSeconds():
    seconds = float(dt.days * 24 * 60 * 60 + dt.seconds) + dt.microseconds / 1000000.0
    return seconds
 
-class MsgPlot:
+class MsgPlot(QObject):
+    Paused = QtCore.pyqtSignal(bool)
     MAX_LENGTH = 100
     def __init__(self, msgClass, fieldInfo, subindex):
+        super(QObject,self).__init__()
         self.msgClass = msgClass
         self.pause = 0
         self.lineCount = 0
@@ -102,10 +104,7 @@ class MsgPlot:
     def mouseClicked(self, ev):
         if ev.button() == QtCore.Qt.LeftButton:
             self.pause = not self.pause
-        if self.pause:
-            print("Paused")
-        else:
-            print("Not paused")
+        self.Paused.emit(self.pause)
 
     def addData(self, msg):
         # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
