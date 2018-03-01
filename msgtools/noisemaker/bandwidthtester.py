@@ -164,9 +164,6 @@ class BandwidthTester(msgtools.lib.gui.Gui):
             if desiredSeq > self.maxSeq:
                 desiredSeq = 0
             if msg.GetSequenceNumber() == desiredSeq:
-                self.rxByteCount += int(msg.SetSequenceNumber.size) # size of sequence count sequence count
-                self.rxBytesPerSec += int(msg.SetSequenceNumber.size)
-                
                 if msg.hdr.GetDataLength() >= int(msg.GetTestData.offset)+int(msg.GetTestData.size):
                     sendTime = msg.GetTestData(0)
                     recvTime = int(time.time() * 1000)-self.startTime
