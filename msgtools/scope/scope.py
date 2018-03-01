@@ -86,7 +86,21 @@ def vsplitter(parent, a,b):
     splitter.addWidget(a)
     splitter.addWidget(b)
     return splitter
-    
+
+class ClosableDockWidget(QDockWidget):
+    def __init__(self, name, parent, widget, itemToRemoveOnClose, itemList):
+        super(QDockWidget,self).__init__(name, parent)
+        self.setObjectName(name)
+        self.setWidget(widget)
+        # item to remvoe from list when we're closed
+        self.itemToRemoveOnClose = itemToRemoveOnClose
+        # list it needs to be removed from
+        self.itemList = itemList
+
+    def closeEvent(self, ev):
+        self.itemList.remove(self.itemToRemoveOnClose)
+        self.parent().removeDockWidget(self)
+
 class MessageScopeGui(msgtools.lib.gui.Gui):
     def __init__(self, argv, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Message Scope 0.1", argv, [], parent)
@@ -256,11 +270,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                     if plottingLoaded:
                         msgPlot = MsgPlot(type(rxWidgetItem.msg), fieldInfo, fieldIndex)
                         # add a tab for new plot
-                        dock = QDockWidget(plotName, self)
-                        dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-                        #dock.setAllowedAreas()
-                        dock.setWidget(msgPlot.plotWidget)
-                        self.addDockWidget(Qt.RightDockWidgetArea, dock)
+                        self.addDockWidget(Qt.RightDockWidgetArea, ClosableDockWidget(plotName, self, msgPlot.plotWidget, msgPlot, plotListForID))
                         plotListForID.append(msgPlot)
                         msgPlot.addData(rxWidgetItem.msg)
         except AttributeError:
