@@ -272,3 +272,5 @@ class EditableMessageItem(MessageItem):
         sendButton.autoFillBackground()
         sendButton.clicked.connect(lambda: self.qobjectProxy.send_message.emit(self.msg))
         tree_widget.setItemWidget(self, 4, sendButton)
+        for i in range(0, tree_widget.columnCount()):
+            tree_widget.resizeColumnToContents(i);
