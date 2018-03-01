@@ -46,6 +46,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
     private static final String TAG = BluetoothConnectionMgr.class.getSimpleName();
     private static final String SERVER_NAME = "AndroidServer";
     private static final int ACCEPT_TIMEOUT = 1000;
+    private static final int CONNECTION_ATTEMPTS = -1;  // Each attempt is about 12 seconds, -1 to go forever
 
     // Setup a constant with the well known SPP UUID
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -131,7 +132,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
             for (BluetoothDevice dev : devs) {
                 BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
-                        this);
+                        this, CONNECTION_ATTEMPTS);
                 connection.start();
             }
 
