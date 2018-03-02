@@ -50,50 +50,23 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private boolean m_Connected = false;
     private int m_MessagesSent = 0;
     private int m_MessagesReceived = 0;
-    private int m_NumConnectionAttempts = 1;
-    private int m_ConnectionAttemptsRemaining = 1;
 
     private BluetoothHeader m_BluetoothHeader;
     private ByteBuffer m_Payload;
 
     private BTSendThread m_SendThread;
 
-    /**
-     * Instantiate a new Bluetooth connection with the given device.  This constructor is a client thread.
-     * @param device The device to try and connect to
-     * @param bcm The Bluetooth Connection manager we're using
-     * @param connectionAttempts How many connection attempts to make.  0 indicates we should only  make one
-     * connection attempt and never try to reconnect if we lose connection.  1 or more indicates how many many
-     * attempts we'll make before giving up.  If we lose connection we'll try the same number of times to
-     * re-establish the connection.  Less than 0 means we should continue to try and connect forever.
-     */
-    public BluetoothConnectionThread(BluetoothDevice device, BluetoothConnectionMgr bcm, int connectionAttempts) {
+    public BluetoothConnectionThread(BluetoothDevice device, BluetoothConnectionMgr bcm) {
         android.util.Log.i(TAG, "BluetoothConnectionThread(device, ...)");
         m_Device = device;
         m_BluetoothConnectionMgr = new WeakReference<BluetoothConnectionMgr>(bcm);
-
-        // Always start with at least 1 connection attempt
-        m_ConnectionAttemptsRemaining = connectionAttempts == 0 ? 1 : connectionAttempts;
-        m_NumConnectionAttempts = connectionAttempts;
     }
 
-    /**
-     * Instantiate a new Bluetooth connection processing thread for the given connection.  This
-     * constructor wraps an already connected device.
-     * @param connection The connection to wrap
-     * @param bcm The Bluetooth Connection manager we're using
-     */
     public BluetoothConnectionThread(BluetoothSocket connection, BluetoothConnectionMgr bcm) {
         android.util.Log.i(TAG, "BluetoothConnectionThread(connection, ...)");
         m_Device = connection.getRemoteDevice();
         m_WrapSocket = connection;
         m_BluetoothConnectionMgr = new WeakReference<BluetoothConnectionMgr>(bcm);
-
-        // A server accepted socket should never try to reconnect - we rely on the client
-        // to reconnect and BluetoothManager broadcast intents to tell us when we should
-        // try to connect to a client device
-        m_ConnectionAttemptsRemaining = 0;
-        m_NumConnectionAttempts = 0;
     }
 
     /**
@@ -120,43 +93,31 @@ class BluetoothConnectionThread extends Thread implements IConnection {
     private void setup() {
         android.util.Log.i(TAG, "setup()");
 
-        BluetoothSocket newSocket = m_WrapSocket;
+        try {
+            // Initialize an SPP socket - if we were passed a socket to wrap in the ctor
+            // then just initialize our IO streams etc.  If not then try to connect to the
+            // device we're mapped to...
+            BluetoothSocket newSocket = m_WrapSocket;
 
-        while (newSocket == null && (m_NumConnectionAttempts < 0 || --m_ConnectionAttemptsRemaining > 0)) {
-            try {
-                // Initialize an SPP socket - if we were passed a socket to wrap in the ctor
-                // then just initialize our IO streams etc.  If not then try to connect to the
-                // device we're mapped to...
+            if (newSocket == null) {
                 newSocket = m_Device.createRfcommSocketToServiceRecord(SPP_UUID);
 
                 // Connect to the remote device.  This will block until connection, for up to about
                 // 12 seconds, or until we connect.
                 newSocket.connect();
-
-                setSocket(newSocket);
-
-            } catch (IOException ioe) {
-                android.util.Log.d(TAG, ioe.getMessage());
-                android.util.Log.i(TAG, "BluetoothSocket unable to connect!");
-                if ( m_NumConnectionAttempts == 0 || m_ConnectionAttemptsRemaining == 0 ) {
-                    requestHalt();
-                    android.util.Log.i(TAG, "Connection attempt failed.  Halting.");
-                }
-                else {
-                    android.util.Log.i(TAG, "Attempting to connect");
-                    newSocket = null;
-                }
             }
+
+            setSocket(newSocket);
+
+        } catch (IOException ioe) {
+            android.util.Log.d(TAG, ioe.getMessage());
+            android.util.Log.i(TAG, "BluetoothSocket unable to connect!");
+            requestHalt();
         }
     }
 
     private void setSocket(BluetoothSocket newSocket) throws IOException {
         synchronized (m_SocketLock) {
-
-            // Reset our connection attempts remaining and the socket we're
-            // wrapping so we attempt to reconnnect if we lose connection again later
-            m_ConnectionAttemptsRemaining = m_NumConnectionAttempts;
-            m_WrapSocket = null;
 
             m_Socket = newSocket;
 
@@ -250,9 +211,9 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                 m_PayloadBuf = null;
             }
         } catch (IOException ioe) {
-            android.util.Log.i(TAG, "BT socket disconnected.");
+            android.util.Log.i(TAG, "BT socket disconnected.  Cleaning up.");
             ioe.printStackTrace();
-            setup();
+            requestHalt();
         }
     }
 
