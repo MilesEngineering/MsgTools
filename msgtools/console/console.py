@@ -41,10 +41,21 @@ def main(args=None):
             cmd = input("")
             #print("got input cmd [" + cmd + "]")
             if cmd:
-                if cmd == "getmsg":
+                if "getmsg" in cmd:
+                    msgIDs = []
+                    msgIDNames = cmd.split(",")[1:]
+                    for msgname in msgIDNames:
+                        try:
+                            if int(msgname, 0):
+                                msgIDs.append(int(msgname,0))
+                        except ValueError:
+                            if msgname in Messaging.MsgIDFromName:
+                                msgIDs.append(int(Messaging.MsgIDFromName[msgname], 0))
+                            else:
+                                print("invalid msg " + msgname)
                     # this blocks until message received, or timeout occurs
                     timeout = 10.0 # value in seconds
-                    hdr = connection.get_message(timeout, [msgLib.Messages.Network.Connect.ID, msgLib.Messages.Experimental.AccelData.Status.ID])
+                    hdr = connection.get_message(timeout, msgIDs)
                     if hdr:
                         msg = msgLib.MsgFactory(hdr)
                         # print as JSON for debug purposes
