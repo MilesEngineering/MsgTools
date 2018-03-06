@@ -90,6 +90,15 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         cleanup();
     }
 
+    /**
+     * Get the BluetoothDevice we're connected to
+     *
+     * @return A BluetoothDevice instance for the remote device
+     */
+    public BluetoothDevice getDevice() {
+        return m_Device;
+    }
+
     private void setup() {
         android.util.Log.i(TAG, "setup()");
 
