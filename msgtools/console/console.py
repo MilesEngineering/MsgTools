@@ -22,9 +22,9 @@ def main(args=None):
     msgLib = Messaging(None, 0, "NetworkHeader")
 
     if len(sys.argv) > 1 and sys.argv[1] == "server":
-        connection = SynchronousMsgServer(NetworkHeader)
+        connection = SynchronousMsgServer(Messaging.hdr)
     else:
-        connection = SynchronousMsgClient(NetworkHeader)
+        connection = SynchronousMsgClient(Messaging.hdr)
         # say my name
         connectMsg = msgLib.Messages.Network.Connect()
         connectMsg.SetName("CLI")
