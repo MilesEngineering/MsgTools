@@ -119,13 +119,14 @@ class BluetoothConnectionThread extends Thread implements IConnection {
             setSocket(newSocket);
 
         } catch (IOException ioe) {
+            android.util.Log.d(TAG, "Connection or setup error:");
             android.util.Log.d(TAG, ioe.getMessage());
-            android.util.Log.i(TAG, "BluetoothSocket unable to connect!");
             requestHalt();
         }
     }
 
     private void setSocket(BluetoothSocket newSocket) throws IOException {
+
         synchronized (m_SocketLock) {
 
             m_Socket = newSocket;
@@ -144,6 +145,8 @@ class BluetoothConnectionThread extends Thread implements IConnection {
             m_SendThread = new BTSendThread("BT Socket: " + m_Socket.getRemoteDevice().getName());
             m_SendThread.start();
         }
+
+        android.util.Log.i(TAG, "BT CONNECTED: " + getDescription());
 
         // Notify everyone we've connected
         BluetoothConnectionMgr bcm = m_BluetoothConnectionMgr.get();
@@ -230,7 +233,7 @@ class BluetoothConnectionThread extends Thread implements IConnection {
         android.util.Log.d(TAG, "cleanup()");
 
         // Shutdown our send thread.  This is done here so all thread ops are on
-        // the connection thread - that way don't have to sweat external threadsafety!
+        // the connection thread - that way don't have to sweat external thread safety!
         if (m_SendThread != null )
             m_SendThread.requestHalt();
 
@@ -244,14 +247,22 @@ class BluetoothConnectionThread extends Thread implements IConnection {
                 android.util.Log.i(TAG, e.getMessage());
                 e.printStackTrace();
             } finally {
-                if (m_Connected == true) {
-                    m_Connected = false;
-
-                    // Notify everyone we've closed
-                    BluetoothConnectionMgr bcm = m_BluetoothConnectionMgr.get();
-                    if (bcm != null)
-                        bcm.closeConnection(this);
+                // Notify everyone we've closed
+                BluetoothConnectionMgr bcm = m_BluetoothConnectionMgr.get();
+                if (bcm != null) {
+                    if (m_Connected == true)
+                        bcm.closeConnection(this);  // This should handle any reconnects
+                    else {
+                        // Otherwise we have manage the reconnect ourself...
+                        android.util.Log.i(TAG, getDescription() + " connection failed.  Retrying...");
+                        bcm.reconnect(this);
+                    }
                 }
+                else {
+                    android.util.Log.e(TAG, "BCM null!  Can't notify of closure or reconnect!");
+                }
+
+                m_Connected = false;
             }
         }
     }
