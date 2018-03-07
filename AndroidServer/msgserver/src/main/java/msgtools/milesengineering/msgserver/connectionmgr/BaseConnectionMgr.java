@@ -19,11 +19,6 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
     private Object m_Lock = new Object();   // Used as a private sync object for thread safety
     private ConnectionListenerHelper m_Listeners;
     private HashSet<IConnection> m_ActiveConnections = new HashSet<IConnection>();
-
-    private BaseConnectionMgr() {
-        m_Listeners = new ConnectionListenerHelper(TAG, this);
-    }
-
     private MessageHandler m_MsgHandler = MessageHandler.getInstance();
 
     /**
@@ -171,6 +166,9 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
             m_Listeners.onClosedConnection(closedConnection);
             removeConnection(closedConnection);
         }
+
+        // Offer a chance for reconnection to any interested managers
+        reconnect(closedConnection);
     }
 
     protected final void onMessage(IConnection srcConnection, NetworkHeader networkHeader,
@@ -205,5 +203,19 @@ public abstract class BaseConnectionMgr extends Thread implements IConnectionMgr
         synchronized (m_Lock) {
             m_ActiveConnections.remove(connection);
         }
+    }
+
+    /**
+     * Called when a connection is closed.  The base class never
+     * attempts to reconnect, but you may override this function
+     * in your own manager with your own reconnect logic.
+     *
+     * @param connection the connection that was just closed and is
+     *                   a candidate for reconnection.  DO NOT
+     *                   reuse this instance if you choose to
+     *                   reconnect.  Create a new IConnection instance
+     *                   and use addConnection as if it were new.
+     */
+    protected void reconnect(IConnection connection) {
     }
 }

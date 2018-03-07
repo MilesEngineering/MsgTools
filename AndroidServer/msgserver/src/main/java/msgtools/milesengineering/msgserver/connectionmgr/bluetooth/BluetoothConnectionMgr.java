@@ -130,8 +130,7 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
         if (m_BluetoothAdapter != null) {
             Set<BluetoothDevice> devs = m_BluetoothAdapter.getBondedDevices();
             for (BluetoothDevice dev : devs) {
-                BluetoothConnectionThread connection = new BluetoothConnectionThread(dev,
-                        this);
+                BluetoothConnectionThread connection = new BluetoothConnectionThread(dev, this);
                 connection.start();
             }
 
@@ -154,15 +153,13 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
             // All we're going to do here is listen for incoming connections
             // and spawn off receiver conections
             BluetoothSocket newConnection = null;
-            android.util.Log.v(TAG, "accept()");
             newConnection = m_ServerSocket.accept( ACCEPT_TIMEOUT );
-
-            android.util.Log.i(TAG, "Accepting connection to " + newConnection.getRemoteDevice().getName());
-
             BluetoothConnectionThread connection = new BluetoothConnectionThread(newConnection,
                     this);
             connection.start();
 
+            // TODO: Turns out a Bluetooth Server socket is only good for one connection
+            // Create a new server socket for the next run.
 
         } catch (IOException ioe) {
             // Assuming we just timed out here and this is ok - may need to revisit this if we find
@@ -174,6 +171,19 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
     @Override
     protected void cleanup() {
         android.util.Log.i(TAG, "cleanup()");
+    }
+
+    @Override
+    protected void reconnect(IConnection connection) {
+        android.util.Log.d(TAG, "reconnect("+connection.getDescription() + ")");
+
+        if ( connection instanceof BluetoothConnectionThread ) {
+            BluetoothConnectionThread btConnection = (BluetoothConnectionThread)connection;
+
+            BluetoothConnectionThread connThread =
+                    new BluetoothConnectionThread(btConnection.getDevice(), this);
+            connThread.start();
+        }
     }
 
     //
