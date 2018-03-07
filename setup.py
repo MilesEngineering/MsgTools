@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.28.30',
+    version='0.28.31',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -35,7 +35,9 @@ setup(name='msgtools',
         'msgtools.server.plugin': ['serial=msgserver.serial:serial']
     },
     install_requires=[
-        'pyyaml'
+        'pyyaml',
+        'websockets',
+        'janus'
     ],
     extras_require={
         'gui':  ["pyqt5", "pyqtgraph"],
