@@ -23,7 +23,20 @@ class MessageServer(QtWidgets.QMainWindow):
         self.logFile = None
         self.logFileType = None
         
-        self.msgLib = Messaging(None, False, "NetworkHeader")
+        # directory to load messages from.
+        msgLoadDir = None
+        options = ['msgdir=']
+        self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
+        for opt in self.optlist:
+            if opt[0] == '--msgdir':
+                msgLoadDir = opt[1]
+        try:
+            self.msgLib = Messaging(msgLoadDir, False, "NetworkHeader")
+        except ImportError:
+            print("\nERROR! Auto-generated python code not found!")
+            print("cd to a directory downstream from a parent of obj/CodeGenerator/Python")
+            print("or specify that directory with --msgdir=PATH\n")
+            quit()
         self.networkMsgs = self.msgLib.Messages.Network
 
         self.clients = {}

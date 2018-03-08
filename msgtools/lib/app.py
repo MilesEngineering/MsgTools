@@ -34,6 +34,9 @@ class App(QtWidgets.QMainWindow):
         
         # flag that indicates if we're connected
         self.connected = False
+        
+        # directory to load messages from.
+        msgLoadDir = None
 
         # need better handling of command line arguments for case when there is only one arg and it's a filename
         if(len(argv) == 3 and argv[2].lower().endswith((".txt",".log"))):
@@ -41,7 +44,7 @@ class App(QtWidgets.QMainWindow):
             self.connectionName = argv[2]
         else:
             allOptions = options
-            options += ['connectionType=', 'connectionName=', 'msg=','ip=','port=']
+            options += ['connectionType=', 'connectionName=', 'msg=','ip=','port=','msgdir=']
             self.optlist, args = getopt.getopt(sys.argv[1:], '', allOptions)
             # connection modes
             self.connectionType = "qtsocket"
@@ -52,18 +55,20 @@ class App(QtWidgets.QMainWindow):
             for opt in self.optlist:
                 if opt[0] == '--connectionType':
                     self.connectionType = opt[1]
-                if opt[0] == '--connectionName':
+                elif opt[0] == '--connectionName':
                     self.connectionName = opt[1]
-                if opt[0] == '--ip':
+                elif opt[0] == '--ip':
                     ip = opt[1]
-                if opt[0] == '--port':
+                elif opt[0] == '--port':
                     port = opt[1]
-                if opt[0] == '--msg':
+                elif opt[0] == '--msg':
                     option = opt[1].split('/')
                     self.allowedMessages.append(option[0])
                     if len(option) > 1:
                         self.keyFields[option[0]] = option[1]
                     print("only allowing msg " + str(option))
+                elif opt[0] == '--msgdir':
+                    msgLoadDir = opt[1]
             
             # if either --ip or --port were used, override connectionName
             if ip or port:
@@ -73,10 +78,12 @@ class App(QtWidgets.QMainWindow):
         self.readBytesFn = None
 
         try:
-            self.msgLib = Messaging(None, 0, headerName)
+            self.msgLib = Messaging(msgLoadDir, 0, headerName)
         except ImportError:
             print("\nERROR! Auto-generated python code not found!")
-            print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
+            print("cd to a directory downstream from a parent of obj/CodeGenerator/Python")
+            print("or specify that directory with --msgdir=PATH\n")
+            quit()
         
         self.OpenConnection()
 

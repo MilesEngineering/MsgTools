@@ -79,28 +79,25 @@ class Messaging:
     
     debug=0
 
-    def __init__(self, loadDir, debug, headerName):
+    def __init__(self, searchdir, debug, headerName):
         Messaging.debug = debug
-        if not loadDir:
-            srcdir=os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
-            loadDir = os.path.join(srcdir, "../../../obj/CodeGenerator/Python/")
-            if not os.path.isdir(loadDir):
-                srcdir = os.getcwd()
-                loadDir = os.path.join(srcdir, "obj/CodeGenerator/Python/")
-                while not os.path.isdir(loadDir):
-                    lastsrcdir = srcdir
-                    srcdir = os.path.abspath(os.path.join(srcdir, os.pardir))
-                    # checking if joining with pardir returns the same dir is the easiest way to
-                    # determine if we're at root of filesystem
-                    if lastsrcdir == srcdir:
-                        # if we're at root of filesystem, just give up!
-                        loadDir = None
-                        #print("\nERROR! Auto-generated python code not found!")
-                        #print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
-                        break
-                    loadDir = srcdir + "/obj/CodeGenerator/Python/"
-                    if Messaging.debug:
-                        print("search for objdir in " + loadDir)
+        if not searchdir or not os.path.isdir(searchdir):
+            searchdir = os.getcwd()
+        loadDir = os.path.join(searchdir, "obj/CodeGenerator/Python/")
+        while not os.path.isdir(loadDir):
+            lastsearchdir = searchdir
+            searchdir = os.path.abspath(os.path.join(searchdir, os.pardir))
+            # checking if joining with pardir returns the same dir is the easiest way to
+            # determine if we're at root of filesystem
+            if lastsearchdir == searchdir:
+                # if we're at root of filesystem, just give up!
+                loadDir = None
+                #print("\nERROR! Auto-generated python code not found!")
+                #print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
+                break
+            loadDir = searchdir + "/obj/CodeGenerator/Python/"
+            if Messaging.debug:
+                print("search for objdir in " + loadDir)
         sys.path.append(loadDir)
         sys.path.append(str(loadDir)+"/headers")
         
