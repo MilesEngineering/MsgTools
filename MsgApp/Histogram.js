@@ -33,6 +33,11 @@ Histogram.prototype.initFromData = function()
 {
     this.g = this.svg.append("g");
 
+    if(this.width == null || this.height == null) {
+        console.log("graph %o has probably not yet been displayed; can't draw anything.", this);
+        return;
+    }
+    //console.log("initfromdata %o %o", this.width, this.height);
     this.svg.attr("viewBox", "0 0 "+(this.width+10)+" "+(this.height+20));
 
     var that = this
@@ -43,7 +48,7 @@ Histogram.prototype.initFromData = function()
 
     this.bins = d3.histogram()
         .domain(that.x.domain())
-        .thresholds(that.x.ticks(20))
+        .thresholds(that.x.ticks(100))
         (this.data);
 
     this.y = d3.scaleLinear()
@@ -63,13 +68,16 @@ Histogram.prototype.initFromData = function()
 
     var formatCount = d3.format(",.0f");
 
+    /*
+    // Put the bar height in each histogram bar
     this.bar.append("text")
         .attr("dy", ".75em")
         .attr("y", 6)
         .attr("x", (that.x(that.bins[0].x1) - that.x(that.bins[0].x0)) / 2)
         .attr("text-anchor", "middle")
         .text(function(d) { return formatCount(d.length); });
-
+    */
+    
     this.g.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + that.height + ")")
