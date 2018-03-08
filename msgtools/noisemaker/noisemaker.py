@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+from datetime import datetime
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import QTimer
 
@@ -36,7 +37,8 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         self.msgPeriod = {}
         self.msgTxTime = {}
         for msgName in Messaging.MsgClassFromName:
-            if not msgName.startswith("Network"):
+            #if not msgName.startswith("Network"):
+            if msgName.startswith("Experimental.Accel"):
                 #print("found message " + msgName)
                 self.msgPeriod[msgName] = period
                 period = period + 20
@@ -53,7 +55,12 @@ class NoiseMaker(msgtools.lib.gui.Gui):
             self.startStop.setText('Stop')
     
     def msgTimeout(self):
-        self.currentTime += 10
+        timeInfo = Messaging.findFieldInfo(Messaging.hdr.fields, "Time")
+        if timeInfo.units == "ms":
+            self.currentTime = int(datetime.now().timestamp()*1000)
+        else:
+            # what if time is a float?
+            self.currentTime = int(datetime.now().timestamp())
         for msgName in self.msgTxTime:
             if self.currentTime > self.msgTxTime[msgName]:
                 msgClass = Messaging.MsgClassFromName[msgName]

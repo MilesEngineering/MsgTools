@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 
 from PyQt5 import QtGui, QtWidgets, QtCore, QtNetwork
 
@@ -62,7 +63,10 @@ class MsgTreeWidget(TreeWidget):
             self.showHeader = False
         # add table header, one column for each message field
         tableHeader = []
-        tableHeader.append("Time (ms)")
+        timeUnits = Messaging.findFieldInfo(Messaging.hdr.fields, "Time").units
+        if timeUnits == "ms":
+            timeUnits = "s"
+        tableHeader.append("Time ("+timeUnits+")")
         if self.showHeader:
             for fieldInfo in Messaging.hdr.fields:
                 if len(fieldInfo.bitfieldInfo) == 0:
@@ -97,9 +101,15 @@ class MsgTreeWidget(TreeWidget):
         msgStringList = []
         columnAlerts = []
         try:
-            msgStringList.append(str(msg.hdr.GetTime()))
+            timeVal = msg.hdr.GetTime()
+            timeInfo = Messaging.findFieldInfo(msg.hdr.fields, "Time")
+            if timeInfo.units == "ms":
+                timeVal = timeVal / 1000.0
+            timeVal = datetime.fromtimestamp(timeVal, datetime.timezone.utc)
         except AttributeError:
-            msgStringList.append("Unknown")
+            timeVal = datetime.now()
+        timeVal = timeVal.strftime('%H:%M:%S.%f')[:-3]
+        msgStringList.append(timeVal)
         columnAlerts.append(0)
         keyColumn = -1
         columnCounter = 1
@@ -280,7 +290,7 @@ class MsgCommandWidget(QtWidgets.QWidget):
             self.messageEntered.emit(msg)
             self.addText(" -> Msg\n")
         else:
-            self.commandEntered.emit(lineOfText+'\n')
+            self.commandEntered.emit(lineOfText)
         self.lineEdit.setText("")
 
     def addText(self, text):

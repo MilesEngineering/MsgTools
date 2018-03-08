@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import struct
-import datetime
+from datetime import datetime
 import collections
 import functools
 import threading
@@ -294,14 +294,14 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.add_message_to_rx_tree(rxListItem.msg_key, rxListItem.msg)
 
     def display_message_in_rx_list(self, msg_key, msg):
-        rx_time = datetime.datetime.now()
+        rx_time = datetime.now()
 
         if not msg_key in self.rx_msg_list:
             widget_name = msg.MsgName()
             msg_route = Messaging.MsgRoute(msg)
             if len(msg_route) > 0 and not(all ("0" == a for a in msg_route)):
                 widget_name += " ("+"->".join(msg_route)+")"
-            msg_list_item = QTreeWidgetItem([ widget_name, str(rx_time), "- Hz" ])
+            msg_list_item = QTreeWidgetItem([ widget_name, rx_time.strftime('%H:%M:%S.%f')[:-3], "- Hz" ])
             msg_list_item.msg_key = msg_key
             msg_list_item.msg = msg
 
@@ -318,7 +318,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             self.rx_msg_list_timestamps[msg_key].appendleft(rx_time)
             self.thread_lock.release()
 
-        self.rx_msg_list[msg_key].setText(1, str(rx_time))
+        self.rx_msg_list[msg_key].setText(1, rx_time.strftime('%H:%M:%S.%f')[:-3])
         self.rx_msg_list[msg_key].msg = msg
 
     def show_rx_msg_rates(self, rx_rates):

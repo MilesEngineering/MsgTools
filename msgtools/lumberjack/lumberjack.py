@@ -60,7 +60,10 @@ in that directory.''')
             self.outputFiles[id] = outputFile
             
             # add table header, one column for each message field
-            tableHeader = "Time (ms), "
+            timeUnits = Messaging.findFieldInfo(msg.hdr.fields, "Time").units
+            if timeUnits == "ms":
+                timeUnits = "s"
+            tableHeader = "Time ("+timeUnits+"), "
             for fieldInfo in type(msg).fields:
                 tableHeader += fieldInfo.name + ", "
                 for bitInfo in fieldInfo.bitfieldInfo:
@@ -78,8 +81,11 @@ in that directory.''')
 
             self._lastTimestamp = thisTimestamp
 
-            # instead of left shifting by 16, we should use the actual size in bits of the timestamp field!
-            text = str((self._timestampOffset << 16) + thisTimestamp) + ", "
+            timeSizeInBits = int(round(math.log(int(Messaging.findFieldInfo(msg.hdr.fields, "Time").maxVal), 2)))
+            timestamp = (self._timestampOffset << timeSizeInBits) + thisTimestamp
+            if Messaging.findFieldInfo(msg.hdr.fields, "Time").units == "ms":
+                timestamp = timestamp / 1000.0
+            text = str(timestamp) + ", "
         except AttributeError:
             text = "unknown, "
 

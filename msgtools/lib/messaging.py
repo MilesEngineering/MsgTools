@@ -391,8 +391,6 @@ class Messaging:
         return msg_route
 
     class HeaderTranslator:
-        startTime = int(time.time() * 1000)
-
         def __init__(self, hdr1, hdr2):
             # Make a list of fields in the headers that have matching names.
             self._correspondingFields = []
@@ -444,7 +442,7 @@ class Messaging:
             for i in range(0,fromHdr.GetDataLength()):
                 toHdr.rawBuffer()[toHdr.SIZE+i] = body[i]
             
-            # do special timestamp stuff
+            # do special timestamp stuff to convert from relative to absolute time
             if toHdrInfo.timeField != None and fromHdrInfo.timeField != None and self.serialTimeFieldSize < self.networkTimeFieldSize:
                 # Detect time rolling
                 thisTimestamp = fromHdr.GetTime()
@@ -461,8 +459,7 @@ class Messaging:
                 # need to handle different size timestamps!
                 toHdr.SetTime((timestampOffset << 16) + thisTimestamp)
             elif toHdrInfo.timeField != None and fromHdrInfo.timeField == None:
-                thisTime = int(time.time() * 1000)
-                toHdr.SetTime(thisTime - self.startTime)
+                toHdr.SetTime(int(time.time() * 1000))
 
             return toHdr
 

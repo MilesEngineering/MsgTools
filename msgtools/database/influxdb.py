@@ -12,7 +12,7 @@ from msgtools.console.SynchronousMsgClient import SynchronousMsgClient
 
 from influxdb import InfluxDBClient
 from influxdb.client import InfluxDBClientError
-import datetime
+from datetime import datetime
 
 # this allows sending Messages as data to an InfluxDB database
 class InfluxDBConnection:
@@ -33,7 +33,7 @@ class InfluxDBConnection:
 
     def send_message(self, msg):
         # need to use msg time from header once it's 64-bit UTC time!
-        now = datetime.datetime.utcnow()
+        now = datetime.now()
 
         pointValues = {
                 "time": str(now),

@@ -23,17 +23,14 @@ except ImportError:
 from datetime import datetime
 from datetime import timedelta
 
-start_time = datetime.now()
-
 from collections import namedtuple
 
 # make tuple for line, and have multiple of them in a MsgPlot, as long as their units match and they are from the same message
 LineInfo = namedtuple('LineInfo', 'fieldInfo fieldSubindex dataArray timeArray curve ptr1')
 
-def elapsedSeconds():
-   dt = datetime.now() - start_time
-   seconds = float(dt.days * 24 * 60 * 60 + dt.seconds) + dt.microseconds / 1000000.0
-   return seconds
+start_time = datetime.now().timestamp()
+def elapsedSeconds(timestamp):
+    return timestamp - start_time
 
 class MsgPlot(QObject):
     Paused = QtCore.pyqtSignal(bool)
@@ -111,14 +108,17 @@ class MsgPlot(QObject):
         for line in self.lines:
             newDataPoint = Messaging.getFloat(msg, line.fieldInfo, line.fieldSubindex)
             try:
-                newTime = float(msg.hdr.GetTime()/1000.0)
+                timestamp = msg.hdr.GetTime()
+                if Messaging.findFieldInfo(msg.hdr.fields, "Time").units == "ms":
+                    timestamp = timestamp / 1000.0
+                newTime = float(elapsedSeconds(timestamp))
                 if newTime != 0:
                     self.useHeaderTime = 1
                 if not self.useHeaderTime:
-                    newTime = elapsedSeconds()
+                    newTime = elapsedSeconds(datetime.now().timestamp())
             except AttributeError:
                 # if header has no time, fallback to PC time.
-                newTime = elapsedSeconds()
+                newTime = elapsedSeconds(datetime.now().timestamp())
             
             # add data in the array until MAX_LENGTH is reached, then drop data off start of array
             # such that plot appears to scroll.  The array size is limited to MAX_LENGTH.
