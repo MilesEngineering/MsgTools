@@ -51,6 +51,8 @@ def bitfieldReflection(msg, field, bits):
               'description="'+MsgParser.fieldDescription(bits) + '",'+\
               'get='+"Get" + name + ','+\
               'set='+"Set" + name  + ', '
+    if "IDBits" in bits:
+        ret += "idbits="+str(bits["IDBits"])+","
     if "Enum" in bits:
         ret += "enum = ["+  bits["Enum"]+", " + "Reverse" + bits["Enum"]+"])"
     else:
@@ -68,6 +70,8 @@ def fieldReflection(msg, field):
                   'get='+"Get" + field["Name"] + ','+\
                   'set='+"Set" + field["Name"]  + ','+\
                   'count='+str(pythonFieldCount(field)) + ', '
+    if "IDBits" in field:
+        fieldInfo += "idbits="+str(field["IDBits"])+","
     if "Bitfields" in field:
         bitfieldInfo = []
         for bits in field["Bitfields"]:

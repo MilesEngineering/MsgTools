@@ -41,34 +41,41 @@ class InfluxDBConnection:
         except AttributeError:
             timeVal = datetime.now()
 
-        pointValues = {
+        dbJson = {
                 "time": str(timeVal),
                 "measurement": msg.MsgName(),
                 'fields':  {},
-                'tags': {
-                    "deviceID": "unknown", # need to base this on something about the hardware we're talking to
-                },
+                'tags': {}
             }
+
+        for fieldInfo in msg.hdr.fields:
+            if len(fieldInfo.bitfieldInfo) == 0:
+                if fieldInfo.idbits == 0 and fieldInfo.name != "Time" and fieldInfo.name != "DataLength":
+                    dbJson['tags'][fieldInfo.name] = Messaging.get(msg.hdr, fieldInfo)
+            else:
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    if bitInfo.idbits == 0 and bitInfo.name != "Time" and bitInfo.name != "DataLength":
+                        dbJson['tags'][bitInfo.name] = Messaging.get(msg.hdr, bitInfo)
         
         msgClass = type(msg)
         for fieldInfo in msgClass.fields:
-            if(fieldInfo.count == 1):
+            if fieldInfo.count == 1:
                 if len(fieldInfo.bitfieldInfo) == 0:
-                    pointValues['fields'][fieldInfo.name] = InfluxDBConnection.GetDBValue(msg, fieldInfo)
+                    dbJson['fields'][fieldInfo.name] = InfluxDBConnection.GetDBValue(msg, fieldInfo)
                 else:
                     for bitInfo in fieldInfo.bitfieldInfo:
-                        pointValues['fields'][bitInfo.name] = InfluxDBConnection.GetDBValue(msg, bitInfo)
+                        dbJson['fields'][bitInfo.name] = InfluxDBConnection.GetDBValue(msg, bitInfo)
             # leave out arrays until we figure out how to handle them
             #else:
             #    arrayList = []
             #    for i in range(0,fieldInfo.count):
             #        arrayList.append(InfluxDBConnection.GetDBValue(msg, fieldInfo, i))
-            #    pointValues['fields'][fieldInfo.name] = arrayList
+            #    dbJson['fields'][fieldInfo.name] = arrayList
 
         #print("Create a retention policy")
         #retention_policy = 'awesome_policy'
         #client.create_retention_policy(retention_policy, '3d', 3, default=True)
-        self.db.write_points([pointValues]) #, retention_policy=retention_policy)
+        self.db.write_points([dbJson]) #, retention_policy=retention_policy)
 
 # this is client that reads from network, and writes to InfluxDB
 class InfluxDBMsgClient:

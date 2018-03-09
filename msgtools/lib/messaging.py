@@ -468,7 +468,7 @@ class Messaging:
             return toHdr
 
 class BitFieldInfo(object):
-    def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum):
+    def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum, idbits=0):
         self.name=name
         self.type=type
         self.units=units
@@ -478,9 +478,10 @@ class BitFieldInfo(object):
         self.get=get
         self.set=set
         self.enum=enum
+        self.idbits=idbits
 
 class FieldInfo(object):
-    def __init__(self, name, type, units, minVal, maxVal, description, get, set, count, bitfieldInfo, enum):
+    def __init__(self, name, type, units, minVal, maxVal, description, get, set, count, bitfieldInfo, enum, idbits=0):
         self.name=name
         self.type=type
         self.units=units
@@ -492,3 +493,4 @@ class FieldInfo(object):
         self.count=count
         self.bitfieldInfo=bitfieldInfo
         self.enum=enum
+        self.idbits=idbits
