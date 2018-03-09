@@ -37,8 +37,7 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         self.msgPeriod = {}
         self.msgTxTime = {}
         for msgName in Messaging.MsgClassFromName:
-            #if not msgName.startswith("Network"):
-            if msgName.startswith("Experimental.Accel"):
+            if not msgName.startswith("Network"):
                 #print("found message " + msgName)
                 self.msgPeriod[msgName] = period
                 period = period + 0.020
