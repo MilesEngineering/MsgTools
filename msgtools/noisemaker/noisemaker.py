@@ -32,7 +32,7 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         self.setCentralWidget(self.startStop)
         
         # find a few messages to send at specified rates
-        period = 300
+        period = 0.3
         self.fieldNumber = 0
         self.msgPeriod = {}
         self.msgTxTime = {}
@@ -41,7 +41,7 @@ class NoiseMaker(msgtools.lib.gui.Gui):
             if msgName.startswith("Experimental.Accel"):
                 #print("found message " + msgName)
                 self.msgPeriod[msgName] = period
-                period = period + 20
+                period = period + 0.020
                 self.msgTxTime[msgName] = 0
         
         self.msgTimer.start()
@@ -57,10 +57,9 @@ class NoiseMaker(msgtools.lib.gui.Gui):
     def msgTimeout(self):
         timeInfo = Messaging.findFieldInfo(Messaging.hdr.fields, "Time")
         if timeInfo.units == "ms":
-            self.currentTime = int(datetime.now().timestamp()*1000)
+            self.currentTime = datetime.now().timestamp()/1000.0
         else:
-            # what if time is a float?
-            self.currentTime = int(datetime.now().timestamp())
+            self.currentTime = datetime.now().timestamp()
         for msgName in self.msgTxTime:
             if self.currentTime > self.msgTxTime[msgName]:
                 msgClass = Messaging.MsgClassFromName[msgName]
