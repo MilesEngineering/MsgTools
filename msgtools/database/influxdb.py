@@ -32,11 +32,17 @@ class InfluxDBConnection:
         return val
 
     def send_message(self, msg):
-        # need to use msg time from header once it's 64-bit UTC time!
-        now = datetime.now()
+        try:
+            timeVal = msg.hdr.GetTime()
+            timeInfo = Messaging.findFieldInfo(msg.hdr.fields, "Time")
+            if timeInfo.units == "ms":
+                timeVal = timeVal / 1000.0
+            timeVal = datetime.fromtimestamp(timeVal, datetime.timezone.utc)
+        except AttributeError:
+            timeVal = datetime.now()
 
         pointValues = {
-                "time": str(now),
+                "time": str(timeVal),
                 "measurement": msg.MsgName(),
                 'fields':  {},
                 'tags': {
