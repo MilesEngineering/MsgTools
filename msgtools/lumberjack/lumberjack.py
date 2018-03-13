@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import math
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 try:
@@ -47,6 +48,8 @@ in that directory.''')
 
     def ProcessMessage(self, msg):
         self.messageCount += 1
+        
+        id = msg.hdr.GetMessageID()
 
         # if we write CSV to multiple files, we'd probably look up a hash table for this message id,
         # and open it and write a header
