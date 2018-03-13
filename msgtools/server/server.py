@@ -25,8 +25,19 @@ class MessageServer(QtWidgets.QMainWindow):
         
         # directory to load messages from.
         msgLoadDir = None
-        options = ['msgdir=']
-        self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
+        # need a way to make serial= and serial both work!
+        try:
+            options = ['serial=', 'bluetoothSPP=', 'plugin=', 'port=', 'msgdir=']
+            self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
+        except getopt.GetoptError:
+            pass
+
+        try:
+            options = ['serial', 'bluetoothSPP=', 'plugin=', 'port=', 'msgdir=']
+            self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
+        except getopt.GetoptError:
+            pass
+
         for opt in self.optlist:
             if opt[0] == '--msgdir':
                 msgLoadDir = opt[1]
@@ -44,22 +55,6 @@ class MessageServer(QtWidgets.QMainWindow):
         self.privateSubscriptions = {}
 
         self.initializeGui()
-
-        # need a way to make serial= and serial both work!
-        try:
-            tmpOptions = ['serial=', 'bluetoothSPP=', 'plugin=', 'port=']
-            self.optlist, args = getopt.getopt(sys.argv[1:], '', tmpOptions)
-        except getopt.GetoptError:
-            pass
-        else:
-            options = tmpOptions
-        try:
-            tmpOptions = ['serial', 'bluetoothSPP=', 'plugin=', 'port=']
-            self.optlist, args = getopt.getopt(sys.argv[1:], '', tmpOptions)
-        except getopt.GetoptError:
-            pass
-        else:
-            options = tmpOptions
 
         self.pluginPort = None
         tcpport = 5678
