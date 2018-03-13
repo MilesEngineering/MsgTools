@@ -17,6 +17,8 @@ class NoiseMaker(msgtools.lib.gui.Gui):
     def __init__(self, argv, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Noise Maker 0.1", argv, [], parent)
         
+        self.timeInfo = Messaging.findFieldInfo(Messaging.hdr.fields, "Time")
+        
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
         
@@ -37,7 +39,7 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         self.msgPeriod = {}
         self.msgTxTime = {}
         for msgName in Messaging.MsgClassFromName:
-            if not msgName.startswith("Network"):
+            if msgName.startswith("Experimental.Accel"):
                 #print("found message " + msgName)
                 self.msgPeriod[msgName] = period
                 period = period + 0.020
@@ -54,11 +56,7 @@ class NoiseMaker(msgtools.lib.gui.Gui):
             self.startStop.setText('Stop')
     
     def msgTimeout(self):
-        timeInfo = Messaging.findFieldInfo(Messaging.hdr.fields, "Time")
-        if timeInfo.units == "ms":
-            self.currentTime = datetime.now().timestamp()/1000.0
-        else:
-            self.currentTime = datetime.now().timestamp()
+        self.currentTime = datetime.now().timestamp()
         for msgName in self.msgTxTime:
             if self.currentTime > self.msgTxTime[msgName]:
                 msgClass = Messaging.MsgClassFromName[msgName]
@@ -85,13 +83,19 @@ class NoiseMaker(msgtools.lib.gui.Gui):
                 
     def sendMsg(self, msgClass):
         msg = msgClass()
-        try:
+        if self.timeInfo.units:
             hdr = Messaging.hdr(msg.rawBuffer())
-            hdr.SetTime(self.currentTime)
-        except AttributeError:
-            pass
+            #Messaging.set(hdr, self.timeInfo, self.currentTime)
+            t = self.currentTime
+            if float(self.timeInfo.maxVal) <= 2**32:
+                t = (datetime.fromtimestamp(self.currentTime) - datetime.fromtimestamp(self.currentTime).replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+            if self.timeInfo.units == "ms":
+                t = t * 1000.0
+            if self.timeInfo.type == "int":
+                t = int(t)
+            hdr.SetTime(t)
+
         for fieldInfo in msgClass.fields:
-            
             if fieldInfo.units == 'ASCII':
                 Messaging.set(msg, fieldInfo, 's'+str(self.fieldValue(fieldInfo)))
             else:

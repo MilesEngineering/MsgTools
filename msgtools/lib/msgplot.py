@@ -30,7 +30,9 @@ LineInfo = namedtuple('LineInfo', 'fieldInfo fieldSubindex dataArray timeArray c
 
 start_time = datetime.now().timestamp()
 def elapsedSeconds(timestamp):
-    return timestamp - start_time
+    if timestamp > start_time:
+        return timestamp - start_time
+    return timestamp
 
 class MsgPlot(QObject):
     Paused = QtCore.pyqtSignal(bool)

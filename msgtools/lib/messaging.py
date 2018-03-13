@@ -443,23 +443,32 @@ class Messaging:
                 toHdr.rawBuffer()[toHdr.SIZE+i] = body[i]
             
             # do special timestamp stuff to convert from relative to absolute time
-            if toHdrInfo.timeField != None and fromHdrInfo.timeField != None and self.serialTimeFieldSize < self.networkTimeFieldSize:
-                # Detect time rolling
-                thisTimestamp = fromHdr.GetTime()
-                thisTime = int(time.time() * 1000)
-                timestampOffset = self.timestampOffset
-                if thisTimestamp < self.lastTimestamp:
-                    # If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
-                    # and do not wrap again.
-                    if thisTime > self.lastWrapTime.addSecs(30):
-                        self.lastWrapTime = thisTime
-                        self.timestampOffset+=1
+            if toHdrInfo.timeField != None:
+                if fromHdrInfo.timeField != None:
+                    if fromHdrInfo.timeField.fieldSize < toHdrInfo.timeField.fieldSize:
+                        # Detect time rolling
+                        thisTimestamp = fromHdr.GetTime()
+                        thisTime = time.time()
                         timestampOffset = self.timestampOffset
-                self.lastTimestamp = thisTimestamp
-                # need to handle different size timestamps!
-                toHdr.SetTime((timestampOffset << 16) + thisTimestamp)
-            elif toHdrInfo.timeField != None and fromHdrInfo.timeField == None:
-                toHdr.SetTime(int(time.time() * 1000))
+                        if thisTimestamp < self.lastTimestamp:
+                            # If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
+                            # and do not wrap again.
+                            if thisTime > self.lastWrapTime.addSecs(30):
+                                self.lastWrapTime = thisTime
+                                self.timestampOffset+=1
+                                timestampOffset = self.timestampOffset
+                        self.lastTimestamp = thisTimestamp
+                        # need to handle different size timestamps!
+                        toHdr.SetTime((timestampOffset << 16) + thisTimestamp)
+                    else:
+                        toHdr.SetTime(fromHdr.GetTime())
+                else:
+                    t = datetime.now().timestamp()
+                    if toHdrInfo.timeField.units == "ms":
+                        t = t * 1000.0
+                    if toHdrInfo.timeField.type == "int":
+                        t = int(t)
+                    toHdr.SetTime(t)
 
             return toHdr
 
