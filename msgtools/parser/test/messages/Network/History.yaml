@@ -1,0 +1,48 @@
+Messages:
+  - Name: GetData
+    ID: 0xFFFFFF0B
+    Description: Query historical data
+    Fields:
+      - Name: StartTime
+        Type: float64
+      - Name: EndTime
+        Type: float64
+      - Name: AveragingTime
+        Type: float64
+        Description: time period to average over
+      - Name: Query
+        Type: uint8
+        Count: 120
+        Units: ASCII
+        Description: msgname.fieldname,tagquery
+
+  - Name: QueryResult
+    ID: 0xFFFFFF0C
+    Description: Results of query
+    Fields:
+      - Name: Cookie
+        Type: uint16
+        Description: Unique value in all History.Data messages for this QueryResult
+      - Name: ResultCount
+        Type: uint16
+        Description: Number of History.Data messages that will be returned
+      - Name: Query
+        Type: uint8
+        Count: 120
+        Units: ASCII
+        Description: Echo of the requested Query
+
+  - Name: Data
+    ID: 0xFFFFFF0D
+    Description: Data for the query
+    Fields:
+      - Name: Cookie
+        Type: uint16
+        Description: Unique value that matches our QueryResult
+      - Name: ResultNumber
+        Type: uint16
+        Description: Sequence number of our data message
+      - Name: Data
+        Type: float64
+        Description: Alternating timestamps and values
+        Count: 64
