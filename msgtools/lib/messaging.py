@@ -13,7 +13,7 @@ import json
 
 from collections import namedtuple
 import ctypes
-import time
+from datetime import datetime
 
 # A decorator to specify units for fields
 def units(arg):
@@ -448,7 +448,7 @@ class Messaging:
                     if fromHdrInfo.timeField.fieldSize < toHdrInfo.timeField.fieldSize:
                         # Detect time rolling
                         thisTimestamp = fromHdr.GetTime()
-                        thisTime = time.time()
+                        thisTime = datetime.now()
                         timestampOffset = self.timestampOffset
                         if thisTimestamp < self.lastTimestamp:
                             # If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
@@ -464,6 +464,8 @@ class Messaging:
                         toHdr.SetTime(fromHdr.GetTime())
                 else:
                     t = datetime.now().timestamp()
+                    if float(toHdrInfo.timeField.maxVal) <= 2**32:
+                        t = (datetime.fromtimestamp(t) - datetime.fromtimestamp(t).replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
                     if toHdrInfo.timeField.units == "ms":
                         t = t * 1000.0
                     if toHdrInfo.timeField.type == "int":

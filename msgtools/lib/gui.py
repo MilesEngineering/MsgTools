@@ -1,5 +1,5 @@
 import sys
-from datetime import datetime
+import datetime
 
 from PyQt5 import QtGui, QtWidgets, QtCore, QtNetwork
 
@@ -105,9 +105,9 @@ class MsgTreeWidget(TreeWidget):
             timeInfo = Messaging.findFieldInfo(msg.hdr.fields, "Time")
             if timeInfo.units == "ms":
                 timeVal = timeVal / 1000.0
-            timeVal = datetime.fromtimestamp(timeVal, datetime.timezone.utc)
+            timeVal = datetime.datetime.fromtimestamp(timeVal, datetime.timezone.utc)
         except AttributeError:
-            timeVal = datetime.now()
+            timeVal = datetime.datetime.now()
         timeVal = timeVal.strftime('%H:%M:%S.%f')[:-3]
         msgStringList.append(timeVal)
         columnAlerts.append(0)

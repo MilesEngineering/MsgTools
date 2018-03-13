@@ -12,7 +12,7 @@ from msgtools.console.SynchronousMsgClient import SynchronousMsgClient
 
 from influxdb import InfluxDBClient
 from influxdb.client import InfluxDBClientError
-from datetime import datetime
+import datetime
 
 # this allows sending Messages as data to an InfluxDB database
 class InfluxDBConnection:
@@ -54,9 +54,9 @@ class InfluxDBConnection:
                 raise AttributeError
             if timeInfo.units == "ms":
                 timeVal = timeVal / 1000.0
-            timeVal = datetime.fromtimestamp(timeVal, datetime.timezone.utc)
+            timeVal = datetime.datetime.fromtimestamp(timeVal, datetime.timezone.utc)
         except AttributeError:
-            timeVal = datetime.now()
+            timeVal = datetime.datetime.now()
 
         dbJson = {
                 "time": str(timeVal),
@@ -115,7 +115,7 @@ class InfluxDBConnection:
         if end != 0:
             dbquery += " AND time < " + FormattedTime(end)
         else:
-            end = datetime.now()
+            end = datetime.datetime.now()
         if averagingPeriod != 0:
             # limit averaging period such that we don't get too many data points
             if avg / (end - start) > MAX_POINTS:
