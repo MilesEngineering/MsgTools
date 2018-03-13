@@ -43,9 +43,15 @@ class TreeWidget(QtWidgets.QTreeWidget):
         for itemNumber in range(len(selectedItems)):
             w = selectedItems[itemNumber]
             for col in range(w.columnCount()):
-                if col != 0:
+                # treat first column as time, convert HH:MM:SS.sss to a float
+                if col == 0:
+                    t = w.text(col)
+                    time_components = t.split(':')
+                    t = int(time_components[0]) * 3600 + int(time_components[1]) * 60 + float(time_components[2])
+                    copiedText += str(t)
+                else:
                     copiedText += ", "
-                copiedText += w.text(col)
+                    copiedText += w.text(col)
             copiedText += "\n"
         clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(copiedText)
