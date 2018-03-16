@@ -23,6 +23,9 @@ cpp:
 c:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/C c  Template.h HeaderTemplate.h
 
+dart:
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Dart dart  Template.dart HeaderTemplate.dart
+
 java:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Java java  Template.java HeaderTemplate.java
 
@@ -41,7 +44,7 @@ html:
 
 check: $(DIGEST)
 
-install all:: Makefile check cpp c python java js swift matlab html
+install all:: Makefile check cpp c dart python java js swift matlab html
 
 clean clobber::
 	rm -rf $(MSGDIR) __pycache__ *.pyc
