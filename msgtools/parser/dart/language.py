@@ -42,10 +42,25 @@ def getFn(field, offset):
         access = retType + "(" + access + ")"
     ret = '''\
 %s
-%s %s(%s)
+%s Get%s(%s)
 {
     return %s;
-}''' % (fnHdr(field), retType, "Get"+field["Name"], param, access)
+}''' % (fnHdr(field), retType, field["Name"], param, access)
+    if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+        ret += '''
+%s
+String Get%sString()
+{
+    String ret = "";
+    for(int i=0; i<%s && i<_hdr.GetDataLength()-%s; i++)
+    {
+        nextChar = String.fromCharCode(Get%s(i));
+        if(nextChar == '\\0')
+            break;
+        value += nextChar;
+    }
+    return ret;
+}''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), offset, field["Name"])
     return ret
 
 def setFn(field, offset):
@@ -63,10 +78,20 @@ def setFn(field, offset):
         param += ", int idx"
     ret = '''\
 %s
-%s(%s)
+Set%s(%s)
 {
     _data.set%s(%s, %s);
-}''' % (fnHdr(field), "Set"+field["Name"], param, fieldType(field), loc, valueString)
+}''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString)
+    if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+        ret += '''
+%s
+Set%sString(String value)
+{
+    for(int i=0; i<%s && i<value.length; i++)
+    {
+        Set%s(value.codeUnitAt(i), i);
+    }
+};''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), field["Name"])
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
