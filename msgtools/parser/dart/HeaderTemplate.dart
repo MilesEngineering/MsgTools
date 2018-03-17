@@ -14,7 +14,7 @@
 
 class <MSGNAME>
 {
-    const SIZE = <MSGSIZE>;
+    static const SIZE = <MSGSIZE>;
     ByteData _data;
     <MSGNAME>()
     {

@@ -329,17 +329,17 @@ def fieldMax(field):
 
 def genericInfo(field, offset):
     loc = str(offset)
-    params  = '    const loc   = ' + loc + ';\n'
-    params += '    const max   = ' + fieldMax(field) + ';\n'
-    params += '    const min   = ' + fieldMin(field) + ';\n'
-    params += '    const units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
-    params += '    const count = ' + str(MsgParser.fieldCount(field)) + ';\n'
+    params  = '    static const loc   = ' + loc + ';\n'
+    params += '    static const max   = ' + fieldMax(field) + ';\n'
+    params += '    static const min   = ' + fieldMin(field) + ';\n'
+    params += '    static const units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
+    params += '    static const count = ' + str(MsgParser.fieldCount(field)) + ';\n'
     if "Default" in field:
-        params += '    const defaultValue = ' + str(fieldDefault(field)) + ";\n" 
+        params += '    static const defaultValue = ' + str(fieldDefault(field)) + ";\n" 
     if "Scale" in field:
-        params += '    const scale = ' + str(field["Scale"]) + ';\n'
+        params += '    static const scale = ' + str(field["Scale"]) + ';\n'
     if "Offset" in field:
-        params += '    const offset = ' + str(field["Offset"]) + ';\n'
+        params += '    static const offset = ' + str(field["Offset"]) + ';\n'
     return params
     
 def fieldInfo(field, offset):
@@ -351,8 +351,8 @@ def fieldInfo(field, offset):
 def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
     params  = 'class ' + bits["Name"] + 'FieldInfo {\n'
     params += genericInfo(bits, offset)
-    params += '    const bitOffset = ' + str(bitOffset) + ';\n'
-    params += '    const numBits   = ' + str(numBits) + ';\n'
+    params += '    static const bitOffset = ' + str(bitOffset) + ';\n'
+    params += '    static const numBits   = ' + str(numBits) + ';\n'
     params += '};\n'
     return params
 

@@ -12,8 +12,8 @@ import 'ByteData'
 
 class <MSGNAME>Message
 {
-    const MSG_ID = <MSGID>;
-    const MSG_SIZE = <MSGSIZE>;
+    static const MSG_ID = <MSGID>;
+    static const MSG_SIZE = <MSGSIZE>;
     ByteBuffer _buffer
     ByteData _data;
     MessageHeader _hdr;
