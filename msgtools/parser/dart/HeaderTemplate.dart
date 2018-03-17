@@ -14,40 +14,43 @@
 
 class <MSGNAME>
 {
-    public:
-        auto static constexpr SIZE = <MSGSIZE>;
-        <MSGNAME>()
-        {
-            Init();
-        }
-        void Init()
-        {
-            <INIT_CODE>
-        }
-        <ENUMERATIONS>
-        <FIELDINFOS>
-        void SetMessageID(uint32_t id)
-        {
-            <SETMSGID>;
-        }
-        uint32_t GetMessageID()
-        {
-            return <GETMSGID>;
-        }
-        <ACCESSORS>
+    const SIZE = <MSGSIZE>;
+    ByteData _data;
+    <MSGNAME>()
+    {
+        _data = new ByteData(SIZE);
+        Init();
+    }
+    <MSGNAME>.fromBuffer(ByteBuffer buffer)
+    {
+        _data = ByteData.view(buffer);
+    }
+    void Init()
+    {
+        <INIT_CODE>
+    }
+    <ENUMERATIONS>
+    <FIELDINFOS>
+    void SetMessageID(uint32_t id)
+    {
+        <SETMSGID>;
+    }
+    uint32_t GetMessageID()
+    {
+        return <GETMSGID>;
+    }
+    <ACCESSORS>
 /*
-        static MsgInfo* ReflectionInfo()
+    static MsgInfo* ReflectionInfo()
+    {
+        static bool firstTime = true;
+        static MsgInfo msgInfo(-1, "<MSGNAME>", "<MSGDESCRIPTION>", SIZE);
+        if(firstTime)
         {
-            static bool firstTime = true;
-            static MsgInfo msgInfo(-1, "<MSGNAME>", "<MSGDESCRIPTION>", SIZE);
-            if(firstTime)
-            {
-                firstTime = false;
-                msgInfo.AddField(new <REFLECTION>);
-            }
-            return &msgInfo;
+            firstTime = false;
+            msgInfo.AddField(new <REFLECTION>);
         }
+        return &msgInfo;
+    }
 */
-    public:
-        uint8_t m_data[SIZE];
 };

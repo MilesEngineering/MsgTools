@@ -14,15 +14,23 @@ class <MSGNAME>Message
 {
     const MSG_ID = <MSGID>;
     const MSG_SIZE = <MSGSIZE>;
+    ByteBuffer _buffer
     ByteData _data;
     MessageHeader _hdr;
     <MSGNAME>Message(int size=MSG_SIZE)
     {
-        _data = new ByteData(size);
-        _hdr = new MessageHeader();
+        _buffer = new ByteBuffer(MessageHeader.SIZE + size);
+        _hdr = new MessageHeader.fromBuffer(_buffer);
         _hdr.SetDataLength(size);
         _hdr.SetMessageID(MSG_ID);
+        _data = new ByteData.view(_buffer, MessageHeader.SIZE);
         Init();
+    }
+    <MSGNAME>Message.fromBuffer(ByteBuffer buffer)
+    {
+        _buffer = buffer;
+        _hdr = MessageHeader.fromBuffer(buffer);
+        _data = ByteData.view(buffer, MessageHeader.SIZE);
     }
     void Init()
     {
