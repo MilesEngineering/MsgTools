@@ -23,8 +23,12 @@ cpp:
 c:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/C c  Template.h HeaderTemplate.h
 
-dart:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Dart dart  Template.dart HeaderTemplate.dart
+$(MSGDIR)/Dart/pubspec.yaml:
+	@mkdir -p $(@D)
+	echo 'name: messages\ndescription: Auto-generated Dart code from MsgTools, based on YAML message definitions.' > $@
+
+dart: | $(MSGDIR)/Dart/pubspec.yaml
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Dart/lib dart  Template.dart HeaderTemplate.dart
 
 java:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Java java  Template.java HeaderTemplate.java

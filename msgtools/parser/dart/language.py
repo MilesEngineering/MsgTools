@@ -33,7 +33,7 @@ def getFn(field, offset):
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "int idx"
     access = "_data.get%s(%s)" % (fieldType(field), loc)
-    access = getMath(access, field, castForScaledInt(field), 'f')
+    access = getMath(access, field, castForScaledInt(field), '')
     retType = returnType(field)
     if "Offset" in field or "Scale" in field:
         retType = "double"
@@ -65,7 +65,7 @@ String Get%sString()
 
 def setFn(field, offset):
     paramType = returnType(field)
-    valueString = setMath("value", field, "int", 'f')
+    valueString = setMath("value", field, "int", '')
     if "Offset" in field or "Scale" in field:
         paramType = "double"
     elif "Enum" in field:
@@ -91,12 +91,12 @@ Set%sString(String value)
     {
         Set%s(value.codeUnitAt(i), i);
     }
-};''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), field["Name"])
+}''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), field["Name"])
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
     access = "(Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
-    access = getMath(access, bits, castForScaledInt(bits), 'f')
+    access = getMath(access, bits, castForScaledInt(bits), '')
     retType = returnType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = "double"
@@ -113,7 +113,7 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
     paramType = returnType(field)
-    valueString = setMath("value", bits, "int", 'f')
+    valueString = setMath("value", bits, "int", '')
     if "Offset" in bits or "Scale" in bits:
         paramType = "double"
     elif "Enum" in bits:
@@ -151,8 +151,6 @@ def accessors(msg):
 
 def fieldDefault(field):
     ret = field["Default"]
-    if("Type" in field and "int" in field["Type"]) and ret > 2**31:
-        ret = str(ret)+'u'
     return ret
 
 def initField(field):
@@ -194,12 +192,11 @@ def initCode(msg):
 def enums(e):
     ret = ""
     for enum in e:
-        ret +=  "enum " + enum["Name"]+" {"
+        ret += "class <MSGNAME>_"+enum["Name"]+" {"
         for option in enum["Options"]:
             optionName = OptionName(option)
-            ret += optionName+" = "+str(option["Value"]) + ', '
-        ret = ret[:-2]
-        ret += "};\n"
+            ret += "static const "+optionName+" = "+str(option["Value"]) + ';'
+        ret += "}\n"
     return ret
 
 def fieldReflectionType(field):
@@ -311,49 +308,35 @@ def reflection(msg):
 
 def fieldMin(field):
     ret = str(MsgParser.fieldMin(field))
-    if "Scale" in field or "Offset" in field:
-        ret += 'f'
-    else:
-        if fieldIsInt(field) and not fieldIsSigned(field):
-            ret += 'U'
     return ret
 
 def fieldMax(field):
     ret = str(MsgParser.fieldMax(field))
-    if "Scale" in field or "Offset" in field:
-        ret += 'f'
-    else:
-        if fieldIsInt(field) and not fieldIsSigned(field):
-            ret += 'U'
     return ret
 
-def genericInfo(field, offset):
+def genericInfo(field, offset, fieldName):
     loc = str(offset)
-    params  = '    static const loc   = ' + loc + ';\n'
-    params += '    static const max   = ' + fieldMax(field) + ';\n'
-    params += '    static const min   = ' + fieldMin(field) + ';\n'
-    params += '    static const units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
-    params += '    static const count = ' + str(MsgParser.fieldCount(field)) + ';\n'
+    params  = 'static const '+fieldName+'_Loc   = ' + loc + ';\n'
+    params += 'static const '+fieldName+'_Max   = ' + fieldMax(field) + ';\n'
+    params += 'static const '+fieldName+'_Min   = ' + fieldMin(field) + ';\n'
+    params += 'static const '+fieldName+'_Units = "' + str(MsgParser.fieldUnits(field)) + '"' + ';\n'
+    params += 'static const '+fieldName+'_Count = ' + str(MsgParser.fieldCount(field)) + ';\n'
     if "Default" in field:
-        params += '    static const defaultValue = ' + str(fieldDefault(field)) + ";\n" 
+        params += 'static const '+fieldName+'_DefaultValue = ' + str(fieldDefault(field)) + ";\n" 
     if "Scale" in field:
-        params += '    static const scale = ' + str(field["Scale"]) + ';\n'
+        params += 'static const '+fieldName+'_Scale = ' + str(field["Scale"]) + ';\n'
     if "Offset" in field:
-        params += '    static const offset = ' + str(field["Offset"]) + ';\n'
+        params += 'static const '+fieldName+'_Offset = ' + str(field["Offset"]) + ';\n'
     return params
     
 def fieldInfo(field, offset):
-    params  = 'class ' + field["Name"] + 'FieldInfo {\n'
-    params += genericInfo(field, offset)
-    params += '};\n'
+    params = genericInfo(field, offset, field["Name"])
     return params
 
 def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
-    params  = 'class ' + bits["Name"] + 'FieldInfo {\n'
-    params += genericInfo(bits, offset)
-    params += '    static const bitOffset = ' + str(bitOffset) + ';\n'
-    params += '    static const numBits   = ' + str(numBits) + ';\n'
-    params += '};\n'
+    params  = genericInfo(bits, offset, MsgParser.BitfieldName(field, bits))
+    params += 'static const '+MsgParser.BitfieldName(field, bits)+'_BitOffset = ' + str(bitOffset) + ';\n'
+    params += 'static const '+MsgParser.BitfieldName(field, bits)+'_NumBits   = ' + str(numBits) + ';\n'
     return params
 
 def fieldInfos(msg):
