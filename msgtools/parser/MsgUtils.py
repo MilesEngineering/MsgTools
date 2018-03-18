@@ -110,7 +110,7 @@ def fieldMax(field):
             maxVal = 2**numBits-1
         maxVal = transformInt(field, maxVal)
     elif "Type" in field and str.lower(field["Type"]) == 'float64':
-        maxVal = "DBL_MAX "
+        maxVal = "DBL_MAX"
     elif "Type" in field and str.lower(field["Type"]) == 'float32':
         maxVal = "FLT_MAX"
     maxVal = fieldItem(field, "Max", maxVal)
