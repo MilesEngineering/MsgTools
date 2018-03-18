@@ -14,7 +14,7 @@
 
 class <MSGNAME>
 {
-    static const SIZE = <MSGSIZE>;
+    static const int SIZE = <MSGSIZE>;
     ByteData _data;
     <MSGNAME>()
     {
@@ -23,18 +23,19 @@ class <MSGNAME>
     }
     <MSGNAME>.fromBuffer(ByteBuffer buffer)
     {
-        _data = ByteData.view(buffer);
+        _data = new ByteData.view(buffer);
     }
     void Init()
     {
         <INIT_CODE>
     }
     <FIELDINFOS>
-    void SetMessageID(uint32_t id)
+    void SetMessageID(int input)
     {
+        int id = input;
         <SETMSGID>;
     }
-    uint32_t GetMessageID()
+    int GetMessageID()
     {
         return <GETMSGID>;
     }

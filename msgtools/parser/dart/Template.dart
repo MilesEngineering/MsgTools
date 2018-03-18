@@ -9,30 +9,31 @@
 
 */
 <ONCE>import 'dart:typed_data';
+<ONCE>import 'package:messages/headers/NetworkHeader.dart';
 
 <ENUMERATIONS>
 
 class <MSGNAME>Message
 {
-    static const MSG_ID = <MSGID>;
-    static const MSG_SIZE = <MSGSIZE>;
+    static const int MSG_ID = <MSGID>;
+    static const int MSG_SIZE = <MSGSIZE>;
     ByteBuffer _buffer;
     ByteData _data;
-    MessageHeader _hdr;
+    NetworkHeader _hdr;
     <MSGNAME>Message({int size=MSG_SIZE})
     {
-        _buffer = new ByteBuffer(MessageHeader.SIZE + size);
-        _hdr = new MessageHeader.fromBuffer(_buffer);
+        _buffer = new Uint8List(NetworkHeader.SIZE + size).buffer;
+        _hdr = new NetworkHeader.fromBuffer(_buffer);
         _hdr.SetDataLength(size);
         _hdr.SetMessageID(MSG_ID);
-        _data = new ByteData.view(_buffer, MessageHeader.SIZE);
+        _data = new ByteData.view(_buffer, NetworkHeader.SIZE);
         Init();
     }
     <MSGNAME>Message.fromBuffer(ByteBuffer buffer)
     {
         _buffer = buffer;
-        _hdr = MessageHeader.fromBuffer(buffer);
-        _data = ByteData.view(buffer, MessageHeader.SIZE);
+        _hdr = new NetworkHeader.fromBuffer(buffer);
+        _data = new ByteData.view(buffer, NetworkHeader.SIZE);
     }
     void Init()
     {
