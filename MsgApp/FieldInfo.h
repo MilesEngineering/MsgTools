@@ -182,8 +182,7 @@ class BitfieldInfo : public UIntFieldInfo
           _numBits(numBits),
           _shift(startBit)
         {
-            /** \todo This isn't right! */
-            _mask = _numBits << _shift;
+            _mask = ((1 << _numBits) - 1) << _shift;
         }
         virtual void FromUint64_t(uint64_t value, uint8_t* data, int index) const
         {
