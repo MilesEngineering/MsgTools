@@ -39,10 +39,9 @@ class HeaderWrapper : public HeaderClass
         }
 
     private:
-        static FieldInfo* fieldInfo(const QString& name)
+        static const FieldInfo* fieldInfo(const QString& name)
         {
-            static FieldInfoCache fieldInfos;
-            return fieldInfos.lookup(HeaderClass::ReflectionInfo(), name);
+            return HeaderClass::ReflectionInfo()->GetField(name);
         }
 };
 
