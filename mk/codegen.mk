@@ -30,6 +30,9 @@ $(MSGDIR)/Dart/pubspec.yaml:
 dart: | $(MSGDIR)/Dart/pubspec.yaml
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Dart/lib dart  Template.dart HeaderTemplate.dart
 
+dartlint:
+	cd $(MSGDIR)/Dart ; flutter analyze > lint.txt
+
 java:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Java java  Template.java HeaderTemplate.java
 
