@@ -100,7 +100,13 @@ MessagingClient.prototype.onmessage = function (event) {
 };
 
 MessagingClient.prototype.send = function (msg) {
-    this.webSocket.send(msg.m_data.buffer);
+    var buf = msg.m_data.buffer;
+    var lenFromHdr = msg.hdr.MSG_SIZE + msg.hdr.GetDataLength();
+    if(lenFromHdr < msg.m_data.buffer.byteLength)
+    {
+        buf = msg.m_data.buffer.slice(0,lenFromHdr);
+    }
+    this.webSocket.send(buf);
 };
 
 MessagingClient.prototype.startlogging = function ()
