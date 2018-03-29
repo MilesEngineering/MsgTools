@@ -248,6 +248,21 @@ class Messaging:
         return json.dumps({msg.MsgName() : pythonObj})
 
     @staticmethod
+    def toCsv(msg):
+        ret = ""
+        for fieldInfo in type(msg).fields:
+            if(fieldInfo.count == 1):
+                columnText = str(Messaging.get(msg, fieldInfo)) + ", "
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    columnText += str(Messaging.get(msg, bitInfo)) + ", "
+            else:
+                columnText = ""
+                for i in range(0,fieldInfo.count):
+                    columnText += str(Messaging.get(msg, fieldInfo, i)) + ", "
+            ret += columnText
+        return ret
+
+    @staticmethod
     def csvToMsg(lineOfText):
         if lineOfText == '':
             return None

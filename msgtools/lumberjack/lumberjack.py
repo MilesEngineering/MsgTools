@@ -92,16 +92,7 @@ in that directory.''')
         except AttributeError:
             text = "unknown, "
 
-        for fieldInfo in type(msg).fields:
-            if(fieldInfo.count == 1):
-                columnText = str(Messaging.get(msg, fieldInfo)) + ", "
-                for bitInfo in fieldInfo.bitfieldInfo:
-                    columnText += str(Messaging.get(msg, bitInfo)) + ", "
-            else:
-                columnText = ""
-                for i in range(0,fieldInfo.count):
-                    columnText += str(Messaging.get(msg, fieldInfo, i)) + ", "
-            text += columnText
+        text += Messaging.toCsv(msg)
         text += '\n'
         outputFile.write(text)
 
