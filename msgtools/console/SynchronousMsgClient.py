@@ -15,7 +15,17 @@ class SynchronousMsgClient:
         self.hdr = hdr
         
     def send_message(self, msg):
-        self.sock.send(msg.rawBuffer().raw)
+        bufferSize = len(msg.rawBuffer().raw)
+        computedSize = msg.hdr.SIZE + msg.hdr.GetDataLength()
+        if(computedSize > bufferSize):
+            msg.hdr.SetDataLength(bufferSize - msg.hdr.SIZE)
+            print("Truncating message to "+str(computedSize)+" bytes")
+        if(computedSize < bufferSize):
+            # don't send the *whole* message, just a section of it up to the specified length
+            self.sock.send(msg.rawBuffer().raw[0:computedSize])
+        else:
+            self.sock.send(msg.rawBuffer().raw)
+
     
     def get_message(self, timeout, msgIds=[]):
         if self.timeout != timeout:

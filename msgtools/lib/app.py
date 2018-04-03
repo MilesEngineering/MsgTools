@@ -227,10 +227,9 @@ class App(QtWidgets.QMainWindow):
     
     def SendMsg(self, msg):
         bufferSize = len(msg.rawBuffer().raw)
-        hdr = msg.hdr
-        computedSize = Messaging.hdrSize + hdr.GetDataLength()
+        computedSize = Messaging.hdrSize + msg.hdr.GetDataLength()
         if(computedSize > bufferSize):
-            hdr.SetDataLength(bufferSize - Messaging.hdrSize)
+            msg.hdr.SetDataLength(bufferSize - Messaging.hdrSize)
             print("Truncating message to "+str(computedSize)+" bytes")
         if(computedSize < bufferSize):
             # don't send the *whole* message, just a section of it up to the specified length
