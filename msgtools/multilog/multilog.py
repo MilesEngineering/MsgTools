@@ -17,6 +17,18 @@ except ImportError:
     sys.path.append(srcroot)
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
+import msgtools.lib.txtreewidget
+
+plottingLoaded=0
+try:
+    from msgtools.lib.msgplot import MsgPlot
+    plottingLoaded=1
+except ImportError as e:
+    print("Error loading plot interface ["+str(e)+"]")
+    print("Perhaps you forgot to install pyqtgraph.")
+except RuntimeError as e:
+    print("Error loading plot interface ["+str(e)+"]")
+    print("Perhaps you need to install the PyQt5 version of pyqtgraph.")
 
 def removePrefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
@@ -38,11 +50,14 @@ filenames will be composed like so:
     YEAR_MONTH_DAY.TEXT1.TEXT2.TAG1.log
 ''')
 
-        options = ['field=', 'button=']
+        options = ['field=', 'button=', 'show=', 'plot=', 'send=']
         msgtools.lib.gui.Gui.__init__(self, "Multilog 0.1", argv, options, parent)
         
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
+        
+        # handling of messages by sub-widgets
+        self.msgHandlers = {}
 
         # tab widget to show multiple messages, one per tab
         widget = QtWidgets.QWidget(self)
@@ -57,10 +72,15 @@ filenames will be composed like so:
         rvLayout = QtWidgets.QVBoxLayout()
         hLayout.addLayout(lvLayout)
         hLayout.addLayout(rvLayout)
+
+        splitter = QtWidgets.QSplitter(parent)
+        splitter.setOrientation(QtCore.Qt.Vertical)
+        vLayout.addWidget(splitter)
         
         self.lineEdits = []
         self.buttons = []
         self.activeLogButton = None
+        txMsgs = None
         for option in self.optlist:
             if option[0] == '--field':
                 label = option[1].replace("_"," ")
@@ -92,17 +112,80 @@ filenames will be composed like so:
                 vLayout.addWidget(button)
                 
                 button.clicked.connect(self.HandleButtonPress)
+            elif option[0] == '--show':
+                msgname = option[1]
+                subWidget = QtWidgets.QWidget()
+                subLayout = QtWidgets.QVBoxLayout()
+                subWidget.setLayout(subLayout)
+                splitter.addWidget(subWidget)
+                subLayout.addWidget(QtWidgets.QLabel(msgname))
+                msgClass = self.msgLib.MsgClassFromName[msgname]
+                msgWidget = msgtools.lib.gui.MsgTreeWidget(msgClass, None, 1, 1)
+                subLayout.addWidget(msgWidget)
+                if not msgClass.ID in self.msgHandlers:
+                    self.msgHandlers[msgClass.ID] = []
+                self.msgHandlers[msgClass.ID].append(msgWidget)
+            elif option[0] == '--plot':
+                if plottingLoaded:
+                    msgname = option[1].split("[")[0]
+                    try:
+                        fieldNames = option[1].split("[")[1].replace("]","").split(',')
+                    except IndexError:
+                        fieldNames = []
+                    subWidget = QtWidgets.QWidget()
+                    subLayout = QtWidgets.QVBoxLayout()
+                    subWidget.setLayout(subLayout)
+                    splitter.addWidget(subWidget)
+                    subLayout.addWidget(QtWidgets.QLabel(msgname))
+                    msgClass = self.msgLib.MsgClassFromName[msgname]
+                    # should plot only fields specified, if user specified fields
+                    firstTime = True
+                    for fieldInfo in msgClass.fields:
+                        if fieldInfo.name in fieldNames or not fieldNames:
+                            if firstTime:
+                                msgWidget = MsgPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
+                                firstTime = False
+                            else:
+                                msgWidget.addPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
+                    subLayout.addWidget(msgWidget.plotWidget)
+                    if not msgClass.ID in self.msgHandlers:
+                        self.msgHandlers[msgClass.ID] = []
+                    self.msgHandlers[msgClass.ID].append(msgWidget)
+            elif option[0] == '--send':
+                msgname = option[1]
+                msgClass = self.msgLib.MsgClassFromName[msgname]
+                if not txMsgs:
+                    txMsgs = QtWidgets.QTreeWidget(parent)
+                    txMsgs.setColumnCount(4)
+                    txMsgsHeader = QtWidgets.QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
+                    txMsgs.setHeaderItem(txMsgsHeader)
+                    splitter.addWidget(txMsgs)
+                
+                msg = msgClass()
+                # set fields to defaults
+                msgWidget = msgtools.lib.txtreewidget.EditableMessageItem(txMsgs, msg)
+                msgWidget.qobjectProxy.send_message.connect(self.on_tx_message_send)
+
 
         # create a new file
         self.file = None
-        
+
+    def on_tx_message_send(self, msg):
+        if not self.connected:
+            self.OpenConnection()
+        self.SendMsg(msg)
+
     def ProcessMessage(self, msg):
+        if msg.ID in self.msgHandlers:
+            handlersList = self.msgHandlers[msg.ID]
+            for handler in handlersList:
+                handler.addData(msg)
         # if user specified allowed messages...
         if self.allowedMessages:
             # only log this message if it's in that list
             if not msg.MsgName() in self.allowedMessages:
                 return
-
+        
         if self.file is not None:
             #write to a single binary log file
             self.file.write(hdr.rawBuffer())
