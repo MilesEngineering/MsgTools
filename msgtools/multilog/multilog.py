@@ -38,10 +38,13 @@ class Multilog(msgtools.lib.gui.Gui):
         if(len(argv) < 2):
             exit('''
 Invoke like this
-    ./path/to/Multilog.py --field=LABEL1 --field=LABEL2 --button=hotkey:X,tag:TAG1,label:LABEL3  --button=hotkey:X,tag:TAG2,label:LABEL4
+    ./path/to/Multilog.py --field=LABEL1 --field=LABEL2 --button=hotkey:X,tag:TAG1,label:LABEL3  --button=hotkey:X,tag:TAG2,label:LABEL4 --show=MSGNAME --plot=MSGNAME[fieldname1,fieldname2] --send=MSGNAME
     
 each --field adds a text field named the specified LABEL, and the value of the text field will become part of the filename.
 each --button adds a pushbutton named for the specified LABEL, with a hotkey of the specified key, and the tag value will become part of the filename
+each --show adds a table view of that MSGNAME
+each --plot adds a plot of the fields within MSGNAME.  If fields left off, all fields are plotted
+each --send adds a tree view to edit a message with a 'send' button to send it
 
 pressing a button starts/stops a log file
 underscores in label or field are replaced with spaces for display (to make entering command-line args easier)
