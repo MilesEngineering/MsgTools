@@ -15,7 +15,8 @@ import msgtools.lib.gui
 
 class NoiseMaker(msgtools.lib.gui.Gui):
     def __init__(self, argv, parent=None):
-        msgtools.lib.gui.Gui.__init__(self, "Noise Maker 0.1", argv, [], parent)
+        options = ['msgs=']
+        msgtools.lib.gui.Gui.__init__(self, "Noise Maker 0.1", argv, options, parent)
         
         self.timeInfo = Messaging.findFieldInfo(Messaging.hdr.fields, "Time")
         
@@ -33,6 +34,12 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         self.startStop.clicked.connect(self.startStopFn)
         self.setCentralWidget(self.startStop)
         
+        # check if user specified which messages we should output
+        msgs = None
+        for option in self.optlist:
+            if option[0] == '--msgs':
+                msgs = option[1]
+        
         # find a few messages to send at specified rates
         period = 0.3
         self.fieldNumber = 0
@@ -40,6 +47,8 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         self.msgTxTime = {}
         for msgName in Messaging.MsgClassFromName:
             if not msgName.startswith("Network"):
+                if msgs and not msgs in msgName:
+                    continue
                 #print("found message " + msgName)
                 self.msgPeriod[msgName] = period
                 period = period + 0.020
