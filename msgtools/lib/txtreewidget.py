@@ -268,9 +268,42 @@ class EditableMessageItem(MessageItem):
     def __init__(self, tree_widget, msg):
         super(EditableMessageItem, self).__init__(tree_widget, msg, EditableFieldItem, EditableFieldArrayItem, EditableFieldBitfieldItem)
 
-        sendButton = QPushButton("Send", tree_widget)
-        sendButton.autoFillBackground()
-        sendButton.clicked.connect(lambda: self.qobjectProxy.send_message.emit(self.msg))
-        tree_widget.setItemWidget(self, 4, sendButton)
+        # text entry for rate, and a 'send' button
+        self.sendTimer = QTimer()
+        self.sendTimer.timeout.connect(lambda: self.qobjectProxy.send_message.emit(self.msg))
+        containerWidget = QWidget(tree_widget)
+        containerLayout = QHBoxLayout()
+        containerWidget.setLayout(containerLayout)
+        self.sendButton = QPushButton("Send", tree_widget)
+        self.sendButton.autoFillBackground()
+        self.sendButton.clicked.connect(self.sendClicked)
+        self.rateEdit = QLineEdit("", tree_widget)
+        self.rateEdit.setValidator(QDoubleValidator(0, 100, 2, containerWidget))
+        self.rateEdit.setMaximumWidth(50)
+        self.rateEdit.setFixedWidth(50)
+        self.rateEdit.setPlaceholderText("Rate")
+        containerLayout.addWidget(self.rateEdit)
+        containerLayout.addWidget(QLabel("Hz"))
+        containerLayout.addWidget(self.sendButton)
+        tree_widget.setItemWidget(self, 4, containerWidget)
+        
         for i in range(0, tree_widget.columnCount()):
             tree_widget.resizeColumnToContents(i);
+
+    def sendClicked(self):
+        if self.sendButton.text() == "Send":
+            if self.rateEdit.text() == "" or self.rateEdit.text() == "0":
+                self.qobjectProxy.send_message.emit(self.msg)
+            else:
+                self.sendButton.setText("Stop")
+                rate = float(self.rateEdit.text())
+                if rate > 0.01:
+                    period = 1000.0/rate
+                    # send once now, then periodically after
+                    self.qobjectProxy.send_message.emit(self.msg)
+                    self.sendTimer.start(period)
+                else:
+                    self.sendButton.text("Send")
+        else:
+            self.sendButton.setText("Send")
+            self.sendTimer.stop()
