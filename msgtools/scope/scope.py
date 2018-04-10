@@ -88,17 +88,15 @@ def vsplitter(parent, a,b):
     return splitter
 
 class ClosableDockWidget(QDockWidget):
-    def __init__(self, name, parent, widget, itemToRemoveOnClose, itemList):
+    def __init__(self, name, parent, widget, itemList):
         super(QDockWidget,self).__init__(name, parent)
         self.setObjectName(name)
         self.setWidget(widget)
-        # item to remvoe from list when we're closed
-        self.itemToRemoveOnClose = itemToRemoveOnClose
         # list it needs to be removed from
         self.itemList = itemList
 
     def closeEvent(self, ev):
-        self.itemList.remove(self.itemToRemoveOnClose)
+        self.itemList.remove(self.widget())
         self.parent().removeDockWidget(self)
 
 class MessageScopeGui(msgtools.lib.gui.Gui):
@@ -296,7 +294,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             if plottingLoaded:
                 msgPlot = MsgPlot(msgClass, fieldInfo, fieldIndex)
                 # add a dock widget for new plot
-                dockWidget = ClosableDockWidget(plotName, self, msgPlot.plotWidget, msgPlot, plotListForID)
+                dockWidget = ClosableDockWidget(plotName, self, msgPlot, plotListForID)
                 self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
                 # Change title when plot is paused/resumed
                 msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
@@ -304,19 +302,16 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 return msgPlot
         
     def onRxMessageFieldSelected(self, rxWidgetItem):
-        try:
-            if isinstance(rxWidgetItem, txtreewidget.FieldItem) or isinstance(rxWidgetItem, txtreewidget.FieldArrayItem):
-                fieldInfo = rxWidgetItem.fieldInfo
-                fieldIndex = 0
-                if isinstance(rxWidgetItem, txtreewidget.FieldArrayItem):
-                    fieldIndex = rxWidgetItem.index
-                msg_id = hex(rxWidgetItem.msg.hdr.GetMessageID())
-                msg_key = ",".join(Messaging.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
-                msgPlot = self.addPlot(msg_key, type(rxWidgetItem.msg), fieldInfo, fieldIndex)
-                if msgPlot:
-                    msgPlot.addData(rxWidgetItem.msg)
-        except AttributeError:
-            pass
+        if isinstance(rxWidgetItem, txtreewidget.FieldItem) or isinstance(rxWidgetItem, txtreewidget.FieldArrayItem):
+            fieldInfo = rxWidgetItem.fieldInfo
+            fieldIndex = 0
+            if isinstance(rxWidgetItem, txtreewidget.FieldArrayItem):
+                fieldIndex = rxWidgetItem.index
+            msg_id = hex(rxWidgetItem.msg.hdr.GetMessageID())
+            msg_key = ",".join(Messaging.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
+            msgPlot = self.addPlot(msg_key, type(rxWidgetItem.msg), fieldInfo, fieldIndex)
+            if msgPlot:
+                msgPlot.addData(rxWidgetItem.msg)
 
     def ProcessMessage(self, msg):
         hdr = msg.hdr
@@ -388,13 +383,10 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             self.rx_msg_widgets[msg_key].set_msg_buffer(msg.rawBuffer())
     
     def display_message_in_plots(self, msg_key, msg):
-        try:
-            if msg_key in self.msgPlots:
-                plotListForID = self.msgPlots[msg_key]
-                for plot in plotListForID:
-                    plot.addData(msg)
-        except AttributeError:
-            pass
+        if msg_key in self.msgPlots:
+            plotListForID = self.msgPlots[msg_key]
+            for plot in plotListForID:
+                plot.addData(msg)
     
     def clear_rx_list(self):
         if self.thread_lock.acquire():

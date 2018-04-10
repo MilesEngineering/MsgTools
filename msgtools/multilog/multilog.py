@@ -150,7 +150,7 @@ filenames will be composed like so:
                                 firstTime = False
                             else:
                                 msgWidget.addPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
-                    subLayout.addWidget(msgWidget.plotWidget)
+                    subLayout.addWidget(msgWidget)
                     if not msgClass.ID in self.msgHandlers:
                         self.msgHandlers[msgClass.ID] = []
                     self.msgHandlers[msgClass.ID].append(msgWidget)

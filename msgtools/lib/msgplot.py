@@ -34,11 +34,13 @@ def elapsedSeconds(timestamp):
         return timestamp - start_time
     return timestamp
 
-class MsgPlot(QObject):
+class MsgPlot(QWidget):
     Paused = QtCore.pyqtSignal(bool)
-    MAX_LENGTH = 100
+    MAX_LENGTH = 500
     def __init__(self, msgClass, fieldInfo, subindex):
-        super(QObject,self).__init__()
+        super(QWidget,self).__init__()
+        layout = QVBoxLayout()
+        self.setLayout(layout)
         self.msgClass = msgClass
         self.pause = 0
         self.lineCount = 0
@@ -48,11 +50,20 @@ class MsgPlot(QObject):
         yAxisLabel = fieldInfo.units
         xAxisLabel = "time (s)"
         self.plotWidget = pg.PlotWidget(labels={'left':yAxisLabel,'bottom':xAxisLabel})
+        layout.addWidget(self.plotWidget)
         self.plotWidget.addLegend()
         self.addPlot(msgClass, fieldInfo, subindex)
 
         # set up click handler to pause graph
         self.plotWidget.scene().sigMouseClicked.connect(self.mouseClicked)
+        
+        # add slider bar to control time scale
+        self.timeSlider = QSlider(Qt.Horizontal)
+        self.timeSlider.setMinimum(50)
+        self.timeSlider.setMaximum(MsgPlot.MAX_LENGTH)
+        self.timeSlider.setSingleStep(10)
+        self.timeSlider.setPageStep(50)
+        layout.addWidget(self.timeSlider)
         
         self.plotWidget.dragEnterEvent = self.dragEnterEvent
         self.plotWidget.dragMoveEvent = self.dragMoveEvent
@@ -134,7 +145,13 @@ class MsgPlot(QObject):
                 line.timeArray.append(newTime)
 
             if not self.pause:
-                line.curve.setData(line.timeArray, line.dataArray)
+                timeArray = line.timeArray
+                dataArray = line.dataArray
+                count = self.timeSlider.value()
+                if len(line.dataArray) > count:
+                    timeArray = timeArray[-count:]
+                    dataArray = dataArray[-count:]
+                line.curve.setData(timeArray, dataArray)
                 line.curve.setPos(line.ptr1, 0)
 
 import msgtools.lib.gui
