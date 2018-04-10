@@ -241,11 +241,68 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             messageTreeWidgetItem = txtreewidget.EditableMessageItem(self.txMsgs, messageObj)
             messageTreeWidgetItem.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
+    def on_open(self):
+        plots = self.settings.value("plotList", "")
+        if plots:
+            plotList = plots.split("|")
+            for plot in plotList:
+                msg_key = plot.split(":")[0]
+                msg_id = msg_key.split(',')[-1]
+                msgName = self.msgLib.MsgNameFromID[msg_id]
+                msgClass = self.msgLib.MsgClassFromName[msgName]
+                
+                fieldNames = plot.split(":")[1].split(",")
+                firstTime = True
+                for fieldInfo in msgClass.fields:
+                    if fieldInfo.name in fieldNames:
+                        if firstTime:
+                            msgPlot = self.addPlot(msg_key, msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
+                            firstTime = False
+                        else:
+                            msgPlot.addPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
+
+    def on_close(self):
+        plotList = ""
+        for msg_key in self.msgPlots:
+            plotListForID = self.msgPlots[msg_key]
+            for plot in plotListForID:
+                plotConfig = msg_key + ":"
+                for line in plot.lines:
+                    plotConfig += line.fieldInfo.name + ","
+                plotConfig = plotConfig[:-1]
+                plotList += plotConfig + "|"
+        if plotList:
+            plotList = plotList[:-1]
+        self.settings.setValue("plotList", plotList)
+            
     def on_tx_message_send(self, msg):
         if not self.connected:
             self.OpenConnection()
         self.SendMsg(msg)
     
+    def addPlot(self, msg_key, msgClass, fieldInfo, fieldIndex):
+        plotListForID = []
+        if msg_key in self.msgPlots:
+            plotListForID = self.msgPlots[msg_key]
+        else:
+            self.msgPlots[msg_key] = plotListForID
+        alreadyThere = False
+        for plot in plotListForID:
+            for line in plot.lines:
+                if line.fieldInfo == fieldInfo and line.fieldSubindex == fieldIndex:
+                    alreadyThere = True
+        if not alreadyThere:
+            plotName = msgClass.MsgName()
+            if plottingLoaded:
+                msgPlot = MsgPlot(msgClass, fieldInfo, fieldIndex)
+                # add a dock widget for new plot
+                dockWidget = ClosableDockWidget(plotName, self, msgPlot.plotWidget, msgPlot, plotListForID)
+                self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
+                # Change title when plot is paused/resumed
+                msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
+                plotListForID.append(msgPlot)
+                return msgPlot
+        
     def onRxMessageFieldSelected(self, rxWidgetItem):
         try:
             if isinstance(rxWidgetItem, txtreewidget.FieldItem) or isinstance(rxWidgetItem, txtreewidget.FieldArrayItem):
@@ -254,29 +311,10 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 if isinstance(rxWidgetItem, txtreewidget.FieldArrayItem):
                     fieldIndex = rxWidgetItem.index
                 msg_id = hex(rxWidgetItem.msg.hdr.GetMessageID())
-                plotListForID = []
                 msg_key = ",".join(Messaging.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
-                if msg_key in self.msgPlots:
-                    plotListForID = self.msgPlots[msg_key]
-                else:
-                    self.msgPlots[msg_key] = plotListForID
-                alreadyThere = False
-                for plot in plotListForID:
-                    for line in plot.lines:
-                        if line.fieldInfo == fieldInfo and line.fieldSubindex == fieldIndex:
-                            alreadyThere = True
-                if not alreadyThere:
-                    plotName = rxWidgetItem.msg.MsgName()
-                    if plottingLoaded:
-                        msgPlot = MsgPlot(type(rxWidgetItem.msg), fieldInfo, fieldIndex)
-                        # add a dock widget for new plot
-                        dockWidget = ClosableDockWidget(plotName, self, msgPlot.plotWidget, msgPlot, plotListForID)
-                        self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
-                        # Change title when plot is paused/resumed
-                        msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
-                        
-                        plotListForID.append(msgPlot)
-                        msgPlot.addData(rxWidgetItem.msg)
+                msgPlot = self.addPlot(msg_key, type(rxWidgetItem.msg), fieldInfo, fieldIndex)
+                if msgPlot:
+                    msgPlot.addData(rxWidgetItem.msg)
         except AttributeError:
             pass
 

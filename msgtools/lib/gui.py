@@ -1,5 +1,6 @@
 import sys
 import datetime
+import inspect
 
 from PyQt5 import QtGui, QtWidgets, QtCore, QtNetwork
 
@@ -327,7 +328,7 @@ class Gui(App, QtWidgets.QMainWindow):
         self.connectionCheckbox.clicked.connect(self.connectionCheckedChanged)
         self.connectionChanged.connect(self.connectionChangedSlot)
 
-        self.readSettings()
+        QtCore.QTimer.singleShot(0, self.delayedInit)
         self.setWindowTitle(self.name)
 
         # create menu items, connect them to socket operations
@@ -342,6 +343,11 @@ class Gui(App, QtWidgets.QMainWindow):
             connectAction.triggered.connect(self.chooseHost)
             disconnectAction.triggered.connect(self.CloseConnection)
     
+    def delayedInit(self):
+        if hasattr(self.__class__, 'on_open'):
+            self.on_open()
+        self.readSettings()
+
     # open dialog box to choose host to connect to
     def chooseHost(self):
         userInput, ok = QInputDialog.getText(self, 'Connect',  'Server:', QLineEdit.Normal, self.connectionName)
@@ -352,6 +358,8 @@ class Gui(App, QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())
+        if hasattr(self.__class__, 'on_close'):
+            self.on_close()
         super(Gui, self).closeEvent(event)
     
     def readSettings(self):
