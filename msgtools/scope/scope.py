@@ -338,7 +338,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             widget_name = msg.MsgName()
             msg_route = Messaging.MsgRoute(msg)
             if len(msg_route) > 0 and not(all ("0" == a for a in msg_route)):
-                widget_name += " ("+"->".join(msg_route)+")"
+                widget_name += " ("+",".join(msg_route)+")"
             msg_list_item = QTreeWidgetItem([ widget_name, rx_time.strftime('%H:%M:%S.%f')[:-3], "- Hz" ])
             msg_list_item.msg_key = msg_key
             msg_list_item.msg = msg

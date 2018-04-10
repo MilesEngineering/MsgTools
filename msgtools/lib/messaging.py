@@ -386,23 +386,18 @@ class Messaging:
             return (None, "["+msgName+"] is not a message name!")
         return (autoComplete, help)
 
-    # should this move to a member function of a hypothetical Message base class?
     @staticmethod
     def MsgRoute(msg):
         hdr = msg.hdr
         msg_route = []
-        try:
-            msg_route.append(str(hdr.GetSource()))
-        except AttributeError:
-            pass
-        try:
-            msg_route.append(str(hdr.GetDestination()))
-        except AttributeError:
-            pass
-        try:
-            msg_route.append(str(hdr.GetDeviceID()))
-        except AttributeError:
-            pass
+        for fieldInfo in msg.hdr.fields:
+            if fieldInfo.bitfieldInfo:
+                for bitfieldInfo in fieldInfo.bitfieldInfo:
+                    if bitfieldInfo.idbits == 0 and bitfieldInfo.name != "DataLength" and bitfieldInfo.name != "Time":
+                        msg_route.append(str(bitfieldInfo.get(msg.hdr)))
+            else:
+                if fieldInfo.idbits == 0 and fieldInfo.name != "DataLength" and fieldInfo.name != "Time":
+                    msg_route.append(str(fieldInfo.get(msg.hdr)))
         return msg_route
 
     class HeaderTranslator:
