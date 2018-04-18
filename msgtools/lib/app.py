@@ -105,7 +105,7 @@ class App(QtWidgets.QMainWindow):
         if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
             if "ws:" in self.connectionName:
                 connectionName = self.connectionName.replace("ws://","")
-                (ip, port) = connectionName.split(":")
+                (ip, port) = connectionName.rsplit(":",1)
                 if ip == None or ip == "":
                     ip = "127.0.0.1"
 
@@ -121,7 +121,7 @@ class App(QtWidgets.QMainWindow):
                 self.sendBytesFn = self.connection.sendBinaryMessage
             else:
                 #print("opening TCP socket " + self.connectionName)
-                (ip, port) = self.connectionName.split(":")
+                (ip, port) = self.connectionName.rsplit(":",1)
                 if ip == None or ip == "":
                     ip = "127.0.0.1"
 
