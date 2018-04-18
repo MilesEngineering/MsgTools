@@ -75,6 +75,8 @@ def getFn(field, offset):
 {
     return %s;
 }''' % (fnHdr(field), functionPrefix+retType, namespace+"Get"+field["Name"], params(firstParamDecl, param), const, access)
+    if "float" in retType or "double" in retType:
+        ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
 
 def setFn(field, offset):
@@ -96,6 +98,8 @@ def setFn(field, offset):
 {
     Set_%s(&m_data[%s], %s);
 }''' % (fnHdr(field), functionPrefix+"void", namespace+"Set"+field["Name"], params(firstParamDecl, param), fieldType(field), loc, valueString)
+    if "float" in paramType or "double" in paramType:
+        ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
@@ -113,6 +117,8 @@ def getBitsFn(field, bits, offset, bitOffset, numBits):
 {
     return %s;
 }''' % (fnHdr(bits), functionPrefix+retType, namespace+"Get"+MsgParser.BitfieldName(field, bits), firstParamDecl, const, access)
+    if "float" in retType or "double" in retType:
+        ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
 
 def setBitsFn(field, bits, offset, bitOffset, numBits):
@@ -131,6 +137,8 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
 {
     %s(%s);
 }''' % (fnHdr(bits), functionPrefix+"void", namespace+"Set"+MsgParser.BitfieldName(field, bits), params(firstParamDecl, paramType), namespace+"Set"+field["Name"], params(firstParam, newVal))
+    if "float" in paramType or "double" in paramType:
+        ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
 
 def accessors(msg):
