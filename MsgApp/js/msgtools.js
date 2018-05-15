@@ -96,7 +96,7 @@
 
             msgs.forEach(function(msg, index, array) {
                 // In case the user likes headers.NetworkHeader vs. header/NetworkHeader
-                msg = msg.replace('.', '/') 
+                msg = msg.replace(/\./g, '/') 
 
                 url = baseDir + msg + '.js'
 
