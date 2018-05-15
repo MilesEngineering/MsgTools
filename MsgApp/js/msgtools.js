@@ -1,23 +1,152 @@
 /*
- *  The MsgTools core module for web apps.
+ * The MsgTools core module for web apps.
  * This module exposes a number of connectivity and utility functions 
  * and classes available for writing web apps based on MsgTools.
+ *
+ * This module is Promises frienndly where needed
  */
 
-// TODO: Take this out of global space!!!
- var MessageDictionary = {}
+//TODO: Remove this from global space!
+     // Used to store a dictionary of all messages - key is the msg ID,
+    // and the value is a reference to the message class itself
+    var MessageDictionary = {}
 
  var msgtools = (function() {
 
-    /*
-     * Message registration and lookup
-     */
-    function registerMessage(msg) {
+    // Base messasge directory we load generated messages from
+    // You must call setMsgDirectory to initialize this method and load all
+    // of our dependent messages.
+    var msgDir = undefined
+    var dependenciesLoaded = false
 
+    /**
+     * Set the base directory from which we should load messages. 
+     *
+     * This method not only initializes the base directory, but it also triggers loading
+     * of module dependent messages.  Of most import is the headers.NetworkHeader message
+     * which serves as a base header/template for ALL messages.
+     *
+     * @param {string} baseMsgDir - The base message directory for generated messages.
+     * typically ending with obj/CodeGenerator/Javascript. Can be relative or absolute 
+     * according to your app needs.
+     *
+     * @return A Promise that can be used to wait for, and confirm dependencies are loaded
+     * If an error occurs the error response is an array of message urls that failed to load.
+     */
+    function setMsgDirectory(baseMsgDir) {
+        // First set the base directory
+        if (baseMsgDir.length > 0 && baseMsgDir[baseMsgDir.length-1] != '/')
+            baseMsgDir += '/'
+
+        msgDir = baseMsgDir
+
+        // Load up all the messages this module depends on
+        let dependencies = ['headers.NetworkHeader', 'Network.Connect', 'Network.MaskedSubscription', 
+            'Network.StartLog', 'Network.StopLog', 'Network.LogStatus', 'Network.QueryLog', 
+            'Network.ClearLogs', 'Network.Note']
+
+        return new Promise((resolve, reject)=>{
+            if (dependenciesLoaded == false)
+                loadMessages(dependencies, msgDir)
+                    .then(()=> {
+                        dependenciesLoaded = true
+                        resolve()
+                    })
+                    .catch(error=>{
+                        dependenciesLoaded = false
+                        reject(error)
+                    })
+            else
+                resolve()
+        })
     }
 
-    function lookupMessage(msgId) {
+    /**
+     * Pass in a list of messages relative to the baseMsgDir to load and register
+     *
+     * @param {string|Array} msgs - a list (or singular) message 'module' name.  These names should map to the 
+     * directory structure of your message tree.  For example if we are loading headers/NetworkHeader.js
+     * you would specify headers/NetworkHeader or headers.NetworkHeader as the message name.  This function
+     * will take care of the base directory mapping, and make your message request a proper url for script loading.
+     *
+     * @param {string} baseMsgDir - override our module base directory to load one or more messages from
+     * the indicated base instead.
+     *
+     * @return A Promise for async loading.  The error response will be an array of urls we couldn't load
+     */
+    function loadMessages(msgs, baseMsgDir=undefined) {
+        return new Promise((resolve, reject)=> {
 
+            // If we were handed a single message then wrap it in an array
+            // so we can symmetrically process one or multiple...
+            if (msgs instanceof Array == false )
+                msgs = [msgs]
+
+            var baseDir = baseMsgDir === undefined ? msgDir : baseMsgDir
+            if (baseDir.length > 0 && baseDir[baseDir.length-1] != '/')
+                baseDir += '/'
+
+            var errors = new Array()
+            var scriptsProcessed = 0
+
+            msgs.forEach(function(msg, index, array) {
+                // In case the user likes headers.NetworkHeader vs. header/NetworkHeader
+                msg = msg.replace('.', '/') 
+
+                url = baseDir + msg + '.js'
+
+                loadScript(url, (event)=>{
+                    if (event.type == 'load')
+                        scriptsProcessed++
+                    else if (event.type == 'error' || event.type == 'abort') {
+                        scriptsProcessed++
+                        errors.push(event.srcElement.src)
+                    }
+                    // Done?
+                    if (scriptsProcessed == msgs.length)
+                        if (errors.length == 0)
+                            resolve()
+                        else
+                            reject(errors)
+                })
+            })
+        })
+    }
+
+    /*
+     * Message registration.  This is called by each message as it loads.  Unless you're hand crafting your
+     * own message outside the generator, you shouldn't need this...
+     */
+    function registerMessage(id, msg) {
+        MessageDictionary.set(id, msg)
+    }
+
+    /**
+     * Dynamic script loading - courtesy of Dhaval Shah
+     * https://stackoverflow.com/questions/21294/dynamically-load-a-javascript-file
+     * A few tweaks made to the callback events
+     *
+     * @param {string} the url to load
+     *
+     * @param {callback} a readystatechange/onload callback handler you can use to determine
+     * when the script is done loading.
+     */
+    function loadScript(url, callback)
+    {
+        // adding the script tag to the head as suggested before
+       var head = document.getElementsByTagName('head')[0];
+       var script = document.createElement('script');
+       script.type = 'text/javascript';
+       script.src = url;
+
+       // then bind the event to the callback function 
+       // there are several events for cross browser compatibility
+       script.onload = callback;
+       script.onerror = callback;
+       script.onabort = callback;
+
+       // fire the loading
+       head.appendChild(script);
     }
 
     /**
@@ -29,8 +158,10 @@
     class MessagingClient extends EventTarget {
         /**
          * Contruct a new MessagingClient
+         *
          * @param {string} name - the name of this messaging client.  Will be emitted on the Connect
          * message if Connect is defined and you request it.  If undefined we don't send a connect message.
+         *
          * @param {Window} hostWindow - the host window for the application (will be used to infer
          * if we should use a secure socket.  Overerides the secureSocket parameter.  If hostWindow
          * and has a ws and/or port query param, this class will use these values for the server and port
@@ -38,6 +169,10 @@
          */
         constructor(name='', hostWindow=null) {
             super()
+
+            if (dependenciesLoaded==false)
+                throw 'You must call setMsgDirectory() before a MessageClient can be created.'
+
             this.m_Name = name
             this.m_WebSocket = null
             this.m_HostWindow = hostWindow
@@ -50,15 +185,15 @@
          * If the user passes a default server or port, and a host window was provided then this class will
          * use the host window query params ws and port for the server and port respectively.
          *
-         * @param {Map} - Map of options as follows
-         * 'server' - IP or hostname of the target server. Default = 127.0.0.1
-         * 'port' - port number of the target server.  Default = 5679
-         * 'secureSocket' - Set to true if you want to use a secure socket.  If you want the client to 
-         * automatcally select secure or insecure sockets based on the page souce then pass a host window
-         * into the constructor and set secureSocket to false.  Default false.
-         * 'subscriptionMask - uint32 mask for messages of interest - 0=don't care, 1=accept only.  
-         * Default=0 (accept all)
-         * 'subscriptionValue - uint32 value for a message of interest. Default = 0 (all messages).'
+         * @param {Map} - Map of options as follows:
+         *  'server' - IP or hostname of the target server. Default = 127.0.0.1
+         *  'port' - port number of the target server.  Default = 5679
+         *  'secureSocket' - Set to true if you want to use a secure socket.  If you want the client to 
+         *  automatcally select secure or insecure sockets based on the page souce then pass a host window
+         *  into the constructor and set secureSocket to false.  Default false.
+         *  'subscriptionMask - uint32 mask for messages of interest - 0=don't care, 1=accept only.  
+         *  Default=0 (accept all)
+         *  'subscriptionValue - uint32 value for a message of interest. Default = 0 (all messages).'
          */
         connect(options) {
             // Setup defaults...
@@ -129,9 +264,11 @@
                             }
 
                             // Request log status
+                            var sentLogQuery = false
                             if (typeof QueryLog == 'function') {
                                 var ql = new QueryLog()
                                 this.sendMessage(ql)
+                                sentLogQuery = true
                             }
                         }
                         catch(e) {
@@ -144,7 +281,8 @@
                             detail: {
                                 connectionUrl: this.m_WebSocket.url,
                                 sentConnected: sentConnected,
-                                sentMask: sentSubscription
+                                sentSubscription: sentSubscription,
+                                sentLogQuery: sentLogQuery
                             }
                         })
 
@@ -191,14 +329,15 @@
                         else {
                             var evt = new CustomEvent('message', 
                                 {detail: {
-                                    message: msg
+                                    message: msg,
+                                    data: event.data
                                 }
                             })
 
                             this.dispatchEvent(evt)
 
                             if(typeof this.onconnect === "function") {
-                                this.onmessage(msg);
+                                this.onmessage(evt);
                             }
                         }
                     }
@@ -257,7 +396,10 @@
         /**
          * Send a message on the underlying Websocket.
          *
-         * return true if the message was sent, otherwise false
+         * @param {object} msg - We expect a MsgTools compatible message.  Meaning 
+         * the message has a NetworkHeader and a m_data_buffer payload.
+         *
+         * @return true if the message was sent, otherwise false
          */
         sendMessage(msg) {
             var retVal = false
@@ -349,24 +491,26 @@
         //if needed
 
         /**
-         * Function callback called when  we've connected.  Simple Event with no detail.
+         * Function callback called when  we've connected.  Emits a CustomEvent that
+         * inlcudes the WS url, and booleans indicated if a Connect and Subscription
+         * and LoqQuery messages were sent.
          */
         // onconnected
 
         /**
-         * Function callback called when a new Websocket message arrives.  Adhered to the same
-         * contract as Websocket's onmessage (e.g. a MessageEvent is passed)
+         * Function callback called when a new Websocket message arrives.  Emits a CustomEvent
+         * with the parsed message (and raw data) as part of the detail.
          */
         // onmessage
 
         /**
          * Function callback called when the underlying socket connection is disconnected.
+         * Emits a CustomEvent with details about why the connection was closed.
          */
         // ondisconnected
 
         /**
          * Function callback called when there is an error - forwarded from the underlying Websocket
-         * Also raised if the incoming message is not a known BMAP message
          */
         // onerror
 
@@ -376,10 +520,114 @@
         // onlogstatus
     }
 
+    /**
+     * If we have no idea what a message is (because it's definition wasn't loaded) then return an UnknownMsg
+     * in the onmessage event callback.  This allows reflection to inspect a "unknown" message
+     */
+    var UnknownMsg = function(buffer) {
+        this.m_data = new DataView(buffer, NetworkHeader.prototype.MSG_SIZE);
+        this.hdr = new NetworkHeader(buffer);
+    };
+
+    UnknownMsg.prototype.MsgName = function(){
+        return "Unknown0x" + this.hdr.GetMessageID().toString(16);
+    }
+
+    // The string to display. ASCII, (0 to 255)
+    UnknownMsg.prototype.GetBuffer = function(idx)
+    {
+        return this.m_data.getUint8(idx, false);
+    };
+    // The string to display. ASCII, (0 to 255)
+    UnknownMsg.prototype.GetBufferString = function()
+    {
+        var value = '0x';
+        for(i=0; i<this.m_data.byteLength ; i++)
+        {
+            value += ' ' + this.GetBuffer(i).toString(16);
+        }
+        return value;
+    };
+    // The string to display. ASCII, (0 to 255)
+    UnknownMsg.prototype.SetBuffer = function(value, idx)
+    {
+        this.m_data.setUint8(idx, value, false);
+    };
+    // The string to display. ASCII, (0 to 255)
+    UnknownMsg.prototype.SetBufferString = function(value)
+    {
+        value.removeStart('0x');
+        value.split(' ');
+        for(i=0; i<this.m_data.byteLength && i<value.length; i++)
+        {
+            this.SetBuffer(parseInt(value[i], 16), i);
+        }
+    };
+
+    // Convert to a javascript object
+    UnknownMsg.prototype.toObject = function(){
+        ret = {};
+        ret["rawData"] = this.GetBufferString();
+        return ret;
+    }
+
+    /**
+     * Convert the given msg to JSON
+     *
+     * @param {object} obj - Assumed to be a message with a network header.  Convert it to 
+     * a JSON string suitable for printing etc...
+     * 
+     * @return JSON string of the given message
+     */
+    function toJSON(obj) {
+        // console.log("JSON for " + obj.MSG_NAME + ", ID=",+obj.MSG_ID+", "+obj.MSG_SIZE+" bytes")
+        var jsonStr = '{"'+obj.MsgName()+'": ';
+        jsonStr += JSON.stringify(obj.toObject());
+        jsonStr += '}'
+        return jsonStr;
+    }
+
+    /**
+     * Convert the array buffer to a hex string
+     *
+     * @param {ArrayBuffer} buffer - the buffer to convert to a string
+     *
+     * @return hex string representation of the given buffer
+     */
+    function buf2hex(buffer) { // buffer is an ArrayBuffer
+      return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
+    }
+
+    /**
+     * Retrieve the websocket server params from the given window
+     * 
+     * @param {Window} hostWindow - the host window from which to rerieve query params
+     * we're looking specifically for ws and port as our server and port params respectively.
+     *
+     * @return object with websocketServer and websocketPort set to our defaults (127.0.0.1 and 5679)
+     * or whatever we handed in on the query params
+     */
+    function getWebsocketURLParams(hostWindow) {
+        var url = new URL(hostWindow.location)
+        var ws = "127.0.0.1"
+        var port = 5679
+        if (url.searchParams.has('ws'))
+            ws = url.searchParams.get('ws')
+        if (url.searchParams.has('port'))
+            port = url.searchParams.get('port')
+
+        return {websocketServer: ws, websocketPort:port}    
+    }
+
     // Module Exports...
     return {
+        setMsgDirectory : setMsgDirectory,
+        loadMessages : loadMessages,
         registerMessage : registerMessage,
-        lookupMessage : lookupMessage,
-        MessagingClient : MessagingClient
+        MessagingClient : MessagingClient,
+        UnknownMsg : UnknownMsg,
+        toJSON : toJSON,
+        buf2hex : buf2hex,
+        getWebsocketURLParams : getWebsocketURLParams
     }
 })()
