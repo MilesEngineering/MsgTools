@@ -43,7 +43,7 @@ def buildApp(msgdir, outputdir):
     templateArgs['messages'] = messages
     rendering = template.render(**templateArgs)
 
-    with open(os.path.join(outputdir, 'WebConsole.html'), 'w') as fp:
+    with open(outputdir, 'w') as fp:
         fp.write(rendering)
 
 # main starts here
@@ -59,8 +59,5 @@ if __name__ == '__main__':
     if os.path.exists(args.msgdir) is False or os.path.isdir(args.msgdir) is False:
         print('{0} does not exist, or is not a directory'.format(args.msgdir))
         sys.exit(1)
-
-    if os.path.exists(args.outputdir) is False:
-        os.mkdir(args.outputdir)
 
     buildApp(args.msgdir, args.outputdir)
