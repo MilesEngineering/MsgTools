@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <script type="text/javascript" src="../MsgApp/js/msgtools.js" ></script>
+
+    <!-- Load our main program. -->
+    <script type="text/javascript" src="WebConsole.js" ></script>
+
+    <!-- Minimium bootstrap for msgtools - this loads up core dependencies and the messages we know about-->
+    <script type='text/javascript'>
+        msgtools.setMsgDirectory('{{msgdir}}')
+            .then(()=>{
+                msgtools.loadMessages({{messages}})
+                    .then(()=>{
+                        // TODO: Display messages supported
+                        connectToServer()
+                        document.getElementById('body').innerHTML = 
+                            '<p>Open debug console to see output of javascript console.log statements!</p>'
+                    })
+                    .catch(error=>{
+                        console.log('Unable to load messages...')
+                        console.log(error)
+                        document.getElementById('body').innerHTML = 
+                            '<p>Unable to load generated messages.  Open debug console to see debug output!</p>'
+                    })
+            })
+            .catch(error=>{
+                console.log('Failed to load dependencies')
+                console.log(error)
+                document.getElementById('body').innerHTML = 
+                    '<p>Unable to load msgtools dependent messages.  Open debug console to see debug output!</p>'
+            })
+    </script>
+</head>
+<body id='body'>
+</body>
+</html>
