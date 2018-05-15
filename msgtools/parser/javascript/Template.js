@@ -32,8 +32,9 @@ var <MSGSHORTNAME> = function(buffer) {
     }
 };
 
-// add our class to the dictionary
-MessageDictionary[<MSGID>] = <MSGSHORTNAME>
+// Add our class to the registered message dictionary (if defined)
+if (typeof msgtools == 'object')
+    msgtools.registerMessage(<MSGID>,<MSGSHORTNAME>)
 
 // how to make constants?
 <MSGSHORTNAME>.prototype.MSG_ID = <MSGID>;

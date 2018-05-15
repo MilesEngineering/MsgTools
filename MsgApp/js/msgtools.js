@@ -6,12 +6,11 @@
  * This module is Promises frienndly where needed
  */
 
-//TODO: Remove this from global space!
-     // Used to store a dictionary of all messages - key is the msg ID,
-    // and the value is a reference to the message class itself
-    var MessageDictionary = {}
 
  var msgtools = (function() {
+    // Used to store a dictionary of all messages - key is the msg ID,
+    // and the value is a reference to the message class itself
+    var MessageDictionary = new Map()
 
     // Base messasge directory we load generated messages from
     // You must call setMsgDirectory to initialize this method and load all
@@ -23,8 +22,8 @@
      * Set the base directory from which we should load messages. 
      *
      * This method not only initializes the base directory, but it also triggers loading
-     * of module dependent messages.  Of most import is the headers.NetworkHeader message
-     * which serves as a base header/template for ALL messages.
+     * of module dependent messages (unless already loaded).  Of most import is the 
+     * headers.NetworkHeader message which serves as a base header/template for ALL messages.
      *
      * @param {string} baseMsgDir - The base message directory for generated messages.
      * typically ending with obj/CodeGenerator/Javascript. Can be relative or absolute 
@@ -50,10 +49,16 @@
                 loadMessages(dependencies, msgDir)
                     .then(()=> {
                         dependenciesLoaded = true
+
+                        console.log(MessageDictionary)
+
                         resolve()
                     })
                     .catch(error=>{
                         dependenciesLoaded = false
+
+                        console.log(MessageDictionary)
+
                         reject(error)
                     })
             else
@@ -194,6 +199,10 @@
          *  'subscriptionMask - uint32 mask for messages of interest - 0=don't care, 1=accept only.  
          *  Default=0 (accept all)
          *  'subscriptionValue - uint32 value for a message of interest. Default = 0 (all messages).'
+         *  'suppressConnect' - true if you don't want to send a Connect message on connection. Default=false.
+         *  'suppressMaskedSubscription' - true if you don't want to send a MaskedSubscription message on connection.
+         *   Default=false.
+         *  'suppressQueryLog' - true if you don't want to send a QueryLog message on connection.
          */
         connect(options) {
             // Setup defaults...
@@ -202,6 +211,9 @@
             var secureSocket = false
             var subscriptionMask = 0
             var subscriptionValue = 0
+            var suppressConnect = false
+            var suppressMaskedSubscription = false
+            var suppressQueryLog = false
 
             // Override defaults...
             if (options !== undefined && options !== null && options instanceof Map) {
@@ -212,6 +224,12 @@
                     options.get('subscriptionMask') : subscriptionMask
                 subscriptionValue = options.has('subscriptionValue') ? 
                     options.get('subscriptionValue') : subscriptionValue
+                suppressConnect = options.has('suppressConnect') ?
+                    options.get('suppressConnect') : suppressConnect
+                suppressMaskedSubscription = options.has('suppressMaskedSubscription') ?
+                    options.get('suppressMaskedSubscription') : suppressMaskedSubscription
+                suppressQueryLog = options.has('suppressQueryLog') ?
+                    options.get('suppressQueryLog') : suppressQueryLog
             }
 
             // If we're already connected then disconnect the old socket and let it go...
@@ -247,7 +265,7 @@
                         var sentConnected = false
                         var sentSubscription = false
                         try {
-                            if (typeof Connect == 'function') {
+                            if (suppressConnect == false && typeof Connect == 'function') {
                                 var cm = new Connect();
                                 cm.SetNameString(''+this.m_Name);
                                 this.sendMessage(cm);
@@ -255,7 +273,7 @@
                             }
 
                             // default values will make us receive all messages
-                            if (typeof MaskedSubscription == 'function') {
+                            if (suppressMaskedSubscription == false && typeof MaskedSubscription == 'function') {
                                 var sm = new MaskedSubscription();
                                 sm.SetMask(subscriptionMask)
                                 sm.SetValue(subscriptionValue)
@@ -264,11 +282,11 @@
                             }
 
                             // Request log status
-                            var sentLogQuery = false
-                            if (typeof QueryLog == 'function') {
+                            var sentQueryLog = false
+                            if (suppressQueryLog == false && typeof QueryLog == 'function') {
                                 var ql = new QueryLog()
                                 this.sendMessage(ql)
-                                sentLogQuery = true
+                                sentQueryLog = true
                             }
                         }
                         catch(e) {
@@ -282,7 +300,7 @@
                                 connectionUrl: this.m_WebSocket.url,
                                 sentConnected: sentConnected,
                                 sentSubscription: sentSubscription,
-                                sentLogQuery: sentLogQuery
+                                sentLogQuery: sentQueryLog
                             }
                         })
 
@@ -299,10 +317,9 @@
                         var msg = null
                         var hdr = new NetworkHeader(event.data)
                         var id = hdr.GetMessageID()
-                        var strId = String(id >>> 0)
-                        if(strId in MessageDictionary)
+                        if(MessageDictionary.has(id))
                         {
-                            var msgClass = MessageDictionary[strId]
+                            var msgClass = MessageDictionary.get(id)
                             msg = new msgClass(event.data)
                         }
                         else {
@@ -311,7 +328,7 @@
 
                         // If this is a log status message then raise a special event for that
                         // Otherwise emit as a generic message
-                        if (strId==LogStatus.prototype.MSG_ID) {
+                        if (id==LogStatus.prototype.MSG_ID) {
                             var evt = new CustomEvent( 'logstatus',
                                 { detail: {
                                     logIsOpen: msg.GetLogOpen(),
