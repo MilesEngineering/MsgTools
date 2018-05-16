@@ -84,22 +84,26 @@ def buildApp(htmlTemplate, jsTemplate, jinjaArgs, msgdir, outputdir):
     '''We're  just going to iterate each file in the directlry and build a message entry for it.
     Then we'll run Jinja to build a custom web app based on the messages we've processed'''
 
-    # Load up the known messages
+    print('Analyzing message directory...')
     jinjaArgs['messages'] = discoverMessages(msgdir)
     jinjaArgs['appjs'] = jinjaArgs['appname'].replace(' ', '_').lower() + '.js'
 
-    # Generate the html file
+    print('Generating {0}...'.format(os.path.join(outputdir, 'index.html')))
     generateAppFile(htmlTemplate, jinjaArgs,
                     os.path.join(outputdir, 'index.html'))
 
     # Generate the app js file
     jsOutputname = os.path.join(outputdir, jinjaArgs['appjs'])
+    print('Generating {0}...'.format(jsOutputname))
     generateAppFile(jsTemplate, jinjaArgs, jsOutputname)
 
     # Copy msgtools libraries to the output directory
+    # Note that you should also add these files to setup.py: package data
+    # so they are included with the pip install package.  Otherwise this 
+    # call will fail...
+    print('Copying library files...')
     files = ['msgtools.js']
     copyFiles(files, outputdir)
-
 
 def getTemplate(templatePath, defaultTemplate):
     retVal = None
@@ -113,8 +117,7 @@ def getTemplate(templatePath, defaultTemplate):
 
     return retVal
 
-
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-w', '--web', dest='webdir', required=False, 
         help='The web friendly msg path inserted into the app template.  Defaults to msgdir if not specified.')
@@ -133,6 +136,8 @@ if __name__ == '__main__':
         'outputdir', help='The destination directory for the resulting HTML app.  Defaults to the current directory.')
 
     args = parser.parse_args()
+
+    print('Preparing environment...')
     
     # Setup our templates
     htmlTemplate = getTemplate(args.htmlTemplate, 'template.html')
@@ -164,8 +169,6 @@ if __name__ == '__main__':
     jinjaArgs['appname'] = args.appname
     jinjaArgs['webdir'] = args.msgdir if args.webdir is None else args.webdir
     
-    print(jinjaArgs)
-
     # Verify the message basepath exists
     if os.path.exists(args.msgdir) is False or os.path.isdir(args.msgdir) is False:
         print('{0} does not exist, or is not a directory'.format(args.msgdir))
@@ -176,3 +179,8 @@ if __name__ == '__main__':
         os.mkdir(args.outputdir)
         
     buildApp(htmlTemplate, jsTemplate, jinjaArgs, args.msgdir, args.outputdir)
+
+    print('DONE')
+
+if __name__ == '__main__':
+    main()
