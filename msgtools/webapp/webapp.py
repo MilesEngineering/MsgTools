@@ -73,11 +73,12 @@ def generateAppFile(templatepath, jinjaArgs, outputfile):
         fp.write(rendering)
 
 
-def copyFiles(srcFiles, destdir):
-    for file in srcFiles:
-        srcpath = os.path.join(apppath, file)
-        destpath = os.path.join(destdir, file)
-        shutil.copy2(srcpath, destpath)
+def copyFiles(srcpath, destpath):
+    '''Shallow copy of the src path to the destpath'''
+    for file in os.listdir(srcpath):
+        src = os.path.join(srcpath, file)
+        dest = os.path.join(destpath, file)
+        shutil.copy2(src, dest)
 
 
 def buildApp(htmlTemplate, jsTemplate, jinjaArgs, msgdir, outputdir):
@@ -102,8 +103,7 @@ def buildApp(htmlTemplate, jsTemplate, jinjaArgs, msgdir, outputdir):
     # so they are included with the pip install package.  Otherwise this 
     # call will fail...
     print('Copying library files...')
-    files = ['msgtools.js']
-    copyFiles(files, outputdir)
+    copyFiles(os.path.join(apppath,'lib'), outputdir)
 
 def getTemplate(templatePath, defaultTemplate):
     retVal = None

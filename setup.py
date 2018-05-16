@@ -47,7 +47,6 @@ setup(name='msgtools',
     },
     package_data={
         # Include all Template files for the code generator
-        '': ['*Template*', 'bootstrap.min.css', 'msgtools.js', 'template.html',
-            'template.js'],
+        '': ['*Template*', 'bootstrap.min.css']
     }
 )
