@@ -28,7 +28,11 @@ function initMsgTools() {
 // This instantiates a new connection to the server
 //
 function connectToServer() {
-    var client = new msgtools.MessagingClient('{{appname}}', window)
+    var client = new msgtools.MessagingClient('{{appname}}', window);
+
+    //Assign client to use msgsocket-connector and msgsocket-logging widgets 
+    WebSocketUtils.setClient('TestClient', client);
+
     client.addEventListener('connected', ()=>{
         console.log('Connected')
         // TODO: Any custom handling needed

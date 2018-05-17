@@ -4,11 +4,15 @@
     <meta charset="utf-8"/>
     <title>{{appname}}</title>
     <script type="text/javascript" src="msgtools.js" ></script>
+    <script type="text/javascript" src="WebSocketUtils.js"></script>
 
     <!-- Load our main program. -->
     <script type="text/javascript" src="{{appjs}}" ></script>
 
 </head>
 <body onload="initMsgTools()">
+	<!-- Use WebSocketUtils Widgets -->
+	<msgsocket-connector connect-name="TestClient" > </msgsocket-connector>
+    <msgsocket-logging connect-name="TestClient"> </msgsocket-logging>
 </body>
 </html>
