@@ -444,7 +444,7 @@ var WebSocketUtils = {};
             client.addEventListener('logstatus', function(event) {
 
                 var logging = !!event.detail.logIsOpen;
-                var filename = event.detail.logIsOpen.logFilename;
+                var filename = event.detail.logFilename;
                 var format = event.detail.logType;
 
                 console.log('logging', logging, filename, format);

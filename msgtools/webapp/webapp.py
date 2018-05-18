@@ -135,6 +135,14 @@ def main():
     parser.add_argument(
         'outputdir', help='The destination directory for the resulting HTML app.  Defaults to the current directory.')
 
+    parser.add_argument("-d", "--disable",
+                      help="specified to disable automatic adding of widgets" +
+                      "\n [default enabled]",
+                      dest='widgets',
+                      action='store_false',
+                      default=True
+                      )
+
     args = parser.parse_args()
 
     print('Preparing environment...')
@@ -168,6 +176,8 @@ def main():
 
     jinjaArgs['appname'] = args.appname
     jinjaArgs['webdir'] = args.msgdir if args.webdir is None else args.webdir
+    jinjaArgs['widgets'] = args.widgets
+
     
     # Verify the message basepath exists
     if os.path.exists(args.msgdir) is False or os.path.isdir(args.msgdir) is False:

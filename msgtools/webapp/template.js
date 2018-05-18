@@ -4,20 +4,20 @@
 function initMsgTools() {
     // Initialize MsgTools itself...
     msgtools.setMsgDirectory('{{webdir}}')
-        .then(()=>{
+        .then(() => {
             // Load app specific messages
-            msgtools.loadMessages({{messages}})
-                .then(()=>{
+            msgtools.loadMessages({ { messages } })
+                .then(() => {
                     // Once all scripts have loaded then we can 
                     // instantiate a connection to the server...
                     connectToServer()
                 })
-                .catch(error=>{
+                .catch(error => {
                     // TODO: Any specific error handling you want here
                     console.log(error)
                 })
         })
-        .catch(error=>{
+        .catch(error => {
             // TODO: Any specific error handling you want here
             console.log(error)
         })
@@ -29,15 +29,14 @@ function initMsgTools() {
 //
 function connectToServer() {
     var client = new msgtools.MessagingClient('{{appname}}', window);
-
     //Assign client to use msgsocket-connector and msgsocket-logging widgets 
-    WebSocketUtils.setClient('TestClient', client);
+    { % if widgets % } WebSocketUtils.setClient('{{appname}}', client); { % endif % }
 
-    client.addEventListener('connected', ()=>{
+    client.addEventListener('connected', () => {
         console.log('Connected')
         // TODO: Any custom handling needed
     })
-    client.addEventListener('message', (event)=>{
+    client.addEventListener('message', (event) => {
         console.log('New Message')
 
         // OPTiONAL: Pretty print the message to the console
@@ -46,19 +45,19 @@ function connectToServer() {
 
         // TODO: Any custom handling needed
     })
-    client.addEventListener('disconnected', ()=>{
+    client.addEventListener('disconnected', () => {
         console.log('Disconnected')
 
-       // TODO: Any custom handling needed
+        // TODO: Any custom handling needed
     })
-    client.addEventListener('error', ()=>{
+    client.addEventListener('error', () => {
         console.log('Error')
 
-    // TODO: Any custom handling needed
+        // TODO: Any custom handling needed
     })
-    client.addEventListener('logstatus', (event)=>{
+    client.addEventListener('logstatus', (event) => {
         console.log('LogStatus')
-        
+
         // TODO: Any custom handling needed
     })
 
