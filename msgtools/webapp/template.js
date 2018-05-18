@@ -6,7 +6,7 @@ function initMsgTools() {
     msgtools.setMsgDirectory('{{webdir}}')
         .then(() => {
             // Load app specific messages
-            msgtools.loadMessages({ { messages } })
+            msgtools.loadMessages({{ messages }})
                 .then(() => {
                     // Once all scripts have loaded then we can 
                     // instantiate a connection to the server...
@@ -30,7 +30,7 @@ function initMsgTools() {
 function connectToServer() {
     var client = new msgtools.MessagingClient('{{appname}}', window);
     //Assign client to use msgsocket-connector and msgsocket-logging widgets 
-    { % if widgets % } WebSocketUtils.setClient('{{appname}}', client); { % endif % }
+    {% if widgets %} WebSocketUtils.setClient('{{appname}}', client); {% endif %}
 
     client.addEventListener('connected', () => {
         console.log('Connected')
