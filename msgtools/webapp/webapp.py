@@ -100,10 +100,11 @@ def buildApp(htmlTemplate, jsTemplate, jinjaArgs, msgdir, outputdir):
 
     # Copy msgtools libraries to the output directory
     # Note that you should also add these files to setup.py: package data
-    # so they are included with the pip install package.  Otherwise this 
+    # so they are included with the pip install package.  Otherwise this
     # call will fail...
     print('Copying library files...')
-    copyFiles(os.path.join(apppath,'lib'), outputdir)
+    copyFiles(os.path.join(apppath, 'lib'), outputdir)
+
 
 def getTemplate(templatePath, defaultTemplate):
     retVal = None
@@ -117,16 +118,17 @@ def getTemplate(templatePath, defaultTemplate):
 
     return retVal
 
+
 def main():
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('-w', '--web', dest='webdir', required=False, 
-        help='The web friendly msg path inserted into the app template.  Defaults to msgdir if not specified.')
+    parser.add_argument('-w', '--web', dest='webdir', required=False,
+                        help='The web friendly msg path inserted into the app template.  Defaults to msgdir if not specified.')
     parser.add_argument('-m', '--html', dest='htmlTemplate',
-        help='Use the specified HTML template instead of the default for building the web app')
+                        help='Use the specified HTML template instead of the default for building the web app')
     parser.add_argument('-j', '--javascript', dest='jsTemplate',
-        help='Use the specified Javascript template instead of the default')
+                        help='Use the specified Javascript template instead of the default')
     parser.add_argument('-t', '--templateargs', dest='templateArgs', type=str,
-        help='''Arguments to pass to the template engine as a set of key/value pairs. This argument is first interpreted
+                        help='''Arguments to pass to the template engine as a set of key/value pairs. This argument is first interpreted
                 as a path to a JSON formatted file.  If it is not a valid file, then the argument is treated as a
                 JSON string.  Literal JSON example: \'{"key":"value"}\' ''')
     parser.add_argument('appname', help='The name of the app.')
@@ -135,18 +137,18 @@ def main():
     parser.add_argument(
         'outputdir', help='The destination directory for the resulting HTML app.  Defaults to the current directory.')
 
-    parser.add_argument("-d", "--disable",
-                      help="specified to disable automatic adding of widgets" +
-                      "\n [default enabled]",
-                      dest='widgets',
-                      action='store_false',
-                      default=True
-                      )
+    parser.add_argument("-d", "--disable-ui",
+                        help='''If specified, disables generation of UI components for socket connection and logging, 
+                        in favor of a messaging client object. [default enabled]''',
+                        dest='widgets',
+                        action='store_false',
+                        default=True
+                        )
 
     args = parser.parse_args()
 
     print('Preparing environment...')
-    
+
     # Setup our templates
     htmlTemplate = getTemplate(args.htmlTemplate, 'template.html')
     jsTemplate = getTemplate(args.jsTemplate, 'template.js')
@@ -178,7 +180,6 @@ def main():
     jinjaArgs['webdir'] = args.msgdir if args.webdir is None else args.webdir
     jinjaArgs['widgets'] = args.widgets
 
-    
     # Verify the message basepath exists
     if os.path.exists(args.msgdir) is False or os.path.isdir(args.msgdir) is False:
         print('{0} does not exist, or is not a directory'.format(args.msgdir))
@@ -187,7 +188,7 @@ def main():
     # Setup our destination dir
     if os.path.exists(args.outputdir) is False or os.path.isdir(args.outputdir) is False:
         os.mkdir(args.outputdir)
-        
+
     buildApp(htmlTemplate, jsTemplate, jinjaArgs, args.msgdir, args.outputdir)
 
     print('DONE')
