@@ -17,6 +17,7 @@
     // of our dependent messages.
     var msgDir = undefined
     var dependenciesLoaded = false
+    var optionalMessages = new Set()
 
     /**
      * Set the base directory from which we should load messages. 
@@ -39,26 +40,27 @@
 
         msgDir = baseMsgDir
 
-        // Load up all the messages this module depends on
-        let dependencies = ['headers.NetworkHeader', 'Network.Connect', 'Network.MaskedSubscription', 
+        // All the messages this module depends on
+        let dependencies = ['Network.Connect', 'Network.MaskedSubscription', 
             'Network.StartLog', 'Network.StopLog', 'Network.LogStatus', 'Network.QueryLog', 
             'Network.ClearLogs', 'Network.Note']
+
+        // Create a set of optional messages
+        optionalMessages = new Set(dependencies)
+
+        // Network header is ALWAYS required, and should be the first because
+        // other messages depend on it
+        dependencies = ['headers.NetworkHeader'].concat(dependencies)
 
         return new Promise((resolve, reject)=>{
             if (dependenciesLoaded == false)
                 loadMessages(dependencies, msgDir)
                     .then(()=> {
                         dependenciesLoaded = true
-
-                        console.log(MessageDictionary)
-
                         resolve()
                     })
                     .catch(error=>{
                         dependenciesLoaded = false
-
-                        console.log(MessageDictionary)
-
                         reject(error)
                     })
             else
@@ -96,16 +98,21 @@
 
             msgs.forEach(function(msg, index, array) {
                 // In case the user likes headers.NetworkHeader vs. header/NetworkHeader
+                msgId = msg.replace(/\//g, '.')
                 msg = msg.replace(/\./g, '/') 
 
                 url = baseDir + msg + '.js'
 
-                loadScript(url, (event)=>{
+                loadScript(url, msgId, (event)=>{
                     if (event.type == 'load')
                         scriptsProcessed++
                     else if (event.type == 'error' || event.type == 'abort') {
                         scriptsProcessed++
-                        errors.push(event.srcElement.src)
+
+                        // If this isn't an optional message than tag it as an error
+                        if (optionalMessages.has(event.srcElement.id) == false ) {
+                            errors.push(event.srcElement.src)
+                        }
                     }
                     // Done?
                     if (scriptsProcessed == msgs.length)
@@ -136,22 +143,33 @@
      * @param {callback} a readystatechange/onload callback handler you can use to determine
      * when the script is done loading.
      */
-    function loadScript(url, callback)
+    function loadScript(url, id, callback)
     {
-        // adding the script tag to the head as suggested before
-       var head = document.getElementsByTagName('head')[0];
-       var script = document.createElement('script');
-       script.type = 'text/javascript';
-       script.src = url;
+        if ( document.getElementById(id) != null )
+        {  
+            // Don't bother creating a new script tag.
+            // Just report it as ok.  If the caller didn't 
+            // handle an error previously not our problem.
+            callback(new Event('load'))
+        }
+        else
+        {
+           var head = document.getElementsByTagName('head')[0];
+           var script = document.createElement('script');
+           script.type = 'text/javascript';
+           script.src = url;
+           script.id = id;
 
-       // then bind the event to the callback function 
-       // there are several events for cross browser compatibility
-       script.onload = callback;
-       script.onerror = callback;
-       script.onabort = callback;
+           // then bind the event to the callback function 
+           // there are several events for cross browser compatibility
+           script.onload = callback;
+           script.onerror = callback;
+           script.onabort = callback;
 
-       // fire the loading
-       head.appendChild(script);
+           // fire the loading
+
+          head.appendChild(script);
+        }
     }
 
     /**
