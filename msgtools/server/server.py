@@ -27,13 +27,13 @@ class MessageServer(QtWidgets.QMainWindow):
         msgLoadDir = None
         # need a way to make serial= and serial both work!
         try:
-            options = ['serial=', 'bluetoothSPP=', 'plugin=', 'port=', 'msgdir=']
+            options = ['serial=', 'bluetoothSPP=', 'bluetoothRFCOMM=', 'bluetoothRFCOMMQt=', 'plugin=', 'port=', 'msgdir=']
             self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
         except getopt.GetoptError:
             pass
 
         try:
-            options = ['serial', 'bluetoothSPP=', 'plugin=', 'port=', 'msgdir=']
+            options = ['serial', 'bluetoothSPP=', 'bluetoothRFCOMM=', 'bluetoothRFCOMMQt=', 'plugin=', 'port=', 'msgdir=']
             self.optlist, args = getopt.getopt(sys.argv[1:], '', options)
         except getopt.GetoptError:
             pass
@@ -80,6 +80,21 @@ class MessageServer(QtWidgets.QMainWindow):
                 self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
                 self.onNewConnection(self.bluetoothPort)
                 self.bluetoothPort.start()
+            elif opt[0] == '--bluetoothRFCOMM':
+                from msgtools.server.BluetoothRFCOMM import BluetoothRFCOMMConnection
+                btDeviceAddr = opt[1]
+                self.bluetoothPort = BluetoothRFCOMMConnection(btDeviceAddr)
+                self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
+                self.onNewConnection(self.bluetoothPort)
+            elif opt[0] == '--bluetoothRFCOMMQt':
+                from msgtools.server.BluetoothRFCOMMQt import BluetoothRFCOMMQtConnection
+                from PyQt5 import QtBluetooth
+                btHost = opt[1]
+                self.btSocket = QtBluetooth.QBluetoothSocket(QtBluetooth.QBluetoothServiceInfo.RfcommProtocol)
+                self.btSocket.connectToService(QtBluetooth.QBluetoothAddress(btHost), 8)
+                self.bluetoothPort = BluetoothRFCOMMQtConnection(self.btSocket)
+                self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
+                self.onNewConnection(self.bluetoothPort)
             elif opt[0] == '--plugin':
                 filename = opt[1]
                 import os
