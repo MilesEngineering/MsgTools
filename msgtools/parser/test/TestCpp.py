@@ -47,11 +47,14 @@ uint8_t GetFieldD() const
     return Get_uint8_t(&m_data[11]);
 }""")
         expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (0.0 to 215.355)*/
 float GetBitsA() const
 {
     return (float((GetFieldD() >> 0) & 0xf) * 14.357f);
-}""")
+}
+#endif
+""")
         expected.append("""\
 /*  , (0 to 7)*/
 EnumA GetBitsB() const
@@ -65,17 +68,23 @@ uint8_t GetBitsC() const
     return (GetFieldD() >> 7) & 0x1;
 }""")
         expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (0.0 to 10.0)*/
 float GetFieldE() const
 {
     return Get_float(&m_data[12]);
-}""")
+}
+#endif
+""")
         expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (1.828 to 176946.328)*/
 float GetFieldF() const
 {
     return ((float(Get_uint16_t(&m_data[16])) * 2.7f) + 1.828f);
-}""")
+}
+#endif
+""")
         expected.append("""\
 /*  m/s, (0 to 4294967295)*/
 void SetFieldA(uint32_t value)
@@ -107,11 +116,14 @@ void SetFieldD(uint8_t value)
     Set_uint8_t(&m_data[11], value);
 }""")
         expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (0.0 to 215.355)*/
 void SetBitsA(float value)
 {
     SetFieldD((GetFieldD() & ~(0xf << 0)) | (((uint8_t)(value / 14.357f) & 0xf) << 0));
-}""")
+}
+#endif
+""")
         expected.append("""\
 /*  , (0 to 7)*/
 void SetBitsB(EnumA value)
@@ -125,17 +137,23 @@ void SetBitsC(uint8_t value)
     SetFieldD((GetFieldD() & ~(0x1 << 7)) | ((value & 0x1) << 7));
 }""")
         expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (0.0 to 10.0)*/
 void SetFieldE(float value)
 {
     Set_float(&m_data[12], value);
-}""")
+}
+#endif
+""")
         expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (1.828 to 176946.328)*/
 void SetFieldF(float value)
 {
     Set_uint16_t(&m_data[16], (uint16_t)((value - 1.828f) / 2.7f));
-}""")
+}
+#endif
+""")
         expected.append("""\
 /*  , (0 to 255)*/
 uint8_t* FieldC()
