@@ -82,16 +82,23 @@ class MessageServer(QtWidgets.QMainWindow):
                 self.bluetoothPort.start()
             elif opt[0] == '--bluetoothRFCOMM':
                 from msgtools.server.BluetoothRFCOMM import BluetoothRFCOMMConnection
-                btDeviceAddr = opt[1]
-                self.bluetoothPort = BluetoothRFCOMMConnection(btDeviceAddr)
+                btArgs = opt[1].split(",")
+                if len(btArgs)>1:
+                    btArgs[1] = int(btArgs[1])
+                self.bluetoothPort = BluetoothRFCOMMConnection(*btArgs)
                 self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
                 self.onNewConnection(self.bluetoothPort)
             elif opt[0] == '--bluetoothRFCOMMQt':
                 from msgtools.server.BluetoothRFCOMMQt import BluetoothRFCOMMQtConnection
                 from PyQt5 import QtBluetooth
-                btHost = opt[1]
+                btArgs = opt[1].split(",")
+                btHost = btArgs[0]
+                if len(btArgs)>1:
+                    btPort = int(btArgs[1])
+                else:
+                    btPort = 8
                 self.btSocket = QtBluetooth.QBluetoothSocket(QtBluetooth.QBluetoothServiceInfo.RfcommProtocol)
-                self.btSocket.connectToService(QtBluetooth.QBluetoothAddress(btHost), 8)
+                self.btSocket.connectToService(QtBluetooth.QBluetoothAddress(btHost), btPort)
                 self.bluetoothPort = BluetoothRFCOMMQtConnection(self.btSocket)
                 self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
                 self.onNewConnection(self.bluetoothPort)
