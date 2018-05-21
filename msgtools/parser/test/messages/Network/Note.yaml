@@ -1,0 +1,10 @@
+Messages:
+  - Name: Note
+    ID: 0xFFFFFF07
+    Description: Message used for adding notes to log files.
+    Fields:
+      - Name: Text
+        Type: uint8
+        Count: 128
+        Units: ASCII
+        Description: The note to log.

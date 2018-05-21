@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>{{appname}}</title>
+    <script type="text/javascript" src="msgtools.js" ></script>
+    
+
+    <!-- Load our main program. -->
+    <script type="text/javascript" src="{{appjs}}" ></script>
+
+</head>
+<body onload="initMsgTools()">
+	<!-- Use WebSocketUtils Widgets -->
+	{% if widgets  %}
+		<script type="text/javascript" src="WebSocketUtils.js"></script>
+		<msgsocket-connector connect-name="{{appname}}" > </msgsocket-connector>
+	    <msgsocket-logging connect-name="{{appname}}"> </msgsocket-logging>
+    {% endif %}
+</body>
+</html>

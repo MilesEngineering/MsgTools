@@ -1,0 +1,51 @@
+<html>
+    <!-- TODO: Have MsgTools import all these scripts behind the scenes! -->
+    <script type='text/javascript' src = 'msgtools.js'></script>
+    <script type='text/javascript'>
+        msgtools.setMsgDirectory('../../js')
+            .then(()=>{
+                msgtools.loadMessages('TestCase1').then(()=>{
+                    var client = new msgtools.MessagingClient('TestClient', window)
+                    client.addEventListener('connected', ()=>{
+                        console.log('Connected')
+                        client.startLogging()
+                        client.logNote('Test note')
+                        client.stopLogging()
+                        client.clearLogs()
+                    })
+                    client.addEventListener('message', (event)=>{
+                        console.log('New Message')
+                        console.log(event.detail.message)
+                    })
+                    client.addEventListener('disconnected', ()=>{
+                        console.log('Disconnected')
+                    })
+                    client.addEventListener('error', ()=>{
+                        console.log('error')
+                    })
+                    client.addEventListener('logstatus', (event)=>{
+                        console.log('logstatus')
+                        console.log(event.detail)
+                    })
+
+                    var options = new Map()
+                    //options.set('secureSocket', true)
+                    //options.set('server', localhost)
+                    //options.set('port', 5678)
+                    //options.set('subscriptionMask', 0x00000001)
+                    //options.set('subscriptionValue', 0xFFFF4080)
+                    //options.set('suppressConnect', true)
+                    //options.set('suppressMaskedSubscription', true)
+                    //options.set('suppressQueryLog', true)
+                    client.connect(options)
+                })
+                .catch(error=>{
+                    console.log(error)
+                })
+            })
+            .catch(error=>{
+                console.log(error)
+            })
+
+    </script>
+</html>

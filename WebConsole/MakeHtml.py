@@ -1,57 +1,63 @@
 #!/usr/bin/env python3
-import sys
 import os
-import string
+import sys
+import argparse
+import jinja2
 
-def Usage():
-    sys.stderr.write('Usage: ' + sys.argv[0] + ' outputfile msgdir\n')
-    sys.exit(1)
+description = '''This script inspects the given message directory and builds a list of all the message modules
+    in the message directory.  It then emits a web app (WebConsole.html) that will load and parse these messages
+    to the console.'''
 
-def ProcessDir(outFile, msgDir):
-    for filename in sorted(os.listdir(msgDir)):
-        inputFilename = msgDir + '/' + filename
-        if os.path.isdir(inputFilename):
-            ProcessDir(outFile, inputFilename)
-        elif filename.endswith(".js"):
-            script = '<script type="text/javascript" src="%s" ></script>\n' % inputFilename
-            outFile.write(script)
+
+def buildApp(msgdir, outputdir):
+    '''We're  just going to iterate each file in the directlry and build a message entry for it.
+    Then we'll run Jinja to build a custom web app based on the messages we've processed'''
+    if msgdir[len(msgdir) - 1] != os.sep:
+        msgdir += os.sep
+
+    messages = []
+    dirs = [msgdir]
+    while len(dirs) is not 0:
+        currentDir = dirs.pop()
+        for entry in os.listdir(currentDir):
+            currentPath = os.path.join(currentDir, entry)
+            if os.path.isdir(currentPath):
+                dirs.append(currentPath)
+            elif entry.endswith('.js'):
+                # Drop the base msgdir and extension
+                message = currentPath[
+                    0:currentPath.rfind('.')][len(msgdir):]
+                message = message.replace(os.sep, '.')
+                messages.append(message)
+            else:
+                print('Skipping {0}; not a Javascript file'.format(
+                    currentPath))
+
+    with open('template.html', 'r') as fp:
+        html = fp.read()
+
+    # Run the Jinja engine to swap out tags
+    template = jinja2.Template(html)
+    templateArgs = {}
+    templateArgs['msgdir'] = msgdir
+    templateArgs['messages'] = messages
+    rendering = template.render(**templateArgs)
+
+    with open(outputdir, 'w') as fp:
+        fp.write(rendering)
 
 # main starts here
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        Usage();
-    outputFilename = sys.argv[1]
-    msgDir = sys.argv[2]
-    
-    global msgNames
-    msgNames = {}
-    global msgPaths
-    msgPaths = {}
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        'outputdir', help='The destination directory for the resulting HTML app')
+    parser.add_argument(
+        'msgdir', help='The basepath for where generated messages are placed.  For example, obj/CodeGenerator/Javascript')
 
-    try:
-        os.makedirs(os.path.dirname(outputFilename))
-    except:
-        pass
-    with open(outputFilename,'w') as outFile:
-        header = \
-'''<!DOCTYPE HTML>
-<html>
-<head>
-<meta charset="utf-8"/>
-<!-- Load messaging library -->
-<script type="text/javascript" src="../MsgApp/UnknownMsg.js" ></script>
-<script type="text/javascript" src="../MsgApp/Messaging.js" ></script>
-<!-- Load auto-generated message files. -->
-'''
-        outFile.write(header)
-        ProcessDir(outFile, msgDir)
-        footer = \
-'''
-<!-- Load our main program. -->
-<script type="text/javascript" src="%s.js" ></script>
-</head>
-<body>
-  <p>Open debug console to see output of javascript console.log statements!</p>
-</body>
-</html>''' % outputFilename.split('.')[0]
-        outFile.write(footer)
+    args = parser.parse_args()
+
+    if os.path.exists(args.msgdir) is False or os.path.isdir(args.msgdir) is False:
+        print('{0} does not exist, or is not a directory'.format(args.msgdir))
+        sys.exit(1)
+
+    buildApp(args.msgdir, args.outputdir)

@@ -1,9 +1,38 @@
-// this prints the whole message dictionary
-//console.log(MessageDictionary);
 
-// create a connection
-var params = getWebsocketURLParams()
-var msgSocket = new MessagingClient("Web Console", params.websocketServer, params.websocketPort);
+function connectToServer() {
+    var client = new msgtools.MessagingClient('WebConsole', window)
+    client.addEventListener('connected', ()=>{
+        console.log('Connected')
+    })
+    client.addEventListener('message', (event)=>{
+        console.log('New Message')
+        console.log(msgtools.toJSON(msg));
+        console.log(reflectionExampleFn(msg));
+
+    })
+    client.addEventListener('disconnected', ()=>{
+        console.log('Disconnected')
+    })
+    client.addEventListener('error', ()=>{
+        console.log('Error')
+    })
+    client.addEventListener('logstatus', (event)=>{
+        console.log('LogStatus')
+        console.log(event.detail)
+    })
+
+    var options = new Map()
+    //options.set('secureSocket', true)
+    //options.set('server', localhost)
+    //options.set('port', 5678)
+    //options.set('subscriptionMask', 0x00000001)
+    //options.set('subscriptionValue', 0xFFFF4080)
+    //options.set('suppressConnect', true)
+    //options.set('suppressMaskedSubscription', true)
+    //options.set('suppressQueryLog', true)
+    client.connect(options)
+
+}
 
 //  this is an example of how to iterate over the fields of a message, getting metadata about each field
 // (and bitfield), and getting the value of the field using the get function called with bracket notation obj[fnName](), instead of obj.fn()
@@ -33,19 +62,3 @@ function reflectionExampleFn(obj) {
     }
     return ret;
 }
-
-// this is the callback to handle received messages
-msgSocket.onmsg = function(msg)
-{
-    // this writes the JSON of the message's header
-    //console.log(toJSON(msg.hdr));
-    console.log(toJSON(msg));
-    console.log(reflectionExampleFn(msg));
-    // this gets the javascript object from a message, instead of accessing the fields using get/set
-    //msg.toObject();
-};
-
-// this is the callback to do stuff after the connection is made
-msgSocket.onconnect = function()
-{
-};

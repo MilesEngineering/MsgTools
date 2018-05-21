@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.28.42',
+    version='0.29.42',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -13,7 +13,8 @@ setup(name='msgtools',
         'console_scripts': ['msgparser=msgtools.parser.parser:main',
                             'msgcheck=msgtools.parser.check:main',
                             'msgconsole=msgtools.console.console:main',
-                            'msginflux=msgtools.database.influxdb:main'],
+                            'msginflux=msgtools.database.influxdb:main',
+                            'msginitwebapp=msgtools.webapp.webapp:main'],
         'gui_scripts': ['msgscope=msgtools.scope.scope:main [gui]',
                         'msgserver=msgtools.server.server:main [gui]',
                         'msginspector=msgtools.inspector.inspector:main [gui]',
@@ -37,10 +38,12 @@ setup(name='msgtools',
     install_requires=[
         'pyyaml',
         'websockets',
-        'janus'
+        'janus',
+        'jinja2',
+        'pyqt5' # This is so instrinsic to most tools; just install it.
     ],
     extras_require={
-        'gui':  ["pyqt5", "pyqtgraph"],
+        'gui':  ["pyqtgraph"],
         'serverserial': ["pyqtserial"],
     },
     package_data={
