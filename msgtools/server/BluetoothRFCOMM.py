@@ -19,7 +19,7 @@ class BluetoothRFCOMMConnection(QObject):
     messagereceived = QtCore.pyqtSignal(object)
     statusUpdate = QtCore.pyqtSignal(str)
 
-    def __init__(self, deviceBTAddr):
+    def __init__(self, deviceBTAddr, deviceBTPort=None):
         super(BluetoothRFCOMMConnection, self).__init__(None)
 
         self.removeClient = QtWidgets.QPushButton("Remove")
@@ -31,13 +31,16 @@ class BluetoothRFCOMMConnection(QObject):
         self.isHardwareLink = True
         self.basetime = time.time()
         
-        services = bluetooth.find_service(address=deviceBTAddr,
-                                          uuid='00001101-0000-1000-8000-00805F9B34FB')
-        if len(services)<=0:
-            pass
+        if deviceBTPort is None:
+            services = bluetooth.find_service(address=deviceBTAddr,
+                                              uuid='00001101-0000-1000-8000-00805F9B34FB')
+            if len(services)<=0:
+                deviceBTPort = 8
+            else:
+                deviceBTPort = services[0]['port']
         
         self.socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-        self.socket.connect((deviceBTAddr, services[0]['port']))
+        self.socket.connect((deviceBTAddr, deviceBTPort))
         #self.socket.disconnected.connect(self.onDisconnected)
 
         self.btsock_buffer = b''
