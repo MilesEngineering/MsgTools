@@ -2,7 +2,15 @@
 import sys
 import os
 import string
+import argparse
 from time import gmtime, strftime
+
+DESCRIPTION = '''Applies message and header language template files to
+                 YAML message inputs to generate code for creating
+                 and parsing messages.  Headers are assumed to reside in
+                 a folder called headers at the root of the input 
+                 directory.  Files in this directly will have the
+                 provided header template applied to them.'''
 
 try:
     from msgtools.parser.MsgUtils import *
@@ -228,6 +236,22 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
             if filename.endswith(".yaml") or filename.endswith(".json"):
                 ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
 
+def getAvailableLanguages():
+    '''Look at all supported languages.  Assume each language is a 
+    subdirectory of the parser.  Special omission of python
+    cache and test directories'''
+    languageDir = os.path.dirname(os.path.realpath(__file__)) + "/"
+
+    print('ld', languageDir)
+    languages = []
+    for file in os.listdir(languageDir):
+        fullpath = os.path.join(languageDir, file)
+        if file != '__pycache__' and file != 'test' and os.path.isdir(fullpath):
+            languages.append(file)
+
+    return languages
+
+
 def loadlanguage(languageName):
     # assume the languageName is a subdirectory of the parser's location,
     # and try loading a language from there
@@ -244,16 +268,22 @@ def loadlanguage(languageName):
     print("Error loading plugin " + languageName)
     sys.exit(1)
 
-def main(args=None):
-    if len(sys.argv) < 6:
-        sys.stderr.write('Usage: ' + sys.argv[0] + ' input output language template headertemplate\n')
-        sys.exit(1)
+def main():
+
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser.add_argument('input', help='YAML base directory')
+    parser.add_argument('output', help='Destination directory for generated language files.')
+    parser.add_argument('language', choices=getAvailableLanguages(), help='Language to target')
+    parser.add_argument('template', help='Message template for the given language')
+    parser.add_argument('headertemplate', help='Header template for the given language')
+    args = parser.parse_args()
+
     global inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename
-    inputFilename = sys.argv[1]
-    outputFilename = sys.argv[2]
-    languageFilename = sys.argv[3]
-    templateFilename = sys.argv[4]
-    headerTemplateFilename = sys.argv[5]
+    inputFilename = args.input
+    outputFilename = args.output
+    languageFilename = args.language
+    templateFilename = args.template
+    headerTemplateFilename = args.headertemplate
 
     # import the language file
     global language
