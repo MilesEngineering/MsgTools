@@ -1,8 +1,8 @@
 <html>
     <!-- TODO: Have MsgTools import all these scripts behind the scenes! -->
-    <script type='text/javascript' src = 'msgtools.js'></script>
+    <script type='text/javascript' src = 'lib/msgtools.js'></script>
     <script type='text/javascript'>
-        msgtools.setMsgDirectory('../../js')
+        msgtools.setMsgDirectory('../../obj/CodeGenerator/Javascript')
             .then(()=>{
                 msgtools.loadMessages('TestCase1').then(()=>{
                     var client = new msgtools.MessagingClient('TestClient', window)
@@ -19,6 +19,10 @@
                     })
                     client.addEventListener('disconnected', ()=>{
                         console.log('Disconnected')
+
+                        // Always call disconnect to make sure we
+                        // cleanup after ourselves.
+                        client.disconnect()
                     })
                     client.addEventListener('error', ()=>{
                         console.log('error')
@@ -46,6 +50,8 @@
             .catch(error=>{
                 console.log(error)
             })
-
     </script>
+    <body>
+
+    </body>
 </html>

@@ -178,7 +178,7 @@
      * mirroring the underlying Websocket and also encapsulates some core MsgTools
      * logic for identifying the client by name, and masking
      */
-    class MessagingClient extends EventTarget {
+    class MessagingClient {
         /**
          * Contruct a new MessagingClient
          *
@@ -191,7 +191,13 @@
          * when connecting.
          */
         constructor(name='', hostWindow=null) {
-            super()
+
+            // Because Safari doesn't support EventTarget as an actual constructable class we
+            // are going with a delegation pattern where we create a div tag to act as our 
+            // event mediator.  In Chrome we could just extend this class from EventTarget and
+            // move on.
+            this.m_EventTarget = document.createElement('div')
+            this.m_EventTarget.name=name
 
             if (dependenciesLoaded==false)
                 throw 'You must call setMsgDirectory() before a MessageClient can be created.'
@@ -199,6 +205,21 @@
             this.m_Name = name
             this.m_WebSocket = null
             this.m_HostWindow = hostWindow
+        }
+
+        //
+        // Our own version of EventTarget that we just delegate - see comments in the constructor
+        // for why we went this way...
+        addEventListener() {
+            return this.m_EventTarget.addEventListener.apply(null, arguments)
+        }
+
+        removeEventListener() {
+            return this.m_EventTarget.removeEventListener.apply(null, arguments)           
+        }
+        
+        dispatchEvent() {
+            return this.m_EventTarget.dispatchEvent.apply(null, arguments)
         }
 
         /**
@@ -460,8 +481,16 @@
         */
         disconnect() {
             if (this.m_WebSocket !== null) {
-                // 1000 is a normal/expected closure
-                this.m_WebSocket.close(1000, 'disconnect() called')
+                try {
+                    // 1000 is a normal/expected closure
+                    this.m_WebSocket.close(1000, 'disconnect() called')
+                    this.m_WebSocket.removeEventListener('open', eventListener)
+                    this.m_WebSocket.removeEventListener('message', eventListener)
+                    this.m_WebSocket.removeEventListener('close', eventListener)
+                    this.m_WebSocket.removeEventListener('error', eventListener)
+                }
+                finally {
+                }
             }        
         }
 
