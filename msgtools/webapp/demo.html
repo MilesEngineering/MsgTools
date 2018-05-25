@@ -19,6 +19,10 @@
                     })
                     client.addEventListener('disconnected', ()=>{
                         console.log('Disconnected')
+
+                        // Always call disconnect to make sure we
+                        // cleanup after ourselves.
+                        client.disconnect()
                     })
                     client.addEventListener('error', ()=>{
                         console.log('error')
@@ -47,4 +51,7 @@
                 console.log(error)
             })
     </script>
+    <body>
+
+    </body>
 </html>

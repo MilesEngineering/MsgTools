@@ -481,8 +481,16 @@
         */
         disconnect() {
             if (this.m_WebSocket !== null) {
-                // 1000 is a normal/expected closure
-                this.m_WebSocket.close(1000, 'disconnect() called')
+                try {
+                    // 1000 is a normal/expected closure
+                    this.m_WebSocket.close(1000, 'disconnect() called')
+                    this.m_WebSocket.removeEventListener('open', eventListener)
+                    this.m_WebSocket.removeEventListener('message', eventListener)
+                    this.m_WebSocket.removeEventListener('close', eventListener)
+                    this.m_WebSocket.removeEventListener('error', eventListener)
+                }
+                finally {
+                }
             }        
         }
 
