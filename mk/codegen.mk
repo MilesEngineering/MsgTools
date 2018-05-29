@@ -15,38 +15,38 @@ MSG_FILES := $(shell cd $(mdir) && find * -iname \*.yaml)
 .PHONY: python cpp c java js swift matlab html check
 
 python:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Python python  Template.py HeaderTemplate.py
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Python python
 
 cpp:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Cpp cpp  Template.h HeaderTemplate.h
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Cpp cpp
 
 c:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/C c  Template.h HeaderTemplate.h
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/C c
 
 $(MSGDIR)/Dart/pubspec.yaml:
 	@mkdir -p $(@D)
 	echo 'name: messages\ndescription: Auto-generated Dart code from MsgTools, based on YAML message definitions.' > $@
 
 dart: | $(MSGDIR)/Dart/pubspec.yaml
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Dart/lib dart  Template.dart HeaderTemplate.dart
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Dart/lib dart
 
 dartlint:
 	cd $(MSGDIR)/Dart ; flutter analyze > lint.txt
 
 java:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Java java  Template.java HeaderTemplate.java
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Java java
 
 js:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Javascript javascript  Template.js HeaderTemplate.js
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Javascript javascript
 
 swift:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Swift swift  Template.swift HeaderTemplate.swift
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Swift swift
 
 matlab:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Matlab/+Messages matlab  Template.m HeaderTemplate.m
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Matlab/+Messages matlab
 
 html:
-	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Html html  Template.html HeaderTemplate.html
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Html html
 	@find $(MSGDIR)/Html -type d -print0 | xargs -n 1 -0 cp $(CG_DIR)html/bootstrap.min.css
 
 check: $(DIGEST)
