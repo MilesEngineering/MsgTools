@@ -38,7 +38,7 @@ class App(QtWidgets.QMainWindow):
                     This parameter is overridden by the --ip and --port options.''')
         parser.add_argument('--ip', help='The IP address for a socket connection.   Overrides connectionName.')
         parser.add_argument('--port', type=int, help='The port for a socket connection. Overrides connectionName.')
-        parser.add_argument('--msg', help='Allowed messages followed by a slash ("/") followed key fields´.  Presently unsupported.')
+#        parser.add_argument('--msg', help='Allowed messages followed by a slash ("/") followed key fields.')
         parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
         parser.add_argument('--serial', action='store_true', help='Set if you want to use a SerialHeader instead of a NetworkHeader. Overrides files.')
         parser.add_argument('files', nargs=argparse.REMAINDER, help='''Zero or more files for processing.  
