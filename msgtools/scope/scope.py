@@ -5,6 +5,7 @@ from datetime import datetime
 import collections
 import functools
 import threading
+import argparse
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -31,6 +32,9 @@ except RuntimeError as e:
     print("Error loading plot interface ["+str(e)+"]")
     print("Perhaps you need to install the PyQt5 version of pyqtgraph.")
     
+DESCRIPTION='''MsgScope provides a graphical interface that allow syou to view, plot, and send
+    messages.  It requires defined messages in Python.  A list of discovered messages will be
+    displayed in the upper left of the UI.'''
 
 class RxRateCalculatorThread(QObject):
     rates_updated = pyqtSignal(object)
@@ -100,8 +104,8 @@ class ClosableDockWidget(QDockWidget):
         self.parent().removeDockWidget(self)
 
 class MessageScopeGui(msgtools.lib.gui.Gui):
-    def __init__(self, argv, parent=None):
-        msgtools.lib.gui.Gui.__init__(self, "Message Scope 0.1", argv, [], parent)
+    def __init__(self, args, parent=None):
+        msgtools.lib.gui.Gui.__init__(self, "Message Scope 0.1", args, parent)
 
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -402,9 +406,13 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
     def clear_tx(self):
         self.txMsgs.clear()
 
-def main(args=None):
+def main():
+    # Setup a command line processor...
+    parser = msgtools.lib.gui.Gui.getArgParser(argparse.ArgumentParser(description=DESCRIPTION))
+    args = parser.parse_args()
+
     app = QApplication(sys.argv)
-    msgScopeGui = MessageScopeGui(sys.argv)
+    msgScopeGui = MessageScopeGui(args)
     msgScopeGui.show()
     sys.exit(app.exec_())
 
