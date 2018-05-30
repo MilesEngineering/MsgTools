@@ -308,7 +308,7 @@ class MsgCommandWidget(QtWidgets.QWidget):
     
 class Gui(App, QtWidgets.QMainWindow):
     @classmethod
-    def getArgParser(cls, parent=None, skipFiles=False, ):
+    def getArgParser(cls, parent=None, skipFiles=False):
         '''Helper delegate.  We wrap the App internal to the Gui class
         so rather than force users to include both Gui and App they can
         just invoke Gui.  Also allows us to inject our own ArgumentParser later
