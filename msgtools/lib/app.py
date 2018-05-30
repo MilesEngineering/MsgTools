@@ -21,7 +21,7 @@ class App(QtWidgets.QMainWindow):
     connectionChanged = QtCore.pyqtSignal(bool)
 
     @classmethod
-    def getArgParser(cls, parent=None):
+    def getArgParser(cls, parent=None, skipFiles=False):
         '''Retrieve an Arg Parser outlining the command line options
         this class relies on.  This is provided so you can extend
         the parser with your own higher level arguments.
@@ -41,8 +41,10 @@ class App(QtWidgets.QMainWindow):
 #        parser.add_argument('--msg', help='Allowed messages followed by a slash ("/") followed key fields.')
         parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
         parser.add_argument('--serial', action='store_true', help='Set if you want to use a SerialHeader instead of a NetworkHeader. Overrides files.')
-        parser.add_argument('files', nargs=argparse.REMAINDER, help='''Zero or more files for processing.  
-                    Any file with a .txt extension will trigger the use of a SerialHeader instead of a NetworkHeader.''')
+
+        if skipFiles is False:
+            parser.add_argument('files', nargs=argparse.REMAINDER, help='''Zero or more files for processing.  
+                        Any file with a .txt extension will trigger the use of a SerialHeader instead of a NetworkHeader.''')
 
         return parser
     
@@ -90,12 +92,12 @@ class App(QtWidgets.QMainWindow):
             ip = args.ip
         if args.port is not None:
             port = args.port
-        if args.msg is not None:
-            option = args.msg.split('/')
-            self.allowedMessages.append(option[0])
-            if len(option) > 1:
-                self.keyFields[option[0]] = option[1]
-            print("only allowing msg " + str(option))
+        # if args.msg is not None:
+        #     option = args.msg.split('/')
+        #     self.allowedMessages.append(option[0])
+        #     if len(option) > 1:
+        #         self.keyFields[option[0]] = option[1]
+        #     print("only allowing msg " + str(option))
         if args.msgdir:
             msgLoadDir = args.msgdir
         
