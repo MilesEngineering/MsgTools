@@ -16,22 +16,14 @@ except ImportError:
 import msgtools.lib.gui
 
 DESCRIPTION='''
-Invoke like this
-    ./path/to/Lumberjack.py FILENAME
-    
-where FILENAME is the name of the log file you'd like to split into CSV.
-
-If the file extension is .log it will be assumed to be a log file created by MessageServer,
-if the file extension is .txt it will be assumed to be a log file created by the SparkFun serial SD logger.
 Lumberjack will create a directory named after the input file, and put multiple .csv files (one per message)
 in that directory.
 '''
 
 EPILOG='''
-This utility overrides the connectionName with the filename argument, and forces a "file" connectionType.  This 
-disables all socket options.
+This utility overrides connectionName with the logfile argument, and forces a "file" connectionType.  This 
+disables all socket options, and these will be ignored if specified.
 '''
-
 
 class Lumberjack(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
