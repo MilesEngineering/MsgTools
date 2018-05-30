@@ -39,6 +39,9 @@ class Lumberjack(msgtools.lib.gui.Gui):
         args.connectionName = args.logfile
         if args.logfile.lower().endswith('.txt'):
             args.serial = True
+        args.ip = None
+        args.port = None
+        args.files = []
 
         msgtools.lib.gui.Gui.__init__(self, "Lumberjack 0.1", args, parent)
         
