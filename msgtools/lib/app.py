@@ -78,35 +78,30 @@ class App(QtWidgets.QMainWindow):
         # directory to load messages from.
         msgLoadDir = None
 
-        # need better handling of command line arguments for case when there is only one arg and it's a filename
-        if(len(sys.argv) == 3 and sys.argv[2].lower().endswith((".txt",".log"))):
-            self.connectionType = "file"
-            self.connectionName = argv[2]
-        else:
-            # connection modes
-            ip = ""
-            port = ""
+        # connection modes
+        ip = ""
+        port = ""
 
-            if args.connectionType is not None:
-                self.connectionType = args.connectionType
-            if args.connectionName is not None:
-                self.connectionName = args.connectionName
-            if args.ip is not None:
-                ip = args.ip
-            if args.port is not None:
-                port = args.port
-            if args.msg is not None:
-                option = args.msg.split('/')
-                self.allowedMessages.append(option[0])
-                if len(option) > 1:
-                    self.keyFields[option[0]] = option[1]
-                print("only allowing msg " + str(option))
-            if args.msgdir:
-                msgLoadDir = args.msgdir
-            
-            # if either --ip or --port were used, override connectionName
-            if args.ip is not None or args.port is not None:
-                self.connectionName = str(ip)+":"+str(port)
+        if args.connectionType is not None:
+            self.connectionType = args.connectionType
+        if args.connectionName is not None:
+            self.connectionName = args.connectionName
+        if args.ip is not None:
+            ip = args.ip
+        if args.port is not None:
+            port = args.port
+        if args.msg is not None:
+            option = args.msg.split('/')
+            self.allowedMessages.append(option[0])
+            if len(option) > 1:
+                self.keyFields[option[0]] = option[1]
+            print("only allowing msg " + str(option))
+        if args.msgdir:
+            msgLoadDir = args.msgdir
+        
+        # if either --ip or --port were used, override connectionName
+        if args.ip is not None or args.port is not None:
+            self.connectionName = str(ip)+":"+str(port)
         
         # initialize the read function to None, so it's not accidentally called
         self.readBytesFn = None
@@ -177,10 +172,11 @@ class App(QtWidgets.QMainWindow):
         elif(self.connectionType.lower() == "file"):
             try:
                 self.connection = open(self.connectionName, 'rb')
+                self.readBytesFn = self.connection.read
+                self.sendBytesFn = self.connection.write
             except IOError:
                 print("\nERROR!\ncan't open file ", self.connectionName)
-            self.readBytesFn = self.connection.read
-            self.sendBytesFn = self.connection.write
+                sys.exit(1)
         else:
             print("\nERROR!\nneed to specify socket or file")
             sys.exit()
