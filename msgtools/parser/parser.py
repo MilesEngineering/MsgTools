@@ -3,6 +3,8 @@ import sys
 import os
 import string
 import argparse
+import pkg_resources
+
 from time import gmtime, strftime
 
 DESCRIPTION = '''Applies message and header language template files to
@@ -12,6 +14,9 @@ DESCRIPTION = '''Applies message and header language template files to
                  directory.  A header called NetworkHeader.yaml MUST
                  be defined and adhere to the contract outlined in 
                  the test message suite.'''
+
+EPILOG = '''Built-in languages have precedence over plugins.  If your plugin
+            uses the same name as a built-int language it will be ignored.'''
 
 # Used to find the default template and header template within the language 
 # folder. These are case sensitive.
@@ -248,42 +253,36 @@ def getAvailableLanguages():
     cache and test directories'''
     languageDir = os.path.dirname(os.path.realpath(__file__)) + "/"
 
-    languages = []
+    # Use a set - thep plugin could duplicate a built-in language
+    languages = set()
     for file in os.listdir(languageDir):
         fullpath = os.path.join(languageDir, file)
         if file != '__pycache__' and file != 'test' and os.path.isdir(fullpath):
-            languages.append(file)
+            languages.add(file)
 
-    # Special case for plugins...
-    languages.append('plugin')
+    # Discovery plugin entry points
+    for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
+        languages.add(entry_point.name)
+
+    languages = list(languages)
     languages.sort()
 
     return languages
 
-
-def loadlanguage(languageName, pluginName):
+def loadlanguage(languageName):
     # assume the languageName is a subdirectory of the parser's location,
     # and try loading a language from there
-    if languageName != 'plugin':
-        languageDir = os.path.dirname(os.path.realpath(__file__)) + "/" + languageFilename
-        if os.path.isdir(languageDir):
-            sys.path.append(os.path.abspath(languageDir))
-            return __import__('language')
-        else:
-            print('{0} is not a valid language'.format(languageName))
-            sys.exit(1)
-    else:
-        if pluginName is not None:
-            # if the above fails, iterate over packages that implement the plugin interface
-            import pkg_resources
-            for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
-                if entry_point.name == pluginName:
-                    return entry_point.load()
-            print("Error loading plugin " + pluginName)
-            sys.exit(1)
-        else:
-            print("You must specify a plugin name with the -p option for a plugin language")
-            sys.exit(1)
+    languageDir = os.path.dirname(os.path.realpath(__file__)) + "/" + languageFilename
+    if os.path.isdir(languageDir):
+        sys.path.append(os.path.abspath(languageDir))
+        return __import__('language')
+    # if the above fails, iterate over packages that implement the plugin interface
+    import pkg_resources
+    for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
+        if entry_point.name == languageFilename:
+            return entry_point.load()
+    print("Error loading plugin " + languageName)
+    sys.exit(1)
 
 def getTemplate(language, templateBase):
     '''Search the given language sub-folder for the template.
@@ -299,20 +298,18 @@ def getTemplate(language, templateBase):
 
 def main():
 
-    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser = argparse.ArgumentParser(description=DESCRIPTION, epilog=EPILOG)
     parser.add_argument('input', help='YAML base directory, or a specific YAML file you want to process.')
     parser.add_argument('output', help='Destination directory for generated language files.')
-    parser.add_argument('language', choices=getAvailableLanguages(), help='''Built-in language to target.  
-        Plugin to specify a plugin language.''')
-    parser.add_argument('-p', '--pluginentry', dest='plugin', help='''The plugin language entry point to
-        search for.  Must be specified if language=plugin.''')
+    parser.add_argument('language', choices=getAvailableLanguages(), help='''Language to target.  
+        This includes built-in and plugin laguages.''')
     parser.add_argument('-t', '--template', dest='template',
         help='Message template to use for messages.  If unspecified defaults to the template provided by MsgTools')
     parser.add_argument('-ht', '--headertemplate', dest='headertemplate', 
         help='''Header template applied to messages in the "headers" folder.  If unspecified defaults to the 
                 template provided by MsgTools.''')
     args = parser.parse_args()
-
+  
     global inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename
     inputFilename = args.input
     outputFilename = args.output
@@ -322,7 +319,7 @@ def main():
 
     # import the language file
     global language
-    language = loadlanguage(languageFilename, args.plugin)
+    language = loadlanguage(languageFilename)
 
     # If this is a plugin the -t and -ht arguments are no longer optional
     if args.language == 'plugin'and (args.template is None or args.headertemplate  is None):
