@@ -29,6 +29,11 @@ DESCRIPTION='''
 
 EPILOG='''
 
+Headers
+=======
+MsgServer expects headers.NetworkHeader as the prequel for all messages.  
+All clients need to send and receive messages with a NetworkHeader.
+
 TCP and Websockets
 ==================
 MsgServer always runs a TCP and Websocket server.  The Websocket server
