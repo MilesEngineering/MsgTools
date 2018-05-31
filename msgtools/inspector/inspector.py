@@ -14,8 +14,8 @@ except ImportError:
 import msgtools.lib.gui
 
 DESCRIPTION='''MsgInspector allows you to connect to a MsgServer and inspect messages as they arrive.
-    It is similar to MsgScope but presents data in a time linear format with compact details, with 
-    each message type grouped.'''
+    It is similar to MsgScope but presents data in a time linear format with compact details.  Each message
+    type grouped into it's own tab'''
 
 class MsgInspector(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
