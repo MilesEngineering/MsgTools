@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import argparse
 from PyQt5 import QtGui, QtWidgets, QtCore
 import time
 
@@ -12,10 +13,22 @@ except ImportError:
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
+DESCRIPTION='''
+    BandwidthTester is designed to work with the BandWidthTestEcho utility.  It connects to a
+    MsgServer and sends Bandwidth test messages, listening for echo responses with timestamps.
+    Basic stats are provided to allow you rough order of throughput.  Python is not very stable
+    when it comes to timing and multi-threaded operations so expect some margin of error in your 
+    results.
+'''
+
 class BandwidthTester(msgtools.lib.gui.Gui):
     startTime = int(time.time() * 1000)
-    def __init__(self, argv, parent=None):
-        msgtools.lib.gui.Gui.__init__(self, "Bandwidth Tester 0.1", argv, [], parent)
+    def __init__(self, parent=None):
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
+        args = parser.parse_args()
+
+        msgtools.lib.gui.Gui.__init__(self, "Bandwidth Tester 0.1", args, parent)
         
         self.lastTxSequence = 0
         self.lastRxSequence = 0
@@ -201,7 +214,7 @@ class BandwidthTester(msgtools.lib.gui.Gui):
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
-    msgApp = BandwidthTester(sys.argv)
+    msgApp = BandwidthTester()
     msgApp.show()
     sys.exit(app.exec_())
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import argparse
 from PyQt5 import QtGui, QtWidgets, QtCore
 
 try:
@@ -11,9 +12,20 @@ except ImportError:
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
+DESCRIPTION='''
+    Connects to a MsgSever and listens for BandwidthTest messages. When a message is received
+    it is timestamped and sent back.  This app is meant to be used with the BandwidthTester app 
+    which sources the BandwidthTest messages and displays results.  The UI also lets you adjust
+    % of received messages that are simply dropped.
+    '''
+
 class BandwidthTestEcho(msgtools.lib.gui.Gui):
-    def __init__(self, argv, parent=None):
-        msgtools.lib.gui.Gui.__init__(self, "Bandwidth Test Echo 0.1", argv, [], parent)
+    def __init__(self, parent=None):
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
+        args = parser.parse_args()
+
+        msgtools.lib.gui.Gui.__init__(self, "Bandwidth Test Echo 0.1", args, parent)
         
         self.msgCount = 0
         self.dropPercent = 0
@@ -73,7 +85,7 @@ class BandwidthTestEcho(msgtools.lib.gui.Gui):
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
-    msgApp = BandwidthTestEcho(sys.argv)
+    msgApp = BandwidthTestEcho()
     msgApp.show()
     sys.exit(app.exec_())
 
