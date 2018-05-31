@@ -20,7 +20,7 @@ DESCRIPTION='''MsgInspector allows you to connect to a MsgServer and inspect mes
 class MsgInspector(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
         parser = argparse.ArgumentParser(description=DESCRIPTION)
-        parser = msgtools.lib.gui.Gui.getArgParser(parent=parser, skipFiles=True)
+        parser = msgtools.lib.gui.Gui.getArgParser(DESCRIPTION, parent=parser, skipFiles=True)
         args=parser.parse_args()
 
         msgtools.lib.gui.Gui.__init__(self, "Message Inspector 0.1", args, parent)

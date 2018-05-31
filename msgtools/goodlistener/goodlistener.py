@@ -33,7 +33,7 @@ class GoodListener(msgtools.lib.gui.Gui):
         parser.add_argument('inputfiles', nargs='+', help='''Optional results file, followed by
             the log file to process.''')
 
-        parser = msgtools.lib.gui.Gui.getArgParser(parser, skipFiles = True)
+        parser = msgtools.lib.gui.Gui.getArgParser('', parser, skipFiles = True)
         args = parser.parse_args()
 
         # Override args to line this up for file processing in our shared class

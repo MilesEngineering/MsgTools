@@ -21,14 +21,14 @@ class App(QtWidgets.QMainWindow):
     connectionChanged = QtCore.pyqtSignal(bool)
 
     @classmethod
-    def getArgParser(cls, parent=None, skipFiles=False):
+    def getArgParser(cls, description, epilog=None, parent=None, skipFiles=False):
         '''Retrieve an Arg Parser outlining the command line options
         this class relies on.  This is provided so you can extend
         the parser with your own higher level arguments.
         
         parent - an ArgParser to use as a parent to the one
         for this class.'''
-        parser = argparse.ArgumentParser(parents=[parent], add_help=False)
+        parser = argparse.ArgumentParser(description=description, epilog=epilog, parents=[parent], add_help=False)
         parser.add_argument('--connectionType', choices=['socket', 'qtsocket', 'file'], default='qtsocket',
             help='Specify the type of connection we are establishing as a message pipe/source.')
         parser.add_argument('--connectionName', default='127.0.0.1:5678',
