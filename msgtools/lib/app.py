@@ -21,14 +21,12 @@ class App(QtWidgets.QMainWindow):
     connectionChanged = QtCore.pyqtSignal(bool)
 
     @classmethod
-    def getArgParser(cls, description, epilog=None, parent=None, skipFiles=False):
-        '''Retrieve an Arg Parser outlining the command line options
-        this class relies on.  This is provided so you can extend
-        the parser with your own higher level arguments.
-        
-        parent - an ArgParser to use as a parent to the one
-        for this class.'''
-        parser = argparse.ArgumentParser(description=description, epilog=epilog, parents=[parent], add_help=False)
+    def addBaseArguments(cls, parser, skipFiles=False):
+        '''
+        Adds base app arguments to the provided ArgParser
+        skipFiles - if True we won't provide an agument for a files list
+        returns the parser
+        '''
         parser.add_argument('--connectionType', choices=['socket', 'qtsocket', 'file'], default='qtsocket',
             help='Specify the type of connection we are establishing as a message pipe/source.')
         parser.add_argument('--connectionName', default='127.0.0.1:5678',
@@ -40,7 +38,7 @@ class App(QtWidgets.QMainWindow):
         parser.add_argument('--port', type=int, help='The port for a socket connection. Overrides connectionName.')
         parser.add_argument('--msg', help='Allowed messages followed by a slash ("/") followed key fields.')
         parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
-        parser.add_argument('--serial', action='store_true', help='Set if you want to use a SerialHeader instead of a NetworkHeader. Overrides files.')
+        parser.add_argument('--serial', action='store_true', help='Set if you want to use a SerialHeader instead of a NetworkHeader.')
 
         if skipFiles is False:
             parser.add_argument('files', nargs=argparse.REMAINDER, help='''Zero or more files for processing.  

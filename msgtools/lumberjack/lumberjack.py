@@ -28,11 +28,11 @@ disables all socket options, and these will be ignored if specified.
 class Lumberjack(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
 
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(description=DESCRIPTION, epilog=EPILOG)
         parser.add_argument('logfile', help='''The log file you want to split into CSV.  .log extension 
             assumes the log was created by MsgServer (binary).  A .txt extension assumes the file was
             created by SD logger.''')
-        parser=msgtools.lib.gui.Gui.getArgParser(DESCRIPTION, epilog=EPILOG, parent=parser)
+        parser=msgtools.lib.gui.Gui.addBaseArguments(parser)
         args = parser.parse_args()
 
         args.connectionType='file'

@@ -308,12 +308,18 @@ class MsgCommandWidget(QtWidgets.QWidget):
     
 class Gui(App, QtWidgets.QMainWindow):
     @classmethod
-    def getArgParser(cls, description, epilog=None, parent=None, skipFiles=False):
-        '''Helper delegate.  We wrap the App internal to the Gui class
-        so rather than force users to include both Gui and App they can
-        just invoke Gui.  Also allows us to inject our own ArgumentParser later
-        if we want to add Gui specific command line args'''
-        return App.getArgParser(description, epilog, parent, skipFiles)
+    def addBaseArguments(cls, parser, skipFiles=False):
+        '''
+        Adds base app arguments to the provided ArgParser
+        skipFiles - if True we won't provide an agument for a files list
+        returns the parser
+        '''
+
+        # Just delegate - this design choice is two fold - it prevents
+        # code using the Gui from including the App as a dependency.
+        # It also allows us to inject Gui specific arguments into this
+        # base class later.
+        return App.addBaseArguments(parser, skipFiles)
 
     '''Gui base class that provides standard connection and status UI
 
