@@ -230,11 +230,12 @@
          * use the host window query params ws and port for the server and port respectively.
          *
          * @param {Map} - Map of options as follows:
-         *  'server' - IP or hostname of the target server. Default = 127.0.0.1
-         *  'port' - port number of the target server.  Default = 5679
+         *  'server' - IP or hostname of the target server. Default = 127.0.0.1 - this will override window
+         *  'port' - port number of the target server.  Default = 5679 - this will override window
          *  'secureSocket' - Set to true if you want to use a secure socket.  If you want the client to 
-         *  automatcally select secure or insecure sockets based on the page souce then pass a host window
-         *  into the constructor and set secureSocket to false.  Default false.
+         *  automatically select secure or insecure sockets based on the page source then pass a host window
+         *  into the constructor and set secureSocket to false.  Otherwise this option will always override 
+         *  the window.  Default false.
          *  'subscriptionMask - uint32 mask for messages of interest - 0=don't care, 1=accept only.  
          *  Default=0 (accept all)
          *  'subscriptionValue - uint32 value for a message of interest. Default = 0 (all messages).'
@@ -253,11 +254,21 @@
             var suppressConnect = false
             var suppressMaskedSubscription = false
             var suppressQueryLog = false
+            var serverOption = false
+            var portOption = false
 
             // Override defaults...
             if (options !== undefined && options !== null && options instanceof Map) {
-                server = options.has('server') ? options.get('server') : server
-                port = options.has('port') ? options.get('port') : port
+                if (options.has('server')) {
+                    server = options.get('server')
+                    serverOption = true
+                }
+
+                if (options.has('port')) {
+                    port = options.get('port')
+                    portOption = true
+                } 
+
                 secureSocket = options.has('secureSocket') ? options.get('secureSocket') : secureSocket
                 subscriptionMask = options.has('subscriptionMask') ? 
                     options.get('subscriptionMask') : subscriptionMask
@@ -281,13 +292,14 @@
                 protocol='wss://'
             }
 
-            // Apply server and port logic as outlined above
+            // Apply server and port logic as outlined above - note that if a server or port option
+            // was specified that will override the query params here
             if (this.m_HostWindow !== null) {
                 var url = new URL(this.m_HostWindow.location)
-                if (url.searchParams.has('ws') && server === '127.0.0.1') {
+                if (serverOption == false && url.searchParams.has('ws') && server === '127.0.0.1') {
                     server = url.searchParams.get('ws')
                 }
-                if (url.searchParams.has('port') && port === 5679) {
+                if (portOption === false && url.searchParams.has('port') && port === 5679) {
                     port = url.searchParams.get('port')
                 }
             }
