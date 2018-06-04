@@ -25,7 +25,7 @@ class BandwidthTester(msgtools.lib.gui.Gui):
     startTime = int(time.time() * 1000)
     def __init__(self, parent=None):
         parser = argparse.ArgumentParser(description=DESCRIPTION)
-        parser = msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
         args = parser.parse_args()
 
         msgtools.lib.gui.Gui.__init__(self, "Bandwidth Tester 0.1", args, parent)

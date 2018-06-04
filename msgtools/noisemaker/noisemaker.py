@@ -28,7 +28,7 @@ class NoiseMaker(msgtools.lib.gui.Gui):
             One or more messages that you wish to send.  This entire list is sent each 
             time the message period is up.  Network messages are ignored.  By default we 
             send all known messages.''')
-        parser = msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
         args = parser.parse_args()
 
         print(args)

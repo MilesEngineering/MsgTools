@@ -409,7 +409,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 def main():
     # Setup a command line processor...
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser = msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
+    parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
     args = parser.parse_args()
 
     app = QApplication(sys.argv)

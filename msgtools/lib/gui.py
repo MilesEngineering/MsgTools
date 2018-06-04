@@ -308,10 +308,10 @@ class MsgCommandWidget(QtWidgets.QWidget):
     
 class Gui(App, QtWidgets.QMainWindow):
     @classmethod
-    def addBaseArguments(cls, parser, skipFiles=False):
+    def addBaseArguments(cls, parser):
         '''
         Adds base app arguments to the provided ArgParser
-        skipFiles - if True we won't provide an agument for a files list
+
         returns the parser
         '''
 
@@ -319,7 +319,7 @@ class Gui(App, QtWidgets.QMainWindow):
         # code using the Gui from including the App as a dependency.
         # It also allows us to inject Gui specific arguments into this
         # base class later.
-        return App.addBaseArguments(parser, skipFiles)
+        return App.addBaseArguments(parser)
 
     '''Gui base class that provides standard connection and status UI
 

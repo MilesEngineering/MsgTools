@@ -41,13 +41,6 @@ class GoodListener(msgtools.lib.gui.Gui):
         args.ip = None
         args.port = None
 
-        # Stuff base App arguments
-        args.lastserial = False
-        args.serial = None
-        args.msg = None
-        args.msgdir = None
-
-
         if len(args.inputfiles) > 1:
             resultsFilename = args.inputfiles[0]
             logFileName = None if len(args.inputfiles) < 2 else args.inputfiles[2]

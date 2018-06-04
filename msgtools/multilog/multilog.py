@@ -70,7 +70,7 @@ class Multilog(msgtools.lib.gui.Gui):
                     is a message name that adds a tree view to edit a message with a 'send' 
                     button to send it.  Example argument: MSGNAME''')
 
-        parser = msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
 
         args=parser.parse_args()
 

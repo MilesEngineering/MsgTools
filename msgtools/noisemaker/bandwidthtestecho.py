@@ -22,7 +22,7 @@ DESCRIPTION='''
 class BandwidthTestEcho(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
         parser = argparse.ArgumentParser(description=DESCRIPTION)
-        parser = msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
         args = parser.parse_args()
 
         msgtools.lib.gui.Gui.__init__(self, "Bandwidth Test Echo 0.1", args, parent)

@@ -21,7 +21,7 @@ class App(QtWidgets.QMainWindow):
     connectionChanged = QtCore.pyqtSignal(bool)
 
     @classmethod
-    def addBaseArguments(cls, parser, skipFiles=False):
+    def addBaseArguments(cls, parser):
         '''
         Adds base app arguments to the provided ArgParser
         skipFiles - if True we won't provide an agument for a files list
@@ -39,10 +39,6 @@ class App(QtWidgets.QMainWindow):
         parser.add_argument('--msg', help='Allowed messages followed by a slash ("/") followed key fields.')
         parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
         parser.add_argument('--serial', action='store_true', help='Set if you want to use a SerialHeader instead of a NetworkHeader.')
-
-        if skipFiles is False:
-            parser.add_argument('files', nargs=argparse.REMAINDER, help='''Zero or more files for processing.  
-                        Any file with a .txt extension will trigger the use of a SerialHeader instead of a NetworkHeader.''')
 
         return parser
     
@@ -62,11 +58,9 @@ class App(QtWidgets.QMainWindow):
         args.msg = None if hasattr(args, 'msg') == False else args.msg
         args.msgdir = None if hasattr(args, 'msgdir') == False else args.msgdir
 
-
         # default to Network, unless we have a input filename that contains .txt
         headerName = "NetworkHeader"
-        if args.serial or (hasattr(args, 'files') and len(args.files) > 0 and 
-                (any(".txt" in s for s in args.files) or any(".TXT" in s for s in args.files))):
+        if args.serial or (args.connectionType=='file' and os.path.splitext(args.connectionType)[1].lower() == '.txt'):
             headerName = "SerialHeader"
 
         self.name = name

@@ -26,7 +26,7 @@ class Lumberjack(msgtools.lib.gui.Gui):
         parser.add_argument('logfile', help='''The log file you want to split into CSV.  .log extension 
             assumes the log was created by MsgServer (binary).  A .txt extension assumes the file was
             created by SD logger.''')
-        # parser=msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
+        # parser=msgtools.lib.gui.Gui.addBaseArguments(parser)
         args = parser.parse_args()
 
         args.connectionType='file'
@@ -35,7 +35,6 @@ class Lumberjack(msgtools.lib.gui.Gui):
             args.serial = True
         args.ip = None
         args.port = None
-        args.files = []
 
         msgtools.lib.gui.Gui.__init__(self, "Lumberjack 0.1", args, parent)
         
