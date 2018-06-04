@@ -1,7 +1,7 @@
 import socket
 import os
 import sys
-import getopt
+import argparse
 
 if sys.version_info<(3,4):
     raise SystemExit('''\n\nSorry, this code need Python 3.4 or higher.\n
@@ -19,8 +19,50 @@ class App(QtWidgets.QMainWindow):
     RxMsg = QtCore.pyqtSignal(object)
     statusUpdate = QtCore.pyqtSignal(str)
     connectionChanged = QtCore.pyqtSignal(bool)
+
+    @classmethod
+    def addBaseArguments(cls, parser):
+        '''
+        Adds base app arguments to the provided ArgParser
+        skipFiles - if True we won't provide an agument for a files list
+        returns the parser
+        '''
+        parser.add_argument('--connectionType', choices=['socket', 'qtsocket', 'file'], default='qtsocket',
+            help='Specify the type of connection we are establishing as a message pipe/source.')
+        parser.add_argument('--connectionName', default='127.0.0.1:5678',
+            help='''The connection name.  For socket connections this is an IP and port e.g. 127.0.0.1:5678.  
+                    You may prepend ws:// to indicate you want to use a Websocket instead.  For file 
+                    connection types, this is the filename to use as a message source.
+                    This parameter is overridden by the --ip and --port options.''')
+        parser.add_argument('--ip', help='The IP address for a socket connection.   Overrides connectionName.')
+        parser.add_argument('--port', type=int, help='The port for a socket connection. Overrides connectionName.')
+        parser.add_argument('--msg', help='Allowed messages followed by a slash ("/") followed key fields.')
+        parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
+        parser.add_argument('--serial', action='store_true', help='Set if you want to use a SerialHeader instead of a NetworkHeader.')
+
+        return parser
     
-    def __init__(self, name, headerName, argv, options):
+    def __init__(self, name, args):
+        '''Initializer - this is used more as a decorator in the MsgTools suite than an actual
+        standalone class.
+
+        name - the name of the application - usually displayed in the UI window header
+        args - argparse.Namespace of command line options.  See getArgParser for what we provide
+               by default as part of this base app framework.  A command line tool may act as a 
+               parent ArgumentParser and provide additional options.
+        '''
+
+        # If the caller skips adding base arguments we need to patch up args
+        args.lastserial = False if hasattr(args, 'lastserial') == False else args.lastserial
+        args.serial = None if hasattr(args, 'serial') == False else args.serial
+        args.msg = None if hasattr(args, 'msg') == False else args.msg
+        args.msgdir = None if hasattr(args, 'msgdir') == False else args.msgdir
+
+        # default to Network, unless we have a input filename that contains .txt
+        headerName = "NetworkHeader"
+        if args.serial or (args.connectionType=='file' and os.path.splitext(args.connectionType)[1].lower() == '.txt'):
+            headerName = "SerialHeader"
+
         self.name = name
         
         # persistent settings
@@ -38,41 +80,30 @@ class App(QtWidgets.QMainWindow):
         # directory to load messages from.
         msgLoadDir = None
 
-        # need better handling of command line arguments for case when there is only one arg and it's a filename
-        if(len(argv) == 3 and argv[2].lower().endswith((".txt",".log"))):
-            self.connectionType = "file"
-            self.connectionName = argv[2]
-        else:
-            allOptions = options
-            options += ['connectionType=', 'connectionName=', 'msg=','ip=','port=','msgdir=']
-            self.optlist, args = getopt.getopt(sys.argv[1:], '', allOptions)
-            # connection modes
-            self.connectionType = "qtsocket"
-            self.connectionName = "127.0.0.1:5678"
-            ip = ""
-            port = ""
+        # connection modes
+        ip = ""
+        port = ""
 
-            for opt in self.optlist:
-                if opt[0] == '--connectionType':
-                    self.connectionType = opt[1]
-                elif opt[0] == '--connectionName':
-                    self.connectionName = opt[1]
-                elif opt[0] == '--ip':
-                    ip = opt[1]
-                elif opt[0] == '--port':
-                    port = opt[1]
-                elif opt[0] == '--msg':
-                    option = opt[1].split('/')
-                    self.allowedMessages.append(option[0])
-                    if len(option) > 1:
-                        self.keyFields[option[0]] = option[1]
-                    print("only allowing msg " + str(option))
-                elif opt[0] == '--msgdir':
-                    msgLoadDir = opt[1]
-            
-            # if either --ip or --port were used, override connectionName
-            if ip or port:
-                self.connectionName = str(ip)+":"+str(port)
+        if args.connectionType is not None:
+            self.connectionType = args.connectionType
+        if args.connectionName is not None:
+            self.connectionName = args.connectionName
+        if args.ip is not None:
+            ip = args.ip
+        if args.port is not None:
+            port = args.port
+        if args.msg is not None:
+            option = args.msg.split('/')
+            self.allowedMessages.append(option[0])
+            if len(option) > 1:
+                self.keyFields[option[0]] = option[1]
+            print("only allowing msg " + str(option))
+        if args.msgdir:
+            msgLoadDir = args.msgdir
+        
+        # if either --ip or --port were used, override connectionName
+        if args.ip is not None or args.port is not None:
+            self.connectionName = str(ip)+":"+str(port)
         
         # initialize the read function to None, so it's not accidentally called
         self.readBytesFn = None
@@ -143,10 +174,11 @@ class App(QtWidgets.QMainWindow):
         elif(self.connectionType.lower() == "file"):
             try:
                 self.connection = open(self.connectionName, 'rb')
+                self.readBytesFn = self.connection.read
+                self.sendBytesFn = self.connection.write
             except IOError:
                 print("\nERROR!\ncan't open file ", self.connectionName)
-            self.readBytesFn = self.connection.read
-            self.sendBytesFn = self.connection.write
+                sys.exit(1)
         else:
             print("\nERROR!\nneed to specify socket or file")
             sys.exit()

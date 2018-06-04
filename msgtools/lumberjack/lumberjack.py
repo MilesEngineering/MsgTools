@@ -2,6 +2,8 @@
 import sys
 import os
 import math
+import argparse
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 try:
@@ -13,21 +15,28 @@ except ImportError:
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
-class Lumberjack(msgtools.lib.gui.Gui):
-    def __init__(self, argv, parent=None):
-        if(len(argv) < 2):
-            exit('''
-Invoke like this
-    ./path/to/Lumberjack.py FILENAME
-    
-where FILENAME is the name of the log file you'd like to split into CSV.
-
-If the file extension is .log it will be assumed to be a log file created by MessageServer,
-if the file extension is .txt it will be assumed to be a log file created by the SparkFun serial SD logger.
+DESCRIPTION='''
 Lumberjack will create a directory named after the input file, and put multiple .csv files (one per message)
-in that directory.''')
-        
-        msgtools.lib.gui.Gui.__init__(self, "Lumberjack 0.1", [argv[0],"file"]+argv[1:], [], parent)
+in that directory.
+'''
+class Lumberjack(msgtools.lib.gui.Gui):
+    def __init__(self, parent=None):
+
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser.add_argument('logfile', help='''The log file you want to split into CSV.  .log extension 
+            assumes the log was created by MsgServer (binary).  A .txt extension assumes the file was
+            created by SD logger.''')
+        # parser=msgtools.lib.gui.Gui.addBaseArguments(parser)
+        args = parser.parse_args()
+
+        args.connectionType='file'
+        args.connectionName = args.logfile
+        if args.logfile.lower().endswith('.txt'):
+            args.serial = True
+        args.ip = None
+        args.port = None
+
+        msgtools.lib.gui.Gui.__init__(self, "Lumberjack 0.1", args, parent)
         
         self.outputName = self.connectionName.replace('.log', '')
         self.outputName = self.outputName.replace('.txt', '')
@@ -96,9 +105,9 @@ in that directory.''')
         text += '\n'
         outputFile.write(text)
 
-def main(args=None):
+def main():
     app = QtWidgets.QApplication(sys.argv)
-    msgApp = Lumberjack(sys.argv)
+    msgApp = Lumberjack()
     msgApp.MessageLoop()
     print("Processed " + str(msgApp.messageCount) + " messages")
 

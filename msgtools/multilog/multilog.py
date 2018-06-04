@@ -6,6 +6,7 @@
 #         text gets inserted in log whenever you hit enter in annotation box or click 'note' button next to annotate box.
 
 import sys
+import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 from time import strftime
 
@@ -30,31 +31,52 @@ except RuntimeError as e:
     print("Error loading plot interface ["+str(e)+"]")
     print("Perhaps you need to install the PyQt5 version of pyqtgraph.")
 
+DESCRIPTION='''
+    MultiLog presents a UI that lets you control logging of messages on an 
+    individual basis, and send and receive messages pressing a button 
+    starts/stops a log file.  Underscores in label or field are replaced 
+    with spaces for display (to make entering command-line args easier)
+
+    Log filenames will be composed like so:
+        YEAR_MONTH_DAY.TEXT1.TEXT2.TAG1.log'''
+
+EPILOG='''
+    Example usage: multilog --fields LABEL1 LABEL2 --buttons hotkey:X,tag:TAG1,label:LABEL3  
+    hotkey:X,tag:TAG2,label:LABEL4 --show MSGNAME MSGNAME2 --plot MSGNAME[fieldname1,fieldname2] 
+    MSGNAME2[fieldname3,fieldname4] --send MSGNAME MSGNAME2
+    '''
+
 def removePrefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
     
 class Multilog(msgtools.lib.gui.Gui):
     def __init__(self, argv, parent=None):
-        if(len(argv) < 2):
-            exit('''
-Invoke like this
-    ./path/to/Multilog.py --field=LABEL1 --field=LABEL2 --button=hotkey:X,tag:TAG1,label:LABEL3  --button=hotkey:X,tag:TAG2,label:LABEL4 --show=MSGNAME --plot=MSGNAME[fieldname1,fieldname2] --send=MSGNAME
-    
-each --field adds a text field named the specified LABEL, and the value of the text field will become part of the filename.
-each --button adds a pushbutton named for the specified LABEL, with a hotkey of the specified key, and the tag value will become part of the filename
-each --show adds a table view of that MSGNAME
-each --plot adds a plot of the fields within MSGNAME.  If fields left off, all fields are plotted
-each --send adds a tree view to edit a message with a 'send' button to send it
+        parser = argparse.ArgumentParser(description=DESCRIPTION, epilog=EPILOG,
+            formatter_class=argparse.RawDescriptionHelpFormatter)
+        parser.add_argument('--fields', nargs='+', default=[], 
+            help='''each --field argument adds a text field named the specified LABEL, and 
+                    the value of the text field will become part of the filename.  
+                    Example argument: LABEL1''')
+        parser.add_argument('--buttons', nargs='+', default=[], help='''each --button 
+                    argument adds a pushbutton named for the specified LABEL, with a 
+                    hotkey of the specified key, and the tag value will become part of 
+                    the filename.  Example argument: hotkey:X,tag:TAG1,label:LABEL1''')
+        parser.add_argument('--show', nargs='+', default=[], 
+            help='each --show argument adds a table view of that MSGNAME')
+        parser.add_argument('--plot', nargs='+', default=[], help='''each --plot argument 
+                    adds a plot of the fields within MSGNAME.  If fields left off, all 
+                    fields are plotted.  Example argument: MSGNAME[fieldname1,fieldname2]''')
+        parser.add_argument('--send', nargs='+', default=[], help='''each --send argument 
+                    is a message name that adds a tree view to edit a message with a 'send' 
+                    button to send it.  Example argument: MSGNAME''')
 
-pressing a button starts/stops a log file
-underscores in label or field are replaced with spaces for display (to make entering command-line args easier)
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
 
-filenames will be composed like so:
-    YEAR_MONTH_DAY.TEXT1.TEXT2.TAG1.log
-''')
+        args=parser.parse_args()
 
-        options = ['field=', 'button=', 'show=', 'plot=', 'send=']
-        msgtools.lib.gui.Gui.__init__(self, "Multilog 0.1", argv, options, parent)
+        print(args)
+
+        msgtools.lib.gui.Gui.__init__(self, "Multilog 0.1", args, parent)
         
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -84,90 +106,88 @@ filenames will be composed like so:
         self.buttons = []
         self.activeLogButton = None
         txMsgs = None
-        for option in self.optlist:
-            if option[0] == '--field':
-                label = option[1].replace("_"," ")
 
-                # add text field
-                lvLayout.addWidget(QtWidgets.QLabel(label))
-                lineEdit = QtWidgets.QLineEdit()
-                rvLayout.addWidget(lineEdit)
-                self.lineEdits.append(lineEdit)
-            elif option[0] == '--button':
-                arg = option[1]
-                parts = arg.split(",")
-                options = {}
-                for option in parts:
-                    key, value = option.split(":")
-                    options[key] = value
+        # Process command line args
+        for field in args.fields:
+            label = field.replace("_"," ")
 
-                # add button
-                label = options["label"].replace("_"," ")
-                button = QtWidgets.QPushButton(label)
-                # how to set hot key?  do it at window level, or at button level?  or something else?
-                #button.hotKey = options["hotkey"]
-                button.label = label
-                self.buttons.append(button)
-                if "tag" in options:
-                    button.tag = options["tag"]
-                else:
-                    button.tag = None
-                vLayout.addWidget(button)
-                
-                button.clicked.connect(self.HandleButtonPress)
-            elif option[0] == '--show':
-                msgname = option[1]
+            # add text field
+            lvLayout.addWidget(QtWidgets.QLabel(label))
+            lineEdit = QtWidgets.QLineEdit()
+            rvLayout.addWidget(lineEdit)
+            self.lineEdits.append(lineEdit)
+        for button in args.buttons:
+            parts = button.split(",")
+            options = {}
+            for option in parts:
+                key, value = option.split(":")
+                options[key] = value
+
+            # add button
+            label = options["label"].replace("_"," ")
+            button = QtWidgets.QPushButton(label)
+            # how to set hot key?  do it at window level, or at button level?  or something else?
+            #button.hotKey = options["hotkey"]
+            button.label = label
+            self.buttons.append(button)
+            if "tag" in options:
+                button.tag = options["tag"]
+            else:
+                button.tag = None
+            vLayout.addWidget(button)
+            
+            button.clicked.connect(self.HandleButtonPress)
+        for msgname in args.show:
+            subWidget = QtWidgets.QWidget()
+            subLayout = QtWidgets.QVBoxLayout()
+            subWidget.setLayout(subLayout)
+            splitter.addWidget(subWidget)
+            subLayout.addWidget(QtWidgets.QLabel(msgname))
+            msgClass = self.msgLib.MsgClassFromName[msgname]
+            msgWidget = msgtools.lib.gui.MsgTreeWidget(msgClass, None, 1, 1)
+            subLayout.addWidget(msgWidget)
+            if not msgClass.ID in self.msgHandlers:
+                self.msgHandlers[msgClass.ID] = []
+            self.msgHandlers[msgClass.ID].append(msgWidget)
+        for plotarg in args.plot:
+            if plottingLoaded:
+                msgname = plotarg.split("[")[0]
+                try:
+                    fieldNames = plotarg.split("[")[1].replace("]","").split(',')
+                except IndexError:
+                    fieldNames = []
                 subWidget = QtWidgets.QWidget()
                 subLayout = QtWidgets.QVBoxLayout()
                 subWidget.setLayout(subLayout)
                 splitter.addWidget(subWidget)
                 subLayout.addWidget(QtWidgets.QLabel(msgname))
                 msgClass = self.msgLib.MsgClassFromName[msgname]
-                msgWidget = msgtools.lib.gui.MsgTreeWidget(msgClass, None, 1, 1)
+                # should plot only fields specified, if user specified fields
+                firstTime = True
+                for fieldInfo in msgClass.fields:
+                    if fieldInfo.name in fieldNames or not fieldNames:
+                        if firstTime:
+                            msgWidget = MsgPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
+                            firstTime = False
+                        else:
+                            msgWidget.addPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
                 subLayout.addWidget(msgWidget)
                 if not msgClass.ID in self.msgHandlers:
                     self.msgHandlers[msgClass.ID] = []
                 self.msgHandlers[msgClass.ID].append(msgWidget)
-            elif option[0] == '--plot':
-                if plottingLoaded:
-                    msgname = option[1].split("[")[0]
-                    try:
-                        fieldNames = option[1].split("[")[1].replace("]","").split(',')
-                    except IndexError:
-                        fieldNames = []
-                    subWidget = QtWidgets.QWidget()
-                    subLayout = QtWidgets.QVBoxLayout()
-                    subWidget.setLayout(subLayout)
-                    splitter.addWidget(subWidget)
-                    subLayout.addWidget(QtWidgets.QLabel(msgname))
-                    msgClass = self.msgLib.MsgClassFromName[msgname]
-                    # should plot only fields specified, if user specified fields
-                    firstTime = True
-                    for fieldInfo in msgClass.fields:
-                        if fieldInfo.name in fieldNames or not fieldNames:
-                            if firstTime:
-                                msgWidget = MsgPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
-                                firstTime = False
-                            else:
-                                msgWidget.addPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
-                    subLayout.addWidget(msgWidget)
-                    if not msgClass.ID in self.msgHandlers:
-                        self.msgHandlers[msgClass.ID] = []
-                    self.msgHandlers[msgClass.ID].append(msgWidget)
-            elif option[0] == '--send':
-                msgname = option[1]
-                msgClass = self.msgLib.MsgClassFromName[msgname]
-                if not txMsgs:
-                    txMsgs = QtWidgets.QTreeWidget(parent)
-                    txMsgs.setColumnCount(4)
-                    txMsgsHeader = QtWidgets.QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
-                    txMsgs.setHeaderItem(txMsgsHeader)
-                    splitter.addWidget(txMsgs)
-                
-                msg = msgClass()
-                # set fields to defaults
-                msgWidget = msgtools.lib.txtreewidget.EditableMessageItem(txMsgs, msg)
-                msgWidget.qobjectProxy.send_message.connect(self.on_tx_message_send)
+        for msgname in args.send:
+            msgClass = self.msgLib.MsgClassFromName[msgname]
+            if not txMsgs:
+                txMsgs = QtWidgets.QTreeWidget(parent)
+                txMsgs.setColumnCount(4)
+                txMsgsHeader = QtWidgets.QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
+                txMsgs.setHeaderItem(txMsgsHeader)
+                splitter.addWidget(txMsgs)
+            
+            msg = msgClass()
+            # set fields to defaults
+            msgWidget = msgtools.lib.txtreewidget.EditableMessageItem(txMsgs, msg)
+            msgWidget.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
 
         # create a new file

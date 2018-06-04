@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import struct
 import sys
+import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 try:
@@ -12,9 +13,17 @@ except ImportError:
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
+DESCRIPTION='''MsgInspector allows you to connect to a MsgServer and inspect messages as they arrive.
+    It is similar to MsgScope but presents data in a time linear format with compact details.  Each message
+    type grouped into it's own tab'''
+
 class MsgInspector(msgtools.lib.gui.Gui):
-    def __init__(self, argv, parent=None):
-        msgtools.lib.gui.Gui.__init__(self, "Message Inspector 0.1", argv, [], parent)
+    def __init__(self, parent=None):
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
+        args=parser.parse_args()
+
+        msgtools.lib.gui.Gui.__init__(self, "Message Inspector 0.1", args, parent)
         
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -96,7 +105,7 @@ class MsgInspector(msgtools.lib.gui.Gui):
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
-    msgApp = MsgInspector(sys.argv)
+    msgApp = MsgInspector()
     msgApp.show()
     sys.exit(app.exec_())
 
