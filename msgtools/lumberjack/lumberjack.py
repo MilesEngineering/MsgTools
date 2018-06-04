@@ -43,6 +43,13 @@ class Lumberjack(msgtools.lib.gui.Gui):
         args.port = None
         args.files = []
 
+        # Stuff base arguments in manually until we come back to verify
+        # all of the base arguments work with MsgLumberjack
+        args.lastserial = False
+        args.serial = None
+        args.msg = None
+        args.msgdir = None
+
         msgtools.lib.gui.Gui.__init__(self, "Lumberjack 0.1", args, parent)
         
         self.outputName = self.connectionName.replace('.log', '')
