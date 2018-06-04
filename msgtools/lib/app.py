@@ -56,6 +56,13 @@ class App(QtWidgets.QMainWindow):
                parent ArgumentParser and provide additional options.
         '''
 
+        # If the caller skips adding base arguments we need to patch up args
+        args.lastserial = False if hasattr(args, 'lastserial') == False else args.lastserial
+        args.serial = None if hasattr(args, 'serial') == False else args.serial
+        args.msg = None if hasattr(args, 'msg') == False else args.msg
+        args.msgdir = None if hasattr(args, 'msgdir') == False else args.msgdir
+
+
         # default to Network, unless we have a input filename that contains .txt
         headerName = "NetworkHeader"
         if args.serial or (hasattr(args, 'files') and len(args.files) > 0 and 

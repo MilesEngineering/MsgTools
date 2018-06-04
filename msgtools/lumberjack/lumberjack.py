@@ -19,16 +19,10 @@ DESCRIPTION='''
 Lumberjack will create a directory named after the input file, and put multiple .csv files (one per message)
 in that directory.
 '''
-
-# EPILOG='''
-# This utility overrides connectionName with the logfile argument, and forces a "file" connectionType.  This 
-# disables all socket options, and these will be ignored if specified.
-# '''
-
 class Lumberjack(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
 
-        parser = argparse.ArgumentParser(description=DESCRIPTION) #, epilog=EPILOG)
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
         parser.add_argument('logfile', help='''The log file you want to split into CSV.  .log extension 
             assumes the log was created by MsgServer (binary).  A .txt extension assumes the file was
             created by SD logger.''')
@@ -42,13 +36,6 @@ class Lumberjack(msgtools.lib.gui.Gui):
         args.ip = None
         args.port = None
         args.files = []
-
-        # Stuff base arguments in manually until we come back to verify
-        # all of the base arguments work with MsgLumberjack
-        args.lastserial = False
-        args.serial = None
-        args.msg = None
-        args.msgdir = None
 
         msgtools.lib.gui.Gui.__init__(self, "Lumberjack 0.1", args, parent)
         

@@ -18,6 +18,9 @@ except ImportError:
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
+DESCRIPTION='''Good listener listens for messages and tests to ensure they are
+    valid.'''
+
 class MsgTimeoutError(Exception):
     def __init__(self, msgName, timeout):
         self.msgName = msgName
@@ -29,16 +32,21 @@ class GoodListener(msgtools.lib.gui.Gui):
     MSG_TIMEOUT = 10
     def __init__(self, ThreadClass, parent=None):
 
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
         parser.add_argument('inputfiles', nargs='+', help='''Optional results file, followed by
             the log file to process.''')
-        parser = msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
         args = parser.parse_args()
 
         # Override args to line this up for file processing in our shared class
         args.ip = None
         args.port = None
-        args.files = []
+
+        # Stuff base App arguments
+        args.lastserial = False
+        args.serial = None
+        args.msg = None
+        args.msgdir = None
+
 
         if len(args.inputfiles) > 1:
             resultsFilename = args.inputfiles[0]
