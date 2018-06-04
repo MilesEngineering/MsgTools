@@ -178,7 +178,7 @@
      * mirroring the underlying Websocket and also encapsulates some core MsgTools
      * logic for identifying the client by name, and masking
      */
-    class MessagingClient extends EventTarget {
+    class MessagingClient {
         /**
          * Contruct a new MessagingClient
          *
@@ -191,7 +191,13 @@
          * when connecting.
          */
         constructor(name='', hostWindow=null) {
-            super()
+
+            // Because Safari doesn't support EventTarget as an actual constructable class we
+            // are going with a delegation pattern where we create a div tag to act as our 
+            // event mediator.  In Chrome we could just extend this class from EventTarget and
+            // move on.
+            this.m_EventTarget = document.createElement('div')
+            this.m_EventTarget.name=name
 
             if (dependenciesLoaded==false)
                 throw 'You must call setMsgDirectory() before a MessageClient can be created.'
@@ -199,6 +205,21 @@
             this.m_Name = name
             this.m_WebSocket = null
             this.m_HostWindow = hostWindow
+        }
+
+        //
+        // Our own version of EventTarget that we just delegate - see comments in the constructor
+        // for why we went this way...
+        addEventListener() {
+            return this.m_EventTarget.addEventListener.apply(null, arguments)
+        }
+
+        removeEventListener() {
+            return this.m_EventTarget.removeEventListener.apply(null, arguments)           
+        }
+        
+        dispatchEvent() {
+            return this.m_EventTarget.dispatchEvent.apply(null, arguments)
         }
 
         /**
@@ -209,11 +230,12 @@
          * use the host window query params ws and port for the server and port respectively.
          *
          * @param {Map} - Map of options as follows:
-         *  'server' - IP or hostname of the target server. Default = 127.0.0.1
-         *  'port' - port number of the target server.  Default = 5679
+         *  'server' - IP or hostname of the target server. Default = 127.0.0.1 - this will override window
+         *  'port' - port number of the target server.  Default = 5679 - this will override window
          *  'secureSocket' - Set to true if you want to use a secure socket.  If you want the client to 
-         *  automatcally select secure or insecure sockets based on the page souce then pass a host window
-         *  into the constructor and set secureSocket to false.  Default false.
+         *  automatically select secure or insecure sockets based on the page source then pass a host window
+         *  into the constructor and set secureSocket to false.  Otherwise this option will always override 
+         *  the window.  Default false.
          *  'subscriptionMask - uint32 mask for messages of interest - 0=don't care, 1=accept only.  
          *  Default=0 (accept all)
          *  'subscriptionValue - uint32 value for a message of interest. Default = 0 (all messages).'
@@ -232,11 +254,21 @@
             var suppressConnect = false
             var suppressMaskedSubscription = false
             var suppressQueryLog = false
+            var serverOption = false
+            var portOption = false
 
             // Override defaults...
             if (options !== undefined && options !== null && options instanceof Map) {
-                server = options.has('server') ? options.get('server') : server
-                port = options.has('port') ? options.get('port') : port
+                if (options.has('server')) {
+                    server = options.get('server')
+                    serverOption = true
+                }
+
+                if (options.has('port')) {
+                    port = options.get('port')
+                    portOption = true
+                } 
+
                 secureSocket = options.has('secureSocket') ? options.get('secureSocket') : secureSocket
                 subscriptionMask = options.has('subscriptionMask') ? 
                     options.get('subscriptionMask') : subscriptionMask
@@ -260,13 +292,14 @@
                 protocol='wss://'
             }
 
-            // Apply server and port logic as outlined above
+            // Apply server and port logic as outlined above - note that if a server or port option
+            // was specified that will override the query params here
             if (this.m_HostWindow !== null) {
                 var url = new URL(this.m_HostWindow.location)
-                if (url.searchParams.has('ws') && server === '127.0.0.1') {
+                if (serverOption == false && url.searchParams.has('ws') && server === '127.0.0.1') {
                     server = url.searchParams.get('ws')
                 }
-                if (url.searchParams.has('port') && port === 5679) {
+                if (portOption === false && url.searchParams.has('port') && port === 5679) {
                     port = url.searchParams.get('port')
                 }
             }
@@ -460,8 +493,16 @@
         */
         disconnect() {
             if (this.m_WebSocket !== null) {
-                // 1000 is a normal/expected closure
-                this.m_WebSocket.close(1000, 'disconnect() called')
+                try {
+                    // 1000 is a normal/expected closure
+                    this.m_WebSocket.close(1000, 'disconnect() called')
+                    this.m_WebSocket.removeEventListener('open', eventListener)
+                    this.m_WebSocket.removeEventListener('message', eventListener)
+                    this.m_WebSocket.removeEventListener('close', eventListener)
+                    this.m_WebSocket.removeEventListener('error', eventListener)
+                }
+                finally {
+                }
             }        
         }
 
