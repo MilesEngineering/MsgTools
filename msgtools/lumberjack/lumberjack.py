@@ -20,19 +20,19 @@ Lumberjack will create a directory named after the input file, and put multiple 
 in that directory.
 '''
 
-EPILOG='''
-This utility overrides connectionName with the logfile argument, and forces a "file" connectionType.  This 
-disables all socket options, and these will be ignored if specified.
-'''
+# EPILOG='''
+# This utility overrides connectionName with the logfile argument, and forces a "file" connectionType.  This 
+# disables all socket options, and these will be ignored if specified.
+# '''
 
 class Lumberjack(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
 
-        parser = argparse.ArgumentParser(description=DESCRIPTION, epilog=EPILOG)
+        parser = argparse.ArgumentParser(description=DESCRIPTION) #, epilog=EPILOG)
         parser.add_argument('logfile', help='''The log file you want to split into CSV.  .log extension 
             assumes the log was created by MsgServer (binary).  A .txt extension assumes the file was
             created by SD logger.''')
-        parser=msgtools.lib.gui.Gui.addBaseArguments(parser)
+        # parser=msgtools.lib.gui.Gui.addBaseArguments(parser, skipFiles=True)
         args = parser.parse_args()
 
         args.connectionType='file'
