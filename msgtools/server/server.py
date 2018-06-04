@@ -162,7 +162,7 @@ class MessageServer(QtWidgets.QMainWindow):
             tcpport = args.port
             wsport = tcpport+1
         
-        if args.lastserial is not None or args.serial is not None:
+        if args.lastserial is not False or args.serial is not None:
             from SerialHeader import SerialHeader
             from msgtools.server.SerialPlugin import SerialConnection
             serialPortName = args.serial if args.serial is not None else None
