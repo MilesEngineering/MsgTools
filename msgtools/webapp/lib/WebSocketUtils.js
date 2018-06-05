@@ -216,7 +216,7 @@ var WebSocketUtils = {};
         setupClient(client) {
             var webSocketConnection = this;
 
-            console.log('[setupClient] Acquire msgClient from gobal ', WebSocketUtils[this.name].msgClient);
+            console.log('[setupClient] Acquire msgClient from global ', WebSocketUtils[this.name].msgClient);
             client = WebSocketUtils[this.name].msgClient; //To-Do access the object instead of global 
             this.webSocketStatus("Connecting", 'gold');
 
@@ -451,7 +451,7 @@ var WebSocketUtils = {};
             //To-Do access the object instead of global 
             //Not effective client object 
             var webSocketLog = this;
-            console.log('[setupLogging] Acquire msgClient from gobal ', WebSocketUtils[this.name].msgClient);
+            console.log('[setupLogging] Acquire msgClient from global ', WebSocketUtils[this.name].msgClient);
             client = WebSocketUtils[this.name].msgClient;
             client.addEventListener('connected', function(event) {
                 webSocketLog.enableLogging = true;
