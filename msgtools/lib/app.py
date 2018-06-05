@@ -273,6 +273,10 @@ class App(QtWidgets.QMainWindow):
     # unclear if it ever makes sense to use this in a application that talks to a socket or UART, because
     # it exits when there's no more data.  Perhaps it does in a CLI that's very procedural, like an automated
     # system test script?
+    #
+    # Note: This loop won't work with Qt socket signals.  For signals to work you have to exeucute the
+    # application event loop.  To make this method work with QtSockets you would need to layer in 
+    # the various waitFor* methods on the connection within this loop.
     def MessageLoop(self):
         msgCount=0
         startSeqField = Messaging.findFieldInfo(Messaging.hdr.fields, "StartSequence")
