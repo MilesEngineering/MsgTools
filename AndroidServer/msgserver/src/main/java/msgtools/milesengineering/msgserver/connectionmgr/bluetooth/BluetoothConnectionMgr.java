@@ -158,8 +158,10 @@ public class BluetoothConnectionMgr extends BaseConnectionMgr implements IConnec
                     this);
             connection.start();
 
-            // TODO: Turns out a Bluetooth Server socket is only good for one connection
-            // Create a new server socket for the next run.
+            // Once we accept a connection on the server socket it's channel is consumed.  If we want to 
+            // accept more incoming connections we need to create a new server socket.
+            android.util.Log.i(TAG, "Setting up new server socket...");
+            m_ServerSocket = m_BluetoothAdapter.listenUsingRfcommWithServiceRecord(SERVER_NAME, SPP_UUID);
 
         } catch (IOException ioe) {
             // Assuming we just timed out here and this is ok - may need to revisit this if we find
