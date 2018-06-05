@@ -31,8 +31,6 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
         args = parser.parse_args()
 
-        print(args)
-
         msgtools.lib.gui.Gui.__init__(self, "Noise Maker 0.1", args, parent)
         
         self.timeInfo = Messaging.findFieldInfo(Messaging.hdr.fields, "Time")
