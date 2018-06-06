@@ -211,7 +211,7 @@ class Multilog(msgtools.lib.gui.Gui):
         
         if self.file is not None:
             #write to a single binary log file
-            self.file.write(hdr.rawBuffer())
+            self.file.write(msg.hdr.rawBuffer())
 
             # if you want to write to multiple CSV files, look at lumberjack for an example of how to do so.
             # for each message, you'll need to
