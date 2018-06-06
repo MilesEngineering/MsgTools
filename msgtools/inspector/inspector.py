@@ -79,10 +79,6 @@ class MsgInspector(msgtools.lib.gui.Gui):
         if len(msgRoute) > 0 and not(all ("0" == a for a in msgRoute)):
             msgKey += " ("+",".join(msgRoute)+")"
 
-        if self.allowedMessages:
-            if not msg.MsgName() in self.allowedMessages:
-                return
-
         if(not(msgKey in self.msgWidgets)):
             # create a new tree widget
             try:
