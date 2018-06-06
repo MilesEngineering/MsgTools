@@ -20,9 +20,9 @@ DESCRIPTION='''MsgInspector allows you to connect to a MsgServer and inspect mes
 class MsgInspector(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
         parser = argparse.ArgumentParser(description=DESCRIPTION)
-        parser.add_argument('--msgfields', nargs='+', help='''One or more msgName:fieldName specifiers which we'll use to 
-            display filtered message views. Example --keyfields Printf/LineNumber Network.Note/Text.  Implies  the --msg option 
-            for each message specified, and overrides --msg if supplied''')
+        parser.add_argument('--msgfields', nargs='+', help='''One or more msgName/fieldName specifiers which we'll use to 
+            set which field on a message can be used for sorting. Example --keyfields Printf/LineNumber.  If --msgs is specified
+            and a msgfied is requested that isn\'t in the whitelist the message will be added to the whitelist for you.''')
         parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
         args=parser.parse_args()
 
@@ -32,9 +32,12 @@ class MsgInspector(msgtools.lib.gui.Gui):
 
         # Process our msg/keyfields
         if args.msgfields is not None:
-            self.allowedMessages = []   # Override --msg
             for msgfield in args.msgfields:
-                msgName,fieldName = msgfield.split('/')
+                try:
+                    msgName,fieldName = msgfield.split('/')
+                except Exception:
+                    print('--msgfields {0} is invalid.  Specify a message name and field name separated by a forward slash.'.format(msgfield))
+                    sys.exit(1)
 
                 if msgName not in Messaging.MsgIDFromName:
                     print('{0} is an unknown message name.'.format(msgName))
@@ -52,7 +55,10 @@ class MsgInspector(msgtools.lib.gui.Gui):
                             fieldNames))
                         sys.exit(1)
 
-                self.allowedMessages.append(msgName)
+                # If we have a message white list then add this message to the set
+                # Length of zero means all messages are being accepted.
+                if len(self.allowedMessages) > 0:
+                    self.allowedMessages.add(msgName)
                 self.keyFields[msgName] = fieldName
 
         # event-based way of getting messages

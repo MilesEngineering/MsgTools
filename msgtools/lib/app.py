@@ -36,7 +36,7 @@ class App(QtWidgets.QMainWindow):
                     This parameter is overridden by the --ip and --port options.''')
         parser.add_argument('--ip', help='The IP address for a socket connection.   Overrides connectionName.')
         parser.add_argument('--port', type=int, help='The port for a socket connection. Overrides connectionName.')
-        parser.add_argument('--msg', nargs='+', help='''A space delimited list of white list messages to process.
+        parser.add_argument('--msg', nargs='+', default=set(), help='''A space delimited list of white list messages to process.
                     All messages outside of this list will be ignored.  For example: --msg TestCase1 Network.Note 
                     Taxonomy/Candidae.AFox''')
         parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
@@ -73,7 +73,7 @@ class App(QtWidgets.QMainWindow):
         # rx buffer, to receive a message with multiple signals
         self.rxBuf = bytearray()
         
-        self.allowedMessages = []
+        self.allowedMessages = set(args.msg)
         
         # flag that indicates if we're connected
         self.connected = False
@@ -91,8 +91,6 @@ class App(QtWidgets.QMainWindow):
             self.connectionName = args.connectionName
         if args.ip is not None:
             ip = args.ip
-        if args.msg is not None:
-            self.allowedMessages = args.msg
         if args.msgdir:
             msgLoadDir = args.msgdir
         
@@ -237,7 +235,7 @@ class App(QtWidgets.QMainWindow):
         return True if all messages are allowed, or the message is
         in the message white list.'''
         retVal = True
-        if self.allowedMessages:
+        if len(self.allowedMessages) > 0:
             if not msg.MsgName() in self.allowedMessages:
                 retVal = False
 
