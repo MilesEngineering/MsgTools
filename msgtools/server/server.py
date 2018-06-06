@@ -331,6 +331,15 @@ class MessageServer(QtWidgets.QMainWindow):
         else:
             self.onStatusUpdate("cnx not in list!")
 
+    def logMessage(self, hdr):
+        #write to log, if log is open
+        if self.logFile != None:
+            if self.logFileType and self.logFileType == "JSON":
+                msgObj = Messaging.MsgFactory(hdr)
+                self.logFile.write(Messaging.toJson(msgObj).encode('utf-8'))
+            else:
+                self.logFile.write(hdr.rawBuffer().raw)
+
     def onMessageReceived(self, hdr):
         c = self.sender()
         # check for name, subscription, etc.
@@ -362,6 +371,16 @@ class MessageServer(QtWidgets.QMainWindow):
             self.stopLog()
         elif hasattr(self.networkMsgs, 'QueryLog') and hdr.GetMessageID() == self.networkMsgs.QueryLog.ID:
             self.queryLog()
+        elif hasattr(self.networkMsgs, 'ClearLogs') and hdr.GetMessageID() == self.networkMsgs.ClearLogs.ID:
+            # This message was added more for AndroidServer. Plenty of other good ways to delete a log on 
+            # a desktop or other more capable machine. That said, silently eat the request - blindly forwarding
+            # this along could be hazardous.
+            pass
+        elif hasattr(self.networkMsgs, 'Note') and hdr.GetMessageID() == self.networkMsgs.Note.ID:
+            # The Note message allows a user to annotate a log.  We want to drop it into the log, but not
+            # forward to all other clients.
+            self.logMessage(hdr)
+
         elif hasattr(self.networkMsgs, 'PrivateSubscriptionList') and  hdr.GetMessageID() == self.networkMsgs.PrivateSubscriptionList.ID:
             subListMsg = self.networkMsgs.PrivateSubscriptionList(hdr.rawBuffer())
             privateSubs = []
@@ -376,13 +395,10 @@ class MessageServer(QtWidgets.QMainWindow):
                     self.privateSubscriptions[id] = [c]
             self.onStatusUpdate("adding Private subscription for "+c.name+": " + ', '.join(hex(x) for x in privateSubs))
         else:
-            #write to log, if log is open
-            if self.logFile != None:
-                if self.logFileType and self.logFileType == "JSON":
-                    msgObj = Messaging.MsgFactory(hdr)
-                    self.logFile.write(Messaging.toJson(msgObj).encode('utf-8'))
-                else:
-                    self.logFile.write(hdr.rawBuffer().raw)
+            # Log the message
+            self.logMessage(hdr)
+
+            # Route to all clients
             for client in self.clients.values():
                 if client != c:
                     id = hdr.GetMessageID()
