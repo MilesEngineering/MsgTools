@@ -20,9 +20,9 @@ DESCRIPTION='''MsgInspector allows you to connect to a MsgServer and inspect mes
 class MsgInspector(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
         parser = argparse.ArgumentParser(description=DESCRIPTION)
-        parser.add_argument('--msgfields', nargs='+', help='''One or more msgName/fieldName specifiers which we'll use to 
-            set which field on a message can be used for sorting. Example --keyfields Printf/LineNumber.  If --msgs is specified
-            and a msgfied is requested that isn\'t in the whitelist the message will be added to the whitelist for you.''')
+        parser.add_argument('--sortfields', nargs='+', help='''One or more msgName/fieldName specifiers used to indicate
+            which field on a message should be used for sorting. Example --sortfields Printf/LineNumber.  If --msgs is specified,
+            and a message name is requested that isn\'t in the whitelist, the message will be added to the whitelist for you.''')
         parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
         args=parser.parse_args()
 
@@ -31,12 +31,12 @@ class MsgInspector(msgtools.lib.gui.Gui):
         self.keyFields = {}
 
         # Process our msg/keyfields
-        if args.msgfields is not None:
-            for msgfield in args.msgfields:
+        if args.sortfields is not None:
+            for sortfield in args.sortfields:
                 try:
-                    msgName,fieldName = msgfield.split('/')
+                    msgName,fieldName = sortfield.split('/')
                 except Exception:
-                    print('--msgfields {0} is invalid.  Specify a message name and field name separated by a forward slash.'.format(msgfield))
+                    print('--sortfields {0} is invalid.  Specify a message name and field name separated by a forward slash.'.format(sortfield))
                     sys.exit(1)
 
                 if msgName not in Messaging.MsgIDFromName:
