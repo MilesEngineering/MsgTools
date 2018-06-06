@@ -20,11 +20,41 @@ DESCRIPTION='''MsgInspector allows you to connect to a MsgServer and inspect mes
 class MsgInspector(msgtools.lib.gui.Gui):
     def __init__(self, parent=None):
         parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser.add_argument('--msgfields', nargs='+', help='''One or more msgName:fieldName specifiers which we'll use to 
+            display filtered message views. Example --keyfields Printf/LineNumber Network.Note/Text.  Implies  the --msg option 
+            for each message specified, and overrides --msg if supplied''')
         parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
         args=parser.parse_args()
 
         msgtools.lib.gui.Gui.__init__(self, "Message Inspector 0.1", args, parent)
-        
+
+        self.keyFields = {}
+
+        # Process our msg/keyfields
+        if args.msgfields is not None:
+            self.allowedMessages = []   # Override --msg
+            for msgfield in args.msgfields:
+                msgName,fieldName = msgfield.split('/')
+
+                if msgName not in Messaging.MsgIDFromName:
+                    print('{0} is an unknown message name.'.format(msgName))
+                    sys.exit(1)
+
+                if isinstance(fieldName, str) is False:
+                    print(msgfield, ': You may only specify one field name per message.')
+                    sys.exit(1)
+
+                MsgClass = Messaging.MsgClassFromName[msgName]
+                if hasattr(MsgClass, 'fields'):
+                    fieldNames = [field.name for field in MsgClass.fields]
+                    if fieldName not in fieldNames:
+                        print('{0} is not a field of {1}.  Valid fields are: {2}'.format(fieldName, msgName,
+                            fieldNames))
+                        sys.exit(1)
+
+                self.allowedMessages.append(msgName)
+                self.keyFields[msgName] = fieldName
+
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
 
@@ -81,10 +111,7 @@ class MsgInspector(msgtools.lib.gui.Gui):
 
         if(not(msgKey in self.msgWidgets)):
             # create a new tree widget
-            try:
-                keyField = self.keyFields[msg.MsgName()]
-            except KeyError:
-                keyField = None
+            keyField = self.keyFields.get(msg.MsgName(), None)
             msgWidget = msgtools.lib.gui.MsgTreeWidget(type(msg), keyField)
 
             # connect to double-clicked signal to change scrolling globally

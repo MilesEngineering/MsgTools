@@ -74,7 +74,6 @@ class App(QtWidgets.QMainWindow):
         self.rxBuf = bytearray()
         
         self.allowedMessages = []
-        self.keyFields = {}
         
         # flag that indicates if we're connected
         self.connected = False
@@ -231,8 +230,6 @@ class App(QtWidgets.QMainWindow):
         msg = Messaging.MsgFactory(hdr)
         if self._messageAllowed(msg):
             self.RxMsg.emit(msg)
-        else:
-            print('Not allowed')
 
     def _messageAllowed(self, msg):
         '''Check msg against the list of allowed messages.
