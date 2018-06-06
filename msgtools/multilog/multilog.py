@@ -203,11 +203,6 @@ class Multilog(msgtools.lib.gui.Gui):
             handlersList = self.msgHandlers[msg.ID]
             for handler in handlersList:
                 handler.addData(msg)
-        # if user specified allowed messages...
-        if self.allowedMessages:
-            # only log this message if it's in that list
-            if not msg.MsgName() in self.allowedMessages:
-                return
         
         if self.file is not None:
             #write to a single binary log file
