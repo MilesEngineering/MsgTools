@@ -65,8 +65,13 @@ class TcpClientConnection(QObject):
         self.disconnected.emit(self)
 
     def sendMsg(self, msg):
-        self.tcpSocket.write(msg.rawBuffer().raw)
-
+        buf = msg.rawBuffer().raw
+        while len(buf) > 0:
+            bytesWritten = self.tcpSocket.write(buf)
+            if bytesWritten == -1:
+                raise Exception('Write error (-1)')
+            buf = buf[bytesWritten:]
+    
 class TcpServer(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     newConnection = QtCore.pyqtSignal(object)
