@@ -1,7 +1,7 @@
 import socket
 import os
 import sys
-import getopt
+import argparse
 
 if sys.version_info<(3,4):
     raise SystemExit('''\n\nSorry, this code need Python 3.4 or higher.\n
@@ -19,8 +19,52 @@ class App(QtWidgets.QMainWindow):
     RxMsg = QtCore.pyqtSignal(object)
     statusUpdate = QtCore.pyqtSignal(str)
     connectionChanged = QtCore.pyqtSignal(bool)
+
+    @classmethod
+    def addBaseArguments(cls, parser):
+        '''
+        Adds base app arguments to the provided ArgParser
+        skipFiles - if True we won't provide an agument for a files list
+        returns the parser
+        '''
+        parser.add_argument('--connectionType', choices=['socket', 'qtsocket', 'file'], default='qtsocket',
+            help='Specify the type of connection we are establishing as a message pipe/source.')
+        parser.add_argument('--connectionName', default='127.0.0.1:5678',
+            help='''The connection name.  For socket connections this is an IP and port e.g. 127.0.0.1:5678.  
+                    You may prepend ws:// to indicate you want to use a Websocket instead.  For file 
+                    connection types, this is the filename to use as a message source.
+                    This parameter is overridden by the --ip and --port options.''')
+        parser.add_argument('--ip', help='The IP address for a socket connection.   Overrides connectionName.')
+        parser.add_argument('--port', type=int, help='The port for a socket connection. Overrides connectionName.')
+        parser.add_argument('--msg', nargs='+', default=set(), help='''A space delimited list of white list messages to process.
+                    All messages outside of this list will be ignored.  For example: --msg TestCase1 Network.Note 
+                    Taxonomy/Candidae.AFox''')
+        parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
+        parser.add_argument('--serial', action='store_true', help='Set if you want to use a SerialHeader instead of a NetworkHeader.')
+
+        return parser
     
-    def __init__(self, name, headerName, argv, options):
+    def __init__(self, name, args):
+        '''Initializer - this is used more as a decorator in the MsgTools suite than an actual
+        standalone class.
+
+        name - the name of the application - usually displayed in the UI window header
+        args - argparse.Namespace of command line options.  See getArgParser for what we provide
+               by default as part of this base app framework.  A command line tool may act as a 
+               parent ArgumentParser and provide additional options.
+        '''
+
+        # If the caller skips adding base arguments we need to patch up args
+        args.lastserial = False if hasattr(args, 'lastserial') == False else args.lastserial
+        args.serial = None if hasattr(args, 'serial') == False else args.serial
+        args.msg = None if hasattr(args, 'msg') == False else args.msg
+        args.msgdir = None if hasattr(args, 'msgdir') == False else args.msgdir
+
+        # default to Network, unless we have a input filename that contains .txt
+        headerName = "NetworkHeader"
+        if args.serial or (args.connectionType=='file' and os.path.splitext(args.connectionType)[1].lower() == '.txt'):
+            headerName = "SerialHeader"
+
         self.name = name
         
         # persistent settings
@@ -29,8 +73,7 @@ class App(QtWidgets.QMainWindow):
         # rx buffer, to receive a message with multiple signals
         self.rxBuf = bytearray()
         
-        self.allowedMessages = []
-        self.keyFields = {}
+        self.allowedMessages = set(args.msg)
         
         # flag that indicates if we're connected
         self.connected = False
@@ -38,47 +81,37 @@ class App(QtWidgets.QMainWindow):
         # directory to load messages from.
         msgLoadDir = None
 
-        # need better handling of command line arguments for case when there is only one arg and it's a filename
-        if(len(argv) == 3 and argv[2].lower().endswith((".txt",".log"))):
-            self.connectionType = "file"
-            self.connectionName = argv[2]
-        else:
-            allOptions = options
-            options += ['connectionType=', 'connectionName=', 'msg=','ip=','port=','msgdir=']
-            self.optlist, args = getopt.getopt(sys.argv[1:], '', allOptions)
-            # connection modes
-            self.connectionType = "qtsocket"
-            self.connectionName = "127.0.0.1:5678"
-            ip = ""
-            port = ""
+        # connection modes
+        ip = ""
+        port = ""
 
-            for opt in self.optlist:
-                if opt[0] == '--connectionType':
-                    self.connectionType = opt[1]
-                elif opt[0] == '--connectionName':
-                    self.connectionName = opt[1]
-                elif opt[0] == '--ip':
-                    ip = opt[1]
-                elif opt[0] == '--port':
-                    port = opt[1]
-                elif opt[0] == '--msg':
-                    option = opt[1].split('/')
-                    self.allowedMessages.append(option[0])
-                    if len(option) > 1:
-                        self.keyFields[option[0]] = option[1]
-                    print("only allowing msg " + str(option))
-                elif opt[0] == '--msgdir':
-                    msgLoadDir = opt[1]
-            
-            # if either --ip or --port were used, override connectionName
-            if ip or port:
-                self.connectionName = str(ip)+":"+str(port)
+        if args.connectionType is not None:
+            self.connectionType = args.connectionType
+        if args.connectionName is not None:
+            self.connectionName = args.connectionName
+        if args.ip is not None:
+            ip = args.ip
+        if args.msgdir:
+            msgLoadDir = args.msgdir
+        
+        # if either --ip or --port were used, override connectionName
+        if args.ip is not None or args.port is not None:
+            self.connectionName = str(ip)+":"+str(port)
         
         # initialize the read function to None, so it's not accidentally called
         self.readBytesFn = None
 
         try:
             self.msgLib = Messaging(msgLoadDir, 0, headerName)
+
+            if args.msg is not None:
+                # Validate all message names are valid
+                for msg in args.msg:
+                    if msg not in Messaging.MsgIDFromName:
+                        print('{0} is not a valid message name!'.format(msg))
+                        sys.exit(1)
+                port = args.port
+
         except ImportError:
             print("\nERROR! Auto-generated python code not found!")
             print("cd to a directory downstream from a parent of obj/CodeGenerator/Python")
@@ -143,10 +176,11 @@ class App(QtWidgets.QMainWindow):
         elif(self.connectionType.lower() == "file"):
             try:
                 self.connection = open(self.connectionName, 'rb')
+                self.readBytesFn = self.connection.read
+                self.sendBytesFn = self.connection.write
             except IOError:
                 print("\nERROR!\ncan't open file ", self.connectionName)
-            self.readBytesFn = self.connection.read
-            self.sendBytesFn = self.connection.write
+                sys.exit(1)
         else:
             print("\nERROR!\nneed to specify socket or file")
             sys.exit()
@@ -183,9 +217,29 @@ class App(QtWidgets.QMainWindow):
 
     # Qt signal/slot based reading of websocket
     def processBinaryMessage(self, bytes):
-        hdr = Messaging.hdr(bytes.data())
-        # if we got this far, we have a whole message! So, emit the signal
-        self.RxMsg.emit(Messaging.MsgFactory(hdr))
+        if isinstance(bytes, bytearray):
+            hdr = Messaging.hdr(bytes)
+        else:
+            # Assume this is a QByteArray from a websocket
+            hdr = Messaging.hdr(bytes.data())
+
+        # if we got this far, we have a whole message! Emit the signal
+        # if the message is whitelisted
+        msg = Messaging.MsgFactory(hdr)
+        if self._messageAllowed(msg):
+            self.RxMsg.emit(msg)
+
+    def _messageAllowed(self, msg):
+        '''Check msg against the list of allowed messages.
+
+        return True if all messages are allowed, or the message is
+        in the message white list.'''
+        retVal = True
+        if len(self.allowedMessages) > 0:
+            if not msg.MsgName() in self.allowedMessages:
+                retVal = False
+
+        return retVal
 
     # Qt signal/slot based reading of TCP socket
     def readRxBuffer(self):
@@ -216,12 +270,10 @@ class App(QtWidgets.QMainWindow):
             if(len(self.rxBuf) < Messaging.hdrSize + bodyLen):
                 print("don't have full body, quitting")
                 return
-            
-            # create a new header object with the appended body
-            hdr = Messaging.hdr(self.rxBuf)
 
-            # if we got this far, we have a whole message! So, emit the signal
-            self.RxMsg.emit(Messaging.MsgFactory(hdr))
+            # Process what we assume to be a full message...            
+            self.processBinaryMessage(self.rxBuf)
+
             # then clear the buffer, so we start over on the next message
             self.rxBuf = bytearray()
     
@@ -241,6 +293,10 @@ class App(QtWidgets.QMainWindow):
     # unclear if it ever makes sense to use this in a application that talks to a socket or UART, because
     # it exits when there's no more data.  Perhaps it does in a CLI that's very procedural, like an automated
     # system test script?
+    #
+    # Note: This loop won't work with Qt socket signals.  For signals to work you have to exeucute the
+    # application event loop.  To make this method work with QtSockets you would need to layer in 
+    # the various waitFor* methods on the connection within this loop.
     def MessageLoop(self):
         msgCount=0
         startSeqField = Messaging.findFieldInfo(Messaging.hdr.fields, "StartSequence")
@@ -289,7 +345,11 @@ class App(QtWidgets.QMainWindow):
                 # create a new header object with the appended body
                 hdr = Messaging.hdr(self.rxBuf)
 
-                # got a complete message, call the callback to process it
-                self.ProcessMessage(Messaging.MsgFactory(hdr))
+                # got a complete message, call the callback to process it if
+                # the message is on our white list
+                msg = Messaging.MsgFactory(hdr)
+                if self._messageAllowed(msg):
+                    self.ProcessMessage(msg)
         except StopIteration:
             print("found end of file, exited")
+

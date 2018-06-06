@@ -1,6 +1,7 @@
 import sys
 import datetime
 import inspect
+import argparse
 
 from PyQt5 import QtGui, QtWidgets, QtCore, QtNetwork
 
@@ -306,14 +307,32 @@ class MsgCommandWidget(QtWidgets.QWidget):
         self.textBox.moveCursor (QtGui.QTextCursor.End)
     
 class Gui(App, QtWidgets.QMainWindow):
-    def __init__(self, name, argv, options, parent=None):
-        # default to Network, unless we have a input filename that contains .txt
-        headerName = "NetworkHeader"
-        if any(".txt" in s for s in argv) or any(".TXT" in s for s in argv):
-            headerName = "SerialHeader"
+    @classmethod
+    def addBaseArguments(cls, parser):
+        '''
+        Adds base app arguments to the provided ArgParser
+
+        returns the parser
+        '''
+
+        # Just delegate - this design choice is two fold - it prevents
+        # code using the Gui from including the App as a dependency.
+        # It also allows us to inject Gui specific arguments into this
+        # base class later.
+        return App.addBaseArguments(parser)
+
+    '''Gui base class that provides standard connection and status UI
+
+        name - the name of the app - will be displayed in the title bar of the window
+        args - argparse.Namespace representing parsed arguments.  See app.py for
+               the standard options provided as part of this Gui/App framework used
+               in most MsgTools utilities.
+        parent - a parent Qt Widget to attach to
+    '''
+    def __init__(self, name, args, parent=None):
 
         QtWidgets.QMainWindow.__init__(self,parent)
-        App.__init__(self, name, headerName, argv, options)
+        App.__init__(self, name, args)
 
         # make a status bar to print status messages
         self.status = QtWidgets.QLabel("Initializing")

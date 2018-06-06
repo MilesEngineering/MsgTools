@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import struct
 import sys
+import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 try:
@@ -12,10 +13,54 @@ except ImportError:
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
+DESCRIPTION='''MsgInspector allows you to connect to a MsgServer and inspect messages as they arrive.
+    It is similar to MsgScope but presents data in a time linear format with compact details.  Each message
+    type grouped into it's own tab'''
+
 class MsgInspector(msgtools.lib.gui.Gui):
-    def __init__(self, argv, parent=None):
-        msgtools.lib.gui.Gui.__init__(self, "Message Inspector 0.1", argv, [], parent)
-        
+    def __init__(self, parent=None):
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser.add_argument('--sortfields', nargs='+', help='''One or more msgName/fieldName specifiers used to indicate
+            which field on a message should be used for sorting. Example --sortfields Printf/LineNumber.  If --msgs is specified,
+            and a message name is requested that isn\'t in the whitelist, the message will be added to the whitelist for you.''')
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
+        args=parser.parse_args()
+
+        msgtools.lib.gui.Gui.__init__(self, "Message Inspector 0.1", args, parent)
+
+        self.keyFields = {}
+
+        # Process our msg/keyfields
+        if args.sortfields is not None:
+            for sortfield in args.sortfields:
+                try:
+                    msgName,fieldName = sortfield.split('/')
+                except Exception:
+                    print('--sortfields {0} is invalid.  Specify a message name and field name separated by a forward slash.'.format(sortfield))
+                    sys.exit(1)
+
+                if msgName not in Messaging.MsgIDFromName:
+                    print('{0} is an unknown message name.'.format(msgName))
+                    sys.exit(1)
+
+                if isinstance(fieldName, str) is False:
+                    print(msgfield, ': You may only specify one field name per message.')
+                    sys.exit(1)
+
+                MsgClass = Messaging.MsgClassFromName[msgName]
+                if hasattr(MsgClass, 'fields'):
+                    fieldNames = [field.name for field in MsgClass.fields]
+                    if fieldName not in fieldNames:
+                        print('{0} is not a field of {1}.  Valid fields are: {2}'.format(fieldName, msgName,
+                            fieldNames))
+                        sys.exit(1)
+
+                # If we have a message white list then add this message to the set
+                # Length of zero means all messages are being accepted.
+                if len(self.allowedMessages) > 0:
+                    self.allowedMessages.add(msgName)
+                self.keyFields[msgName] = fieldName
+
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
 
@@ -70,16 +115,9 @@ class MsgInspector(msgtools.lib.gui.Gui):
         if len(msgRoute) > 0 and not(all ("0" == a for a in msgRoute)):
             msgKey += " ("+",".join(msgRoute)+")"
 
-        if self.allowedMessages:
-            if not msg.MsgName() in self.allowedMessages:
-                return
-
         if(not(msgKey in self.msgWidgets)):
             # create a new tree widget
-            try:
-                keyField = self.keyFields[msg.MsgName()]
-            except KeyError:
-                keyField = None
+            keyField = self.keyFields.get(msg.MsgName(), None)
             msgWidget = msgtools.lib.gui.MsgTreeWidget(type(msg), keyField)
 
             # connect to double-clicked signal to change scrolling globally
@@ -96,7 +134,7 @@ class MsgInspector(msgtools.lib.gui.Gui):
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
-    msgApp = MsgInspector(sys.argv)
+    msgApp = MsgInspector()
     msgApp.show()
     sys.exit(app.exec_())
 

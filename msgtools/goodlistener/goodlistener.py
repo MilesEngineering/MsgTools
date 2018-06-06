@@ -2,6 +2,7 @@
 import sys
 import queue
 import time
+import argparse
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QTimer
@@ -17,6 +18,9 @@ except ImportError:
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
+DESCRIPTION='''Good listener listens for messages and tests to ensure they are
+    valid.'''
+
 class MsgTimeoutError(Exception):
     def __init__(self, msgName, timeout):
         self.msgName = msgName
@@ -26,20 +30,31 @@ class MsgTimeoutError(Exception):
 
 class GoodListener(msgtools.lib.gui.Gui):
     MSG_TIMEOUT = 10
-    def __init__(self, argv, ThreadClass, parent=None):
-        if(len(argv) < 2):
-            exit('''
-Invoke like this
-    ./path/to/GoodListener.py [RESULTS] [LOG]
-    
-where RESULTS and LOG are the optional results and log files.
-''')
+    def __init__(self, ThreadClass, parent=None):
+
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser.add_argument('inputfiles', nargs='+', help='''Optional results file, followed by
+            the log file to process.''')
+        args = parser.parse_args()
+
+        # Override args to line this up for file processing in our shared class
+        args.ip = None
+        args.port = None
+
+        if len(args.inputfiles) > 1:
+            resultsFilename = args.inputfiles[0]
+            logFileName = None if len(args.inputfiles) < 2 else args.inputfiles[2]
+        else:
+            resultsFilename = None
+            logFileName = args.inputfiles[1]
+
+        args.connectionType = 'file'
+        args.connectionName = logFilename
+
         appName = "Good Listener 0.1, " + ThreadClass.__name__
-        msgtools.lib.gui.Gui.__init__(self, appName, [argv[0],"file"]+argv[1:], [], parent)
+        msgtools.lib.gui.Gui.__init__(self, appName, args, parent)
         
-        resultsFilename = argv[1]
-        logFileName = argv[2]
-        
+
         self.statusWindow = QtWidgets.QPlainTextEdit(self)
         doc = self.statusWindow.document()
         font = doc.defaultFont()
@@ -142,7 +157,7 @@ class MyTest(ScriptThread):
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
-    listener = GoodListener(sys.argv, MyTest)
+    listener = GoodListener(MyTest)
     listener.show()
     sys.exit(app.exec_())
 

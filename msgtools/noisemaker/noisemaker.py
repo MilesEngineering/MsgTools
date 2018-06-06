@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import argparse
 from datetime import datetime
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import QTimer
@@ -13,10 +14,24 @@ except ImportError:
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 
+DESCRIPTION='''
+    Noisemaker is a utility for generating message traffic.  Messages are roughly 
+    staggered with a constant delta between each message, triggered at a rate 33Hz rate.
+    Python's built in timing is highly unstable.  Timing won't be extremeley precise.
+'''
+
 class NoiseMaker(msgtools.lib.gui.Gui):
-    def __init__(self, argv, parent=None):
-        options = ['msgs=']
-        msgtools.lib.gui.Gui.__init__(self, "Noise Maker 0.1", argv, options, parent)
+    def __init__(self, parent=None):
+
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser.add_argument('msgs', nargs='*', help='''
+            One or more messages that you wish to send.  This entire list is sent each 
+            time the message period is up.  Network messages are ignored.  By default we 
+            send all known messages.''')
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
+        args = parser.parse_args()
+
+        msgtools.lib.gui.Gui.__init__(self, "Noise Maker 0.1", args, parent)
         
         self.timeInfo = Messaging.findFieldInfo(Messaging.hdr.fields, "Time")
         
@@ -35,10 +50,7 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         self.setCentralWidget(self.startStop)
         
         # check if user specified which messages we should output
-        msgs = None
-        for option in self.optlist:
-            if option[0] == '--msgs':
-                msgs = option[1]
+        msgs = args.msgs
         
         # find a few messages to send at specified rates
         period = 0.3
@@ -47,13 +59,13 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         self.msgTxTime = {}
         for msgName in Messaging.MsgClassFromName:
             if not msgName.startswith("Network"):
-                if msgs and not msgs in msgName:
+                if len(msgs) > 0 and msgName not in msgs:
                     continue
-                #print("found message " + msgName)
+                print("found message " + msgName)
                 self.msgPeriod[msgName] = period
                 period = period + 0.020
                 self.msgTxTime[msgName] = 0
-        
+       
         self.msgTimer.start()
         
     def startStopFn(self):
@@ -122,7 +134,7 @@ class NoiseMaker(msgtools.lib.gui.Gui):
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
-    msgApp = NoiseMaker(sys.argv)
+    msgApp = NoiseMaker()
     msgApp.show()
     sys.exit(app.exec_())
 

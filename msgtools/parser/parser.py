@@ -2,7 +2,26 @@
 import sys
 import os
 import string
+import argparse
+import pkg_resources
+
 from time import gmtime, strftime
+
+DESCRIPTION = '''Applies message and header language template files to
+                 YAML message inputs to generate code for creating,
+                 and parsing, messages.  Headers definitions are assumed 
+                 to reside in a folder called headers at the root of the input 
+                 directory.  A header called NetworkHeader.yaml MUST
+                 be defined and adhere to the contract outlined in 
+                 the test message suite.'''
+
+EPILOG = '''Built-in languages have precedence over plugins.  If your plugin
+            uses the same name as a built-int language it will be ignored.'''
+
+# Used to find the default template and header template within the language 
+# folder. These are case sensitive.
+DEFAULT_TEMPLATE = 'Template.'
+DEFAULT_HEADER_TEMPLATE = 'HeaderTemplate.'
 
 try:
     from msgtools.parser.MsgUtils import *
@@ -228,6 +247,28 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
             if filename.endswith(".yaml") or filename.endswith(".json"):
                 ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
 
+def getAvailableLanguages():
+    '''Look at all supported languages.  Assume each language is a 
+    subdirectory of the parser.  Special omission of python
+    cache and test directories'''
+    languageDir = os.path.dirname(os.path.realpath(__file__)) + "/"
+
+    # Use a set - thep plugin could duplicate a built-in language
+    languages = set()
+    for file in os.listdir(languageDir):
+        fullpath = os.path.join(languageDir, file)
+        if file != '__pycache__' and file != 'test' and os.path.isdir(fullpath):
+            languages.add(file)
+
+    # Discovery plugin entry points
+    for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
+        languages.add(entry_point.name)
+
+    languages = list(languages)
+    languages.sort()
+
+    return languages
+
 def loadlanguage(languageName):
     # assume the languageName is a subdirectory of the parser's location,
     # and try loading a language from there
@@ -235,7 +276,6 @@ def loadlanguage(languageName):
     if os.path.isdir(languageDir):
         sys.path.append(os.path.abspath(languageDir))
         return __import__('language')
-
     # if the above fails, iterate over packages that implement the plugin interface
     import pkg_resources
     for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
@@ -244,20 +284,54 @@ def loadlanguage(languageName):
     print("Error loading plugin " + languageName)
     sys.exit(1)
 
-def main(args=None):
-    if len(sys.argv) < 6:
-        sys.stderr.write('Usage: ' + sys.argv[0] + ' input output language template headertemplate\n')
-        sys.exit(1)
+def getTemplate(language, templateBase):
+    '''Search the given language sub-folder for the template.
+    Basically we are looking for specific filename, with an extension
+    appropriate to the language we're processing'''
+
+    for file in os.listdir(os.path.dirname(os.path.realpath(__file__)) + "/" + language):
+        index = file.rfind(templateBase)
+        if index == 0:
+            return file[index:]
+
+    print('Unable to find template base "{0}"" for language {1}'.format(templateBase, language))
+
+def main():
+
+    parser = argparse.ArgumentParser(description=DESCRIPTION, epilog=EPILOG)
+    parser.add_argument('input', help='YAML base directory, or a specific YAML file you want to process.')
+    parser.add_argument('output', help='Destination directory for generated language files.')
+    parser.add_argument('language', choices=getAvailableLanguages(), help='''Language to target.  
+        This includes built-in and plugin laguages.''')
+    parser.add_argument('-t', '--template', dest='template',
+        help='Message template to use for messages.  If unspecified defaults to the template provided by MsgTools')
+    parser.add_argument('-ht', '--headertemplate', dest='headertemplate', 
+        help='''Header template applied to messages in the "headers" folder.  If unspecified defaults to the 
+                template provided by MsgTools.''')
+    args = parser.parse_args()
+  
     global inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename
-    inputFilename = sys.argv[1]
-    outputFilename = sys.argv[2]
-    languageFilename = sys.argv[3]
-    templateFilename = sys.argv[4]
-    headerTemplateFilename = sys.argv[5]
+    inputFilename = args.input
+    outputFilename = args.output
+    languageFilename = args.language
+    templateFilename = args.template
+    headerTemplateFilename = args.headertemplate
 
     # import the language file
     global language
     language = loadlanguage(languageFilename)
+
+    # If this is a plugin the -t and -ht arguments are no longer optional
+    if args.language == 'plugin'and (args.template is None or args.headertemplate  is None):
+        print('You must specify both templates for plugins')
+        sys.exit(1)
+
+    # If the user didn't specify a template or header template then
+    # use the language defaults
+    if templateFilename is None:
+        templateFilename = getTemplate(languageFilename, DEFAULT_TEMPLATE)
+    if headerTemplateFilename is None:
+        headerTemplateFilename = getTemplate(languageFilename, DEFAULT_HEADER_TEMPLATE)
     
     # Get latest timestamp of imported modules.
     # We should only check the file times of any user-defined imports!
