@@ -29,8 +29,8 @@ var WebSocketUtils = {};
                 cursor: pointer;
                 background: var(--btn-bg-color, white);
                 color: var(--btn-color, black);
-                border-color: var(--btn-border-color, black);
-                border: var(--btn-border, 1px solid black);
+                border-color: var(--btn-border-color, grey);
+                border: var(--btn-border, .5px solid grey);
                 border-radius: var(--btn-border-radius, 6px);
                 box-shadow: var(--btn-box-shadow, 0 ,0 0px rgba(255, 255, 255, 1));
                 margin-left: var(--btn-margin-left, 10px);
@@ -41,6 +41,7 @@ var WebSocketUtils = {};
                 height: var(--btn-height, auto);     
                 font-family: var(--btn-font-family, "Helvetica Neue", Helvetica, Arial, sans-serif);
                 font-size: var(--btn-font-size, small);
+                font-color: var(--btn-font-color, grey);
           
 
             }
@@ -48,8 +49,8 @@ var WebSocketUtils = {};
 
                 background: var(--txt-bg-color, white);
                 color: var(--txt-color, black);
-                border-color: var(--txt-border-color, black);
-                border: var(--txt-border, 1px solid black);
+                border-color: var(--txt-border-color, grey);
+                border: var(--txt-border, .5px solid grey);
                 border-radius: var(--txt-border-radius, 2px);
                 box-shadow: var(--txt-box-shadow, 0 ,0 0px none);
                 margin-left: var(--txt-margin-left, 10px);
@@ -177,10 +178,15 @@ var WebSocketUtils = {};
                                 options.set('address', ws_value);
                                 options.set('port', port_value);
                                 webSocketConnection.client.connect();
+                                if (webSocketConnection.hasAttribute('onclick-start'))
+                                    eval(webSocketConnection.getAttribute('onclick-start'));
+
                             } else {
                                 console.log('DisConnecting %s:%s', ws_value, port_value)
                                 webSocketConnection.webSocketStatus("Disconnecting", 'gold');
                                 webSocketConnection.client.disconnect();
+                                if (webSocketConnection.hasAttribute('onclick-stop'))
+                                    eval(webSocketConnection.getAttribute('onclick-stop'));
                             }
                         }
                     }
@@ -210,7 +216,7 @@ var WebSocketUtils = {};
         setupClient(client) {
             var webSocketConnection = this;
 
-            console.log('[setupClient] Acquire msgClient from gobal ', WebSocketUtils[this.name].msgClient);
+            console.log('[setupClient] Acquire msgClient from global ', WebSocketUtils[this.name].msgClient);
             client = WebSocketUtils[this.name].msgClient; //To-Do access the object instead of global 
             this.webSocketStatus("Connecting", 'gold');
 
@@ -242,11 +248,6 @@ var WebSocketUtils = {};
             client.addEventListener('error', function() {
                 webSocketConnection.webSocketStatus("Error on", 'red');
                 console.log('[WebSocketUtils] Error on');
-
-            }, false);
-
-            client.addEventListener('message', function(response) {                
-                console.log('[WebSocketUtils] message', response);
 
             }, false);
 
@@ -316,8 +317,8 @@ var WebSocketUtils = {};
                 cursor: pointer;
                 background: var(--btn-bg-color, white);
                 color: var(--btn-color, black);
-                border-color: var(--btn-border-color, black);
-                border: var(--btn-border, 1px solid black);
+                border-color: var(--btn-border-color, grey);
+                border: var(--btn-border, .5px solid grey);
                 border-radius: var(--btn-border-radius, 6px);
                 box-shadow: var(--btn-box-shadow, 0 ,0 0px rgba(255, 255, 255, 1));
                 margin-left: var(--btn-margin-left, 10px);
@@ -327,15 +328,16 @@ var WebSocketUtils = {};
                 width: var(--btn-width, auto);
                 height: var(--btn-height, auto);     
                 font-family: var(--btn-font-family, "Helvetica Neue", Helvetica, Arial, sans-serif);
-                font-size: var(--btn-font-size, small);          
+                font-size: var(--btn-font-size, small);
+                font-color: var(--btn-font-color, grey);
 
             }
             input[type="text"]{
 
                 background: var(--txt-bg-color, white);
                 color: var(--txt-color, black);
-                border-color: var(--txt-border-color, black);
-                border: var(--txt-border, 1px solid black);
+                border-color: var(--txt-border-color, grey);
+                border: var(--txt-border, .5px solid grey);
                 border-radius: var(--txt-border-radius, 2px);
                 box-shadow: var(--txt-box-shadow, 0 ,0 0px none);
                 margin-left: var(--txt-margin-left, 10px);
@@ -363,9 +365,9 @@ var WebSocketUtils = {};
             } else {
                 throw 'Error :Usage <msgsocket-logging connect-name="testApp" > </msgsocket-logging>';
             }
-            name = this.name;            
+            name = this.name;
             var webSocketLog = this;
-            
+
             if (this.hasAttribute('hidden')) {
                 this.style.display = "none"
 
@@ -380,11 +382,15 @@ var WebSocketUtils = {};
                     if (webSocketLog.actionLog.getAttribute('value').toLowerCase().startsWith("start")) {
                         // start logging
                         webSocketLog.client.startLogging();
+                        if (webSocketLog.hasAttribute('onclick-start'))
+                            eval(webSocketLog.getAttribute('onclick-start'));
                         console.log('[WebSocketUtils] start');
                     } else {
                         // stop logging
                         webSocketLog.client.stopLogging();
                         console.log('[WebSocketUtils] stop');
+                        if (webSocketLog.hasAttribute('onclick-stop'))
+                            eval(webSocketLog.getAttribute('onclick-stop'));
                     }
                 }
             }, false);
@@ -394,9 +400,16 @@ var WebSocketUtils = {};
             this.clearLog.setAttribute('id', 'clearLog');
             this.clearLog.setAttribute('value', 'Clear Logs');
             this.clearLog.setAttribute('type', 'button');
+
+
             this.clearLog.addEventListener('click', function() {
-                if (webSocketLog.enableLogging)
-                    webSocketLog.client.clearLogs();
+                if (webSocketLog.enableLogging) {
+                    if (confirm("This will delete all logs on the server app.  Are you sure?"))
+                        webSocketLog.client.clearLogs();
+                    //check if any function provided
+                    if (webSocketLog.hasAttribute('onclick-clear'))
+                        eval(webSocketLog.getAttribute('onclick-clear'));
+                }
             }, false);
             this.shadow.appendChild(this.clearLog);
 
@@ -421,6 +434,8 @@ var WebSocketUtils = {};
                     event_id += 1;
                     console.log('[WebSocketUtils] LogNote', txt);
                     webSocketLog.client.logNote(txt);
+                    if (webSocketLog.hasAttribute('onclick-note'))
+                        eval(webSocketLog.getAttribute('onclick-note'));
                 }
             }, false);
             this.shadow.appendChild(this.noteLog);
@@ -436,7 +451,7 @@ var WebSocketUtils = {};
             //To-Do access the object instead of global 
             //Not effective client object 
             var webSocketLog = this;
-            console.log('[setupLogging] Acquire msgClient from gobal ', WebSocketUtils[this.name].msgClient);
+            console.log('[setupLogging] Acquire msgClient from global ', WebSocketUtils[this.name].msgClient);
             client = WebSocketUtils[this.name].msgClient;
             client.addEventListener('connected', function(event) {
                 webSocketLog.enableLogging = true;

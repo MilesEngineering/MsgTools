@@ -61,19 +61,21 @@ function connectToServer() {
         // TODO: Any custom handling needed
     })
 
-    // Uncomment and modify to exercise option values below
-    // indicate msgtools defaults for use with local insecure 
-    // connections.  We assume the taget server is MsgServer
-    // and we emit Connect and other messages expected by that
-    // server as part of our connection sequence.
-    var options = new Map()
-    //options.set('secureSocket', false)
-    //options.set('server', '127.0.0.1')
-    //options.set('port', 5679)
-    //options.set('subscriptionMask', 0x00000000)
-    //options.set('subscriptionValue', 0x0000000)
-    //options.set('suppressConnect', false)
-    //options.set('suppressMaskedSubscription', false)
-    //options.set('suppressQueryLog', false)
-    client.connect(options)
+    {% if not widgets %} 
+        // Uncomment and modify to exercise option values below
+        // indicate msgtools defaults for use with local insecure 
+        // connections.  We assume the taget server is MsgServer
+        // and we emit Connect and other messages expected by that
+        // server as part of our connection sequence.
+        var options = new Map()
+        //options.set('secureSocket', false)
+        //options.set('server', '127.0.0.1')
+        //options.set('port', 5679)
+        //options.set('subscriptionMask', 0x00000000)
+        //options.set('subscriptionValue', 0x0000000)
+        //options.set('suppressConnect', false)
+        //options.set('suppressMaskedSubscription', false)
+        //options.set('suppressQueryLog', false)
+        client.connect(options)
+    {% endif %}
 }
