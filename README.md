@@ -1,7 +1,7 @@
 MsgTools
 ========
 
-Travis-CI build status: https://travis-ci.org/MilesEngineering/MsgTools.svg?branch=master
+Travis-CI Build Status: [![Build Status](https://travis-ci.org/MilesEngineering/MsgTools.svg?branch=master)](https://travis-ci.org/MilesEngineering/MsgTools.svg?branch=master)
 
 Message Tools for embedded systems
 
