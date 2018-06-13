@@ -13,7 +13,7 @@ class BluetoothRFCOMMQtConnection(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
 
     def __init__(self, socket):
-        super(BluetoothRFCOMMConnection, self).__init__(None)
+        super(BluetoothRFCOMMQtConnection, self).__init__(None)
 
         self.removeClient = QtWidgets.QPushButton("Remove")
         self.removeClient.pressed.connect(lambda: self.socket.close())
