@@ -3,7 +3,7 @@ ifeq ($(UNAME),Cygwin)
 QT_ROOT_57_WIN := /cygdrive/c/Qt/5.7/mingw53_32
 QT_ROOT_58_WIN := /cygdrive/c/Qt/Qt5.8.0/5.8/mingw53_32
 
-ifeq ("$(wildcard $(QTROOT_58_WIN))","")
+ifneq ("$(wildcard $(QTROOT_58_WIN))","")
 
 # for Qt 5.8 installed by windows Qt installer, with mingw compiler
 QT_ROOT := $(QT_ROOT_58_WIN)
@@ -11,7 +11,7 @@ QMAKE := $(QT_ROOT)/bin/qmake.exe
 QTBIN := /cygdrive/c/Qt/Qt5.8.0/Tools/mingw530_32/bin
 MAKE_FOR_QT = PATH=$(QTBIN):/usr/bin ; mingw32-make
 
-else ifeq ("$(wildcard $(QTROOT_57_WIN))","")
+else ifneq ("$(wildcard $(QTROOT_57_WIN))","")
 
 # for Qt 5.7 installed by windows Qt installer, with mingw compiler
 QT_ROOT := $(QT_ROOT_57_WIN)
@@ -19,7 +19,7 @@ QMAKE := $(QT_ROOT)/bin/qmake.exe
 QTBIN := /cygdrive/c/Qt/Tools/mingw530_32/bin
 MAKE_FOR_QT = PATH=$(QTBIN):/usr/bin ; mingw32-make
 
-else ifeq ("$(wildcard /usr/bin/qmake)","")
+else ifneq ("$(wildcard /usr/bin/qmake-qt5)","")
 
 # for qt in path
 QMAKE := qmake-qt5
@@ -38,11 +38,17 @@ run: $(TARGET)
 
 else
 
+QMAKE_FOUND := $(shell command -v qmake 2> /dev/null)
+
+ifdef QMAKE_FOUND
 QMAKE := qmake
 MAKE_FOR_QT := make
 QSPEC := -spec  linux-g++
+endif
 
 endif
+
+ifdef QMAKE
 
 ifeq ($(UNAME),Cygwin)
 $(OBJ_DIR)/Makefile: *.pro | $(OBJ_DIR)
@@ -57,6 +63,10 @@ endif
 $(TARGET) : $(TARGET).pro $(OBJ_DIR)/Makefile
 	@echo Building $@
 	cd $(OBJ_DIR) ; $(MAKE_FOR_QT)
+else
+$(TARGET) : 
+	@echo Not building $(TARGET), no Qt install found
+endif
 
 clean ::
 	rm -rf $(OBJ_DIR)
