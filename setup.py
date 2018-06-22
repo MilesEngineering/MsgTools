@@ -39,11 +39,10 @@ setup(name='msgtools',
         'pyyaml',
         'websockets',
         'janus',
-        'jinja2',
-        'pyqt5' # This is so instrinsic to most tools; just install it.
+        'jinja2'
     ],
     extras_require={
-        'gui':  ["pyqtgraph"],
+        'gui':  ["pyqtgraph", "pyqt5"],
         'serverserial': ["pyqtserial"],
     },
     package_data={
