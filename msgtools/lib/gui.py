@@ -305,7 +305,10 @@ class MsgCommandWidget(QtWidgets.QWidget):
         self.textBox.moveCursor (QtGui.QTextCursor.End)
         self.textBox.insertPlainText(text)
         self.textBox.moveCursor (QtGui.QTextCursor.End)
-    
+
+    def clear(self):
+        self.textBox.clear()
+
 class Gui(App, QtWidgets.QMainWindow):
     @classmethod
     def addBaseArguments(cls, parser):
