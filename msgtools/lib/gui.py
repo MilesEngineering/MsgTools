@@ -245,16 +245,18 @@ class LineEditWithHistory(QtWidgets.QLineEdit):
     # disable tab focus so we get tab keys delivered via keyPressEvent.
     def focusNextPrevChild(self, next):
         return False
+    
+    def addToHistory(self, lineOfText):
+        if len(self.commandHistory) == 0 or self.commandHistory[-1] != lineOfText:
+            self.commandHistory.append(lineOfText)
+            if len(self.commandHistory) > 20:
+                self.commandHistory.pop(0)
+        self.placeInHistory = len(self.commandHistory)
 
     def keyPressEvent(self, keyEvent):
         if keyEvent.key() == QtCore.Qt.Key_Return:
             # add to history
-            lineOfText = self.text()
-            if len(self.commandHistory) == 0 or self.commandHistory[-1] != lineOfText:
-                self.commandHistory.append(lineOfText)
-                if len(self.commandHistory) > 20:
-                    self.commandHistory.pop(0)
-            self.placeInHistory = len(self.commandHistory)
+            self.addToHistory(self.text())
         elif keyEvent.key() == QtCore.Qt.Key_Up:
             #up in history
             self.setToHistoryItem(self.placeInHistory - 1)
@@ -308,6 +310,21 @@ class MsgCommandWidget(QtWidgets.QWidget):
 
     def clear(self):
         self.textBox.clear()
+    
+    def addToHistory(self, lineOfText):
+        self.lineEdit.addToHistory(lineOfText)
+    
+    def saveState(self):
+        ret = ""
+        for h in self.lineEdit.commandHistory:
+            ret = ret + "|" + h
+        return ret
+    
+    def restoreState(self, state):
+        if state:
+            history = state.split("|")
+            for h in history:
+                self.lineEdit.addToHistory(h)
 
 class Gui(App, QtWidgets.QMainWindow):
     @classmethod

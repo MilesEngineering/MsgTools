@@ -84,11 +84,11 @@ def slim_vbox(a, b):
     vBox.setLayout(vLayout)
     return vBox
 
-def vsplitter(parent, a,b):
+def vsplitter(parent, *argv):
     splitter = QSplitter(parent)
     splitter.setOrientation(Qt.Vertical)
-    splitter.addWidget(a)
-    splitter.addWidget(b)
+    for arg in argv:
+        splitter.addWidget(arg)
     return splitter
 
 class ClosableDockWidget(QDockWidget):
@@ -119,10 +119,15 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.txDictionary = self.configure_tx_dictionary(parent)
         self.txMsgs = self.configure_tx_messages(parent)
         txClearBtn = QPushButton("Clear")
+        self.textEntryWidget = msgtools.lib.gui.MsgCommandWidget(parent)
+        #self.textEntryWidget.commandEntered.connect(self.newCommandEntered)
+        self.textEntryWidget.messageEntered.connect(self.newMessageEntered)
+        # tracking what reply to expect
+        self.expectedReply = None
         
         # add them to the tx layout
         txVBox = slim_vbox(self.txMsgs, txClearBtn)
-        txSplitter = vsplitter(parent, self.txDictionary, txVBox)
+        self.txSplitter = vsplitter(parent, self.txDictionary, txVBox, self.textEntryWidget)
         
         # create widgets for rx
         self.rx_message_list = self.configure_rx_message_list(parent)
@@ -134,14 +139,14 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         # add them to the rx layout
         rxMsgListBox = slim_vbox(self.rx_message_list, rxClearListBtn)
         rxMsgsBox = slim_vbox(self.rx_messages_widget, rxClearMsgsBtn)
-        rxSplitter = vsplitter(parent, rxMsgListBox, rxMsgsBox)
+        self.rxSplitter = vsplitter(parent, rxMsgListBox, rxMsgsBox)
 
         # top level horizontal splitter to divide the screen
-        hSplitter = QSplitter(parent)
-        hSplitter.addWidget(txSplitter)
-        hSplitter.addWidget(rxSplitter)
+        self.hSplitter = QSplitter(parent)
+        self.hSplitter.addWidget(self.txSplitter)
+        self.hSplitter.addWidget(self.rxSplitter)
 
-        self.setCentralWidget(hSplitter)
+        self.setCentralWidget(self.hSplitter)
     
         # connect signals for 'clear' buttons
         txClearBtn.clicked.connect(self.clear_tx)
@@ -262,6 +267,10 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                             firstTime = False
                         else:
                             msgPlot.addPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
+        self.txSplitter.restoreState(self.settings.value("txSplitterSizes"));
+        self.rxSplitter.restoreState(self.settings.value("rxSplitterSizes"));
+        self.hSplitter.restoreState(self.settings.value("hSplitterSizes"));
+        self.textEntryWidget.restoreState(self.settings.value("cmdHistory"))
 
     def on_close(self):
         plotList = ""
@@ -276,10 +285,19 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         if plotList:
             plotList = plotList[:-1]
         self.settings.setValue("plotList", plotList)
+        
+        # save splitter sizes
+        self.settings.setValue("txSplitterSizes", self.txSplitter.saveState());
+        self.settings.setValue("rxSplitterSizes", self.rxSplitter.saveState());
+        self.settings.setValue("hSplitterSizes",  self.hSplitter.saveState());
+        self.settings.setValue("cmdHistory", self.textEntryWidget.saveState());
             
     def on_tx_message_send(self, msg):
         if not self.connected:
             self.OpenConnection()
+        text = msg.MsgName() + " " + Messaging.toCsv(msg)
+        self.textEntryWidget.addText(text + " -> Msg\n> ")
+        self.textEntryWidget.addToHistory(text)
         self.SendMsg(msg)
     
     def addPlot(self, msg_key, msgClass, fieldInfo, fieldIndex):
@@ -326,6 +344,9 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.display_message_in_rx_list(msg_key, msg)
         self.display_message_in_rx_tree(msg_key, msg)
         self.display_message_in_plots(msg_key, msg)
+        
+        if self.expectedReply and msg.MsgName().startswith(self.expectedReply):
+            self.textEntryWidget.addText(Messaging.toJson(msg)+"\n> ")
 
     def onRxListDoubleClicked(self, rxListItem):
         self.add_message_to_rx_tree(rxListItem.msg_key, rxListItem.msg)
@@ -405,6 +426,18 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 
     def clear_tx(self):
         self.txMsgs.clear()
+
+    # this sends text in the body of a special 'text' message
+    def newCommandEntered(self, cmd):
+        tm = textMessage()
+        tm.SetBuffer(cmd)
+        tm.hdr.SetDataLength(len(cmd)+1)
+        self.SendMsg(tm)
+    
+    def newMessageEntered(self, msg):
+        self.expectedReply = msg.MsgName().rsplit(".",1)[0]
+        self.SendMsg(msg)
+
 
 def main():
     # Setup a command line processor...
