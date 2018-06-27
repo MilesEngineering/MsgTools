@@ -233,6 +233,12 @@ def msgName(msg):
         else:
             ret = subname
     return ret
+
+def msgAlias(msg):
+    try:
+        return msg["Alias"]
+    except KeyError:
+        return ""
     
 def msgShortName(msg):
     commonSubdir = msg["commonSubdir"]

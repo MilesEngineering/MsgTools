@@ -70,3 +70,4 @@ class <MSGNAME> :
     ]
 
 Messaging.Register("<MSGDESCRIPTOR>", <MSGNAME>.ID, <MSGNAME>)
+Messaging.AddAlias("<MSGALIAS>", <MSGNAME>.ID, <MSGNAME>)

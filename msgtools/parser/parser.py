@@ -210,6 +210,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<MESSAGE_PACKAGE>"] = msg["commonSubdir"].replace( '/', '.').replace( '\\', '.')
                 replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg)
                 replacements["<DATE>"] = currentDateTime
+                replacements["<MSGALIAS>"] = msgAlias(msg)
                 for line in template:
                     line = DoReplacements(line, msg, replacements, firstTime)
                     outFile.write(line)
