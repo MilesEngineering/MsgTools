@@ -349,6 +349,8 @@ class DebugPrint(msgtools.lib.gui.Gui):
 def main():
     # Setup a command line processor...
     parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser.add_argument('dictionaryfile', nargs='?', default=None, help='''The dictionary file
+you want tolook up format string IDs in.''')
     parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
     args = parser.parse_args()
 
