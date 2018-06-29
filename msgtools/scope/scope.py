@@ -267,17 +267,10 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                             firstTime = False
                         else:
                             msgPlot.addPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
-        if self.settings.value("txSplitterSize") != None:
-            self.txSplitter.restoreState(self.settings.value("txSplitterSizes"));
-
-        if self.settings.value("rxSplitterSize") != None:
-            self.rxSplitter.restoreState(self.settings.value("rxSplitterSizes"));
-
-        if self.settings.value("hSplitterSizes") != None:
-            self.hSplitter.restoreState(self.settings.value("hSplitterSizes"));
-
-        if self.settings.value("cmdHistory") != None:
-            self.textEntryWidget.restoreState(self.settings.value("cmdHistory"));
+        self.txSplitter.restoreState(self.settings.value("txSplitterSizes", self.txSplitter.saveState()));
+        self.rxSplitter.restoreState(self.settings.value("rxSplitterSizes", self.rxSplitter.saveState()));
+        self.hSplitter.restoreState(self.settings.value("hSplitterSizes", self.hSplitter.saveState()));
+        self.textEntryWidget.restoreState(self.settings.value("cmdHistory", self.textEntryWidget.saveState()));
 
     def on_close(self):
         plotList = ""
