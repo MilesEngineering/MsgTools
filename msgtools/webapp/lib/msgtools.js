@@ -196,11 +196,11 @@
             // appears to spuriously send events to disconnected DOM elements that result in 
             // unexpected messages to client we'll need to implement our own EventTarget API.
             this.m_Listeners = {}
-            this.m_Listeners.message = new Array()
-            this.m_Listeners.connected = new Array()
-            this.m_Listeners.disconnected = new Array()
-            this.m_Listeners.error = new Array()
-            this.m_Listeners.logstatus = new Array()
+            this.m_Listeners.message = new Set()
+            this.m_Listeners.connected = new Set()
+            this.m_Listeners.disconnected = new Set()
+            this.m_Listeners.error = new Set()
+            this.m_Listeners.logstatus = new Set()
 
             if (dependenciesLoaded==false)
                 throw 'You must call setMsgDirectory() before a MessageClient can be created.'
@@ -222,8 +222,8 @@
          */
         addEventListener(type, listener) {
             var listeners = this.m_Listeners[type]
-            if (listeners !== undefined && listeners.find(listener) === undefined) {
-                listeners.push(listener)
+            if (listeners !== undefined) {
+                listeners.add(listener)
             }
         }
 
@@ -235,10 +235,7 @@
         removeEventListener(type, listener) {
             var listeners = this.m_Listeners[type]
             if (listeners !== undefined) {
-                var index = listeners.findIndex(listener)
-                if ( index > -1 ) {
-                    listeners = listeners.slice(index, 1)
-                }
+                listeners.delete(listener)
             }
         }
         
