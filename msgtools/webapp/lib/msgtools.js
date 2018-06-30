@@ -192,12 +192,15 @@
          */
         constructor(name='', hostWindow=null) {
 
-            // Because Safari doesn't support EventTarget as an actual constructable class we
-            // are going with a delegation pattern where we create a div tag to act as our 
-            // event mediator.  In Chrome we could just extend this class from EventTarget and
-            // move on.
-            this.m_EventTarget = document.createElement('div')
-            this.m_EventTarget.name=name
+            // Because Safari doesn't support EventTarget as an actual constructable class, and Chrome
+            // appears to spuriously send events to disconnected DOM elements that result in 
+            // unexpected messages to client we'll need to implement our own EventTarget API.
+            this.m_Listeners = {}
+            this.m_Listeners.message = new Set()
+            this.m_Listeners.connected = new Set()
+            this.m_Listeners.disconnected = new Set()
+            this.m_Listeners.error = new Set()
+            this.m_Listeners.logstatus = new Set()
 
             if (dependenciesLoaded==false)
                 throw 'You must call setMsgDirectory() before a MessageClient can be created.'
@@ -208,18 +211,52 @@
         }
 
         //
-        // Our own version of EventTarget that we just delegate - see comments in the constructor
-        // for why we went this way...
-        addEventListener() {
-            return this.m_EventTarget.addEventListener.apply(null, arguments)
+        // Emulate Event Target
+        //
+
+        /**
+         * Add an event listener.  
+         * @param {string} - The type of message this listener is interested in.  Valid values are
+         * message, connected, disconnected, error, logstatus.
+         * @param {EventListener} - The event listener to register
+         */
+        addEventListener(type, listener) {
+            var listeners = this.m_Listeners[type]
+            if (listeners !== undefined) {
+                listeners.add(listener)
+            }
         }
 
-        removeEventListener() {
-            return this.m_EventTarget.removeEventListener.apply(null, arguments)           
+        /**
+         * Removes the indicated listener from the indicated messsge type
+         * @param {string} type - See add listener for the list of valid types
+         * @param {EventListener} - The event listener to remove
+         */
+        removeEventListener(type, listener) {
+            var listeners = this.m_Listeners[type]
+            if (listeners !== undefined) {
+                listeners.delete(listener)
+            }
         }
         
-        dispatchEvent() {
-            return this.m_EventTarget.dispatchEvent.apply(null, arguments)
+        /**
+         * Send the indicated event to all registered listeners
+         */
+        dispatchEvent(event) {
+            var listeners = this.m_Listeners[event.type]
+            if (listeners !== undefined) {
+                for( let l of listeners ) {
+                    try {
+                        if ( typeof(l) == 'function') 
+                            l(event)
+                        else if (l.handleEvent !== undefined)
+                            l.handleEvent(event)
+                    }
+                    catch(e) {
+                        // Nothing - carry on
+                    }
+                }
+            }
         }
 
         /**
