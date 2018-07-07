@@ -255,7 +255,11 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             for plot in plotList:
                 msg_key = plot.split(":")[0]
                 msg_id = msg_key.split(',')[-1]
-                msgName = self.msgLib.MsgNameFromID[msg_id]
+                try:
+                    msgName = self.msgLib.MsgNameFromID[msg_id]
+                except KeyError:
+                    print('Error!  msg_id ' + msg_id + ' is undefined!')
+                    continue
                 msgClass = self.msgLib.MsgClassFromName[msgName]
                 
                 fieldNames = plot.split(":")[1].split(",")
