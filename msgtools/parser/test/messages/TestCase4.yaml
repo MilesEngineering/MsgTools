@@ -1,0 +1,17 @@
+Messages:
+  - Name: TestCase4
+    ID: 1234
+    Description: Used for testing CSV
+    Fields:
+      - Name: A
+        Type: uint32
+      - Name: B
+        Type: uint8
+        Count: 3
+      - Name: C
+        Type: uint16
+        Count: 3
+      - Name: D
+        Type: uint8
+        Count: 10
+        Units: ASCII
