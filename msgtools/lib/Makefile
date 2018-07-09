@@ -1,7 +1,7 @@
 .PHONY: all install clean clobber
 
 test:
-	cd Test && make
+	cd Test && make test
 
 clean:
 	cd Test && make clean

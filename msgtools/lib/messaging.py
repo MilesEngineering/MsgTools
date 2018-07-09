@@ -11,6 +11,9 @@ import importlib
 from collections import OrderedDict
 import json
 
+# for reading CSV
+import csv
+
 from collections import namedtuple
 import ctypes
 from datetime import datetime
@@ -179,6 +182,10 @@ class Messaging:
     @staticmethod
     def set(msg, fieldInfo, value, index=0):
         if("int" in fieldInfo.type):
+            if isinstance(value, str):
+                value = value.strip()
+                if value.startswith("0x"):
+                    value = int(value, 0)
             value = int(float(value))
         elif("float" in fieldInfo.type):
             value = float(value)
@@ -238,6 +245,8 @@ class Messaging:
         pythonObj = OrderedDict()
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
+                if msg.hdr.GetDataLength() < int(fieldInfo.get.offset) + int(fieldInfo.get.size):
+                    break
                 if len(fieldInfo.bitfieldInfo) == 0:
                     pythonObj[fieldInfo.name] = str(Messaging.get(msg, fieldInfo))
                 else:
@@ -245,11 +254,60 @@ class Messaging:
                         pythonObj[bitInfo.name] = str(Messaging.get(msg, bitInfo))
             else:
                 arrayList = []
+                terminate = 0
                 for i in range(0,fieldInfo.count):
+                    if msg.hdr.GetDataLength() < int(fieldInfo.get.offset) + i*int(fieldInfo.get.size):
+                        terminate = 1
+                        break
                     arrayList.append(str(Messaging.get(msg, fieldInfo, i)))
                 pythonObj[fieldInfo.name] = arrayList
+                if terminate:
+                    break
 
         return json.dumps({msg.MsgName() : pythonObj})
+
+    @staticmethod
+    def jsonToMsg(jsonString):
+        terminationLen = None
+        if "hdr" in jsonString:
+            fieldJson = jsonString["hdr"]
+            for fieldName in fieldJson:
+                if fieldName == "DataLength":
+                    if fieldJson[fieldName] == ";":
+                        terminationLen = 0
+                    else:
+                        terminationLen = int(fieldJson[fieldName])
+        for msgName in jsonString:
+            if msgName == "hdr":
+                # hdr handled above, *before* message body
+                pass
+            else:
+                fieldJson = jsonString[msgName]
+                msgClass = Messaging.MsgClassFromName[msgName]
+                msg = msgClass()
+                for fieldName in fieldJson:
+                    fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
+                    fieldValue = fieldJson[fieldName]
+                    if isinstance(fieldValue, list):
+                        #print(fieldName + " list type is " + str(type(fieldValue)))
+                        for i in range(0,len(fieldValue)):
+                            Messaging.set(msg, fieldInfo, fieldValue[i], i)
+                            if terminationLen != None:
+                                terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1))
+                    elif isinstance(fieldValue, dict):
+                        #print(fieldName + " dict type is " + str(type(fieldValue)))
+                        if fieldInfo.bitfieldInfo:
+                            pass
+                        else:
+                            pass
+                    else:
+                        #print(str(type(fieldValue)) + " " + fieldName + ", calling set with " + str(fieldValue))
+                        Messaging.set(msg, fieldInfo, fieldValue)
+                        if terminationLen != None:
+                            terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size))
+        if terminationLen != None:
+            msg.hdr.SetDataLength(terminationLen)
+        return msg
 
     @staticmethod
     def toCsv(msg):
@@ -270,32 +328,73 @@ class Messaging:
     def csvToMsg(lineOfText):
         if lineOfText == '':
             return None
-        params = lineOfText.split()
+        params = lineOfText.split(" ", 1)
         msgName = params[0]
         if len(params) == 1:
             params = []
         else:
-            params = lineOfText.replace(msgName, "",1).split(',')
+            # use CSV reader module
+            params = list(csv.reader([params[1]], quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True))[0]
+            #params = params[1].split(",")
         if msgName in Messaging.MsgClassFromName:
             msgClass = Messaging.MsgClassFromName[msgName]
             msg = msgClass()
             if msg.fields:
                 try:
                     paramNumber = 0
+                    terminateMsg = 0
+                    terminationLen = 0
                     for fieldInfo in msgClass.fields:
+                        val = params[paramNumber].strip()
                         if(fieldInfo.count == 1):
+                            if val.endswith(";"):
+                                #print('found ; in ' + val)
+                                terminateMsg = 1
+                                val = val[:-1]
+                                if val == "":
+                                    # terminate without this field
+                                    terminationLen = int(fieldInfo.get.offset)
+                                    break
+                                # terminate after this field
+                                terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)
                             if len(fieldInfo.bitfieldInfo) == 0:
-                                Messaging.set(msg, fieldInfo, params[paramNumber])
+                                if fieldInfo.type == "string":
+                                    if val.startswith('"') and val.endswith('"'):
+                                        val = val.strip('"')
+                                Messaging.set(msg, fieldInfo, val)
                                 paramNumber+=1
                             else:
                                 for bitInfo in fieldInfo.bitfieldInfo:
-                                    Messaging.set(msg, bitInfo, params[paramNumber])
+                                    Messaging.set(msg, bitInfo, val)
                                     paramNumber+=1
+                                    val = params[paramNumber]
                         else:
-                            arrayList = []
-                            for i in range(0,fieldInfo.count):
-                                Messaging.set(msg, fieldInfo, params[paramNumber], i)
+                            if val.startswith("0x") and len(val) > 2+fieldInfo.count*int(fieldInfo.get.size):
+                                if val.endswith(";"):
+                                    terminateMsg = 1
+                                    val = val[:-1]
+                                    hexStr = val[2:].strip()
+                                    terminationLen = int(int(fieldInfo.get.offset) + len(hexStr)/2)
+                                hexStr = val[2:].strip()
+                                charsForOneElem = int(fieldInfo.get.size)*2
+                                valArray = [hexStr[i:i+charsForOneElem] for i in range(0, len(hexStr), charsForOneElem)]
+                                for i in range(0,len(valArray)):
+                                    Messaging.set(msg, fieldInfo, int(valArray[i], 16), i)
                                 paramNumber+=1
+                            else:
+                                for i in range(0,fieldInfo.count):
+                                    if val.endswith(";"):
+                                        terminateMsg = 1
+                                        terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1)
+                                        val = val[:-1]
+                                    Messaging.set(msg, fieldInfo, val, i)
+                                    if terminateMsg:
+                                        break
+                                    paramNumber+=1
+                                    val = params[paramNumber]
+                        if terminateMsg:
+                            msg.hdr.SetDataLength(terminationLen)
+                            break
                 except IndexError:
                     # if index error occurs on accessing params, then stop processing params
                     # because we've processed them all
