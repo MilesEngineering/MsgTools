@@ -304,7 +304,10 @@ class Messaging:
                         #print(str(type(fieldValue)) + " " + fieldName + ", calling set with " + str(fieldValue))
                         Messaging.set(msg, fieldInfo, fieldValue)
                         if terminationLen != None:
-                            terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size))
+                            if fieldInfo.type == "string":
+                                terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(fieldValue))
+                            else:
+                                terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size))
         if terminationLen != None:
             msg.hdr.SetDataLength(terminationLen)
         return msg
@@ -325,6 +328,19 @@ class Messaging:
         return ret
 
     @staticmethod
+    def escapeCommasInQuotedString(line):
+        ret = ""
+        quoteStarted = 0
+        for c in line:
+            if c == '"':
+                quoteStarted = not quoteStarted
+            elif c == ',':
+                if quoteStarted:
+                    ret = ret + '\\'
+            ret = ret + c
+        return ret
+
+    @staticmethod
     def csvToMsg(lineOfText):
         if lineOfText == '':
             return None
@@ -333,9 +349,11 @@ class Messaging:
         if len(params) == 1:
             params = []
         else:
+            # escape commas that are inside quoted strings
+            line = Messaging.escapeCommasInQuotedString(params[1])
             # use CSV reader module
-            params = list(csv.reader([params[1]], quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True))[0]
-            #params = params[1].split(",")
+            params = list(csv.reader([line], quotechar='"', delimiter=',', quoting=csv.QUOTE_NONE, skipinitialspace=True, escapechar='\\'))[0]
+            #print("params is " + str(params))
         if msgName in Messaging.MsgClassFromName:
             msgClass = Messaging.MsgClassFromName[msgName]
             msg = msgClass()
@@ -346,9 +364,9 @@ class Messaging:
                     terminationLen = 0
                     for fieldInfo in msgClass.fields:
                         val = params[paramNumber].strip()
+                        #print("val is [" + val + "]") 
                         if(fieldInfo.count == 1):
                             if val.endswith(";"):
-                                #print('found ; in ' + val)
                                 terminateMsg = 1
                                 val = val[:-1]
                                 if val == "":
@@ -361,6 +379,8 @@ class Messaging:
                                 if fieldInfo.type == "string":
                                     if val.startswith('"') and val.endswith('"'):
                                         val = val.strip('"')
+                                    if terminateMsg:
+                                        terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(val)
                                 Messaging.set(msg, fieldInfo, val)
                                 paramNumber+=1
                             else:
