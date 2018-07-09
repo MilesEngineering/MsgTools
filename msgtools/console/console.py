@@ -19,7 +19,7 @@ except ImportError:
     from msgtools.lib.messaging import Messaging
 
 def main(args=None):
-    msgLib = Messaging(None, 0, "NetworkHeader")
+    msgLib = Messaging()
 
     if len(sys.argv) > 1 and sys.argv[1] == "server":
         connection = SynchronousMsgServer(Messaging.hdr)

@@ -82,25 +82,28 @@ class Messaging:
     
     debug=0
 
-    def __init__(self, searchdir, debug, headerName):
+    def __init__(self, loaddir=None, searchdir=None, debug=0, headerName="NetworkHeader"):
         Messaging.debug = debug
-        if not searchdir or not os.path.isdir(searchdir):
-            searchdir = os.getcwd()
-        loadDir = os.path.join(searchdir, "obj/CodeGenerator/Python/")
-        while not os.path.isdir(loadDir):
-            lastsearchdir = searchdir
-            searchdir = os.path.abspath(os.path.join(searchdir, os.pardir))
-            # checking if joining with pardir returns the same dir is the easiest way to
-            # determine if we're at root of filesystem
-            if lastsearchdir == searchdir:
-                # if we're at root of filesystem, just give up!
-                loadDir = None
-                #print("\nERROR! Auto-generated python code not found!")
-                #print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
-                break
-            loadDir = searchdir + "/obj/CodeGenerator/Python/"
-            if Messaging.debug:
-                print("search for objdir in " + loadDir)
+        if loaddir:
+            pass
+        else:
+            if not searchdir or not os.path.isdir(searchdir):
+                searchdir = os.getcwd()
+            loadDir = os.path.join(searchdir, "obj/CodeGenerator/Python/")
+            while not os.path.isdir(loadDir):
+                lastsearchdir = searchdir
+                searchdir = os.path.abspath(os.path.join(searchdir, os.pardir))
+                # checking if joining with pardir returns the same dir is the easiest way to
+                # determine if we're at root of filesystem
+                if lastsearchdir == searchdir:
+                    # if we're at root of filesystem, just give up!
+                    loadDir = None
+                    #print("\nERROR! Auto-generated python code not found!")
+                    #print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
+                    break
+                loadDir = searchdir + "/obj/CodeGenerator/Python/"
+                if Messaging.debug:
+                    print("search for objdir in " + loadDir)
         sys.path.append(loadDir)
         sys.path.append(str(loadDir)+"/headers")
         
@@ -413,12 +416,13 @@ class Messaging:
                                     paramNumber+=1
                                     val = params[paramNumber]
                         if terminateMsg:
-                            msg.hdr.SetDataLength(terminationLen)
                             break
                 except IndexError:
                     # if index error occurs on accessing params, then stop processing params
                     # because we've processed them all
                     pass
+            if terminateMsg:
+                msg.hdr.SetDataLength(terminationLen)
             return msg
         else:
             print("["+lineOfText+"] is NOT A MESSAGE NAME!")

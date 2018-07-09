@@ -16,7 +16,7 @@ class TestClass(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print ("----------- Running setup")
-        cls.msgLib = Messaging(None, 0, "NetworkHeader")
+        cls.msgLib = Messaging()
 
     def test_dict(self):
         msgname = "Network.Connect"
@@ -82,7 +82,7 @@ class TestClass(unittest.TestCase):
 
     def test_csv_and_json(self):
         testData = [
-         ('TestCase4 ;',                             {"TestCase4": {}}),
+         ('TestCase4 ;',                             {"TestCase4": {}, "hdr" : {"DataLength": ";"}}),
          ('TestCase4 ',                              {"TestCase4": {"A":0, "B": [0,0,0], "C": [0,0,0], "D": ""}}),
          ('TestCase4 1, 2,3,4, 5,6,7,ei;ght',        {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "ei;ght"}}),
          ("TestCase4 1, 2;",                         {"TestCase4": {"A":1, "B": [2]}, "hdr" : {"DataLength": ";"}}),
