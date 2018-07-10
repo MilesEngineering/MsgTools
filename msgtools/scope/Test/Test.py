@@ -7,7 +7,7 @@ try:
     from msgtools.lib.messaging import Messaging
 except ImportError:
     import os
-    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../../..")
     sys.path.append(srcroot)
     from msgtools.lib.messaging import Messaging
 
