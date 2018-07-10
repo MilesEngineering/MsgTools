@@ -112,6 +112,8 @@ def fnHdr(field, offset, count, name):
     
     try:
         fieldSize = MsgParser.fieldSize(field)
+        if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+            count = MsgParser.fieldCount(field)
     except KeyError:
         fieldSize = 0
         
@@ -157,7 +159,7 @@ def getFn(msg, field, offset):
         if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
             preface += "\n    count = " + str(count)+"\n"
             preface += "    if count > len(self.rawBuffer())-("+loc+"):\n"
-            preface += "        count = len(self.rawBuffer())-<MSGNAME>.MSG_OFFSET\n"
+            preface += "        count = len(self.rawBuffer())-("+loc+")\n"
             type = "str(count)+'s'"
             count = 1
             cleanup = '''ascii_len = str(value).find("\\\\x00")

@@ -102,7 +102,7 @@ class App(QtWidgets.QMainWindow):
         self.readBytesFn = None
 
         try:
-            self.msgLib = Messaging(msgLoadDir, 0, headerName)
+            self.msgLib = Messaging(searchdir=msgLoadDir, headerName=headerName)
 
             if args.msg is not None:
                 # Validate all message names are valid

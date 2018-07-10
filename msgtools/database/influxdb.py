@@ -158,7 +158,7 @@ class InfluxDBConnection:
 # this is client that reads from network, and writes to InfluxDB
 class InfluxDBMsgClient:
     def __init__(self):
-        self.msgLib = Messaging(None, 0, "NetworkHeader")
+        self.msgLib = Messaging()
 
         self.connection = SynchronousMsgClient(Messaging.hdr)
         # say my name
