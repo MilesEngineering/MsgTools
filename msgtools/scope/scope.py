@@ -120,7 +120,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.txMsgs = self.configure_tx_messages(parent)
         txClearBtn = QPushButton("Clear")
         self.textEntryWidget = msgtools.lib.gui.MsgCommandWidget(parent)
-        #self.textEntryWidget.commandEntered.connect(self.newCommandEntered)
+        self.textEntryWidget.commandEntered.connect(self.newCommandEntered)
         self.textEntryWidget.messageEntered.connect(self.newMessageEntered)
         # tracking what reply to expect
         self.expectedReply = None
@@ -340,6 +340,19 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 msgPlot.addData(rxWidgetItem.msg)
 
     def ProcessMessage(self, msg):
+        # handle text replies
+        alreadyPrintedText = False
+        try:
+            if type(msg) == Messaging.Messages.MsgText.Response:
+                text = msg.GetBuffer()
+                text = text.replace("\\n","\n")
+                text = text.replace("\\r","")
+                self.textEntryWidget.addText(text)
+                alreadyPrintedText = True
+        except Exception as e:
+            print(e)
+            pass
+
         hdr = msg.hdr
         msg_id = hex(hdr.GetMessageID())
 
@@ -349,7 +362,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.display_message_in_rx_tree(msg_key, msg)
         self.display_message_in_plots(msg_key, msg)
         
-        if self.expectedReply and msg.MsgName().startswith(self.expectedReply):
+        if not alreadyPrintedText and self.expectedReply and msg.MsgName().startswith(self.expectedReply):
             self.textEntryWidget.addText(Messaging.toJson(msg)+"\n> ")
 
     def onRxListDoubleClicked(self, rxListItem):
@@ -433,10 +446,13 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 
     # this sends text in the body of a special 'text' message
     def newCommandEntered(self, cmd):
-        tm = textMessage()
-        tm.SetBuffer(cmd)
-        tm.hdr.SetDataLength(len(cmd)+1)
-        self.SendMsg(tm)
+        try:
+            tc = Messaging.Messages.MsgText.Command()
+            tc.SetBuffer(cmd)
+            tc.hdr.SetDataLength(len(cmd)+1)
+            self.SendMsg(tc)
+        except:
+            self.textEntryWidget.addText("\nWARNING: No message named/aliased to MsgText.Command exists, not sending text\n> ")
     
     def newMessageEntered(self, msg):
         self.expectedReply = msg.MsgName().rsplit(".",1)[0]

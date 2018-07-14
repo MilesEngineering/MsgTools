@@ -1,0 +1,10 @@
+Messages:
+  - Name: Command
+    Alias: MsgText.Command
+    ID: 0xA1
+    Description: Used to send text commands to hardware.
+    Fields:
+      - Name: Buffer
+        Type: uint8
+        Count: 120
+        Units: ASCII

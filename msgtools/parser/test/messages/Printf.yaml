@@ -1,12 +1,25 @@
+Enums:
+  - Name: Priorities
+    Options:
+      - Name: Error
+        Value: 1
+      - Name: Warning
+        Value: 2
+      - Name: Info
+        Value: 3
 Messages:
   - Name: Printf
     ID: 0xFF
     Description: Used to display debug information as strings.
+    Alias: DebugPrintf
     Fields:
-      - Name: ThreadID
+      - Name: StreamID
         Type: uint32
         Units: PlatformSpecific
-        Description: Some sort of identifier for the thread printing the message.
+        Description: Some sort of identifier for the stream printing the message.
+      - Name: Priority
+        Type: uint32
+        Enum: Priorities
       - Name: LineNumber
         Type: uint32
         Units: NA

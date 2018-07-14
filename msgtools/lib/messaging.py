@@ -425,7 +425,8 @@ class Messaging:
                 msg.hdr.SetDataLength(terminationLen)
             return msg
         else:
-            print("["+lineOfText+"] is NOT A MESSAGE NAME!")
+            #print("["+lineOfText+"] is NOT A MESSAGE NAME!")
+            pass
         return None
 
     def long_substr(data):

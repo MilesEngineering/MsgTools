@@ -32,24 +32,14 @@ class DebugPrint(msgtools.lib.gui.Gui):
         # find classes for print messages
         global printf
         global printfID
-        global textCommand
-        global textResponse
         try:
             printf = Messaging.Messages.DebugPrintf
         except AttributeError:
-            pass
+            printf = None
         try:
             printfID = Messaging.Messages.DebugPrintfID
         except AttributeError:
-            pass
-        try:
-            textCommand = Messaging.Messages.MsgText.Command
-        except AttributeError:
-            pass
-        try:
-            textResponse = Messaging.Messages.MsgText.Response
-        except AttributeError:
-            pass
+            printfID = None
         
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -60,10 +50,10 @@ class DebugPrint(msgtools.lib.gui.Gui):
         self.setCentralWidget(self.tabWidget)
         
         # tab for text commands
-        self.textWindow = msgtools.lib.gui.MsgCommandWidget(self)
-        self.tabWidget.addTab(self.textWindow, "Cmd/Reply")
-        self.textWindow.commandEntered.connect(self.newCommandEntered)
-        self.textWindow.messageEntered.connect(self.newMessageEntered)
+        self.textEntryWidget = msgtools.lib.gui.MsgCommandWidget(self)
+        self.tabWidget.addTab(self.textEntryWidget, "Cmd/Reply")
+        self.textEntryWidget.commandEntered.connect(self.newCommandEntered)
+        self.textEntryWidget.messageEntered.connect(self.newMessageEntered)
         
         # tracking what reply to expect
         self.expectedReply = None
@@ -122,12 +112,12 @@ class DebugPrint(msgtools.lib.gui.Gui):
 
     def newCommandEntered(self, cmd):
         try:
-            tc = textCommand()
+            tc = Messaging.Messages.MsgText.Command()
             tc.SetBuffer(cmd)
             tc.hdr.SetDataLength(len(cmd)+1)
             self.SendMsg(tc)
-        except NameError:
-            self.textWindow.addText("\nWARNING: No message named/aliased to MsgText.Command exists, not sending text\n> ")
+        except:
+            self.textEntryWidget.addText("\nWARNING: No message named/aliased to MsgText.Command exists, not sending text\n> ")
     
     def newMessageEntered(self, msg):
         self.expectedReply = msg.MsgName().rsplit(".",1)[0]
@@ -158,18 +148,20 @@ class DebugPrint(msgtools.lib.gui.Gui):
     
     def ProcessMessage(self, msg):
         # handle text replies
+        alreadyPrintedText = False
         try:
-            if type(msg) == textResponse:
+            if type(msg) == Messaging.Messages.MsgText.Response:
                 text = msg.GetBuffer()
                 text = text.replace("\\n","\n")
                 text = text.replace("\\r","")
-                self.textWindow.addText(text)
-        except NameError:
+                self.textEntryWidget.addText(text)
+                alreadyPrintedText = True
+        except:
             pass
         
-        if self.expectedReply and msg.MsgName().startswith(self.expectedReply):
+        if not alreadyPrintedText and self.expectedReply and msg.MsgName().startswith(self.expectedReply):
             outputString = Messaging.toJson(msg)
-            self.textWindow.addText(outputString+"\n> ")
+            self.textEntryWidget.addText(outputString+"\n> ")
 
         # only handle Printf and PrintfID messages!
         try:
@@ -178,14 +170,20 @@ class DebugPrint(msgtools.lib.gui.Gui):
         except NameError:
             return
         
-        deviceID = msg.hdr.GetDeviceID()
+        try:
+            deviceID = msg.hdr.GetDeviceID()
+        except AttributeError:
+            deviceID = 0
         if type(msg) == printfID:
             # make sure we have a dictionary for the device ID
             if deviceID >= len(self.dictionaries):
                 print("ERROR!  deviceID " + str(deviceID) + " is invalid!")
                 #return
 
-        streamID = msg.GetStreamID()
+        try:
+            streamID = msg.GetStreamID()
+        except AttributeError:
+            streamID = 0
         
         # create a new Tree widget to display the print info
         firstTime = 0
@@ -245,8 +243,12 @@ class DebugPrint(msgtools.lib.gui.Gui):
         text = ""
         filename = ""
         linenumber = ""
-        priority = msg.GetPriority()
-        priorityInt = msg.GetPriority(1)
+        try:
+            priority = msg.GetPriority()
+            priorityInt = msg.GetPriority(1)
+        except AttributeError:
+            priority = ""
+            priorityInt = 0
         if type(msg) == printf:
             text = msg.GetBuffer()
             matchObj = re.search( r'(.*), (\d+): (.*)', text)
