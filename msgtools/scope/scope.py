@@ -19,6 +19,7 @@ except ImportError:
     sys.path.append(srcroot)
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
+import msgtools.debug.debug
 
 import msgtools.lib.txtreewidget as txtreewidget
 plottingLoaded=0
@@ -119,15 +120,14 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.txDictionary = self.configure_tx_dictionary(parent)
         self.txMsgs = self.configure_tx_messages(parent)
         txClearBtn = QPushButton("Clear")
-        self.textEntryWidget = msgtools.lib.gui.MsgCommandWidget(parent)
-        self.textEntryWidget.commandEntered.connect(self.newCommandEntered)
-        self.textEntryWidget.messageEntered.connect(self.newMessageEntered)
+        self.debugWidget = msgtools.debug.debug.MsgDebugWidget(parent)
+        self.debugWidget.messageOutput.connect(self.SendMsg)
         # tracking what reply to expect
         self.expectedReply = None
         
         # add them to the tx layout
         txVBox = slim_vbox(self.txMsgs, txClearBtn)
-        self.txSplitter = vsplitter(parent, self.txDictionary, txVBox, self.textEntryWidget)
+        self.txSplitter = vsplitter(parent, self.txDictionary, txVBox, self.debugWidget)
         
         # create widgets for rx
         self.rx_message_list = self.configure_rx_message_list(parent)
@@ -274,7 +274,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.txSplitter.restoreState(self.settings.value("txSplitterSizes", self.txSplitter.saveState()));
         self.rxSplitter.restoreState(self.settings.value("rxSplitterSizes", self.rxSplitter.saveState()));
         self.hSplitter.restoreState(self.settings.value("hSplitterSizes", self.hSplitter.saveState()));
-        self.textEntryWidget.restoreState(self.settings.value("cmdHistory", self.textEntryWidget.saveState()));
+        self.debugWidget.textEntryWidget.restoreState(self.settings.value("cmdHistory", self.debugWidget.textEntryWidget.saveState()));
 
     def on_close(self):
         plotList = ""
@@ -290,18 +290,18 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             plotList = plotList[:-1]
         self.settings.setValue("plotList", plotList)
         
-        # save splitter sizes
+        # save splitter sizes and command history
         self.settings.setValue("txSplitterSizes", self.txSplitter.saveState());
         self.settings.setValue("rxSplitterSizes", self.rxSplitter.saveState());
         self.settings.setValue("hSplitterSizes",  self.hSplitter.saveState());
-        self.settings.setValue("cmdHistory", self.textEntryWidget.saveState());
+        self.settings.setValue("cmdHistory", self.debugWidget.textEntryWidget.saveState());
             
     def on_tx_message_send(self, msg):
         if not self.connected:
             self.OpenConnection()
         text = msg.MsgName() + " " + Messaging.toCsv(msg)
-        self.textEntryWidget.addText(text + " -> Msg\n> ")
-        self.textEntryWidget.addToHistory(text)
+        self.debugWidget.textEntryWidget.addText(text + " -> Msg\n> ")
+        self.debugWidget.textEntryWidget.addToHistory(text)
         self.SendMsg(msg)
     
     def addPlot(self, msg_key, msgClass, fieldInfo, fieldIndex):
@@ -340,18 +340,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 msgPlot.addData(rxWidgetItem.msg)
 
     def ProcessMessage(self, msg):
-        # handle text replies
-        alreadyPrintedText = False
-        try:
-            if type(msg) == Messaging.Messages.MsgText.Response:
-                text = msg.GetBuffer()
-                text = text.replace("\\n","\n")
-                text = text.replace("\\r","")
-                self.textEntryWidget.addText(text)
-                alreadyPrintedText = True
-        except Exception as e:
-            print(e)
-            pass
+        self.debugWidget.ProcessMessage(msg)
 
         hdr = msg.hdr
         msg_id = hex(hdr.GetMessageID())
@@ -361,9 +350,6 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.display_message_in_rx_list(msg_key, msg)
         self.display_message_in_rx_tree(msg_key, msg)
         self.display_message_in_plots(msg_key, msg)
-        
-        if not alreadyPrintedText and self.expectedReply and msg.MsgName().startswith(self.expectedReply):
-            self.textEntryWidget.addText(Messaging.toJson(msg)+"\n> ")
 
     def onRxListDoubleClicked(self, rxListItem):
         self.add_message_to_rx_tree(rxListItem.msg_key, rxListItem.msg)
@@ -443,21 +429,6 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 
     def clear_tx(self):
         self.txMsgs.clear()
-
-    # this sends text in the body of a special 'text' message
-    def newCommandEntered(self, cmd):
-        try:
-            tc = Messaging.Messages.MsgText.Command()
-            tc.SetBuffer(cmd)
-            tc.hdr.SetDataLength(len(cmd)+1)
-            self.SendMsg(tc)
-        except:
-            self.textEntryWidget.addText("\nWARNING: No message named/aliased to MsgText.Command exists, not sending text\n> ")
-    
-    def newMessageEntered(self, msg):
-        self.expectedReply = msg.MsgName().rsplit(".",1)[0]
-        self.SendMsg(msg)
-
 
 def main():
     # Setup a command line processor...

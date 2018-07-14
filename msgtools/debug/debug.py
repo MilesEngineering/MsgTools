@@ -25,10 +25,20 @@ import msgtools.lib.gui
 DESCRIPTION='''DebugPrint provides a graphical interface that allows you to view debug messages, and send
     binary messages and text commands.'''
 
-class DebugPrint(msgtools.lib.gui.Gui):
-    def __init__(self, args, parent=None):
-        msgtools.lib.gui.Gui.__init__(self, "Debug Print 0.1", args, parent)
-
+# this is a widget used for debug purposes.
+# it incorporates:
+# 1) entry text box
+#   a. to send binary messages
+#   b. to send text commands
+# 2) cmd/response text display to show:
+#   a. entered commands
+#   b. responses
+# 3) separate tabs for debug text output
+class MsgDebugWidget(QtWidgets.QWidget):
+    messageOutput = QtCore.pyqtSignal(object)
+    def __init__(self, parent=None):
+        super(MsgDebugWidget, self).__init__()
+        
         # find classes for print messages
         global printf
         global printfID
@@ -41,13 +51,12 @@ class DebugPrint(msgtools.lib.gui.Gui):
         except AttributeError:
             printfID = None
         
-        # event-based way of getting messages
-        self.RxMsg.connect(self.ProcessMessage)
-
         # tab widget to show multiple stream of print statements, one per tab
-        self.tabWidget = QtWidgets.QTabWidget(self)
+        self.tabWidget = QtWidgets.QTabWidget()
         self.tabWidget.currentChanged.connect(self.tabChanged)
-        self.setCentralWidget(self.tabWidget)
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addWidget(self.tabWidget)
+        self.setLayout(vbox)
         
         # tab for text commands
         self.textEntryWidget = msgtools.lib.gui.MsgCommandWidget(self)
@@ -74,24 +83,7 @@ class DebugPrint(msgtools.lib.gui.Gui):
 
         # whether we should autoscroll as data is added
         self.autoscroll = 1
-        
-        # menu items to change view
-        clearAction = QtWidgets.QAction('&Clear', self)
-        clearAllAction = QtWidgets.QAction('Clear &All', self)
-        self.scrollAction = QtWidgets.QAction('&Scroll', self)
-        self.scrollAction.setCheckable(1)
-        self.scrollAction.setChecked(self.autoscroll)
 
-        menubar = self.menuBar()
-        viewMenu = menubar.addMenu('&View')
-        viewMenu.addAction(clearAction)
-        viewMenu.addAction(clearAllAction)
-        viewMenu.addAction(self.scrollAction)
-
-        clearAction.triggered.connect(self.clearTab)
-        clearAllAction.triggered.connect(self.clearAllTabs)
-        self.scrollAction.triggered.connect(self.switchScroll)
-        
         self.fileWatcher.fileChanged.connect(self.fileChanged)
 
     def clearTab(self):
@@ -115,13 +107,13 @@ class DebugPrint(msgtools.lib.gui.Gui):
             tc = Messaging.Messages.MsgText.Command()
             tc.SetBuffer(cmd)
             tc.hdr.SetDataLength(len(cmd)+1)
-            self.SendMsg(tc)
+            self.messageOutput.emit(tc)
         except:
             self.textEntryWidget.addText("\nWARNING: No message named/aliased to MsgText.Command exists, not sending text\n> ")
     
     def newMessageEntered(self, msg):
         self.expectedReply = msg.MsgName().rsplit(".",1)[0]
-        self.SendMsg(msg)
+        self.messageOutput.emit(msg)
 
     def ReadDictionary(self, deviceID, filename):
         nextId = 0
@@ -155,12 +147,20 @@ class DebugPrint(msgtools.lib.gui.Gui):
                 text = text.replace("\\n","\n")
                 text = text.replace("\\r","")
                 self.textEntryWidget.addText(text)
+                if "error" in text.lower():
+                    color = QtCore.Qt.red
+                elif "warning" in text.lower():
+                    color = QtGui.QColor("darkOrange")
+                else:
+                    color = QtGui.QColor("darkGreen")
+                self.tabWidget.tabBar().setTabTextColor(0, color)
                 alreadyPrintedText = True
         except:
             pass
         
         if not alreadyPrintedText and self.expectedReply and msg.MsgName().startswith(self.expectedReply):
             outputString = Messaging.toJson(msg)
+            self.tabWidget.tabBar().setTabTextColor(0, QtGui.QColor("darkGreen"))
             self.textEntryWidget.addText(outputString+"\n> ")
 
         # only handle Printf and PrintfID messages!
@@ -347,6 +347,34 @@ class DebugPrint(msgtools.lib.gui.Gui):
         print("dictionary " + path + " not found")
     def clearStatus(self):
         self.status.setText("")
+
+class DebugPrint(msgtools.lib.gui.Gui):
+    def __init__(self, args, parent=None):
+        msgtools.lib.gui.Gui.__init__(self, "Debug Print 0.1", args, parent)
+
+        self.debugWidget = MsgDebugWidget()
+        self.setCentralWidget(self.debugWidget)
+        self.debugWidget.messageOutput.connect(self.SendMsg)
+        
+        # menu items to change view
+        clearAction = QtWidgets.QAction('&Clear', self)
+        clearAllAction = QtWidgets.QAction('Clear &All', self)
+        self.scrollAction = QtWidgets.QAction('&Scroll', self)
+        self.scrollAction.setCheckable(1)
+        self.scrollAction.setChecked(self.debugWidget.autoscroll)
+
+        menubar = self.menuBar()
+        viewMenu = menubar.addMenu('&View')
+        viewMenu.addAction(clearAction)
+        viewMenu.addAction(clearAllAction)
+        viewMenu.addAction(self.scrollAction)
+
+        clearAction.triggered.connect(self.debugWidget.clearTab)
+        clearAllAction.triggered.connect(self.debugWidget.clearAllTabs)
+        self.scrollAction.triggered.connect(self.debugWidget.switchScroll)
+
+        # event-based way of getting messages
+        self.RxMsg.connect(self.debugWidget.ProcessMessage)
 
 def main():
     # Setup a command line processor...
