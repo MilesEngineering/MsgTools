@@ -1,4 +1,5 @@
 from jinja2 import Template
+import msgtools.parser.MsgUtils as msgutils
 
 def enums(usedEnums):
     return ""
@@ -16,4 +17,4 @@ def ProcessFile(msg, replacements, template, firstTime):
     for key in replacements:
         newKey = key.lower().strip('<>')
         globals[newKey] = replacements[key]
-    return tmpl.render(globals=globals, msg=msg)
+    return tmpl.render(globals=globals, msg=msg, msgutils=msgutils)
