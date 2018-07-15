@@ -176,6 +176,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     if "Messages" in inputData:
         for msg in Messages(inputData):
             msg["ids"] = ids
+            storeFieldLocations(msg)
             try:
                 msg["commonSubdir"] = CommonSubdir(inputFilename, outDir+"/fake")
 

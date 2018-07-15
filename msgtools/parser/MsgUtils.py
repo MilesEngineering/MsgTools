@@ -44,11 +44,7 @@ def fieldSize(field):
     return fieldSizes[str.lower(field["Type"])]
 
 def msgSize(msg):
-    offset = 0
-    if "Fields" in msg:
-        for field in msg["Fields"]:
-            offset += fieldSize(field) * fieldCount(field)
-    return offset
+    return msg["Size"]
 
 def fieldIsInt(field):
     isInt  = 0
@@ -483,3 +479,16 @@ def BitfieldName(field, bits):
     #return str(field["Name"]) +str(bits["Name"])
     return str(bits["Name"])
         
+def storeFieldLocations(msg):
+    offset = 0
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            field["Location"] = offset
+            bitOffset = 0
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    numBits = bits["NumBits"]
+                    bits["BitLocation"] = bitOffset
+                    bitOffset += numBits
+            offset += fieldSize(field) * fieldCount(field)
+    msg["Size"] = offset
