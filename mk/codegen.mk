@@ -39,6 +39,9 @@ java:
 js:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Javascript javascript
 
+jinjac:
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/JinjaC jinja -t ctemplate.h -ht ctemplate.h
+
 swift:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Swift swift
 
@@ -51,7 +54,7 @@ html:
 
 check: $(DIGEST)
 
-install all:: Makefile check cpp c dart python java js swift matlab html
+install all:: Makefile check cpp c dart python jinjac java js swift matlab html
 
 clean clobber::
 	rm -rf $(MSGDIR) __pycache__ *.pyc

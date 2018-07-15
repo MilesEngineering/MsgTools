@@ -211,9 +211,13 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg)
                 replacements["<DATE>"] = currentDateTime
                 replacements["<MSGALIAS>"] = msgAlias(msg)
-                for line in template:
-                    line = DoReplacements(line, msg, replacements, firstTime)
-                    outFile.write(line)
+                if hasattr(language, "ProcessFile"):
+                    outputFileContents = language.ProcessFile(msg, replacements, "\n".join(template), firstTime)
+                    outFile.write(outputFileContents)
+                else:
+                    for line in template:
+                        line = DoReplacements(line, msg, replacements, firstTime)
+                        outFile.write(line)
                 if oneOutputFilePerMsg:
                     outFile.close()
                 else:
