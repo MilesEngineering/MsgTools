@@ -22,10 +22,9 @@ double
 {{'#'}}define {{globals.msgname}}Code_H__
 
 {{'#'}}define {{globals.msgname}}_MSG_ID {{globals.msgid}}
-{{'#'}}define {{globals.msgname}}_MSG_SIZE {{globals.msgname}}
+{{'#'}}define {{globals.msgname}}_MSG_SIZE {{globals.msgsize}}
 <ENUMERATIONS>
 
-#set offset = 0
 #for f in msg.Fields:
     #if f.Default is defined:
 {{'#'}}define {{globals.msgname}}_{{f.Name}}_DEFAULT {{f.Default}}
@@ -33,22 +32,21 @@ double
     #if f.Count is defined:
 {{'#'}}define {{globals.msgname}}_{{f.Name}}_COUNT {{f.Count}}
     #endif
-{{'#'}}define {{globals.msgname}}_{{f.Name}}_OFFSET {{ offset }}
+{{'#'}}define {{globals.msgname}}_{{f.Name}}_OFFSET {{ f.Location }}
 {{'#'}}define {{globals.msgname}}_{{f.Name}}_SIZE {{msgutils.fieldSize(f)}}
     # for bf in f.Bitfields:
         # if bf.Default is defined:
 {{'#'}}define {{globals.msgname}}_{{bf.Name}}_DEFAULT {{bf.Default}}
         #endif
     #endfor
-    #set offset = offset + msgutils.fieldSize(f) * msgutils.fieldCount(f)
 #endfor
 
-#set offset = 0
+
 #for f in msg.Fields:
 /*  {{f.Units}}, ({{msgutils.fieldMin(f)}} to {{msgutils.fieldMax(f)}})*/
 INLINE {{fieldType(f)}} {{globals.msgname}}_Get{{f.Name}}(uint8_t* m_data{%if msgutils.fieldCount(f) > 1%}, int idx{%endif%})
 {
-    return Get_{{fieldType(f)}}(&m_data[{{offset}}{%if msgutils.fieldCount(f) > 1%}+idx*{{msgutils.fieldSize(f)}}{%endif%}]);
+    return Get_{{fieldType(f)}}(&m_data[{{f.Location}}{%if msgutils.fieldCount(f) > 1%}+idx*{{msgutils.fieldSize(f)}}{%endif%}]);
 }
     #for bf in f.Bitfields:
 /*  {{bf.Units}}, ({{msgutils.fieldMin(bf)}} to {{msgutils.fieldMax(bf)}})*/
@@ -57,7 +55,6 @@ INLINE uint32_t {{globals.msgname}}_Get{{bf.Name}}(uint8_t* m_data)
     return ({{globals.msgname}}_Get{{f.Name}}(m_data) >> 0) & 0x7fffffff;
 }
     #endfor
-    #set offset = offset + msgutils.fieldSize(f) * msgutils.fieldCount(f)
 #endfor
 INLINE void {{globals.msgname}}_Init(uint8_t* m_data)
 {
@@ -79,3 +76,4 @@ INLINE void {{globals.msgname}}_Init(uint8_t* m_data)
 }
 
 {{'#'}}endif
+
