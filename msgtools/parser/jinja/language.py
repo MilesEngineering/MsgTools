@@ -12,7 +12,7 @@ def initCode(msg):
 
 
 def ProcessFile(msg, replacements, template, firstTime):
-    tmpl = Template(template, trim_blocks=True, lstrip_blocks=True, line_statement_prefix='#')
+    tmpl = Template(template, trim_blocks=True, lstrip_blocks=True, line_statement_prefix='$')
     globals = {}
     for key in replacements:
         newKey = key.lower().strip('<>')
