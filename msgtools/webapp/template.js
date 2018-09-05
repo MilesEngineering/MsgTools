@@ -1,3 +1,5 @@
+var msgclient = null
+
 //
 // Bare bones setup of message tools
 //
@@ -28,15 +30,15 @@ function initMsgTools() {
 // This instantiates a new connection to the server
 //
 function connectToServer() {
-    var client = new msgtools.MessagingClient('{{appname}}', window);
+    msgclient = new msgtools.MessagingClient('{{appname}}', window);
     //Assign client to use msgsocket-connector and msgsocket-logging widgets 
-    {% if widgets %} WebSocketUtils.setClient('{{appname}}', client); {% endif %}
+    {% if widgets %} WebSocketUtils.setClient('{{appname}}', msgclient); {% endif %}
 
-    client.addEventListener('connected', () => {
+    msgclient.addEventListener('connected', () => {
         console.log('Connected')
         // TODO: Any custom handling needed
     })
-    client.addEventListener('message', (event) => {
+    msgclient.addEventListener('message', (event) => {
         console.log('New Message')
 
         // OPTiONAL: Pretty print the message to the console
@@ -45,17 +47,17 @@ function connectToServer() {
 
         // TODO: Any custom handling needed
     })
-    client.addEventListener('disconnected', () => {
+    msgclient.addEventListener('disconnected', () => {
         console.log('Disconnected')
 
         // TODO: Any custom handling needed
     })
-    client.addEventListener('error', () => {
+    msgclient.addEventListener('error', () => {
         console.log('Error')
 
         // TODO: Any custom handling needed
     })
-    client.addEventListener('logstatus', (event) => {
+    msgclient.addEventListener('logstatus', (event) => {
         console.log('LogStatus')
 
         // TODO: Any custom handling needed
@@ -76,6 +78,6 @@ function connectToServer() {
         //options.set('suppressConnect', false)
         //options.set('suppressMaskedSubscription', false)
         //options.set('suppressQueryLog', false)
-        client.connect(options)
+        msgclient.connect(options)
     {% endif %}
 }

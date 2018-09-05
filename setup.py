@@ -48,7 +48,7 @@ setup(name='msgtools',
         'serverserial': ["pyqtserial"],
     },
     package_data={
-        # Include all Template files for the code generator
-        '': ['*Template*', 'bootstrap.min.css']
+        # Include all Template files for the code generator and web app tool
+        '': ['*Template*', 'bootstrap.min.css', 'webapp/template.*', 'webapp/lib/**']
     }
 )
