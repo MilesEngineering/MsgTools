@@ -292,7 +292,7 @@ class MsgDebugWidget(QtWidgets.QWidget):
                     text = text[:-1]
                 text += ")"
                     
-        msgStringList.append(priority)
+        msgStringList.append(str(priority))
         msgStringList.append(filename)
         msgStringList.append(linenumber)
         msgStringList.append(text)
