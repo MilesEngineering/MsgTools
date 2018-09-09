@@ -432,32 +432,51 @@ class Messaging:
     def long_substr(data):
         substr = ''
         if len(data) > 1 and len(data[0]) > 0:
-            for i in range(len(data[0])):
-                for j in range(len(data[0])-i+1):
-                    if j > len(substr) and all(data[0][i:i+j] in x for x in data):
-                        substr = data[0][i:i+j]
+            for j in range(len(data[0])-1):
+                if j > len(substr) and all(data[0][0:j] in x for x in data):
+                    substr = data[0][0:j]
         return substr
+
+    @staticmethod
+    def paramHelp(field):
+        ret = field.name
+        if field.units:
+            ret = ret + "(" + field.units + ")"
+        if field.description:
+            ret = ret + "# " + field.description
+        return ret
 
     @staticmethod
     def csvHelp(lineOfText):
         autoComplete = None
         help = ""
         params = lineOfText.split()
-        msgName = params[0]
+        if params:
+            msgName = params[0]
+        else:
+            msgName = ''
         # if there's no params beyond first word, try to auto-complete a message name
-        if len(params) == 1 and not lineOfText.endswith(" "):
+        if len(params) <= 1 and not lineOfText.endswith(" "):
             # search for messages that match us
             matchingMsgNames = []
+            truncated = False
             for aMsgName in sorted(Messaging.MsgClassFromName.keys()):
                 if aMsgName.startswith(msgName):
-                    matchingMsgNames.append(aMsgName)
+                    # truncate to first dot after match
+                    firstdot = aMsgName.find('.',len(msgName))
+                    if firstdot > 0:
+                        aMsgName = aMsgName[0:firstdot+1]
+                        truncated = True
+                    if not matchingMsgNames or aMsgName != matchingMsgNames[-1]:
+                        matchingMsgNames.append(aMsgName)
             if len(matchingMsgNames) == 1:
                 help = matchingMsgNames[0]
                 autoComplete = matchingMsgNames[0]
                 # if there's only one result and we don't match it exactly (because it's longer than us)
                 # accept it by giving it as autoComplete with a space at end
                 #if autoComplete != msgName:
-                autoComplete = autoComplete + ' '
+                if not truncated:
+                    autoComplete = autoComplete + ' '
                 return (autoComplete, help)
             else:
                 help = '\n'.join(matchingMsgNames)
@@ -465,11 +484,12 @@ class Messaging:
                 #print("long_substr returned " + autoComplete)
                 return (autoComplete, help)
                 
-
+        #print("param help")
         # if we didn't auto-complete a message name above, then show help on params
-        params = lineOfText.replace(msgName, "",1).split(',')
+        paramstring = lineOfText.replace(msgName, "",1).strip()
+        params = paramstring.split(',')
         if msgName in Messaging.MsgClassFromName:
-            helpOnJustParam = False
+            helpOnJustParam = len(paramstring)
             if not helpOnJustParam:
                 help = msgName + " "
             msgClass = Messaging.MsgClassFromName[msgName]
@@ -482,7 +502,7 @@ class Messaging:
                             if len(fieldInfo.bitfieldInfo) == 0:
                                 if helpOnJustParam:
                                     if paramNumber == len(params)-1:
-                                        return (None, fieldInfo.name)
+                                        return (None, Messaging.paramHelp(fieldInfo))
                                     paramNumber+=1
                                 else:
                                     help += fieldInfo.name + ", "
@@ -490,7 +510,7 @@ class Messaging:
                                 for bitInfo in fieldInfo.bitfieldInfo:
                                     if helpOnJustParam:
                                         if paramNumber == len(params)-1:
-                                            return (None, bitInfo.name)
+                                            return (None, Messaging.paramHelp(bitInfo))
                                         paramNumber+=1
                                     else:
                                         help += bitInfo.name + ", "
@@ -499,7 +519,7 @@ class Messaging:
                                 arrayList = []
                                 for i in range(0,fieldInfo.count):
                                     if helpOnJustParam and paramNumber == len(params)-1:
-                                        return (None, fieldInfo.name)
+                                        return (None, Messaging.paramHelp(fieldInfo))
                                     paramNumber+=1
                             else:
                                 help += fieldInfo.name + "["+str(fieldInfo.count)+"], "
