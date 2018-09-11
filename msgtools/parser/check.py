@@ -111,6 +111,8 @@ def ProcessMsg(filename, msg, subdirComponent, enums):
 def ProcessFile(filename, outFile, inputData, subdirComponent):
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
+    
+    PatchStructs(inputData)
 
     if "Messages" in inputData:
         for msg in Messages(inputData):

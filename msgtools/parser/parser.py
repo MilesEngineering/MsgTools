@@ -172,6 +172,8 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
     
+    PatchStructs(inputData)
+    
     firstTime = True
     if "Messages" in inputData:
         for msg in Messages(inputData):

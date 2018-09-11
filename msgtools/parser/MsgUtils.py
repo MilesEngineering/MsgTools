@@ -2,6 +2,7 @@ import re
 import io
 import json
 import os.path
+import copy
 
 class MessageException(Exception):
     pass
@@ -363,6 +364,37 @@ def Enums(inputData):
         for data in inputData["includes"]:
             enumList = enumList + Enums(data)
     return enumList
+
+def Structs(inputData):
+    structList = []
+    if "Structs" in inputData:
+        structList = inputData["Structs"]
+    if "includes" in inputData:
+        for data in inputData["includes"]:
+            structList = structList + Structs(data)
+    return structList
+
+# this replaces fields that are references to structs with the fields from the referenced struct
+def PatchStructs(inputData):
+    structs = Structs(inputData)
+    if not structs:
+        return
+    
+    # need to make a new list, because we'll be inserting elements as we iterate
+    if 'Messages' in inputData:
+        for msg in inputData["Messages"]:
+            if 'Fields' in msg:
+                outfields = []
+                for field in msg['Fields']:
+                    if field['Type'] in structs:
+                        s = structs[field['Type']]
+                        for subfield in s['Fields']:
+                            subfieldcopy = copy.deepcopy(subfield)
+                            subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']
+                            outfields.append(subfieldcopy)
+                    else:
+                        outfields.append(field)
+                msg['Fields'] = outfields
 
 # sanitize the option name, to have valid identifier characters
 def OptionName(option):
