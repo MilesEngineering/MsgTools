@@ -285,12 +285,20 @@ def msgID(msg, enums, undefinedMsgId):
     #print("message " + msg["Name"] + " has ID " + hex(ret))
     return str(ret)
 
-def msgDescriptor(msg):
+namespaceForFilename = False
+def SetNamespaceForFilename(val):
+    global namespaceForFilename
+    namespaceForFilename = val
+
+def msgDescriptor(msg, inputFilename):
     subdir = msg["commonSubdir"]
     name = msgName(msg)
+    basename = os.path.basename(inputFilename).split('.')[0]
+    if namespaceForFilename and name != basename:
+        name = basename + '.' + name
     if name.startswith(subdir+"_"):
         return name.replace("_", ".")
-    if subdir:
+    if subdir and not name.startswith(subdir):
         return subdir+"."+name.replace("_", ".")
     return name
 
@@ -376,25 +384,27 @@ def Structs(inputData):
 
 # this replaces fields that are references to structs with the fields from the referenced struct
 def PatchStructs(inputData):
-    structs = Structs(inputData)
-    if not structs:
-        return
-    
-    # need to make a new list, because we'll be inserting elements as we iterate
-    if 'Messages' in inputData:
-        for msg in inputData["Messages"]:
-            if 'Fields' in msg:
-                outfields = []
-                for field in msg['Fields']:
-                    if field['Type'] in structs:
-                        s = structs[field['Type']]
-                        for subfield in s['Fields']:
-                            subfieldcopy = copy.deepcopy(subfield)
-                            subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']
-                            outfields.append(subfieldcopy)
-                    else:
-                        outfields.append(field)
-                msg['Fields'] = outfields
+    # loop twice, so that references to structs inside structs are also replaced
+    for i in range(2):
+        structs = Structs(inputData)
+        if not structs:
+            return
+        
+        # need to make a new list, because we'll be inserting elements as we iterate
+        if 'Messages' in inputData:
+            for msg in inputData["Messages"]:
+                if 'Fields' in msg:
+                    outfields = []
+                    for field in msg['Fields']:
+                        if field['Type'] in structs:
+                            s = structs[field['Type']]
+                            for subfield in s['Fields']:
+                                subfieldcopy = copy.deepcopy(subfield)
+                                subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']
+                                outfields.append(subfieldcopy)
+                        else:
+                            outfields.append(field)
+                    msg['Fields'] = outfields
 
 # sanitize the option name, to have valid identifier characters
 def OptionName(option):
