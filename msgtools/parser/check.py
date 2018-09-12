@@ -38,12 +38,12 @@ def ProcessDir(outFile, msgDir, subdirComponent):
                 sys.stderr.write('Error in ' + inputFilename)
                 sys.stderr.write('\n'+str(e)+'\n')
                 outFile.close()
-                os.remove(outputFilename)
+                os.remove(outFile.name)
                 sys.exit(1)
             except:
                 sys.stderr.write("\nError in " + inputFilename + "!\n\n")
                 outFile.close()
-                os.remove(outputFilename)
+                os.remove(outFile.name)
                 raise
 
 def fieldTypeValid(field):
