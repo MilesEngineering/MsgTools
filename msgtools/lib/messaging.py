@@ -360,11 +360,11 @@ class Messaging:
         if msgName in Messaging.MsgClassFromName:
             msgClass = Messaging.MsgClassFromName[msgName]
             msg = msgClass()
+            terminateMsg = 0
+            terminationLen = 0
             if msg.fields:
                 try:
                     paramNumber = 0
-                    terminateMsg = 0
-                    terminationLen = 0
                     for fieldInfo in msgClass.fields:
                         val = params[paramNumber].strip()
                         #print("val is [" + val + "]") 
