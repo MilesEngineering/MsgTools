@@ -150,11 +150,9 @@ class Messaging:
     # add message to the global hash table of IDs by name
     def AddAlias(name, id, classDef):
         if(name in Messaging.MsgIDFromName):
-            print("WARNING! Trying to define message ", name, " for ID ", id, ", but ", Messaging.MsgIDFromName[name], " already uses that ID")
-        Messaging.MsgIDFromName[name] = id
+            print("WARNING! Trying to define message %s for ID %s(%d), but %s(%d) already uses that name" % (name, id, int(id, 0), Messaging.MsgIDFromName[name], int(Messaging.MsgIDFromName[name], 0)))
 
-        if(name in Messaging.MsgClassFromName):
-            print("WARNING! Trying to define message ", name, " but already in use by ID ", Messaging.MsgIDFromName[name])
+        Messaging.MsgIDFromName[name] = id
         Messaging.MsgClassFromName[name] = classDef
 
         # split up the name between periods, and add it to the Messaging object so it
