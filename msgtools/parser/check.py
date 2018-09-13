@@ -74,32 +74,32 @@ def ProcessMsg(filename, msg, subdirComponent, enums):
         for field in msg["Fields"]:
             bitOffset = 0
             if not re.match("^[\w\d_]+$", field["Name"]):
-                raise MessageException('bad field name [' + field["Name"]+"]")
+                raise MessageException('bad field name [' + field["Name"]+"] in message "+msgName(msg))
             if field["Name"] in fieldNames:
-                raise MessageException('Duplicate field name [' + field["Name"]+"]")
+                raise MessageException('Duplicate field name [' + field["Name"]+"] in message "+msgName(msg))
             fieldNames[field["Name"]] = field["Name"]
             if not fieldTypeValid(field):
-                raise MessageException('field ' + field["Name"] + ' has invalid type ' + field['Type'])
+                raise MessageException('field ' + field["Name"] + ' has invalid type ' + field['Type']+ " in message "+msgName(msg))
             if "Enum" in field:
                 if not field["Enum"] in enumNames:
-                    raise MessageException('bad enum [' + field["Enum"]+"]")
+                    raise MessageException('bad enum [' + field["Enum"]+"] in message "+msgName(msg))
                 if " " in field["Enum"]:
-                    raise MessageException('bad enum [' + field["Enum"]+"]")
+                    raise MessageException('bad enum [' + field["Enum"]+"] in message "+msgName(msg))
                 pass
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
                     bitOffset += numBits
                     if not re.match("^[\w\d_]+$", bits["Name"]):
-                        raise MessageException('bad bitfield name [' + bits["Name"]+"]")
+                        raise MessageException('bad bitfield name [' + bits["Name"]+"] in message "+msgName(msg))
                     if bits["Name"] in fieldNames:
-                        raise MessageException('Duplicate bitfield name [' + bits["Name"]+"] in field ["+field["Name"]+"]")
+                        raise MessageException('Duplicate bitfield name [' + bits["Name"]+"] in field ["+field["Name"]+"] in message "+msgName(msg))
                     fieldNames[bits["Name"]] = bits["Name"]
                 if bitOffset > 8*fieldSize(field):
-                    raise MessageException('too many bits')
+                    raise MessageException('too many bits in message '+msgName(msg))
                 if "Enum" in bits:
                     if not bits["Enum"] in enumNames:
-                        raise MessageException('bad enum')
+                        raise MessageException('bad enum in message '+msgName(msg))
                     pass
             # disable enforcement of native alignment
             #if offset % fieldSize(field) != 0:
