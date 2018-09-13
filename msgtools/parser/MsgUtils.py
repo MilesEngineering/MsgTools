@@ -401,6 +401,9 @@ def PatchStructs(inputData):
                             for subfield in s['Fields']:
                                 subfieldcopy = copy.deepcopy(subfield)
                                 subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']
+                                if "Bitfields" in subfieldcopy:
+                                    for bits in subfieldcopy["Bitfields"]:
+                                        bits['Name'] = field['Name'] + "_" + bits['Name']
                                 outfields.append(subfieldcopy)
                         else:
                             outfields.append(field)
