@@ -172,6 +172,8 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
     
+    PatchStructs(inputData)
+    
     firstTime = True
     if "Messages" in inputData:
         for msg in Messages(inputData):
@@ -208,7 +210,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<TEMPLATEFILENAME>"] = templateFilename
                 replacements["<LANGUAGEFILENAME>"] = languageFilename
                 replacements["<MESSAGE_PACKAGE>"] = msg["commonSubdir"].replace( '/', '.').replace( '\\', '.')
-                replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg)
+                replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg, inputFilename)
                 replacements["<DATE>"] = currentDateTime
                 replacements["<MSGALIAS>"] = msgAlias(msg)
                 for line in template:
