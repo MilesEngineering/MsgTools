@@ -311,8 +311,6 @@ def main():
     parser.add_argument('-ht', '--headertemplate', dest='headertemplate', 
         help='''Header template applied to messages in the "headers" folder.  If unspecified defaults to the 
                 template provided by MsgTools.''')
-    parser.add_argument('--namespaceforfilename', action='store_true',
-        help='If the input filename should be used to make a message namespace')
     args = parser.parse_args()
   
     global inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename
@@ -321,7 +319,6 @@ def main():
     languageFilename = args.language
     templateFilename = args.template
     headerTemplateFilename = args.headertemplate
-    SetNamespaceForFilename(args.namespaceforfilename)
 
     # import the language file
     global language

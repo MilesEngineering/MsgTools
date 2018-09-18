@@ -285,17 +285,14 @@ def msgID(msg, enums, undefinedMsgId):
     #print("message " + msg["Name"] + " has ID " + hex(ret))
     return str(ret)
 
-namespaceForFilename = False
-def SetNamespaceForFilename(val):
-    global namespaceForFilename
-    namespaceForFilename = val
-
 def msgDescriptor(msg, inputFilename):
     subdir = msg["commonSubdir"]
     name = msgName(msg)
     basename = os.path.basename(inputFilename).split('.')[0]
-    if namespaceForFilename and name != basename:
+    # add the filename as a namespace, unless it's already there
+    if not basename == name and not basename+'_' in name:
         name = basename + '.' + name
+        print("adding basename " + basename + " to " + name)
     if name.startswith(subdir+"_"):
         return name.replace("_", ".")
     if subdir and not name.startswith(subdir):
