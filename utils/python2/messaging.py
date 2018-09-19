@@ -180,6 +180,11 @@ class Messaging:
 
     @staticmethod
     def MsgFactory(hdr):
+        msgClass = Messaging.MsgClass(hdr)
+        return msgClass(hdr.rawBuffer())
+
+    @staticmethod
+    def MsgClass(hdr):
         msgId = hex(hdr.GetMessageID())
 
         if not msgId in Messaging.MsgNameFromID:
@@ -189,9 +194,9 @@ class Messaging:
         else:
             msgName = Messaging.MsgNameFromID[msgId]
             msgClass = Messaging.MsgClassFromName[msgName]
-        
-        msg = msgClass(hdr.rawBuffer())
-        return msg
+
+        return msgClass
+
 
     @staticmethod
     def set(msg, fieldInfo, value, index=0):
@@ -255,7 +260,7 @@ class Messaging:
 
     @staticmethod
     def toJson(msg):
-        msgClass = type(msg)
+        msgClass = Messaging.MsgClass(msg.hdr)
         pythonObj = OrderedDict()
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
@@ -329,7 +334,7 @@ class Messaging:
     @staticmethod
     def toCsv(msg):
         ret = ""
-        for fieldInfo in type(msg).fields:
+        for fieldInfo in Messaging.MsgClass(msg.hdr).fields:
             if(fieldInfo.count == 1):
                 columnText = str(Messaging.get(msg, fieldInfo)) + ", "
                 for bitInfo in fieldInfo.bitfieldInfo:
