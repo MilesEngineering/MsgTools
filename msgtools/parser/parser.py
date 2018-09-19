@@ -8,15 +8,15 @@ import pkg_resources
 from time import gmtime, strftime
 
 DESCRIPTION = '''Applies message and header language template files to
-                 YAML message inputs to generate code for creating,
-                 and parsing, messages.  Headers definitions are assumed 
+                 YAML message inputs to generate code for creating
+                 and parsing messages.  Header definitions are assumed 
                  to reside in a folder called headers at the root of the input 
                  directory.  A header called NetworkHeader.yaml MUST
-                 be defined and adhere to the contract outlined in 
+                 be defined, and adhere to the contract outlined in 
                  the test message suite.'''
 
 EPILOG = '''Built-in languages have precedence over plugins.  If your plugin
-            uses the same name as a built-int language it will be ignored.'''
+            uses the same name as a built-in language, it will be ignored.'''
 
 # Used to find the default template and header template within the language 
 # folder. These are case sensitive.
