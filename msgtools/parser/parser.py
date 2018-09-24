@@ -218,7 +218,12 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename, messa
                     line = DoReplacements(line, msg, replacements, firstTime)
                     outFile.write(line)
                 if oneOutputFilePerMsg:
+                    outfileLen = outFile.tell()
                     outFile.close()
+                    # It's possible to have empty files as some YAML files can serve as a pure base 
+                    # for others that never generate code.  Clean up empty files
+                    if outfileLen == 0:
+                        os.remove(outputFilename)
                 else:
                     firstTime = False
 
@@ -228,7 +233,12 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename, messa
                 os.remove(outputFilename)
                 sys.exit(1)
     if not oneOutputFilePerMsg:
+        outfileLen = outFile.tell()
         outFile.close()
+        if outfileLen == 0:
+            # It's possible to have empty files as some YAML files can serve as a pure base 
+            # for others that never generate code.  Clean up empty files
+            os.remove(outputFilename)
 
 def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplateFilename, messaging):
     # make the output directory
