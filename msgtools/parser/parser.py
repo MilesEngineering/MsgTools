@@ -42,7 +42,7 @@ def replace(line, pattern, replacement):
             for newLine in replacement.split('\n'):
                 ret += line.replace(pattern, newLine)
     else:
-        #print("NOT replacing ", pattern, " with ", replacement, " in ", line)
+        # print("NOT replacing ", pattern, " with ", replacement, " in ", line)
         ret = line
     return ret
 
@@ -131,7 +131,7 @@ def OutputFile(inputFilename, inputName, outDir):
         return outputFilename, open(outputFilename,'w', newline=lineEndings)
     return outputFilename, None
 
-def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
+def ProcessFile(inputFilename, outDir, languageFilename, templateFilename, messaging):
     currentDateTime = strftime("%d/%m/%Y at %H:%M:%S")
     
     try:
@@ -186,6 +186,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                     if not outFile:
                         continue
 
+                replacements["<MESSAGINGMODULE>"] = messaging
                 replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(msg, enums))
                 replacements["<MSGNAME>"] = msgName(msg)
                 replacements["<MSGSHORTNAME>"] = msgShortName(msg)
@@ -229,10 +230,12 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     if not oneOutputFilePerMsg:
         outFile.close()
 
-def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplateFilename):
+def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplateFilename, messaging):
     # make the output directory
     try:
         os.makedirs(outDir)
+
+        # Make sure we have __init__.py to make Python2 imports happy
         open(os.path.join(outDir, '__init__.py'), 'at').close()
     except:
         pass
@@ -243,13 +246,13 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
                 subdir = language.outputSubdir(outDir, filename)
             except AttributeError:
                 subdir = outDir + "/" + filename
-            ProcessDir(inputFilename, subdir, languageFilename, templateFilename, headerTemplateFilename)
+            ProcessDir(inputFilename, subdir, languageFilename, templateFilename, headerTemplateFilename, messaging)
         else:
             particularTemplate = templateFilename
             if msgDir.endswith("headers"):
                 particularTemplate = headerTemplateFilename
             if filename.endswith(".yaml") or filename.endswith(".json"):
-                ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
+                ProcessFile(inputFilename, outDir, languageFilename, particularTemplate, messaging)
 
 def getAvailableLanguages():
     '''Look at all supported languages.  Assume each language is a 
@@ -309,6 +312,9 @@ def main():
         This includes built-in and plugin laguages.''')
     parser.add_argument('-t', '--template', dest='template',
         help='Message template to use for messages.  If unspecified defaults to the template provided by MsgTools')
+    parser.add_argument('-m', '--messaging', dest='messaging', default='msgtools.lib.messaging',
+        help='''Messaging module to use for message registration in the templates.  Default is msgtool.lib.messaging.
+            You can use this argument to provide a custom messaging module of your own if desired.''')
     parser.add_argument('-ht', '--headertemplate', dest='headertemplate', 
         help='''Header template applied to messages in the "headers" folder.  If unspecified defaults to the 
                 template provided by MsgTools.''')
@@ -358,12 +364,12 @@ def main():
 
     if(os.path.exists(inputFilename)):
         if(os.path.isdir(inputFilename)):
-            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename)
+            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename, args.messaging)
         else:
             particularTemplate = templateFilename
             if "/headers/" in outputFilename:
                 particularTemplate = headerTemplateFilename
-            ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
+            ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate, args.messaging)
     else:
         print("Path " + inputFilename + " does not exist!")
 
