@@ -233,6 +233,7 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
     # make the output directory
     try:
         os.makedirs(outDir)
+        open(os.path.join(outDir, '__init__.py'), 'at').close()
     except:
         pass
     for filename in os.listdir(msgDir):
