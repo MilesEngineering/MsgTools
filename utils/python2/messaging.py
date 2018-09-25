@@ -179,12 +179,16 @@ class Messaging:
         messagingVars[nameParts[-1]] = classDef
 
     @staticmethod
-    def MsgFactory(hdr):
-        msgClass = Messaging.MsgClass(hdr)
-        return msgClass(hdr.rawBuffer())
+    def MsgFactory(msg):
+        '''Return an instance of the message class for the given message buffer.
+        msg should be the full header and message payload.  Not just the header.'''
+        msgClass = Messaging.MsgClass(msg)
+        return msgClass(msg.rawBuffer())
 
     @staticmethod
     def MsgClass(hdr):
+        '''Utility method that returns the message class for the passed
+        in header.'''
         msgId = hex(hdr.GetMessageID())
 
         if not msgId in Messaging.MsgNameFromID:
