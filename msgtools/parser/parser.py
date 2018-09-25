@@ -347,6 +347,10 @@ def main():
     for m in modulenames:
         try:
             modulePath = os.path.abspath(inspect.getfile(sys.modules[m]))
+            # ensure that on windows machines with precompiled msgparser.exe, the correct path
+            # is generated from inspect.getfile
+            if modulePath.endswith(".exe\\__main__.py"):
+                modulePath = modulePath[:-12]
             if curpath in modulePath:
                 moduleFileTime = os.path.getmtime(modulePath)
                 lastSourceFileTime = max(lastSourceFileTime, moduleFileTime)
