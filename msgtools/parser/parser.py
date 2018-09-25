@@ -353,25 +353,6 @@ def main():
     if headerTemplateFilename is None:
         headerTemplateFilename = getTemplate(languageFilename, DEFAULT_HEADER_TEMPLATE)
     
-    # Get latest timestamp of imported modules.
-    # We should only check the file times of any user-defined imports!
-    # It's a bit difficult to determine what's a regular module included with the python distribution,
-    # and what's a user-created module.
-    lastSourceFileTime = 0
-    modulenames = sys.modules.keys()
-    import inspect
-    curpath = os.path.abspath(".")
-    for m in modulenames:
-        try:
-            modulePath = os.path.abspath(inspect.getfile(sys.modules[m]))
-            if curpath in modulePath:
-                moduleFileTime = os.path.getmtime(modulePath)
-                lastSourceFileTime = max(lastSourceFileTime, moduleFileTime)
-        except TypeError:
-            pass
-        except AttributeError:
-            pass
-
     if(os.path.exists(inputFilename)):
         if(os.path.isdir(inputFilename)):
             ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename, args.messaging)
