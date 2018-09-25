@@ -86,7 +86,7 @@ class Messaging:
     def __init__(self, loaddir=None, searchdir=None, debug=0, headerName="NetworkHeader"):
         '''
         Initialize the Messaging class.  This dynamically loads all generated message code,
-        with each message registering itself with the Messaginc lass on import.  This allows
+        with each message registering itself with the Messaging class on import.  This allows
         us to support a number of utility functions for message creation, introspection,
         class lookup, etc
 
