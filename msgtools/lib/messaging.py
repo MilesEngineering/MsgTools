@@ -11,6 +11,9 @@ import json
 # for reading CSV
 import csv
 
+# for runtime module importing
+import importlib
+
 from collections import namedtuple
 import ctypes
 from datetime import datetime
@@ -72,6 +75,7 @@ class Messaging:
     MsgNameFromID = {}
     MsgIDFromName = {}
     MsgClassFromName = {}
+
     # container for accessing message classes via dot notation.
     # odd, in python, that using an empty lambda expression is a suitable container
     # for this, and that some other Object doesn't work better.
@@ -80,6 +84,20 @@ class Messaging:
     debug=0
 
     def __init__(self, loaddir=None, searchdir=None, debug=0, headerName="NetworkHeader"):
+        '''
+        Initialize the Messaging class.  This dynamically loads all generated message code,
+        with each message registering itself with the Messaginc lass on import.  This allows
+        us to support a number of utility functions for message creation, introspection,
+        class lookup, etc
+
+        loaddir - If set we use this as the base directory for generated message code.  Overrides searchdir.
+        searchdir - If set we start a search for 'obj/CodeGenerator/Python' from searchdir, and moving up 
+            to each parent directory until we find this folder.  If loaddir and searchdir are not set
+            we default to the current directory.
+        debug - print debugging information to the console.
+        headerName - the default header to use when processing messages.  We assume this module resides
+            in a 'headers' folder below our base message root directory.
+        '''
         Messaging.debug = debug
         if loaddir:
             loadDir = loaddir
@@ -103,13 +121,16 @@ class Messaging:
                 if Messaging.debug:
                     print("search for objdir in " + loadDir)
 
-        # Fix the sys path for future imports
+        # Normalize our load directory path, and load message modules on the path and
+        # fix the sys path for future imports
+        loadDir = os.path.normpath(loadDir)
+
         sys.path.append(loadDir)
-        sys.path.append(str(loadDir)+"/headers")
+        sys.path.append(os.path.join(loadDir, "headers"))
         
         # if we didn't find valid auto-generated code, this will cause an import error!
         # the fix is to point to valid auto-generated code!
-        headerModule = __import__(headerName)
+        headerModule = importlib.import_module("headers." + headerName)
 
         # Set the global header name
         Messaging.hdr = getattr(headerModule, headerName)
@@ -117,8 +138,6 @@ class Messaging:
         # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE
 
-        # Normalize our load directory path, and load message modules on the path
-        loadDir = os.path.normpath(loadDir)
         self.LoadDir(loadDir, loadDir)
 
     def LoadDir(self, loadDir, rootDir):
@@ -140,7 +159,7 @@ class Messaging:
                 if Messaging.debug:
                     print("loading module "+modulename)
 
-                __import__(modulename)
+                importlib.import_module(modulename)
 
     @staticmethod
     def Register(name, id, classDef):
@@ -179,7 +198,37 @@ class Messaging:
         messagingVars[nameParts[-1]] = classDef
 
     @staticmethod
-    def MsgFactory(hdr):
+    def MsgFactory(msg, name=None):
+        '''Create a new message instance from the given msg
+
+            msg - the header and message payload (as a NetworkHeader)
+
+            name - will override msg - create an empty message by name
+
+            return an instance of the message class for this msg, or UnknownMsg
+                if we can't find this message type
+        '''
+        # TODO: We could do a type check here and support a NetworkHeader or
+        # simple raw buffer
+        if name is None:
+            msgClass = Messaging.MsgClass(msg)
+            return msgClass(msg.rawBuffer())
+
+        if name not in Messaging.MsgClassFromName:
+            return None
+
+        return Messaging.MsgClassFromName[name]()
+
+    @staticmethod
+    def MsgClass(hdr):
+        '''Find the message class for this message header
+
+        hdr - the header for this message.  Need not be the full
+            message, i.e. header + payload.
+
+        return UnknownMsg if we can't find this message, otherwise
+            a class reference to the message for the given header (by ID)
+        '''
         msgId = hex(hdr.GetMessageID())
 
         if not msgId in Messaging.MsgNameFromID:
@@ -189,9 +238,8 @@ class Messaging:
         else:
             msgName = Messaging.MsgNameFromID[msgId]
             msgClass = Messaging.MsgClassFromName[msgName]
-        
-        msg = msgClass(hdr.rawBuffer())
-        return msg
+
+        return msgClass
 
     @staticmethod
     def set(msg, fieldInfo, value, index=0):
