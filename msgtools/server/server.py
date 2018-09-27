@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+import pkg_resources
 
 try:
     from msgtools.lib.messaging import Messaging
@@ -108,6 +109,44 @@ Examples
 
 '''
 
+class SelectPluginDialog(QtWidgets.QDialog):
+    pluginSelected = QtCore.pyqtSignal(str)
+    def __init__(self, parent=None):
+        super(SelectPluginDialog, self).__init__(parent)
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.setWindowTitle("Select a PLugin")
+        
+        self.resize(600, 200)
+
+        self.pluginList = QtWidgets.QTreeWidget()
+        openButton = QtWidgets.QPushButton("Load")
+        openButton.clicked.connect(self.openPort)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.pluginList)
+        layout.addWidget(openButton)
+        self.setLayout(layout)
+
+        if 1:
+            tableHeader = ["Name", "Module", "Function"]
+        else:
+            tableHeader = ["Name"]
+        self.pluginList.setHeaderLabels(tableHeader)
+        for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
+            if 1:
+                list = [entry_point.name, entry_point.module_name, entry_point.attrs[0]]
+            else:
+                list = [entry_point.name]
+            self.pluginList.addTopLevelItem(QtWidgets.QTreeWidgetItem(None, list))
+        for i in range(0, len(tableHeader)):
+            self.pluginList.resizeColumnToContents(i)
+        
+    def openPort(self):
+        cur_item = self.pluginList.currentItem()
+        if cur_item is not None:
+            self.pluginSelected.emit(cur_item.text(0))
+            self.close()
+
 class MessageServer(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
@@ -115,21 +154,28 @@ class MessageServer(QtWidgets.QMainWindow):
         self.settings = QtCore.QSettings("MsgTools", "MessageServer")
         self.logFile = None
         self.logFileType = None
-
+        
         parser = argparse.ArgumentParser(description=DESCRIPTION, epilog=EPILOG, 
             formatter_class=argparse.RawDescriptionHelpFormatter)
+
+        # iterate over plugins, and setup argparse for each
+        for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
+            parser.add_argument('--'+entry_point.name,     dest='last'+entry_point.name, action='store_true', help='same as above with no parameter')
+            parser.add_argument('--'+entry_point.name+'=', dest=entry_point.name, help="%s module, %s function" % (entry_point.module_name, entry_point.attrs[0]))
+
+        ''' 
         parser.add_argument('--serial', dest='lastserial', action='store_true', 
             help='Use a serial port input on the last used port' )
         parser.add_argument('--serial=', dest='serial', 
-            help='''Use a serial port input with the specified serial port name.  This
-                    form takes precedence over --serial if both are specified.''' )
+            help='Use a serial port input with the specified serial port name.  This
+                  form takes precedence over --serial if both are specified.'')
         parser.add_argument('--bluetoothSPP', 
             help='Use a Bluetooth SPP connection to the indicated port.  See below for details.')
         parser.add_argument('--bluetoothRFCOMM', 
             help='Use a Bluetooth RFCOMM connection to the indicated port.  See below for details.')
         parser.add_argument('--bluetoothRFCOMMQt', 
-            help='Use a QT Bluetooth RFCOMM connection on the indicated port. See below for details.')
-        parser.add_argument('--plugin', help='Specify a plugin module to use')
+            help='Use a QT Bluetooth RFCOMM connection on the indicated port. See below for details.')'''
+        parser.add_argument('--plugin', help='Specify a file path to a plugin module to use')
         parser.add_argument('--msgdir', 
             help='''Specify the directory for generated python code to use for headers, and other 
                     message definitions''')
@@ -154,56 +200,24 @@ class MessageServer(QtWidgets.QMainWindow):
 
         self.initializeGui()
 
-        self.pluginPort = None
+        self.pluginPorts = []
         tcpport = 5678
         wsport = 5679
 
         if args.port is not None:
             tcpport = args.port
             wsport = tcpport+1
-        
-        if args.lastserial is not False or args.serial is not None:
-            from SerialHeader import SerialHeader
-            from msgtools.server.SerialPlugin import SerialConnection
-            serialPortName = args.serial if args.serial is not None else None
-            self.serialPort = SerialConnection(SerialHeader, serialPortName)
-            self.serialPort.statusUpdate.connect(self.onStatusUpdate)
-            self.onNewConnection(self.serialPort)
-            self.serialPort.start()
-        
-        if args.bluetoothSPP is not None:
-            from BluetoothHeader import BluetoothHeader
-            from msgtools.server.SerialPlugin import SerialConnection
-            bluetoothPortName = args.bluetoothSPP
-            self.bluetoothPort = SerialConnection(BluetoothHeader, bluetoothPortName)
-            self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
-            self.onNewConnection(self.bluetoothPort)
-            self.bluetoothPort.start()
 
-        if args.bluetoothRFCOMM is not None:
-            from msgtools.server.BluetoothRFCOMM import BluetoothRFCOMMConnection
-            btArgs = args.bluetoothRFCOMM.split(",")
-            if len(btArgs)>1:
-                btArgs[1] = int(btArgs[1])
-            self.bluetoothPort = BluetoothRFCOMMConnection(*btArgs)
-            self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
-            self.onNewConnection(self.bluetoothPort)
-        
-        if args.bluetoothRFCOMMQt is not None:
-            from msgtools.server.BluetoothRFCOMMQt import BluetoothRFCOMMQtConnection
-            from PyQt5 import QtBluetooth
-            btArgs = args.bluetoothRFCOMMQt.split(",")
-            btHost = btArgs[0]
-            if len(btArgs)>1:
-                btPort = int(btArgs[1])
-            else:
-                btPort = 8
-            self.btSocket = QtBluetooth.QBluetoothSocket(QtBluetooth.QBluetoothServiceInfo.RfcommProtocol)
-            self.btSocket.connectToService(QtBluetooth.QBluetoothAddress(btHost), btPort)
-            self.bluetoothPort = BluetoothRFCOMMQtConnection(self.btSocket)
-            self.bluetoothPort.statusUpdate.connect(self.onStatusUpdate)
-            self.onNewConnection(self.bluetoothPort)
-        
+        for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
+            plugin_option = getattr(args, entry_point.name)
+            plugin_last_option = getattr(args, 'last'+entry_point.name)
+            if plugin_last_option is not False or plugin_option is not None:
+                print('plugin ' + entry_point.name)
+                param = plugin_option if plugin_option is not None else None
+                self.load_plugin(entry_point, param)
+                break
+
+        # load plugin via path to .py file
         if args.plugin is not None:
             filename = args.plugin
             import os
@@ -215,10 +229,16 @@ class MessageServer(QtWidgets.QMainWindow):
             import importlib
             self.plugin = importlib.machinery.SourceFileLoader(name, filename).load_module(name)
 
-            self.pluginPort = self.plugin.PluginConnection()
-            self.pluginPort.statusUpdate.connect(self.onStatusUpdate)
-            self.pluginPort.newConnection.connect(self.onNewConnection)
-            self.pluginPort.start()
+            pluginPort = self.plugin.PluginConnection(None)
+            pluginPort.statusUpdate.connect(self.onStatusUpdate)
+            # try to allow plugin to emit new connections
+            try:
+                pluginPort.newConnection.connect(self.onNewConnection)
+            except AttributeError:
+                # if that fails, just use the plugin as one new connection.
+                self.onNewConnection(pluginPort)
+            pluginPort.start()
+            self.pluginPorts.append(pluginPort)
 
         self.tcpServer = TcpServer(tcpport)
         self.tcpServer.statusUpdate.connect(self.onStatusUpdate)
@@ -237,14 +257,19 @@ class MessageServer(QtWidgets.QMainWindow):
     def initializeGui(self):
         # Layout
         vbox = QtWidgets.QVBoxLayout()
-        self.grid = QtWidgets.QGridLayout()
-        vbox.addLayout(self.grid)
 
         # Components
+        self.addPluginButton = QtWidgets.QPushButton("Load Plugin")
+        self.addPluginButton.pressed.connect(self.onAddPluginClicked)
+        vbox.addWidget(self.addPluginButton)
+
         self.logButton = QtWidgets.QPushButton("Start Logging")
         self.logButton.pressed.connect(self.onLogButtonClicked)
         vbox.addWidget(self.logButton)
 
+        self.grid = QtWidgets.QGridLayout()
+        vbox.addLayout(self.grid)
+        
         self.statusBox = QtWidgets.QPlainTextEdit()
         vbox.addWidget(self.statusBox)
 
@@ -297,6 +322,33 @@ class MessageServer(QtWidgets.QMainWindow):
             if not logFileName:
                 return
             self.startLog(logFileName)
+    
+    def onAddPluginClicked(self):
+        d = SelectPluginDialog()
+        d.pluginSelected.connect(self.pluginSelected)
+        d.exec_()
+    
+    def pluginSelected(self, plugin_name):
+        for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
+            if entry_point.name == plugin_name:
+                self.load_plugin(entry_point, None)
+                return
+
+    def load_plugin(self, entry_point, param):
+        pluginCreatorFn = entry_point.load()
+        pluginPort = pluginCreatorFn()
+        pluginPort.statusUpdate.connect(self.onStatusUpdate)
+        
+        # try to allow plugin to emit new connections
+        try:
+            pluginPort.newConnection.connect(self.onNewConnection)
+        except AttributeError:
+            # if that fails, just use the plugin as one new connection.
+            self.onNewConnection(pluginPort)
+            pluginPort.start()
+        
+        pluginPort.start()
+        self.pluginPorts.append(pluginPort)
 
     def onStatusUpdate(self, message):
         self.statusBox.appendPlainText(message)
@@ -416,8 +468,8 @@ class MessageServer(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())
-        if self.pluginPort:
-            self.pluginPort.stop()
+        for pluginPort in self.pluginPorts:
+            pluginPort.stop()
         super(MessageServer, self).closeEvent(event)
 
     def readSettings(self):

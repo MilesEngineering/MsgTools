@@ -269,3 +269,14 @@ class SerialConnection(QObject):
             serialMsg.SetHeaderChecksum(Crc16(serialMsg.rawBuffer()[:self.hdrCrcRegion]))
             serialMsg.SetBodyChecksum(Crc16(serialMsg.rawBuffer()[Messaging.hdrSize:]))
         self.serialPort.write(serialMsg.rawBuffer().raw)
+    
+    def stop(self):
+        pass
+
+def PluginConnection(param):
+    from SerialHeader import SerialHeader
+    return SerialConnection(SerialHeader, param)
+
+def BtPluginConnection(param):
+    from BluetoothHeader import BluetoothHeader
+    return SerialConnection(BluetoothHeader, param)

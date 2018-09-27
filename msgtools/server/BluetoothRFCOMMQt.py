@@ -78,3 +78,19 @@ class BluetoothRFCOMMQtConnection(QObject):
         if btMsg == None:
             return
         self.socket.write(btMsg.rawBuffer().raw)
+
+    def stop(self):
+        pass
+
+def PluginConnection(param):
+    from msgtools.server.BluetoothRFCOMMQt import BluetoothRFCOMMQtConnection
+    from PyQt5 import QtBluetooth
+    btArgs = param.split(",")
+    btHost = btArgs[0]
+    if len(btArgs)>1:
+        btPort = int(btArgs[1])
+    else:
+        btPort = 8
+    btSocket = QtBluetooth.QBluetoothSocket(QtBluetooth.QBluetoothServiceInfo.RfcommProtocol)
+    btSocket.connectToService(QtBluetooth.QBluetoothAddress(btHost), btPort)
+    return BluetoothRFCOMMQtConnection(btSocket)

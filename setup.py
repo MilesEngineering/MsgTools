@@ -36,7 +36,10 @@ setup(name='msgtools',
                                    'html=msgtools.parser.html.language',
                                    'matlab=msgtools.parser.matlab.language',
                                    'swift=msgtools.parser.swift.language'],
-        'msgtools.server.plugin': ['serial=msgserver.serial:serial']
+        'msgtools.server.plugin': ['serial=msgtools.server.SerialPlugin:PluginConnection',
+                                   'bluetoothSPP=msgtools.server.SerialPlugin:BtPluginConnection',
+                                   'bluetoothRFCOMM=msgtools.server.BluetoothRFCOMM:PluginConnection',
+                                   'bluetoothRFCOMMQt=msgtools.server.BluetoothRFCOMMQt:PluginConnection']
     },
     install_requires=[
         'pyyaml',

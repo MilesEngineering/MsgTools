@@ -105,3 +105,12 @@ class BluetoothRFCOMMConnection(QObject):
         if btMsg == None:
             return
         self.btsock_outgoing += btMsg.rawBuffer().raw
+
+    def stop(self):
+        pass
+
+def PluginConnection(param):
+    btArgs = args.bluetoothRFCOMM.split(",")
+    if len(btArgs)>1:
+        btArgs[1] = int(btArgs[1])
+    return BluetoothRFCOMMConnection(*btArgs)
