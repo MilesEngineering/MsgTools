@@ -50,6 +50,6 @@ setup(name='msgtools',
     },
     package_data={
         # Include all Template files for the code generator and web app tool
-        '': ['*Template*', 'bootstrap.min.css', 'webapp/template.*', 'webapp/lib/**']
+        '': ['*Template*', 'bootstrap.min.css', 'webapp/template.*', 'webapp/lib/**', '*.png']
     }
 )
