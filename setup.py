@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.29.51',
+    python_requires='~=3.5',
+    version='0.29.52',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -9,6 +10,19 @@ setup(name='msgtools',
     license='GPLv2',
     packages=find_packages(),
     zip_safe=False,
+    keywords='development tools messaging messages message generator protocol networking',
+    project_urls = {
+        'Documentation': 'https://github.com/MilesEngineering/MsgTools/wiki',
+        'Source': 'https://github.com/MilesEngineering/MsgTools/',
+        'Tracker': 'https://github.com/MilesEngineering/MsgTools/issues',
+    },
+    classifiers = [
+        'Intended Audience :: Developers',
+        'Programming Language :: Python :: 3',
+        'Topic :: Software Development :: Code Generators',
+        'Topic :: Software Development :: Embedded Systems',
+        'Topic :: Utilities'
+    ],
     entry_points = {
         'console_scripts': ['msgparser=msgtools.parser.parser:main',
                             'msgcheck=msgtools.parser.check:main',
