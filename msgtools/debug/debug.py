@@ -36,7 +36,7 @@ DESCRIPTION='''DebugPrint provides a graphical interface that allows you to view
 # 3) separate tabs for debug text output
 class MsgDebugWidget(QtWidgets.QWidget):
     messageOutput = QtCore.pyqtSignal(object)
-    def __init__(self, parent=None):
+    def __init__(self, argv=[], parent=None):
         super(MsgDebugWidget, self).__init__()
         
         # find classes for print messages
@@ -74,8 +74,10 @@ class MsgDebugWidget(QtWidgets.QWidget):
         # array of format string info
         self.dictionaries = []
         self.formatStringFilenames = []
-        for dictName in sys.argv[1:]:
-            self.formatStringFilenames.append(dictName)
+        for dictName in argv[1:]:
+            # ignore arguments that start with - or --, they are command-line options, not dictionary names!
+            if not dictName.startswith('-'):
+                self.formatStringFilenames.append(dictName)
         for deviceID in range(0, len(self.formatStringFilenames)):
             print("reading dictionary["+str(deviceID)+"] " + self.formatStringFilenames[deviceID])
             self.ReadDictionary(deviceID, self.formatStringFilenames[deviceID])
@@ -352,7 +354,7 @@ class DebugPrint(msgtools.lib.gui.Gui):
     def __init__(self, args, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Debug Print 0.1", args, parent)
 
-        self.debugWidget = MsgDebugWidget()
+        self.debugWidget = MsgDebugWidget(sys.argv)
         self.setCentralWidget(self.debugWidget)
         self.debugWidget.messageOutput.connect(self.SendMsg)
         

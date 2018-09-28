@@ -40,7 +40,8 @@ setup(name='msgtools',
                         'msgbandwidthtester=msgtools.noisemaker.bandwidthtester:main [gui]',
                         'msgnoisemaker=msgtools.noisemaker.noisemaker:main [gui]',
                         'msglumberjack=msgtools.lumberjack.lumberjack:main [gui]',
-                        'msgdebug=msgtools.debug.debug:main [gui]'],
+                        'msgdebug=msgtools.debug.debug:main [gui]',
+                        'msglauncher=msgtools.launcher.launcher:main [gui]'],
         'msgtools.parser.plugin': ['c=msgtools.parser.c.language',
                                    'cpp=msgtools.parser.cpp.language',
                                    'java=msgtools.parser.java.language',
@@ -63,6 +64,6 @@ setup(name='msgtools',
     },
     package_data={
         # Include all Template files for the code generator and web app tool
-        '': ['*Template*', 'bootstrap.min.css', 'webapp/template.*', 'webapp/lib/**']
+        '': ['*Template*', 'bootstrap.min.css', 'webapp/template.*', 'webapp/lib/**', '*.png']
     }
 )
