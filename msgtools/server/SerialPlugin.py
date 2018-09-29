@@ -6,6 +6,7 @@ from PyQt5.QtSerialPort import QSerialPortInfo
 from PyQt5.QtSerialPort import QSerialPort
 
 from msgtools.lib.messaging import Messaging
+from msgtools.lib.header_translator import HeaderTranslator
 
 import ctypes
 import struct
@@ -124,7 +125,7 @@ class SerialConnection(QObject):
         self.serialPort.readyRead.connect(self.onReadyRead)
         self.name = "Serial " + self.serialPort.portName()
 
-        self.hdrTranslator = Messaging.HeaderTranslator(hdr, Messaging.hdr)
+        self.hdrTranslator = HeaderTranslator(hdr, Messaging.hdr)
 
         self.serialStartSeqField = Messaging.findFieldInfo(hdr.fields, "StartSequence")
         if self.serialStartSeqField != None:
