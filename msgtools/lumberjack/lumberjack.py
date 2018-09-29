@@ -15,6 +15,7 @@ except ImportError:
     sys.path.append(srcroot)
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
+import msgtools.lib.csv
 
 DESCRIPTION='''
     Lumberjack creates a subdirectory, and one CSV file per message type received in that directory.
@@ -124,7 +125,7 @@ class Lumberjack(msgtools.lib.gui.Gui):
         except AttributeError:
             text = "unknown, "
 
-        text += Messaging.toCsv(msg)
+        text += msgtools.lib.csv.toCsv(msg)
         text += '\n'
         outputFile.write(text)
 

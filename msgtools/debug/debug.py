@@ -21,6 +21,7 @@ except ImportError:
         sys.exit(1)
 
 import msgtools.lib.gui
+import msgtools.lib.json
 
 DESCRIPTION='''DebugPrint provides a graphical interface that allows you to view debug messages, and send
     binary messages and text commands.'''
@@ -161,7 +162,7 @@ class MsgDebugWidget(QtWidgets.QWidget):
             pass
         
         if not alreadyPrintedText and self.expectedReply and msg.MsgName().startswith(self.expectedReply):
-            outputString = Messaging.toJson(msg)
+            outputString = msgtools.lib.json.toJson(msg)
             self.tabWidget.tabBar().setTabTextColor(0, QtGui.QColor("darkGreen"))
             self.textEntryWidget.addText(outputString+"\n> ")
 

@@ -22,6 +22,9 @@ except ImportError:
     sys.path.append(srcroot)
     from msgtools.lib.messaging import Messaging
 
+import msgtools.lib.csv
+import msgtools.lib.json
+
 class MsgCmd(cmd.Cmd):
     intro = 'Type help or ? to list commands.\n'
     prompt = 'msg> '
@@ -31,10 +34,10 @@ class MsgCmd(cmd.Cmd):
 
     def do_send(self, line):
         # this translates the input command from CSV to a message, and sends it.
-        msg = Messaging.csvToMsg(line)
+        msg = msgtools.lib.csv.csvToMsg(line)
         if msg:
             self._connection.send_message(msg)
-            print("sent " + msg.MsgName() + " " + Messaging.toCsv(msg))
+            print("sent " + msg.MsgName() + " " + msgtools.lib.csv.toCsv(msg))
         else:
             print("ERROR! Invalid msg [%s]!" % (line))
     
@@ -64,7 +67,7 @@ class MsgCmd(cmd.Cmd):
         if hdr:
             msg = Messaging.MsgFactory(hdr)
             # print as JSON for debug purposes
-            json = Messaging.toJson(msg)
+            json = msgtools.lib.json.toJson(msg)
             print(json)
         else:
             print("{}")
@@ -80,7 +83,7 @@ class MsgCmd(cmd.Cmd):
                 # use last word
                 simplified = text
 
-            autocomplete, help = Messaging.csvHelp(simplified)
+            autocomplete, help = msgtools.lib.csv.csvHelp(simplified)
             if autocomplete and autocomplete.strip() != simplified.strip():
                 return [autocomplete]
             elif help:
