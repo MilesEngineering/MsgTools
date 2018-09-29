@@ -205,12 +205,12 @@ class MessageServer(QtWidgets.QMainWindow):
             wsport = tcpport+1
 
         for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
+            # check for argparse data for the plugin
             plugin_option = getattr(args, entry_point.name)
             plugin_last_option = getattr(args, 'last'+entry_point.name)
             if plugin_last_option is not False or plugin_option is not None:
                 param = plugin_option if plugin_option is not None else None
                 self.load_plugin(entry_point, param)
-                break
 
         # load plugin via path to .py file
         if args.plugin is not None:
