@@ -2,6 +2,7 @@ import re
 import io
 import json
 import os.path
+import copy
 
 class MessageException(Exception):
     pass
@@ -280,12 +281,17 @@ def msgID(msg, enums, undefinedMsgId):
     #print("message " + msg["Name"] + " has ID " + hex(ret))
     return str(ret)
 
-def msgDescriptor(msg):
+def msgDescriptor(msg, inputFilename):
     subdir = msg["commonSubdir"]
     name = msgName(msg)
+    basename = os.path.basename(inputFilename).split('.')[0]
+    # add the filename as a namespace, unless it's already there
+    if not basename == name and not basename+'_' in name:
+        name = basename + '.' + name
+        print("adding basename " + basename + " to " + name)
     if name.startswith(subdir+"_"):
         return name.replace("_", ".")
-    if subdir:
+    if subdir and not name.startswith(subdir):
         return subdir+"."+name.replace("_", ".")
     return name
 
@@ -359,6 +365,42 @@ def Enums(inputData):
         for data in inputData["includes"]:
             enumList = enumList + Enums(data)
     return enumList
+
+def Structs(inputData):
+    structList = []
+    if "Structs" in inputData:
+        structList = inputData["Structs"]
+    if "includes" in inputData:
+        for data in inputData["includes"]:
+            structList = structList + Structs(data)
+    return structList
+
+# this replaces fields that are references to structs with the fields from the referenced struct
+def PatchStructs(inputData):
+    # loop twice, so that references to structs inside structs are also replaced
+    for i in range(2):
+        structs = Structs(inputData)
+        if not structs:
+            return
+        
+        # need to make a new list, because we'll be inserting elements as we iterate
+        if 'Messages' in inputData:
+            for msg in inputData["Messages"]:
+                if 'Fields' in msg:
+                    outfields = []
+                    for field in msg['Fields']:
+                        if field['Type'] in structs:
+                            s = structs[field['Type']]
+                            for subfield in s['Fields']:
+                                subfieldcopy = copy.deepcopy(subfield)
+                                subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']
+                                if "Bitfields" in subfieldcopy:
+                                    for bits in subfieldcopy["Bitfields"]:
+                                        bits['Name'] = field['Name'] + "_" + bits['Name']
+                                outfields.append(subfieldcopy)
+                        else:
+                            outfields.append(field)
+                    msg['Fields'] = outfields
 
 # sanitize the option name, to have valid identifier characters
 def OptionName(option):

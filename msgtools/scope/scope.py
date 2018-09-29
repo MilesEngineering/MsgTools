@@ -120,7 +120,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.txDictionary = self.configure_tx_dictionary(parent)
         self.txMsgs = self.configure_tx_messages(parent)
         txClearBtn = QPushButton("Clear")
-        self.debugWidget = msgtools.debug.debug.MsgDebugWidget(parent)
+        self.debugWidget = msgtools.debug.debug.MsgDebugWidget([], parent)
         self.debugWidget.messageOutput.connect(self.SendMsg)
         # tracking what reply to expect
         self.expectedReply = None

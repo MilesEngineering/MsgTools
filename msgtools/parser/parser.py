@@ -8,15 +8,15 @@ import pkg_resources
 from time import gmtime, strftime
 
 DESCRIPTION = '''Applies message and header language template files to
-                 YAML message inputs to generate code for creating,
-                 and parsing, messages.  Headers definitions are assumed 
+                 YAML message inputs to generate code for creating
+                 and parsing messages.  Header definitions are assumed 
                  to reside in a folder called headers at the root of the input 
                  directory.  A header called NetworkHeader.yaml MUST
-                 be defined and adhere to the contract outlined in 
+                 be defined, and adhere to the contract outlined in 
                  the test message suite.'''
 
 EPILOG = '''Built-in languages have precedence over plugins.  If your plugin
-            uses the same name as a built-int language it will be ignored.'''
+            uses the same name as a built-in language, it will be ignored.'''
 
 # Used to find the default template and header template within the language 
 # folder. These are case sensitive.
@@ -42,7 +42,7 @@ def replace(line, pattern, replacement):
             for newLine in replacement.split('\n'):
                 ret += line.replace(pattern, newLine)
     else:
-        #print("NOT replacing ", pattern, " with ", replacement, " in ", line)
+        # print("NOT replacing ", pattern, " with ", replacement, " in ", line)
         ret = line
     return ret
 
@@ -131,7 +131,7 @@ def OutputFile(inputFilename, inputName, outDir):
         return outputFilename, open(outputFilename,'w', newline=lineEndings)
     return outputFilename, None
 
-def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
+def ProcessFile(inputFilename, outDir, languageFilename, templateFilename, messaging):
     currentDateTime = strftime("%d/%m/%Y at %H:%M:%S")
     
     try:
@@ -172,6 +172,8 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
     
+    PatchStructs(inputData)
+    
     firstTime = True
     if "Messages" in inputData:
         for msg in Messages(inputData):
@@ -185,6 +187,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                     if not outFile:
                         continue
 
+                replacements["<MESSAGINGMODULE>"] = messaging
                 replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(msg, enums))
                 replacements["<MSGNAME>"] = msgName(msg)
                 replacements["<MSGSHORTNAME>"] = msgShortName(msg)
@@ -209,7 +212,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<TEMPLATEFILENAME>"] = templateFilename
                 replacements["<LANGUAGEFILENAME>"] = languageFilename
                 replacements["<MESSAGE_PACKAGE>"] = msg["commonSubdir"].replace( '/', '.').replace( '\\', '.')
-                replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg)
+                replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg, inputFilename)
                 replacements["<DATE>"] = currentDateTime
                 replacements["<MSGALIAS>"] = msgAlias(msg)
                 if hasattr(language, "ProcessFile"):
@@ -220,7 +223,12 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                         line = DoReplacements(line, msg, replacements, firstTime)
                         outFile.write(line)
                 if oneOutputFilePerMsg:
+                    outfileLen = outFile.tell()
                     outFile.close()
+                    # It's possible to have empty files as some YAML files can serve as a pure base 
+                    # for others that never generate code.  Clean up empty files
+                    if outfileLen == 0:
+                        os.remove(outputFilename)
                 else:
                     firstTime = False
 
@@ -230,12 +238,20 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 os.remove(outputFilename)
                 sys.exit(1)
     if not oneOutputFilePerMsg:
+        outfileLen = outFile.tell()
         outFile.close()
+        if outfileLen == 0:
+            # It's possible to have empty files as some YAML files can serve as a pure base 
+            # for others that never generate code.  Clean up empty files
+            os.remove(outputFilename)
 
-def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplateFilename):
+def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplateFilename, messaging):
     # make the output directory
     try:
         os.makedirs(outDir)
+
+        # Make sure we have __init__.py to make Python2 imports happy
+        open(os.path.join(outDir, '__init__.py'), 'at').close()
     except:
         pass
     for filename in os.listdir(msgDir):
@@ -245,13 +261,13 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
                 subdir = language.outputSubdir(outDir, filename)
             except AttributeError:
                 subdir = outDir + "/" + filename
-            ProcessDir(inputFilename, subdir, languageFilename, templateFilename, headerTemplateFilename)
+            ProcessDir(inputFilename, subdir, languageFilename, templateFilename, headerTemplateFilename, messaging)
         else:
             particularTemplate = templateFilename
             if msgDir.endswith("headers"):
                 particularTemplate = headerTemplateFilename
             if filename.endswith(".yaml") or filename.endswith(".json"):
-                ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
+                ProcessFile(inputFilename, outDir, languageFilename, particularTemplate, messaging)
 
 def getAvailableLanguages():
     '''Look at all supported languages.  Assume each language is a 
@@ -311,6 +327,9 @@ def main():
         This includes built-in and plugin laguages.''')
     parser.add_argument('-t', '--template', dest='template',
         help='Message template to use for messages.  If unspecified defaults to the template provided by MsgTools')
+    parser.add_argument('-m', '--messaging', dest='messaging', default='msgtools.lib.messaging',
+        help='''Messaging module to use for message registration in the templates.  Default is msgtool.lib.messaging.
+            You can use this argument to provide a custom messaging module of your own if desired.''')
     parser.add_argument('-ht', '--headertemplate', dest='headertemplate', 
         help='''Header template applied to messages in the "headers" folder.  If unspecified defaults to the 
                 template provided by MsgTools.''')
@@ -339,33 +358,14 @@ def main():
     if headerTemplateFilename is None:
         headerTemplateFilename = getTemplate(languageFilename, DEFAULT_HEADER_TEMPLATE)
     
-    # Get latest timestamp of imported modules.
-    # We should only check the file times of any user-defined imports!
-    # It's a bit difficult to determine what's a regular module included with the python distribution,
-    # and what's a user-created module.
-    lastSourceFileTime = 0
-    modulenames = sys.modules.keys()
-    import inspect
-    curpath = os.path.abspath(".")
-    for m in modulenames:
-        try:
-            modulePath = os.path.abspath(inspect.getfile(sys.modules[m]))
-            if curpath in modulePath:
-                moduleFileTime = os.path.getmtime(modulePath)
-                lastSourceFileTime = max(lastSourceFileTime, moduleFileTime)
-        except TypeError:
-            pass
-        except AttributeError:
-            pass
-
     if(os.path.exists(inputFilename)):
         if(os.path.isdir(inputFilename)):
-            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename)
+            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename, args.messaging)
         else:
             particularTemplate = templateFilename
             if "/headers/" in outputFilename:
                 particularTemplate = headerTemplateFilename
-            ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
+            ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate, args.messaging)
     else:
         print("Path " + inputFilename + " does not exist!")
 

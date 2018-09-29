@@ -3,7 +3,6 @@ from PyQt5.QtCore import QObject
 
 from msgtools.lib.messaging import Messaging
 from BluetoothHeader import BluetoothHeader
-from NetworkHeader import NetworkHeader
 
 # We require Qt Bluetooth support, available on Linux and Macs(?)
 
@@ -27,7 +26,7 @@ class BluetoothRFCOMMQtConnection(QObject):
         self.socket.readyRead.connect(self.onReadyRead)
         self.socket.disconnected.connect(self.onDisconnected)
 
-        self.hdrTranslator = Messaging.HeaderTranslator(BluetoothHeader, NetworkHeader)
+        self.hdrTranslator = Messaging.HeaderTranslator(BluetoothHeader, Messaging.hdr)
         
         self.rxBuffer = bytearray()
 
@@ -78,3 +77,19 @@ class BluetoothRFCOMMQtConnection(QObject):
         if btMsg == None:
             return
         self.socket.write(btMsg.rawBuffer().raw)
+
+    def stop(self):
+        pass
+
+def PluginConnection(param):
+    from msgtools.server.BluetoothRFCOMMQt import BluetoothRFCOMMQtConnection
+    from PyQt5 import QtBluetooth
+    btArgs = param.split(",")
+    btHost = btArgs[0]
+    if len(btArgs)>1:
+        btPort = int(btArgs[1])
+    else:
+        btPort = 8
+    btSocket = QtBluetooth.QBluetoothSocket(QtBluetooth.QBluetoothServiceInfo.RfcommProtocol)
+    btSocket.connectToService(QtBluetooth.QBluetoothAddress(btHost), btPort)
+    return BluetoothRFCOMMQtConnection(btSocket)

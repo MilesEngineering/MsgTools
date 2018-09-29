@@ -20,10 +20,12 @@ upload:
 	twine upload -r pypi dist/msgtools-*.tar.gz
 
 develop:
-	$(PYTHON) setup.py develop --user
+	#$(PYTHON) setup.py develop --user
+	pip3 install --editable . --user
 
 undevelop:
-	$(PYTHON) setup.py develop --user --uninstall
+	#$(PYTHON) setup.py develop --user --uninstall
+	pip3 uninstall -y msgtools
 	rm $(HOME)/.local/bin/msg*
 
 android:
