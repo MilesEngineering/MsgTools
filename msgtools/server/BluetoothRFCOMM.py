@@ -3,9 +3,7 @@ from PyQt5.QtCore import QObject
 
 from msgtools.lib.messaging import Messaging
 from BluetoothHeader import BluetoothHeader
-from NetworkHeader import NetworkHeader
 
-NHS = NetworkHeader.SIZE
 BTHS = BluetoothHeader.SIZE
 
 # We require bluez, available on Windows and Linux
@@ -46,7 +44,7 @@ class BluetoothRFCOMMConnection(QObject):
         self.btsock_buffer = b''
         self.btsock_outgoing = b''
 
-        self.hdrTranslator = Messaging.HeaderTranslator(BluetoothHeader, NetworkHeader)
+        self.hdrTranslator = Messaging.HeaderTranslator(BluetoothHeader, Messaging.hdr)
         
         self.name = "Bluetooth RFCOMM " + deviceBTAddr
         self.statusLabel.setText(self.name)

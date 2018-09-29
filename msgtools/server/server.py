@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+import traceback
 import pkg_resources
 
 try:
@@ -207,7 +208,6 @@ class MessageServer(QtWidgets.QMainWindow):
             plugin_option = getattr(args, entry_point.name)
             plugin_last_option = getattr(args, 'last'+entry_point.name)
             if plugin_last_option is not False or plugin_option is not None:
-                print('plugin ' + entry_point.name)
                 param = plugin_option if plugin_option is not None else None
                 self.load_plugin(entry_point, param)
                 break
@@ -218,7 +218,7 @@ class MessageServer(QtWidgets.QMainWindow):
             import os
             moduleName = os.path.splitext(os.path.basename(filename))[0]
             if Messaging.debug:
-                print("loading module ", filename, "as",moduleName)
+                print("loading module %s as %s" % (filename, moduleName))
 
             name = filename.replace("/", "_")
             import importlib
@@ -340,7 +340,6 @@ class MessageServer(QtWidgets.QMainWindow):
         except AttributeError:
             # if that fails, just use the plugin as one new connection.
             self.onNewConnection(pluginPort)
-            pluginPort.start()
         
         pluginPort.start()
         self.pluginPorts.append(pluginPort)
@@ -459,7 +458,9 @@ class MessageServer(QtWidgets.QMainWindow):
                             else:
                                 client.sendMsg(hdr)
                         except Exception as ex:
-                            self.onStatusUpdate("Exception in server.py while sending to client " + client.name + ": ["  +str(ex)+"]")
+                            a,b,c = sys.exc_info()
+                            exc = ''.join(traceback.format_exception(a,b,c))
+                            self.onStatusUpdate("Exception in server.py while sending to client %s:\n%s" % (client.name, exc))
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())

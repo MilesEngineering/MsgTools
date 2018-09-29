@@ -7,8 +7,6 @@ from PyQt5.QtSerialPort import QSerialPort
 
 from msgtools.lib.messaging import Messaging
 
-from NetworkHeader import NetworkHeader
-
 import ctypes
 import struct
 import sys
@@ -126,7 +124,7 @@ class SerialConnection(QObject):
         self.serialPort.readyRead.connect(self.onReadyRead)
         self.name = "Serial " + self.serialPort.portName()
 
-        self.hdrTranslator = Messaging.HeaderTranslator(hdr, NetworkHeader)
+        self.hdrTranslator = Messaging.HeaderTranslator(hdr, Messaging.hdr)
 
         self.serialStartSeqField = Messaging.findFieldInfo(hdr.fields, "StartSequence")
         if self.serialStartSeqField != None:
@@ -268,15 +266,16 @@ class SerialConnection(QObject):
             # set header and body CRC
             serialMsg.SetHeaderChecksum(Crc16(serialMsg.rawBuffer()[:self.hdrCrcRegion]))
             serialMsg.SetBodyChecksum(Crc16(serialMsg.rawBuffer()[Messaging.hdrSize:]))
-        self.serialPort.write(serialMsg.rawBuffer().raw)
+        if self.serialPort.isOpen():
+            self.serialPort.write(serialMsg.rawBuffer().raw)
     
     def stop(self):
         pass
 
-def PluginConnection(param):
+def PluginConnection(param=None):
     from SerialHeader import SerialHeader
     return SerialConnection(SerialHeader, param)
 
-def BtPluginConnection(param):
+def BtPluginConnection(param=None):
     from BluetoothHeader import BluetoothHeader
     return SerialConnection(BluetoothHeader, param)
