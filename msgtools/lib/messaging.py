@@ -636,6 +636,7 @@ class Messaging:
                 fromHdrInfo = self._hdr2Info
                 toHdrInfo = self._hdr1Info
             else:
+                print("ERROR!  type %s is not %s or %s!" % (type(fromHdr), self._hdr1Info.type, self._hdr2Info.type))
                 raise TypeError
             
             # allocate the message to translate to
