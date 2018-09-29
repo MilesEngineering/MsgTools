@@ -16,22 +16,22 @@ class TestClass(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print ("----------- Running setup")
-        cls.msgLib = Messaging()
+        Messaging.LoadAllMessages()
 
     def test_dict(self):
         msgname = "Network.Connect"
-        msgid = self.msgLib.MsgIDFromName[msgname]
+        msgid = Messaging.MsgIDFromName[msgname]
 
         msgid2 = "0xffffff01"
-        msgname2 = self.msgLib.MsgNameFromID[msgid]
+        msgname2 = Messaging.MsgNameFromID[msgid]
         self.assertMultiLineEqual(msgname, msgname2)
         self.assertEqual(msgid, msgid2)
     
         self.PrintDictionary()
 
     def test_accessors(self):
-        msgclass = self.msgLib.MsgClassFromName["Network.Connect"]
-        sameMsgClass = self.msgLib.Messages.Network.Connect
+        msgclass = Messaging.MsgClassFromName["Network.Connect"]
+        sameMsgClass = Messaging.Messages.Network.Connect
         self.assertEqual(msgclass, sameMsgClass)
 
         expected = "Testing"
@@ -51,9 +51,9 @@ class TestClass(unittest.TestCase):
         print("Msg Dictionary")
         print("----------------------")
         print("%-10s: ID" %"Name")
-        for msgId, name in self.msgLib.MsgNameFromID.items():
+        for msgId, name in Messaging.MsgNameFromID.items():
              print("%-10s: %s" % (name, msgId))
-             msgClass = self.msgLib.MsgClassFromName[name]
+             msgClass = Messaging.MsgClassFromName[name]
              self.PrintAccessors(msgClass)
         print("")
 

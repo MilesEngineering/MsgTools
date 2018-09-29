@@ -256,11 +256,11 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 msg_key = plot.split(":")[0]
                 msg_id = msg_key.split(',')[-1]
                 try:
-                    msgName = self.msgLib.MsgNameFromID[msg_id]
+                    msgName = Messaging.MsgNameFromID[msg_id]
                 except KeyError:
                     print('Error!  msg_id ' + msg_id + ' is undefined!')
                     continue
-                msgClass = self.msgLib.MsgClassFromName[msgName]
+                msgClass = Messaging.MsgClassFromName[msgName]
                 
                 fieldNames = plot.split(":")[1].split(",")
                 firstTime = True

@@ -98,19 +98,19 @@ class MsgCmd(cmd.Cmd):
         return self.autocomplete("recv", text, line, False)
 
 def main(args=None):
-    msgLib = Messaging()
+    Messaging.LoadAllMessages()
 
     if len(sys.argv) > 1 and sys.argv[1] == "server":
         connection = SynchronousMsgServer(Messaging.hdr)
     else:
         connection = SynchronousMsgClient(Messaging.hdr)
         # say my name
-        connectMsg = msgLib.Messages.Network.Connect()
+        connectMsg = Messaging.Messages.Network.Connect()
         connectMsg.SetName("CLI")
         connection.send_message(connectMsg)
         
         # do default subscription to get *everything*
-        subscribeMsg = msgLib.Messages.Network.MaskedSubscription()
+        subscribeMsg = Messaging.Messages.Network.MaskedSubscription()
         connection.send_message(subscribeMsg)
         
     msg_cmd = MsgCmd(connection)

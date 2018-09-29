@@ -181,14 +181,14 @@ class MessageServer(QtWidgets.QMainWindow):
         args = parser.parse_args()
         
         try:
-            self.msgLib = Messaging(searchdir=args.msgdir)
+            Messaging.LoadAllMessages(searchdir=args.msgdir)
         except ImportError:
             print("\nERROR! Auto-generated python code not found!")
             print("cd to a directory downstream from a parent of obj/CodeGenerator/Python")
             print("or specify that directory with --msgdir=PATH\n")
             quit()
 
-        self.networkMsgs = self.msgLib.Messages.Network
+        self.networkMsgs = Messaging.Messages.Network
 
         self.clients = {}
         

@@ -83,22 +83,8 @@ class Messaging:
     
     debug=0
 
-    def __init__(self, loaddir=None, searchdir=None, debug=0, headerName="NetworkHeader"):
-        '''
-        Initialize the Messaging class.  This dynamically loads all generated message code,
-        with each message registering itself with the Messaging class on import.  This allows
-        us to support a number of utility functions for message creation, introspection,
-        class lookup, etc
-
-        loaddir - If set we use this as the base directory for generated message code.  Overrides searchdir.
-        searchdir - If set we start a search for 'obj/CodeGenerator/Python' from searchdir, and moving up 
-            to each parent directory until we find this folder.  If loaddir and searchdir are not set
-            we default to the current directory.
-        debug - print debugging information to the console.
-        headerName - the default header to use when processing messages.  We assume this module resides
-            in a 'headers' folder below our base message root directory.
-        '''
-        Messaging.debug = debug
+    @staticmethod
+    def DetermineLoadDir(loaddir, searchdir):
         if loaddir:
             loadDir = loaddir
             pass
@@ -124,9 +110,34 @@ class Messaging:
         # Normalize our load directory path, and load message modules on the path and
         # fix the sys path for future imports
         loadDir = os.path.normpath(loadDir)
-
+        
+        # add these to the system path, to allow application code to import header and message files directly.
         sys.path.append(loadDir)
         sys.path.append(os.path.join(loadDir, "headers"))
+        
+        return loadDir
+
+
+    @staticmethod
+    def LoadHeader(loaddir=None, searchdir=None, headerName="NetworkHeader"):
+        loadDir = Messaging.DetermineLoadDir(loaddir, searchdir)
+
+    @staticmethod
+    def LoadAllMessages(loaddir=None, searchdir=None, headerName="NetworkHeader"):
+        '''
+        This dynamically loads all generated message code, with each message registering itself
+        with the Messaging class on import.  This allows us to support a number of utility
+        functions for message creation, introspection, class lookup, etc
+
+        loaddir - If set we use this as the base directory for generated message code.  Overrides searchdir.
+        searchdir - If set we start a search for 'obj/CodeGenerator/Python' from searchdir, and moving up 
+            to each parent directory until we find this folder.  If loaddir and searchdir are not set
+            we default to the current directory.
+        debug - print debugging information to the console.
+        headerName - the default header to use when processing messages.  We assume this module resides
+            in a 'headers' folder below our base message root directory.
+        '''
+        loadDir = Messaging.DetermineLoadDir(loaddir, searchdir)
         
         # if we didn't find valid auto-generated code, this will cause an import error!
         # the fix is to point to valid auto-generated code!
@@ -138,16 +149,17 @@ class Messaging:
         # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE
 
-        self.LoadDir(loadDir, loadDir)
+        Messaging.LoadDir(loadDir, loadDir)
 
-    def LoadDir(self, loadDir, rootDir):
+    @staticmethod
+    def LoadDir(loadDir, rootDir):
         for filename in os.listdir(loadDir):
             filepath = loadDir + '/' + filename
             if os.path.isdir(filepath):
                 if filename != 'headers':
                     if Messaging.debug:
                         print("descending into directory ", filepath)
-                    self.LoadDir(filepath, rootDir)
+                    Messaging.LoadDir(filepath, rootDir)
             elif filename.endswith('.py'):
                 # Build an import friendly module name
                 # Could've just passed the root length to be more efficient
