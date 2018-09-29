@@ -160,22 +160,17 @@ class MessageServer(QtWidgets.QMainWindow):
 
         # iterate over plugins, and setup argparse for each
         for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
-            parser.add_argument('--'+entry_point.name,     dest='last'+entry_point.name, action='store_true', help='same as above with no parameter')
-            parser.add_argument('--'+entry_point.name+'=', dest=entry_point.name, help="%s module, %s function" % (entry_point.module_name, entry_point.attrs[0]))
+            parser.add_argument(
+                '--%s' %entry_point.name,
+                dest='last%s'%entry_point.name,
+                action='store_true',
+                help='''Load the %s plugin via %s:%s''' % (entry_point.name, entry_point.module_name, entry_point.attrs[0]))
+            parser.add_argument(
+                '--%s='%entry_point.name,
+                dest= entry_point.name,
+                help="Same as above, passing param %s to the plugin" % (entry_point.name.upper()))
 
-        ''' 
-        parser.add_argument('--serial', dest='lastserial', action='store_true', 
-            help='Use a serial port input on the last used port' )
-        parser.add_argument('--serial=', dest='serial', 
-            help='Use a serial port input with the specified serial port name.  This
-                  form takes precedence over --serial if both are specified.'')
-        parser.add_argument('--bluetoothSPP', 
-            help='Use a Bluetooth SPP connection to the indicated port.  See below for details.')
-        parser.add_argument('--bluetoothRFCOMM', 
-            help='Use a Bluetooth RFCOMM connection to the indicated port.  See below for details.')
-        parser.add_argument('--bluetoothRFCOMMQt', 
-            help='Use a QT Bluetooth RFCOMM connection on the indicated port. See below for details.')'''
-        parser.add_argument('--plugin', help='Specify a file path to a plugin module to use')
+        parser.add_argument('--plugin', help='Specify a filesystem path to a plugin module to load.')
         parser.add_argument('--msgdir', 
             help='''Specify the directory for generated python code to use for headers, and other 
                     message definitions''')
