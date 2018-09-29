@@ -1,5 +1,5 @@
 # for directory listing, exit function
-import os, glob, sys, struct
+import os, glob, sys, struct, time
 
 # for reflection/introspection (find a class's methods)
 import inspect
@@ -190,6 +190,7 @@ class Messaging:
         cache_filename = os.path.join(loadDir, 'msglib_cache.json')
         if USE_LAZY_LOADING:
             try:
+                t1 = time.time()
                 with open(cache_filename, 'r') as fp:
                     msglibinfo = json.load(fp)
                     Messaging.MsgNameFromID     = msglibinfo["MsgNameFromID"]
@@ -222,12 +223,17 @@ class Messaging:
                                     messagingVars[namePart] = lambda: Nones
                             messagingVars = vars(messagingVars[namePart])
                         #messagingVars[nameParts[-1]] = classDef
+                t2 = time.time()
+                print("Using lazy loading, %s seconds" % str(t2 - t1))
                 cache_valid = True
             except FileNotFoundError:
                 cache_valid = False
 
             if not cache_valid:
+                t1 = time.time()
                 Messaging.LoadDir(loadDir, loadDir)
+                t2 = time.time()
+                print("Loading all msgs, %s seconds" % str(t2 - t1))
                 
                 # store a cache message ID, name, and file data
                 msglibinfo = {
