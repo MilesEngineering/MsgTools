@@ -3,6 +3,7 @@ from PyQt5.QtCore import QObject
 
 from msgtools.lib.messaging import Messaging
 from BluetoothHeader import BluetoothHeader
+from msgtools.lib.header_translator import HeaderTranslator
 
 # We require Qt Bluetooth support, available on Linux and Macs(?)
 
@@ -26,12 +27,15 @@ class BluetoothRFCOMMQtConnection(QObject):
         self.socket.readyRead.connect(self.onReadyRead)
         self.socket.disconnected.connect(self.onDisconnected)
 
-        self.hdrTranslator = Messaging.HeaderTranslator(BluetoothHeader, Messaging.hdr)
+        self.hdrTranslator = HeaderTranslator(BluetoothHeader, Messaging.hdr)
         
         self.rxBuffer = bytearray()
 
         self.name = "Bluetooth RFCOMM " + self.socket.peerAddress().toString()
         self.statusLabel.setText(self.name)
+
+    def start(self):
+        pass
 
     def widget(self, index):
         if index == 0:
@@ -81,7 +85,7 @@ class BluetoothRFCOMMQtConnection(QObject):
     def stop(self):
         pass
 
-def PluginConnection(param):
+def PluginConnection(param=""):
     from msgtools.server.BluetoothRFCOMMQt import BluetoothRFCOMMQtConnection
     from PyQt5 import QtBluetooth
     btArgs = param.split(",")
