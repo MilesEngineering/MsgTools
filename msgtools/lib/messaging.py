@@ -409,6 +409,14 @@ class Messaging:
                         return bfi
         return None
 
+    # This is composed of all the header fields that are not length, time, and any ID fields.
+    # In some systems where one PC talks to one device, there may not be *any* fields that
+    # contribute to Route.  In other systems it could be a device ID on a CANbus, a source
+    # or destination field, or an IP Address or MAC address.
+    # The reason MsgRoute exists is to distinguish between traffic with the same ID, that
+    # is to, from, for, between different entities, so they aren't assumed to be two messages
+    # in one time sequence.  This is necessary for showing lists of data (like msginspector),
+    # showing plots of data as a time series, or showing the latest value of all data (msgscope).
     @staticmethod
     def MsgRoute(msg):
         hdr = msg.hdr
