@@ -1,4 +1,6 @@
 # for directory listing, exit function
+from __future__ import division
+from __future__ import absolute_import
 import os, glob, sys, struct
 
 # for reflection/introspection (find a class's methods)
@@ -67,7 +69,7 @@ def maxVal(arg):
         return fcn
     return _maxVal
 
-class Messaging:
+class Messaging(object):
     hdr=None
     hdrSize=0
 
@@ -75,7 +77,6 @@ class Messaging:
     MsgNameFromID = {}
     MsgIDFromName = {}
     MsgClassFromName = {}
-
     # container for accessing message classes via dot notation.
     # odd, in python, that using an empty lambda expression is a suitable container
     # for this, and that some other Object doesn't work better.
@@ -83,8 +84,8 @@ class Messaging:
     
     debug=0
 
-    def __init__(self, loaddir=None, searchdir=None, debug=0, headerName="NetworkHeader"):
-        '''
+    def __init__(self, loaddir=None, searchdir=None, debug=0, headerName=u"NetworkHeader"):
+        u'''
         Initialize the Messaging class.  This dynamically loads all generated message code,
         with each message registering itself with the Messaging class on import.  This allows
         us to support a number of utility functions for message creation, introspection,
@@ -98,14 +99,15 @@ class Messaging:
         headerName - the default header to use when processing messages.  We assume this module resides
             in a 'headers' folder below our base message root directory.
         '''
+        
         Messaging.debug = debug
         if loaddir:
             loadDir = loaddir
             pass
         else:
             if not searchdir or not os.path.isdir(searchdir):
-                searchdir = os.getcwd()
-            loadDir = os.path.join(searchdir, "obj/CodeGenerator/Python/")
+                searchdir = os.getcwdu()
+            loadDir = os.path.join(searchdir, u"obj/CodeGenerator/Python/")
             while not os.path.isdir(loadDir):
                 lastsearchdir = searchdir
                 searchdir = os.path.abspath(os.path.join(searchdir, os.pardir))
@@ -117,20 +119,20 @@ class Messaging:
                     #print("\nERROR! Auto-generated python code not found!")
                     #print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
                     break
-                loadDir = searchdir + "/obj/CodeGenerator/Python/"
+                loadDir = searchdir + u"/obj/CodeGenerator/Python/"
                 if Messaging.debug:
-                    print("search for objdir in " + loadDir)
+                    print u"search for objdir in " + loadDir
 
         # Normalize our load directory path, and load message modules on the path and
         # fix the sys path for future imports
         loadDir = os.path.normpath(loadDir)
 
         sys.path.append(loadDir)
-        sys.path.append(os.path.join(loadDir, "headers"))
+        sys.path.append(os.path.join(loadDir, u"headers"))
         
         # if we didn't find valid auto-generated code, this will cause an import error!
         # the fix is to point to valid auto-generated code!
-        headerModule = importlib.import_module("headers." + headerName)
+        headerModule = importlib.import_module(u"headers." + headerName)
 
         # Set the global header name
         Messaging.hdr = getattr(headerModule, headerName)
@@ -142,36 +144,36 @@ class Messaging:
 
     def LoadDir(self, loadDir, rootDir):
         for filename in os.listdir(loadDir):
-            filepath = loadDir + '/' + filename
+            filepath = loadDir + u'/' + filename
             if os.path.isdir(filepath):
-                if filename != 'headers':
+                if filename != u'headers':
                     if Messaging.debug:
-                        print("descending into directory ", filepath)
+                        print u"descending into directory ", filepath
                     self.LoadDir(filepath, rootDir)
-            elif filename.endswith('.py'):
+            elif filename.endswith(u'.py'):
                 # Build an import friendly module name
                 # Could've just passed the root length to be more efficient
                 # but felt the easier readability was better than the miniscule
                 # performance gain we could've had
                 modulename = filepath[len(rootDir)+1:]
-                modulename = modulename[0:modulename.rfind('.py')]
-                modulename = modulename.replace(os.sep, '.')
+                modulename = modulename[0:modulename.rfind(u'.py')]
+                modulename = modulename.replace(os.sep, u'.')
                 if Messaging.debug:
-                    print("loading module "+modulename)
+                    print u"loading module "+modulename
 
-                importlib.import_module(modulename)
+                __import__(modulename)
 
     @staticmethod
     def Register(name, id, classDef):
-        'add message to the global hash table of names by ID, and IDs by name'
+        u'add message to the global hash table of names by ID, and IDs by name'
 
         id = hex(id)
         
         if Messaging.debug:
-            print("Registering", name, "as",id)
+            print u"Registering", name, u"as",id
         
         if(id in Messaging.MsgNameFromID):
-            print("WARNING! Trying to define message ", name, " for ID ", id, ", but ", Messaging.MsgNameFromID[id], " already uses that ID")
+            print u"WARNING! Trying to define message ", name, u" for ID ", id, u", but ", Messaging.MsgNameFromID[id], u" already uses that ID"
         
         Messaging.MsgNameFromID[id] = name
 
@@ -179,17 +181,17 @@ class Messaging:
 
     @staticmethod
     def AddAlias(name, id, classDef):
-        'add message to the global hash table of IDs by name'
+        u'add message to the global hash table of IDs by name'
 
         if(name in Messaging.MsgIDFromName):
-            print("WARNING! Trying to define message %s for ID %s(%d), but %s(%d) already uses that name" % (name, id, int(id, 0), Messaging.MsgIDFromName[name], int(Messaging.MsgIDFromName[name], 0)))
+            print u"WARNING! Trying to define message %s for ID %s(%d), but %s(%d) already uses that name" % (name, id, int(id, 0), Messaging.MsgIDFromName[name], int(Messaging.MsgIDFromName[name], 0))
 
         Messaging.MsgIDFromName[name] = id
         Messaging.MsgClassFromName[name] = classDef
 
         # split up the name between periods, and add it to the Messaging object so it
         # can be accessed via dot notation
-        nameParts = name.split(".")
+        nameParts = name.split(u".")
         messagingVars = vars(Messaging.Messages)
         for namePart in nameParts[:-1]:
             if namePart and not namePart in messagingVars:
@@ -199,7 +201,7 @@ class Messaging:
 
     @staticmethod
     def MsgFactory(msg, name=None):
-        '''Create a new message instance from the given msg
+        u'''Create a new message instance from the given msg
 
             msg - the header and message payload (as a NetworkHeader)
 
@@ -221,7 +223,7 @@ class Messaging:
 
     @staticmethod
     def MsgClass(hdr):
-        '''Find the message class for this message header
+        u'''Find the message class for this message header
 
         hdr - the header for this message.  Need not be the full
             message, i.e. header + payload.
@@ -241,18 +243,19 @@ class Messaging:
 
         return msgClass
 
+
     @staticmethod
     def set(msg, fieldInfo, value, index=0):
-        if("int" in fieldInfo.type):
-            if isinstance(value, str):
+        if(u"int" in fieldInfo.type):
+            if isinstance(value, unicode):
                 value = value.strip()
-                if value.startswith("0x"):
+                if value.startswith(u"0x"):
                     value = int(value, 0)
             value = int(float(value))
-        elif("float" in fieldInfo.type):
+        elif(u"float" in fieldInfo.type):
             value = float(value)
         
-        if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
+        if not hasattr(fieldInfo, u"count") or fieldInfo.count == 1:
             fieldInfo.set(msg, value)
         else:
             fieldInfo.set(msg, value, index)
@@ -260,13 +263,13 @@ class Messaging:
     @staticmethod
     def get(msg, fieldInfo, index=0):
         try:
-            if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
+            if not hasattr(fieldInfo, u"count") or fieldInfo.count == 1:
                 value = fieldInfo.get(msg)
             else:
                 value = fieldInfo.get(msg, index)
         except struct.error:
-            value = "UNALLOCATED"
-        return str(value)
+            value = u"UNALLOCATED"
+        return unicode(value)
 
     @staticmethod
     def getFloat(msg, fieldInfo, index=0):
@@ -303,25 +306,25 @@ class Messaging:
 
     @staticmethod
     def toJson(msg):
-        msgClass = type(msg)
+        msgClass = Messaging.MsgClass(msg.hdr)
         pythonObj = OrderedDict()
         for fieldInfo in msgClass.fields:
             if(fieldInfo.count == 1):
                 if msg.hdr.GetDataLength() < int(fieldInfo.get.offset) + int(fieldInfo.get.size):
                     break
                 if len(fieldInfo.bitfieldInfo) == 0:
-                    pythonObj[fieldInfo.name] = str(Messaging.get(msg, fieldInfo))
+                    pythonObj[fieldInfo.name] = unicode(Messaging.get(msg, fieldInfo))
                 else:
                     for bitInfo in fieldInfo.bitfieldInfo:
-                        pythonObj[bitInfo.name] = str(Messaging.get(msg, bitInfo))
+                        pythonObj[bitInfo.name] = unicode(Messaging.get(msg, bitInfo))
             else:
                 arrayList = []
                 terminate = 0
-                for i in range(0,fieldInfo.count):
+                for i in xrange(0,fieldInfo.count):
                     if msg.hdr.GetDataLength() < int(fieldInfo.get.offset) + i*int(fieldInfo.get.size):
                         terminate = 1
                         break
-                    arrayList.append(str(Messaging.get(msg, fieldInfo, i)))
+                    arrayList.append(unicode(Messaging.get(msg, fieldInfo, i)))
                 pythonObj[fieldInfo.name] = arrayList
                 if terminate:
                     break
@@ -331,16 +334,16 @@ class Messaging:
     @staticmethod
     def jsonToMsg(jsonString):
         terminationLen = None
-        if "hdr" in jsonString:
-            fieldJson = jsonString["hdr"]
+        if u"hdr" in jsonString:
+            fieldJson = jsonString[u"hdr"]
             for fieldName in fieldJson:
-                if fieldName == "DataLength":
-                    if fieldJson[fieldName] == ";":
+                if fieldName == u"DataLength":
+                    if fieldJson[fieldName] == u";":
                         terminationLen = 0
                     else:
                         terminationLen = int(fieldJson[fieldName])
         for msgName in jsonString:
-            if msgName == "hdr":
+            if msgName == u"hdr":
                 # hdr handled above, *before* message body
                 pass
             else:
@@ -352,7 +355,7 @@ class Messaging:
                     fieldValue = fieldJson[fieldName]
                     if isinstance(fieldValue, list):
                         #print(fieldName + " list type is " + str(type(fieldValue)))
-                        for i in range(0,len(fieldValue)):
+                        for i in xrange(0,len(fieldValue)):
                             Messaging.set(msg, fieldInfo, fieldValue[i], i)
                             if terminationLen != None:
                                 terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1))
@@ -366,7 +369,7 @@ class Messaging:
                         #print(str(type(fieldValue)) + " " + fieldName + ", calling set with " + str(fieldValue))
                         Messaging.set(msg, fieldInfo, fieldValue)
                         if terminationLen != None:
-                            if fieldInfo.type == "string":
+                            if fieldInfo.type == u"string":
                                 terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(fieldValue))
                             else:
                                 terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size))
@@ -376,37 +379,37 @@ class Messaging:
 
     @staticmethod
     def toCsv(msg):
-        ret = ""
-        for fieldInfo in type(msg).fields:
+        ret = u""
+        for fieldInfo in Messaging.MsgClass(msg.hdr).fields:
             if(fieldInfo.count == 1):
-                columnText = str(Messaging.get(msg, fieldInfo)) + ", "
+                columnText = unicode(Messaging.get(msg, fieldInfo)) + u", "
                 for bitInfo in fieldInfo.bitfieldInfo:
-                    columnText += str(Messaging.get(msg, bitInfo)) + ", "
+                    columnText += unicode(Messaging.get(msg, bitInfo)) + u", "
             else:
-                columnText = ""
-                for i in range(0,fieldInfo.count):
-                    columnText += str(Messaging.get(msg, fieldInfo, i)) + ", "
+                columnText = u""
+                for i in xrange(0,fieldInfo.count):
+                    columnText += unicode(Messaging.get(msg, fieldInfo, i)) + u", "
             ret += columnText
         return ret
 
     @staticmethod
     def escapeCommasInQuotedString(line):
-        ret = ""
+        ret = u""
         quoteStarted = 0
         for c in line:
-            if c == '"':
+            if c == u'"':
                 quoteStarted = not quoteStarted
-            elif c == ',':
+            elif c == u',':
                 if quoteStarted:
-                    ret = ret + '\\'
+                    ret = ret + u'\\'
             ret = ret + c
         return ret
 
     @staticmethod
     def csvToMsg(lineOfText):
-        if lineOfText == '':
+        if lineOfText == u'':
             return None
-        params = lineOfText.split(" ", 1)
+        params = lineOfText.split(u" ", 1)
         msgName = params[0]
         if len(params) == 1:
             params = []
@@ -414,7 +417,7 @@ class Messaging:
             # escape commas that are inside quoted strings
             line = Messaging.escapeCommasInQuotedString(params[1])
             # use CSV reader module
-            params = list(csv.reader([line], quotechar='"', delimiter=',', quoting=csv.QUOTE_NONE, skipinitialspace=True, escapechar='\\'))[0]
+            params = list(csv.reader([line], quotechar=u'"', delimiter=u',', quoting=csv.QUOTE_NONE, skipinitialspace=True, escapechar=u'\\'))[0]
             #print("params is " + str(params))
         if msgName in Messaging.MsgClassFromName:
             msgClass = Messaging.MsgClassFromName[msgName]
@@ -428,19 +431,19 @@ class Messaging:
                         val = params[paramNumber].strip()
                         #print("val is [" + val + "]") 
                         if(fieldInfo.count == 1):
-                            if val.endswith(";"):
+                            if val.endswith(u";"):
                                 terminateMsg = 1
                                 val = val[:-1]
-                                if val == "":
+                                if val == u"":
                                     # terminate without this field
                                     terminationLen = int(fieldInfo.get.offset)
                                     break
                                 # terminate after this field
                                 terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)
                             if len(fieldInfo.bitfieldInfo) == 0:
-                                if fieldInfo.type == "string":
-                                    if val.startswith('"') and val.endswith('"'):
-                                        val = val.strip('"')
+                                if fieldInfo.type == u"string":
+                                    if val.startswith(u'"') and val.endswith(u'"'):
+                                        val = val.strip(u'"')
                                     if terminateMsg:
                                         terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(val)
                                 Messaging.set(msg, fieldInfo, val)
@@ -451,21 +454,21 @@ class Messaging:
                                     paramNumber+=1
                                     val = params[paramNumber]
                         else:
-                            if val.startswith("0x") and len(val) > 2+fieldInfo.count*int(fieldInfo.get.size):
-                                if val.endswith(";"):
+                            if val.startswith(u"0x") and len(val) > 2+fieldInfo.count*int(fieldInfo.get.size):
+                                if val.endswith(u";"):
                                     terminateMsg = 1
                                     val = val[:-1]
                                     hexStr = val[2:].strip()
                                     terminationLen = int(int(fieldInfo.get.offset) + len(hexStr)/2)
                                 hexStr = val[2:].strip()
                                 charsForOneElem = int(fieldInfo.get.size)*2
-                                valArray = [hexStr[i:i+charsForOneElem] for i in range(0, len(hexStr), charsForOneElem)]
-                                for i in range(0,len(valArray)):
+                                valArray = [hexStr[i:i+charsForOneElem] for i in xrange(0, len(hexStr), charsForOneElem)]
+                                for i in xrange(0,len(valArray)):
                                     Messaging.set(msg, fieldInfo, int(valArray[i], 16), i)
                                 paramNumber+=1
                             else:
-                                for i in range(0,fieldInfo.count):
-                                    if val.endswith(";"):
+                                for i in xrange(0,fieldInfo.count):
+                                    if val.endswith(u";"):
                                         terminateMsg = 1
                                         terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1)
                                         val = val[:-1]
@@ -490,9 +493,9 @@ class Messaging:
 
     @staticmethod
     def long_substr(data):
-        substr = ''
+        substr = u''
         if len(data) > 1 and len(data[0]) > 0:
-            for j in range(len(data[0])-1):
+            for j in xrange(len(data[0])-1):
                 if j > len(substr) and all(data[0][0:j] in x for x in data):
                     substr = data[0][0:j]
         return substr
@@ -501,29 +504,29 @@ class Messaging:
     def paramHelp(field):
         ret = field.name
         if field.units:
-            ret = ret + "(" + field.units + ")"
+            ret = ret + u"(" + field.units + u")"
         if field.description:
-            ret = ret + "# " + field.description
+            ret = ret + u"# " + field.description
         return ret
 
     @staticmethod
     def csvHelp(lineOfText):
         autoComplete = None
-        help = ""
+        help = u""
         params = lineOfText.split()
         if params:
             msgName = params[0]
         else:
-            msgName = ''
+            msgName = u''
         # if there's no params beyond first word, try to auto-complete a message name
-        if len(params) <= 1 and not lineOfText.endswith(" "):
+        if len(params) <= 1 and not lineOfText.endswith(u" "):
             # search for messages that match us
             matchingMsgNames = []
             truncated = False
             for aMsgName in sorted(Messaging.MsgClassFromName.keys()):
                 if aMsgName.startswith(msgName):
                     # truncate to first dot after match
-                    firstdot = aMsgName.find('.',len(msgName))
+                    firstdot = aMsgName.find(u'.',len(msgName))
                     if firstdot > 0:
                         aMsgName = aMsgName[0:firstdot+1]
                         truncated = True
@@ -536,22 +539,22 @@ class Messaging:
                 # accept it by giving it as autoComplete with a space at end
                 #if autoComplete != msgName:
                 if not truncated:
-                    autoComplete = autoComplete + ' '
+                    autoComplete = autoComplete + u' '
                 return (autoComplete, help)
             else:
-                help = '\n'.join(matchingMsgNames)
+                help = u'\n'.join(matchingMsgNames)
                 autoComplete = Messaging.long_substr(matchingMsgNames)
                 #print("long_substr returned " + autoComplete)
                 return (autoComplete, help)
                 
         #print("param help")
         # if we didn't auto-complete a message name above, then show help on params
-        paramstring = lineOfText.replace(msgName, "",1).strip()
-        params = paramstring.split(',')
+        paramstring = lineOfText.replace(msgName, u"",1).strip()
+        params = paramstring.split(u',')
         if msgName in Messaging.MsgClassFromName:
             helpOnJustParam = len(paramstring)
             if not helpOnJustParam:
-                help = msgName + " "
+                help = msgName + u" "
             msgClass = Messaging.MsgClassFromName[msgName]
             msg = msgClass()
             if msg.fields:
@@ -565,7 +568,7 @@ class Messaging:
                                         return (None, Messaging.paramHelp(fieldInfo))
                                     paramNumber+=1
                                 else:
-                                    help += fieldInfo.name + ", "
+                                    help += fieldInfo.name + u", "
                             else:
                                 for bitInfo in fieldInfo.bitfieldInfo:
                                     if helpOnJustParam:
@@ -573,25 +576,25 @@ class Messaging:
                                             return (None, Messaging.paramHelp(bitInfo))
                                         paramNumber+=1
                                     else:
-                                        help += bitInfo.name + ", "
+                                        help += bitInfo.name + u", "
                         else:
                             if helpOnJustParam:
                                 arrayList = []
-                                for i in range(0,fieldInfo.count):
+                                for i in xrange(0,fieldInfo.count):
                                     if helpOnJustParam and paramNumber == len(params)-1:
                                         return (None, Messaging.paramHelp(fieldInfo))
                                     paramNumber+=1
                             else:
-                                help += fieldInfo.name + "["+str(fieldInfo.count)+"], "
+                                help += fieldInfo.name + u"["+unicode(fieldInfo.count)+u"], "
                 except IndexError:
                     # if index error occurs on accessing params, then stop processing params
                     # because we've processed them all
-                    print("done at index " + str(paramNumber))
+                    print u"done at index " + unicode(paramNumber)
                     pass
-                if help.endswith(", "):
+                if help.endswith(u", "):
                     help = help[:-2]
         else:
-            return (None, "["+msgName+"] is not a message name!")
+            return (None, u"["+msgName+u"] is not a message name!")
         return (autoComplete, help)
 
     @staticmethod
@@ -601,14 +604,14 @@ class Messaging:
         for fieldInfo in msg.hdr.fields:
             if fieldInfo.bitfieldInfo:
                 for bitfieldInfo in fieldInfo.bitfieldInfo:
-                    if bitfieldInfo.idbits == 0 and bitfieldInfo.name != "DataLength" and bitfieldInfo.name != "Time":
-                        msg_route.append(str(bitfieldInfo.get(msg.hdr)))
+                    if bitfieldInfo.idbits == 0 and bitfieldInfo.name != u"DataLength" and bitfieldInfo.name != u"Time":
+                        msg_route.append(unicode(bitfieldInfo.get(msg.hdr)))
             else:
-                if fieldInfo.idbits == 0 and fieldInfo.name != "DataLength" and fieldInfo.name != "Time":
-                    msg_route.append(str(fieldInfo.get(msg.hdr)))
+                if fieldInfo.idbits == 0 and fieldInfo.name != u"DataLength" and fieldInfo.name != u"Time":
+                    msg_route.append(unicode(fieldInfo.get(msg.hdr)))
         return msg_route
 
-    class HeaderTranslator:
+    class HeaderTranslator(object):
         def __init__(self, hdr1, hdr2):
             # Make a list of fields in the headers that have matching names.
             self._correspondingFields = []
@@ -623,9 +626,9 @@ class Messaging:
                         if fieldInfo2 != None:
                             self._correspondingFields.append([bitfieldInfo1, fieldInfo2])
             
-            HdrInfo = namedtuple('HdrInfo', 'type infoIndex timeField')
-            self._hdr1Info = HdrInfo(hdr1, 0, Messaging.findFieldInfo(hdr1.fields, "Time"))
-            self._hdr2Info = HdrInfo(hdr2, 1, Messaging.findFieldInfo(hdr2.fields, "Time"))
+            HdrInfo = namedtuple(u'HdrInfo', u'type infoIndex timeField')
+            self._hdr1Info = HdrInfo(hdr1, 0, Messaging.findFieldInfo(hdr1.fields, u"Time"))
+            self._hdr2Info = HdrInfo(hdr2, 1, Messaging.findFieldInfo(hdr2.fields, u"Time"))
 
         def translateHdrAndBody(self, fromHdr, body):
             # figure out which direction to translate
@@ -636,7 +639,6 @@ class Messaging:
                 fromHdrInfo = self._hdr2Info
                 toHdrInfo = self._hdr1Info
             else:
-                print("ERROR!  type %s is not %s or %s!" % (type(fromHdr), self._hdr1Info.type, self._hdr2Info.type))
                 raise TypeError
             
             # allocate the message to translate to
@@ -655,10 +657,10 @@ class Messaging:
             # because this message isn't translatable
             if fromHdr.GetMessageID() != toHdr.GetMessageID():
                 if Messaging.debug:
-                    print("message ID 0x" + hex(fromHdr.GetMessageID()) + " translated to 0x" + hex(toHdr.GetMessageID()) + ", throwing away")
+                    print u"message ID 0x" + hex(fromHdr.GetMessageID()) + u" translated to 0x" + hex(toHdr.GetMessageID()) + u", throwing away"
                 return None
             # copy the body
-            for i in range(0,fromHdr.GetDataLength()):
+            for i in xrange(0,fromHdr.GetDataLength()):
                 toHdr.rawBuffer()[toHdr.SIZE+i] = body[i]
             
             # do special timestamp stuff to convert from relative to absolute time
@@ -685,9 +687,9 @@ class Messaging:
                     t = datetime.now().timestamp()
                     if float(toHdrInfo.timeField.maxVal) <= 2**32:
                         t = (datetime.fromtimestamp(t) - datetime.fromtimestamp(t).replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
-                    if toHdrInfo.timeField.units == "ms":
+                    if toHdrInfo.timeField.units == u"ms":
                         t = t * 1000.0
-                    if toHdrInfo.timeField.type == "int":
+                    if toHdrInfo.timeField.type == u"int":
                         t = int(t)
                     toHdr.SetTime(t)
 

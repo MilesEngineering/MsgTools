@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    version='0.29.50',
+    python_requires='~=3.5',
+    version='0.29.52',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -9,6 +10,19 @@ setup(name='msgtools',
     license='GPLv2',
     packages=find_packages(),
     zip_safe=False,
+    keywords='development tools messaging messages message generator protocol networking',
+    project_urls = {
+        'Documentation': 'https://github.com/MilesEngineering/MsgTools/wiki',
+        'Source': 'https://github.com/MilesEngineering/MsgTools/',
+        'Tracker': 'https://github.com/MilesEngineering/MsgTools/issues',
+    },
+    classifiers = [
+        'Intended Audience :: Developers',
+        'Programming Language :: Python :: 3',
+        'Topic :: Software Development :: Code Generators',
+        'Topic :: Software Development :: Embedded Systems',
+        'Topic :: Utilities'
+    ],
     entry_points = {
         'console_scripts': ['msgparser=msgtools.parser.parser:main',
                             'msgcheck=msgtools.parser.check:main',
@@ -26,7 +40,8 @@ setup(name='msgtools',
                         'msgbandwidthtester=msgtools.noisemaker.bandwidthtester:main [gui]',
                         'msgnoisemaker=msgtools.noisemaker.noisemaker:main [gui]',
                         'msglumberjack=msgtools.lumberjack.lumberjack:main [gui]',
-                        'msgdebug=msgtools.debug.debug:main [gui]'],
+                        'msgdebug=msgtools.debug.debug:main [gui]',
+                        'msglauncher=msgtools.launcher.launcher:main [gui]'],
         'msgtools.parser.plugin': ['c=msgtools.parser.c.language',
                                    'cpp=msgtools.parser.cpp.language',
                                    'java=msgtools.parser.java.language',
@@ -35,7 +50,11 @@ setup(name='msgtools',
                                    'html=msgtools.parser.html.language',
                                    'matlab=msgtools.parser.matlab.language',
                                    'swift=msgtools.parser.swift.language'],
-        'msgtools.server.plugin': ['serial=msgserver.serial:serial']
+        'msgtools.server.plugin': ['serial=msgtools.server.SerialPlugin:PluginConnection',
+                                   'bluetoothSPP=msgtools.server.SerialPlugin:BtPluginConnection',
+                                   'bluetoothRFCOMM=msgtools.server.BluetoothRFCOMM:PluginConnection',
+                                   'bluetoothRFCOMMQt=msgtools.server.BluetoothRFCOMMQt:PluginConnection',
+                                   'influxdb=msgtools.database.influx_msgserver_plugin:PluginConnection']
     },
     install_requires=[
         'pyyaml',
@@ -49,6 +68,6 @@ setup(name='msgtools',
     },
     package_data={
         # Include all Template files for the code generator and web app tool
-        '': ['*Template*', 'bootstrap.min.css', 'webapp/template.*', 'webapp/lib/**']
+        '': ['*Template*', 'bootstrap.min.css', 'webapp/template.*', 'webapp/lib/**', '*.png']
     }
 )
