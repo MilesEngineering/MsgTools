@@ -18,6 +18,8 @@ import datetime
 class InfluxDBConnection:
     MAX_POINTS = 100
     def __init__(self, msgClient, dbname='messages', hostname='localhost', port=8086, username='root', password='root'):
+        self.hostname = hostname
+        self.port = port
         self.db = InfluxDBClient(hostname, port, username, password, dbname)
         self.msgClient = msgClient
         self.cookie = 0
@@ -39,8 +41,7 @@ class InfluxDBConnection:
         return val
 
     def handle_message(self, msg):
-        if msg.MsgName().startsWith("Network"):
-            if msg.MsgName() == "Network.History.GetData":
+        if msg.MsgName() == "Network.History.GetData":
                 self.handle_query(msg)
         else:
             self.store_message(msg)

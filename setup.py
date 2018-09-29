@@ -53,7 +53,8 @@ setup(name='msgtools',
         'msgtools.server.plugin': ['serial=msgtools.server.SerialPlugin:PluginConnection',
                                    'bluetoothSPP=msgtools.server.SerialPlugin:BtPluginConnection',
                                    'bluetoothRFCOMM=msgtools.server.BluetoothRFCOMM:PluginConnection',
-                                   'bluetoothRFCOMMQt=msgtools.server.BluetoothRFCOMMQt:PluginConnection']
+                                   'bluetoothRFCOMMQt=msgtools.server.BluetoothRFCOMMQt:PluginConnection',
+                                   'influxdb=msgtools.database.influx_msgserver_plugin:PluginConnection']
     },
     install_requires=[
         'pyyaml',
