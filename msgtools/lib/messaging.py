@@ -67,6 +67,39 @@ def maxVal(arg):
         return fcn
     return _maxVal
 
+USE_LAZY_LOADING = 1
+import collections
+if USE_LAZY_LOADING:
+    class MessageNameLoader(collections.UserDict):
+        def __init__(self,*arg,**kw):
+            super(MessageNameLoader, self).__init__(*arg, **kw)
+
+        def __getitem__(self, key):
+            if key in self.data and self.data[key] != None:
+                return self.data[key]
+            print("MessageNameLoader lazy load of "+key)
+            if key in Messaging.MsgModuleFromName:
+                importlib.import_module(Messaging.MsgModuleFromName[key])
+            return self.data[key]
+
+    class MessageDotLoader(object):
+        def __init__(self, basename):
+            self.basename = basename
+        
+        def __getattr__(self, key):
+            #loaded_module = 
+            #setattr(self, key, loaded_module)
+            if self.basename:
+                msgname = self.basename+"."+key
+            else:
+                msgname = key
+            print("MessageDotLoader lazy load of " + msgname)
+            if msgname in Messaging.MsgModuleFromName:
+                importlib.import_module(Messaging.MsgModuleFromName[msgname])
+            if key in vars(self):
+                return getattr(self, key)
+            raise AttributeError
+
 class Messaging:
     hdr=None
     hdrSize=0
@@ -74,13 +107,18 @@ class Messaging:
     # hash tables for msg lookups
     MsgNameFromID = {}
     MsgIDFromName = {}
-    MsgClassFromName = {}
+    if USE_LAZY_LOADING:
+        MsgClassFromName = MessageNameLoader()
+        MsgModuleFromName = {}
+    else:
+        MsgClassFromName = {}
 
     # container for accessing message classes via dot notation.
-    # odd, in python, that using an empty lambda expression is a suitable container
-    # for this, and that some other Object doesn't work better.
-    Messages = lambda: None
-    
+    if USE_LAZY_LOADING:
+        Messages = MessageDotLoader("")
+    else:
+        Messages = lambda: None
+        
     debug=0
 
     @staticmethod
@@ -148,8 +186,59 @@ class Messaging:
 
         # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE
+        
+        if USE_LAZY_LOADING:
+            cache_filename = 'msglib_cache.json'
+            try:
+                with open(cache_filename, 'r') as fp:
+                    msglibinfo = json.load(fp)
+                    Messaging.MsgNameFromID     = msglibinfo["MsgNameFromID"]
+                    Messaging.MsgIDFromName     = msglibinfo["MsgIDFromName"]
+                    Messaging.MsgModuleFromName = msglibinfo["MsgModuleFromName"]
+                    for name in Messaging.MsgIDFromName:
+                        # initialize all class lookups to None.
+                        # this is a signal for MessageNameLoader to do a lookup, while
+                        # still providing keys() for users to access.
+                        Messaging.MsgClassFromName[name] = None
+                        
+                        # the below is used to populate the hierarchy of dot-notation,
+                        # *except* for the final class at the end (which will be done
+                        # with lazy lookup)
+                        
+                        # split up the name between periods, and add it to the Messaging object so it
+                        # can be accessed via dot notation
+                        nameParts = name.split(".")
+                        messagingVars = vars(Messaging.Messages)
+                        basename = ""
+                        for namePart in nameParts[:-1]:
+                            if basename:
+                                basename = basename + "." + namePart
+                            else:
+                                basename = namePart
+                            if namePart and not namePart in messagingVars:
+                                if USE_LAZY_LOADING:
+                                    messagingVars[namePart] = MessageDotLoader(basename)
+                                else:
+                                    messagingVars[namePart] = lambda: Nones
+                            messagingVars = vars(messagingVars[namePart])
+                        #messagingVars[nameParts[-1]] = classDef
+                cache_valid = True
+            except FileNotFoundError:
+                cache_valid = False
 
-        Messaging.LoadDir(loadDir, loadDir)
+            if not cache_valid:
+                Messaging.LoadDir(loadDir, loadDir)
+                
+                # store a cache message ID, name, and file data
+                msglibinfo = {
+                    "MsgNameFromID":     Messaging.MsgNameFromID,
+                    "MsgIDFromName":     Messaging.MsgIDFromName,
+                    "MsgModuleFromName": Messaging.MsgModuleFromName
+                }
+                with open(cache_filename, 'w') as fp:
+                    json.dump(msglibinfo, fp)
+        else:
+            Messaging.LoadDir(loadDir, loadDir)
 
     @staticmethod
     def LoadDir(loadDir, rootDir):
@@ -170,42 +259,54 @@ class Messaging:
                 modulename = modulename.replace(os.sep, '.')
                 if Messaging.debug:
                     print("loading module "+modulename)
-
+    
                 importlib.import_module(modulename)
 
     @staticmethod
     def Register(name, id, classDef):
         'add message to the global hash table of names by ID, and IDs by name'
 
-        id = hex(id)
+        hexid = hex(id)
         
         if Messaging.debug:
-            print("Registering", name, "as",id)
+            print("Registering", name, "as",hexid)
         
-        if(id in Messaging.MsgNameFromID):
-            print("WARNING! Trying to define message ", name, " for ID ", id, ", but ", Messaging.MsgNameFromID[id], " already uses that ID")
+        if(not USE_LAZY_LOADING and id in Messaging.MsgNameFromID):
+            print("WARNING! Trying to define message ", name, " for ID ", hexid, ", but ", Messaging.MsgNameFromID[hexid], " already uses that ID")
         
-        Messaging.MsgNameFromID[id] = name
+        Messaging.MsgNameFromID[hexid] = name
 
         Messaging.AddAlias(name, id, classDef)
 
     @staticmethod
     def AddAlias(name, id, classDef):
         'add message to the global hash table of IDs by name'
+        
+        hexid = hex(id)
 
-        if(name in Messaging.MsgIDFromName):
-            print("WARNING! Trying to define message %s for ID %s(%d), but %s(%d) already uses that name" % (name, id, int(id, 0), Messaging.MsgIDFromName[name], int(Messaging.MsgIDFromName[name], 0)))
+        if(not USE_LAZY_LOADING and name in Messaging.MsgIDFromName):
+            print("WARNING! Trying to define message %s for ID %s(%d), but %s(%d) already uses that name" % (name, hexid, id, Messaging.MsgIDFromName[name], int(Messaging.MsgIDFromName[name], 0)))
 
-        Messaging.MsgIDFromName[name] = id
+        Messaging.MsgIDFromName[name] = hexid
         Messaging.MsgClassFromName[name] = classDef
+        if USE_LAZY_LOADING:
+            Messaging.MsgModuleFromName[name] = classDef.__module__
 
         # split up the name between periods, and add it to the Messaging object so it
         # can be accessed via dot notation
         nameParts = name.split(".")
         messagingVars = vars(Messaging.Messages)
+        basename = ""
         for namePart in nameParts[:-1]:
+            if basename:
+                basename = basename + "." + namePart
+            else:
+                basename = namePart
             if namePart and not namePart in messagingVars:
-                messagingVars[namePart] = lambda: None
+                if USE_LAZY_LOADING:
+                    messagingVars[namePart] = MessageDotLoader()
+                else:
+                    messagingVars[namePart] = lambda: Nones
             messagingVars = vars(messagingVars[namePart])
         messagingVars[nameParts[-1]] = classDef
 
