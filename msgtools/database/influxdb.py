@@ -41,7 +41,8 @@ class InfluxDBConnection:
         return val
 
     def handle_message(self, msg):
-        if msg.MsgName() == "Network.History.GetData":
+        if msg.MsgName().startsWith("Network"):
+            if msg.MsgName() == "Network.History.GetData":
                 self.handle_query(msg)
         else:
             self.store_message(msg)
