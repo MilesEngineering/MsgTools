@@ -187,8 +187,8 @@ class Messaging:
         # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE
         
+        cache_filename = os.path.join(loadDir, 'msglib_cache.json')
         if USE_LAZY_LOADING:
-            cache_filename = 'msglib_cache.json'
             try:
                 with open(cache_filename, 'r') as fp:
                     msglibinfo = json.load(fp)
@@ -304,7 +304,7 @@ class Messaging:
                 basename = namePart
             if namePart and not namePart in messagingVars:
                 if USE_LAZY_LOADING:
-                    messagingVars[namePart] = MessageDotLoader()
+                    messagingVars[namePart] = MessageDotLoader(basename)
                 else:
                     messagingVars[namePart] = lambda: Nones
             messagingVars = vars(messagingVars[namePart])
