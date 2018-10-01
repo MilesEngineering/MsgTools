@@ -1,5 +1,5 @@
 # for directory listing, exit function
-import os, glob, sys, struct, time
+import os, glob, sys, struct, time, json
 
 # for reflection/introspection (find a class's methods)
 import inspect
@@ -176,10 +176,11 @@ class Messaging:
         # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE
         
+        write_cache_file = False
         cache_filename = os.path.join(loadDir, 'msglib_cache.json')
+        t1 = time.time()
         if USE_LAZY_LOADING:
             try:
-                t1 = time.time()
                 with open(cache_filename, 'r') as fp:
                     msglibinfo = json.load(fp)
                     Messaging.MsgNameFromID     = msglibinfo["MsgNameFromID"]
@@ -212,50 +213,57 @@ class Messaging:
                                     messagingVars[namePart] = lambda: Nones
                             messagingVars = vars(messagingVars[namePart])
                         #messagingVars[nameParts[-1]] = classDef
-                t2 = time.time()
-                print("Using lazy loading, %s seconds" % str(t2 - t1))
-                cache_valid = True
+                    
+                    # now that cache is built, check if we need to load/reload
+                    # any files because their python is newer than the cache
+                    cache_file_timestamp = os.path.getmtime(cache_filename)
             except FileNotFoundError:
-                cache_valid = False
+                write_cache_file = True
+                cache_file_timestamp = 0
 
-            if not cache_valid:
-                t1 = time.time()
-                Messaging.LoadDir(loadDir, loadDir)
-                t2 = time.time()
-                print("Loading all msgs, %s seconds" % str(t2 - t1))
-                
-                # store a cache message ID, name, and file data
-                msglibinfo = {
-                    "MsgNameFromID":     Messaging.MsgNameFromID,
-                    "MsgIDFromName":     Messaging.MsgIDFromName,
-                    "MsgModuleFromName": Messaging.MsgModuleFromName
-                }
-                with open(cache_filename, 'w') as fp:
-                    json.dump(msglibinfo, fp)
-        else:
-            Messaging.LoadDir(loadDir, loadDir)
+        write_cache_file = Messaging.LoadDir(loadDir, loadDir, cache_file_timestamp=cache_file_timestamp)
+        t2 = time.time()
+        print("Messaging.LoadDir %.6f seconds" % (t2 - t1))
+
+        if write_cache_file:
+            # store a cache message ID, name, and file data
+            msglibinfo = {
+                "MsgNameFromID":     Messaging.MsgNameFromID,
+                "MsgIDFromName":     Messaging.MsgIDFromName,
+                "MsgModuleFromName": Messaging.MsgModuleFromName
+            }
+            with open(cache_filename, 'w') as fp:
+                json.dump(msglibinfo, fp)
 
     @staticmethod
-    def LoadDir(loadDir, rootDir):
+    def LoadDir(loadDir, rootDir, cache_file_timestamp=0):
+        loaded = False
         for filename in os.listdir(loadDir):
             filepath = loadDir + '/' + filename
             if os.path.isdir(filepath):
                 if filename != 'headers':
                     if Messaging.debug:
                         print("descending into directory ", filepath)
-                    Messaging.LoadDir(filepath, rootDir)
+                    loaded_subdir = Messaging.LoadDir(filepath, rootDir, cache_file_timestamp)
+                    loaded = loaded or loaded_subdir
             elif filename.endswith('.py'):
-                # Build an import friendly module name
-                # Could've just passed the root length to be more efficient
-                # but felt the easier readability was better than the miniscule
-                # performance gain we could've had
-                modulename = filepath[len(rootDir)+1:]
-                modulename = modulename[0:modulename.rfind('.py')]
-                modulename = modulename.replace(os.sep, '.')
-                if Messaging.debug:
-                    print("loading module "+modulename)
-    
-                importlib.import_module(modulename)
+                file_timestamp = os.path.getmtime(filepath)
+                if file_timestamp > cache_file_timestamp:
+                    if Messaging.debug and cache_file_timestamp != 0:
+                        print("%s out of date (%f > %f), reloading" % (filename, file_timestamp, cache_file_timestamp))
+                    # Build an import friendly module name
+                    # Could've just passed the root length to be more efficient
+                    # but felt the easier readability was better than the miniscule
+                    # performance gain we could've had
+                    modulename = filepath[len(rootDir)+1:]
+                    modulename = modulename[0:modulename.rfind('.py')]
+                    modulename = modulename.replace(os.sep, '.')
+                    if Messaging.debug:
+                        print("loading module "+modulename)
+        
+                    loaded = True
+                    importlib.import_module(modulename)
+        return loaded
 
     @staticmethod
     def Register(name, id, classDef):
@@ -266,7 +274,7 @@ class Messaging:
         if Messaging.debug:
             print("Registering", name, "as",hexid)
         
-        if(not USE_LAZY_LOADING and id in Messaging.MsgNameFromID):
+        if(hexid in Messaging.MsgNameFromID and Messaging.MsgNameFromID[hexid] != name):
             print("WARNING! Trying to define message ", name, " for ID ", hexid, ", but ", Messaging.MsgNameFromID[hexid], " already uses that ID")
         
         Messaging.MsgNameFromID[hexid] = name
@@ -279,7 +287,7 @@ class Messaging:
         
         hexid = hex(id)
 
-        if(not USE_LAZY_LOADING and name in Messaging.MsgIDFromName):
+        if(name in Messaging.MsgIDFromName and Messaging.MsgIDFromName[name] != hexid):
             print("WARNING! Trying to define message %s for ID %s(%d), but %s(%d) already uses that name" % (name, hexid, id, Messaging.MsgIDFromName[name], int(Messaging.MsgIDFromName[name], 0)))
 
         Messaging.MsgIDFromName[name] = hexid
