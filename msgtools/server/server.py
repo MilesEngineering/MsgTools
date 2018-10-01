@@ -16,7 +16,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
 from msgtools.server.TcpServer import *
 from msgtools.server.WebSocketServer import *
-import msgtools.lib.json
+import msgtools.lib.msgjson as msgjson
 
 DESCRIPTION='''
     MsgServer acts as a central routing hub for one or more message clients.
@@ -383,7 +383,7 @@ class MessageServer(QtWidgets.QMainWindow):
         if self.logFile != None:
             if self.logFileType and self.logFileType == "JSON":
                 msgObj = Messaging.MsgFactory(hdr)
-                self.logFile.write(msgtools.lib.json.toJson(msgObj).encode('utf-8'))
+                self.logFile.write(msgjson.toJson(msgObj).encode('utf-8'))
             else:
                 self.logFile.write(hdr.rawBuffer().raw)
 

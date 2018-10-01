@@ -17,7 +17,7 @@ except ImportError:
     sys.path.append(srcroot)
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
-import msgtools.lib.json
+import msgtools.lib.msgjson as msgjson
 
 DESCRIPTION='''Good listener listens for messages and tests to ensure they are
     valid.'''
@@ -149,10 +149,10 @@ class MyTest(ScriptThread):
             for i in range (0,3):
                 self.output("waiting for msg1")
                 msg = self.listener.WaitForMsg('Msg1Name')
-                self.output(msgtools.lib.json.toJson(msg))
+                self.output(msgjson.toJson(msg))
                 self.output("waiting for msg2")
                 msg = self.listener.WaitForMsg('Msg2Name')
-                self.output(msgtools.lib.json.toJson(msg))
+                self.output(msgjson.toJson(msg))
         except MsgTimeoutError as e:
             self.output(">>>> " + str(e))
 
