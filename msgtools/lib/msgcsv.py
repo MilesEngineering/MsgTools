@@ -5,7 +5,7 @@ import csv
 
 def toCsv(msg):
     ret = ""
-    for fieldInfo in type(msg).fields:
+    for fieldInfo in Messaging.MsgClass(msg.hdr).fields:
         if(fieldInfo.count == 1):
             columnText = str(Messaging.get(msg, fieldInfo)) + ", "
             for bitInfo in fieldInfo.bitfieldInfo:

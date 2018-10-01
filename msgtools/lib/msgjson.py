@@ -5,7 +5,7 @@ from collections import OrderedDict
 import json
 
 def toJson(msg):
-    msgClass = type(msg)
+    msgClass = Messaging.MsgClass(msg.hdr)
     pythonObj = OrderedDict()
     for fieldInfo in msgClass.fields:
         if(fieldInfo.count == 1):
