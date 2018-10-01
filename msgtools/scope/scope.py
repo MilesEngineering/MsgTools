@@ -19,7 +19,7 @@ except ImportError:
     sys.path.append(srcroot)
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
-import msgtools.lib.csv
+import msgtools.lib.msgcsv as msgcsv
 import msgtools.debug.debug
 
 import msgtools.lib.txtreewidget as txtreewidget
@@ -300,7 +300,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
     def on_tx_message_send(self, msg):
         if not self.connected:
             self.OpenConnection()
-        text = msg.MsgName() + " " + msgtools.lib.csv.toCsv(msg)
+        text = msg.MsgName() + " " + msgcsv.toCsv(msg)
         self.debugWidget.textEntryWidget.addText(text + " -> Msg\n> ")
         self.debugWidget.textEntryWidget.addToHistory(text)
         self.SendMsg(msg)

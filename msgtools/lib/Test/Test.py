@@ -11,8 +11,8 @@ except ImportError:
     sys.path.append(srcroot)
     from msgtools.lib.messaging import Messaging
 
-import msgtools.lib.csv
-import msgtools.lib.json
+import msgtools.lib.msgcsv as msgcsv
+import msgtools.lib.msgjson as msgjson
 
 class TestClass(unittest.TestCase):
 
@@ -106,9 +106,9 @@ class TestClass(unittest.TestCase):
 
         tcNum = 0
         for tc in testData:
-            msg = msgtools.lib.csv.csvToMsg(tc[0])
-            json = msgtools.lib.json.toJson(msg)
-            msg2 = msgtools.lib.json.jsonToMsg(tc[1])
+            msg = msgcsv.csvToMsg(tc[0])
+            json = msgjson.toJson(msg)
+            msg2 = msgjson.jsonToMsg(tc[1])
             #print("csv is " + tc[0])
             self.assertEqual(msg.hdr.GetDataLength(), msg2.hdr.GetDataLength(), self.info(tc, tcNum, "hdr.DataLength"))
             #print("json of csv is " + json)
