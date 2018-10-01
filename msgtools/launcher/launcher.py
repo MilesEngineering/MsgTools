@@ -34,43 +34,51 @@ class MsgLauncher(QtWidgets.QMainWindow):
         
         self.setWindowTitle("MsgLauncher")
         
-        apps = ['server', 'scope', 'inspector', 'debug', 'noisemaker']
+        apps = self.programs_to_launch()
         w = QtWidgets.QWidget(self)
         grid = QtWidgets.QGridLayout()
         grid.setSpacing(0)
         grid.setContentsMargins(0,0,0,0)
-        app_index = 0
+        col = 0
         row = 0
-        while app_index < len(apps):
-            for col in range(3):
-                if app_index >= len(apps):
-                    break
-                app_launcher = QtWidgets.QToolButton()
-                app_launcher.setText(apps[app_index])
+        for app_info in apps:
+            app_launcher = QtWidgets.QToolButton()
+            app_launcher.setText(app_info.icon_text)
 
-                # set up icon
-                icon_access = "%s/%s.png" % (apps[app_index], apps[app_index])
-                icon_filename = pkg_resources.resource_filename('msgtools', icon_access)
-                pixmap = QtGui.QPixmap(icon_filename)
-                icon = QtGui.QIcon(pixmap)
-                app_launcher.setIcon(icon)
-                app_launcher.setIconSize(pixmap.rect().size()/2)
-                app_launcher.setFixedSize(pixmap.rect().size())
-                app_launcher.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+            # set up icon
+            icon_filename = app_info.icon_filename
+            pixmap = QtGui.QPixmap(icon_filename)
+            icon = QtGui.QIcon(pixmap)
+            app_launcher.setIcon(icon)
+            app_launcher.setIconSize(pixmap.rect().size()/2)
+            app_launcher.setFixedSize(pixmap.rect().size())
+            app_launcher.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
 
-                # set up launching when clicked
-                app_launcher.program_name = 'msg' + apps[app_index]
-                app_launcher.clicked.connect(self.launch)
-                
-                # add to layout
-                grid.addWidget(app_launcher, row, col)
-                app_index += 1
-            row += 1
+            # set up launching when clicked
+            app_launcher.program_name = app_info.program_name
+            app_launcher.clicked.connect(self.launch)
+            
+            # add to layout
+            grid.addWidget(app_launcher, row, col)
+            
+            # adjust column and row for next icon
+            col += 1
+            if col >= 3:
+                col = 0
+                row += 1
                 
         w.setLayout(grid)
         self.setCentralWidget(w)
         self.adjustSize()
         self.setFixedSize(self.size())
+    
+    def programs_to_launch(self):
+        progs = []
+        for entry_point in pkg_resources.iter_entry_points("msgtools.launcher.plugin"):
+            launcher_info_fn = entry_point.load()
+            launcher_info = launcher_info_fn()
+            progs.append(launcher_info)
+        return progs
 
     def launch(self):
         sender = self.sender()
