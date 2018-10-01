@@ -160,16 +160,16 @@ class InfluxDBConnection:
 # this is client that reads from network, and writes to InfluxDB
 class InfluxDBMsgClient:
     def __init__(self):
-        self.msgLib = Messaging()
+        Messaging.LoadAllMessages()
 
         self.connection = SynchronousMsgClient(Messaging.hdr)
         # say my name
-        connectMsg = self.msgLib.Messages.Network.Connect()
+        connectMsg = Messaging.Messages.Network.Connect()
         connectMsg.SetName("InfluxDB")
         self.connection.send_message(connectMsg)
         
         # do default subscription to get *everything*
-        subscribeMsg = self.msgLib.Messages.Network.MaskedSubscription()
+        subscribeMsg = Messaging.Messages.Network.MaskedSubscription()
         self.connection.send_message(subscribeMsg)
 
         self.db = InfluxDBConnection(self)
@@ -180,7 +180,7 @@ class InfluxDBMsgClient:
             timeout = 10.0 # value in seconds
             hdr = self.connection.get_message(timeout)
             if hdr:
-                msg = self.msgLib.MsgFactory(hdr)
+                msg = Messaging.MsgFactory(hdr)
                 self.db.handle_message(msg)
 
 # this is a CLI app that reads from network and writes to InfluxDB

@@ -19,6 +19,7 @@ except ImportError:
     sys.path.append(srcroot)
     from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
+import msgtools.lib.csv
 import msgtools.debug.debug
 
 import msgtools.lib.txtreewidget as txtreewidget
@@ -256,11 +257,11 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 msg_key = plot.split(":")[0]
                 msg_id = msg_key.split(',')[-1]
                 try:
-                    msgName = self.msgLib.MsgNameFromID[msg_id]
+                    msgName = Messaging.MsgNameFromID[msg_id]
                 except KeyError:
                     print('Error!  msg_id ' + msg_id + ' is undefined!')
                     continue
-                msgClass = self.msgLib.MsgClassFromName[msgName]
+                msgClass = Messaging.MsgClassFromName[msgName]
                 
                 fieldNames = plot.split(":")[1].split(",")
                 firstTime = True
@@ -299,7 +300,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
     def on_tx_message_send(self, msg):
         if not self.connected:
             self.OpenConnection()
-        text = msg.MsgName() + " " + Messaging.toCsv(msg)
+        text = msg.MsgName() + " " + msgtools.lib.csv.toCsv(msg)
         self.debugWidget.textEntryWidget.addText(text + " -> Msg\n> ")
         self.debugWidget.textEntryWidget.addToHistory(text)
         self.SendMsg(msg)

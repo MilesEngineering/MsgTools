@@ -2,6 +2,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QObject
 
 from msgtools.lib.messaging import Messaging
+from msgtools.lib.header_translator import HeaderTranslator
 from BluetoothHeader import BluetoothHeader
 
 BTHS = BluetoothHeader.SIZE
@@ -44,7 +45,7 @@ class BluetoothRFCOMMConnection(QObject):
         self.btsock_buffer = b''
         self.btsock_outgoing = b''
 
-        self.hdrTranslator = Messaging.HeaderTranslator(BluetoothHeader, Messaging.hdr)
+        self.hdrTranslator = HeaderTranslator(BluetoothHeader, Messaging.hdr)
         
         self.name = "Bluetooth RFCOMM " + deviceBTAddr
         self.statusLabel.setText(self.name)
@@ -52,6 +53,9 @@ class BluetoothRFCOMMConnection(QObject):
         self.thread = threading.Thread(target=self.rfcommThread)
         self.thread.daemon = True
         self.thread.start()
+
+    def start(self):
+        pass
 
     def widget(self, index):
         if index == 0:
@@ -107,8 +111,8 @@ class BluetoothRFCOMMConnection(QObject):
     def stop(self):
         pass
 
-def PluginConnection(param):
-    btArgs = args.bluetoothRFCOMM.split(",")
+def PluginConnection(param=""):
+    btArgs = param.split(",")
     if len(btArgs)>1:
         btArgs[1] = int(btArgs[1])
     return BluetoothRFCOMMConnection(*btArgs)

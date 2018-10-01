@@ -143,7 +143,7 @@ class Multilog(msgtools.lib.gui.Gui):
             subWidget.setLayout(subLayout)
             splitter.addWidget(subWidget)
             subLayout.addWidget(QtWidgets.QLabel(msgname))
-            msgClass = self.msgLib.MsgClassFromName[msgname]
+            msgClass = Messaging.MsgClassFromName[msgname]
             msgWidget = msgtools.lib.gui.MsgTreeWidget(msgClass, None, 1, 1)
             subLayout.addWidget(msgWidget)
             if not msgClass.ID in self.msgHandlers:
@@ -161,7 +161,7 @@ class Multilog(msgtools.lib.gui.Gui):
                 subWidget.setLayout(subLayout)
                 splitter.addWidget(subWidget)
                 subLayout.addWidget(QtWidgets.QLabel(msgname))
-                msgClass = self.msgLib.MsgClassFromName[msgname]
+                msgClass = Messaging.MsgClassFromName[msgname]
                 # should plot only fields specified, if user specified fields
                 firstTime = True
                 for fieldInfo in msgClass.fields:
@@ -176,7 +176,7 @@ class Multilog(msgtools.lib.gui.Gui):
                     self.msgHandlers[msgClass.ID] = []
                 self.msgHandlers[msgClass.ID].append(msgWidget)
         for msgname in args.send:
-            msgClass = self.msgLib.MsgClassFromName[msgname]
+            msgClass = Messaging.MsgClassFromName[msgname]
             if not txMsgs:
                 txMsgs = QtWidgets.QTreeWidget(parent)
                 txMsgs.setColumnCount(4)

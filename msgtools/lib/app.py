@@ -55,7 +55,6 @@ class App(QtWidgets.QMainWindow):
         '''
 
         # If the caller skips adding base arguments we need to patch up args
-        args.lastserial = False if hasattr(args, 'lastserial') == False else args.lastserial
         args.serial = None if hasattr(args, 'serial') == False else args.serial
         args.msg = None if hasattr(args, 'msg') == False else args.msg
         args.msgdir = None if hasattr(args, 'msgdir') == False else args.msgdir
@@ -102,7 +101,7 @@ class App(QtWidgets.QMainWindow):
         self.readBytesFn = None
 
         try:
-            self.msgLib = Messaging(searchdir=msgLoadDir, headerName=headerName)
+            Messaging.LoadAllMessages(searchdir=msgLoadDir, headerName=headerName)
 
             if args.msg is not None:
                 # Validate all message names are valid
@@ -191,7 +190,7 @@ class App(QtWidgets.QMainWindow):
         self.connected = True
         self.connectionChanged.emit(True)
         # send a connect message
-        connectMsg = self.msgLib.Messages.Network.Connect()
+        connectMsg = Messaging.Messages.Network.Connect()
         connectMsg.SetName(self.name)
         self.SendMsg(connectMsg)
         # if the app has it's own function to happen after connection, assume it will set subscriptions to what it wants.
@@ -199,7 +198,7 @@ class App(QtWidgets.QMainWindow):
             fn = self.onAppConnected
         except AttributeError:
             # send a subscription message
-            subscribeMsg = self.msgLib.Messages.Network.MaskedSubscription()
+            subscribeMsg = Messaging.Messages.Network.MaskedSubscription()
             self.SendMsg(subscribeMsg)
             #self.statusUpdate.emit('Connected')
         else:

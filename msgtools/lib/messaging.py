@@ -4,19 +4,8 @@ import os, glob, sys, struct
 # for reflection/introspection (find a class's methods)
 import inspect
 
-# for conversion to JSON
-from collections import OrderedDict
-import json
-
-# for reading CSV
-import csv
-
 # for runtime module importing
 import importlib
-
-from collections import namedtuple
-import ctypes
-from datetime import datetime
 
 # A decorator to specify units for fields
 def units(arg):
@@ -83,22 +72,8 @@ class Messaging:
     
     debug=0
 
-    def __init__(self, loaddir=None, searchdir=None, debug=0, headerName="NetworkHeader"):
-        '''
-        Initialize the Messaging class.  This dynamically loads all generated message code,
-        with each message registering itself with the Messaging class on import.  This allows
-        us to support a number of utility functions for message creation, introspection,
-        class lookup, etc
-
-        loaddir - If set we use this as the base directory for generated message code.  Overrides searchdir.
-        searchdir - If set we start a search for 'obj/CodeGenerator/Python' from searchdir, and moving up 
-            to each parent directory until we find this folder.  If loaddir and searchdir are not set
-            we default to the current directory.
-        debug - print debugging information to the console.
-        headerName - the default header to use when processing messages.  We assume this module resides
-            in a 'headers' folder below our base message root directory.
-        '''
-        Messaging.debug = debug
+    @staticmethod
+    def DetermineLoadDir(loaddir, searchdir):
         if loaddir:
             loadDir = loaddir
             pass
@@ -124,9 +99,34 @@ class Messaging:
         # Normalize our load directory path, and load message modules on the path and
         # fix the sys path for future imports
         loadDir = os.path.normpath(loadDir)
-
+        
+        # add these to the system path, to allow application code to import header and message files directly.
         sys.path.append(loadDir)
         sys.path.append(os.path.join(loadDir, "headers"))
+        
+        return loadDir
+
+
+    @staticmethod
+    def LoadHeader(loaddir=None, searchdir=None, headerName="NetworkHeader"):
+        loadDir = Messaging.DetermineLoadDir(loaddir, searchdir)
+
+    @staticmethod
+    def LoadAllMessages(loaddir=None, searchdir=None, headerName="NetworkHeader"):
+        '''
+        This dynamically loads all generated message code, with each message registering itself
+        with the Messaging class on import.  This allows us to support a number of utility
+        functions for message creation, introspection, class lookup, etc
+
+        loaddir - If set we use this as the base directory for generated message code.  Overrides searchdir.
+        searchdir - If set we start a search for 'obj/CodeGenerator/Python' from searchdir, and moving up 
+            to each parent directory until we find this folder.  If loaddir and searchdir are not set
+            we default to the current directory.
+        debug - print debugging information to the console.
+        headerName - the default header to use when processing messages.  We assume this module resides
+            in a 'headers' folder below our base message root directory.
+        '''
+        loadDir = Messaging.DetermineLoadDir(loaddir, searchdir)
         
         # if we didn't find valid auto-generated code, this will cause an import error!
         # the fix is to point to valid auto-generated code!
@@ -138,16 +138,17 @@ class Messaging:
         # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE
 
-        self.LoadDir(loadDir, loadDir)
+        Messaging.LoadDir(loadDir, loadDir)
 
-    def LoadDir(self, loadDir, rootDir):
+    @staticmethod
+    def LoadDir(loadDir, rootDir):
         for filename in os.listdir(loadDir):
             filepath = loadDir + '/' + filename
             if os.path.isdir(filepath):
                 if filename != 'headers':
                     if Messaging.debug:
                         print("descending into directory ", filepath)
-                    self.LoadDir(filepath, rootDir)
+                    Messaging.LoadDir(filepath, rootDir)
             elif filename.endswith('.py'):
                 # Build an import friendly module name
                 # Could've just passed the root length to be more efficient
@@ -301,299 +302,14 @@ class Messaging:
                         return bfi
         return None
 
-    @staticmethod
-    def toJson(msg):
-        msgClass = type(msg)
-        pythonObj = OrderedDict()
-        for fieldInfo in msgClass.fields:
-            if(fieldInfo.count == 1):
-                if msg.hdr.GetDataLength() < int(fieldInfo.get.offset) + int(fieldInfo.get.size):
-                    break
-                if len(fieldInfo.bitfieldInfo) == 0:
-                    pythonObj[fieldInfo.name] = str(Messaging.get(msg, fieldInfo))
-                else:
-                    for bitInfo in fieldInfo.bitfieldInfo:
-                        pythonObj[bitInfo.name] = str(Messaging.get(msg, bitInfo))
-            else:
-                arrayList = []
-                terminate = 0
-                for i in range(0,fieldInfo.count):
-                    if msg.hdr.GetDataLength() < int(fieldInfo.get.offset) + i*int(fieldInfo.get.size):
-                        terminate = 1
-                        break
-                    arrayList.append(str(Messaging.get(msg, fieldInfo, i)))
-                pythonObj[fieldInfo.name] = arrayList
-                if terminate:
-                    break
-
-        return json.dumps({msg.MsgName() : pythonObj})
-
-    @staticmethod
-    def jsonToMsg(jsonString):
-        terminationLen = None
-        if "hdr" in jsonString:
-            fieldJson = jsonString["hdr"]
-            for fieldName in fieldJson:
-                if fieldName == "DataLength":
-                    if fieldJson[fieldName] == ";":
-                        terminationLen = 0
-                    else:
-                        terminationLen = int(fieldJson[fieldName])
-        for msgName in jsonString:
-            if msgName == "hdr":
-                # hdr handled above, *before* message body
-                pass
-            else:
-                fieldJson = jsonString[msgName]
-                msgClass = Messaging.MsgClassFromName[msgName]
-                msg = msgClass()
-                for fieldName in fieldJson:
-                    fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
-                    fieldValue = fieldJson[fieldName]
-                    if isinstance(fieldValue, list):
-                        #print(fieldName + " list type is " + str(type(fieldValue)))
-                        for i in range(0,len(fieldValue)):
-                            Messaging.set(msg, fieldInfo, fieldValue[i], i)
-                            if terminationLen != None:
-                                terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1))
-                    elif isinstance(fieldValue, dict):
-                        #print(fieldName + " dict type is " + str(type(fieldValue)))
-                        if fieldInfo.bitfieldInfo:
-                            pass
-                        else:
-                            pass
-                    else:
-                        #print(str(type(fieldValue)) + " " + fieldName + ", calling set with " + str(fieldValue))
-                        Messaging.set(msg, fieldInfo, fieldValue)
-                        if terminationLen != None:
-                            if fieldInfo.type == "string":
-                                terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(fieldValue))
-                            else:
-                                terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size))
-        if terminationLen != None:
-            msg.hdr.SetDataLength(terminationLen)
-        return msg
-
-    @staticmethod
-    def toCsv(msg):
-        ret = ""
-        for fieldInfo in type(msg).fields:
-            if(fieldInfo.count == 1):
-                columnText = str(Messaging.get(msg, fieldInfo)) + ", "
-                for bitInfo in fieldInfo.bitfieldInfo:
-                    columnText += str(Messaging.get(msg, bitInfo)) + ", "
-            else:
-                columnText = ""
-                for i in range(0,fieldInfo.count):
-                    columnText += str(Messaging.get(msg, fieldInfo, i)) + ", "
-            ret += columnText
-        return ret
-
-    @staticmethod
-    def escapeCommasInQuotedString(line):
-        ret = ""
-        quoteStarted = 0
-        for c in line:
-            if c == '"':
-                quoteStarted = not quoteStarted
-            elif c == ',':
-                if quoteStarted:
-                    ret = ret + '\\'
-            ret = ret + c
-        return ret
-
-    @staticmethod
-    def csvToMsg(lineOfText):
-        if lineOfText == '':
-            return None
-        params = lineOfText.split(" ", 1)
-        msgName = params[0]
-        if len(params) == 1:
-            params = []
-        else:
-            # escape commas that are inside quoted strings
-            line = Messaging.escapeCommasInQuotedString(params[1])
-            # use CSV reader module
-            params = list(csv.reader([line], quotechar='"', delimiter=',', quoting=csv.QUOTE_NONE, skipinitialspace=True, escapechar='\\'))[0]
-            #print("params is " + str(params))
-        if msgName in Messaging.MsgClassFromName:
-            msgClass = Messaging.MsgClassFromName[msgName]
-            msg = msgClass()
-            terminateMsg = 0
-            terminationLen = 0
-            if msg.fields:
-                try:
-                    paramNumber = 0
-                    for fieldInfo in msgClass.fields:
-                        val = params[paramNumber].strip()
-                        #print("val is [" + val + "]") 
-                        if(fieldInfo.count == 1):
-                            if val.endswith(";"):
-                                terminateMsg = 1
-                                val = val[:-1]
-                                if val == "":
-                                    # terminate without this field
-                                    terminationLen = int(fieldInfo.get.offset)
-                                    break
-                                # terminate after this field
-                                terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)
-                            if len(fieldInfo.bitfieldInfo) == 0:
-                                if fieldInfo.type == "string":
-                                    if val.startswith('"') and val.endswith('"'):
-                                        val = val.strip('"')
-                                    if terminateMsg:
-                                        terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(val)
-                                Messaging.set(msg, fieldInfo, val)
-                                paramNumber+=1
-                            else:
-                                for bitInfo in fieldInfo.bitfieldInfo:
-                                    Messaging.set(msg, bitInfo, val)
-                                    paramNumber+=1
-                                    val = params[paramNumber]
-                        else:
-                            if val.startswith("0x") and len(val) > 2+fieldInfo.count*int(fieldInfo.get.size):
-                                if val.endswith(";"):
-                                    terminateMsg = 1
-                                    val = val[:-1]
-                                    hexStr = val[2:].strip()
-                                    terminationLen = int(int(fieldInfo.get.offset) + len(hexStr)/2)
-                                hexStr = val[2:].strip()
-                                charsForOneElem = int(fieldInfo.get.size)*2
-                                valArray = [hexStr[i:i+charsForOneElem] for i in range(0, len(hexStr), charsForOneElem)]
-                                for i in range(0,len(valArray)):
-                                    Messaging.set(msg, fieldInfo, int(valArray[i], 16), i)
-                                paramNumber+=1
-                            else:
-                                for i in range(0,fieldInfo.count):
-                                    if val.endswith(";"):
-                                        terminateMsg = 1
-                                        terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1)
-                                        val = val[:-1]
-                                    Messaging.set(msg, fieldInfo, val, i)
-                                    if terminateMsg:
-                                        break
-                                    paramNumber+=1
-                                    val = params[paramNumber]
-                        if terminateMsg:
-                            break
-                except IndexError:
-                    # if index error occurs on accessing params, then stop processing params
-                    # because we've processed them all
-                    pass
-            if terminateMsg:
-                msg.hdr.SetDataLength(terminationLen)
-            return msg
-        else:
-            #print("["+lineOfText+"] is NOT A MESSAGE NAME!")
-            pass
-        return None
-
-    @staticmethod
-    def long_substr(data):
-        substr = ''
-        if len(data) > 1 and len(data[0]) > 0:
-            for j in range(len(data[0])-1):
-                if j > len(substr) and all(data[0][0:j] in x for x in data):
-                    substr = data[0][0:j]
-        return substr
-
-    @staticmethod
-    def paramHelp(field):
-        ret = field.name
-        if field.units:
-            ret = ret + "(" + field.units + ")"
-        if field.description:
-            ret = ret + "# " + field.description
-        return ret
-
-    @staticmethod
-    def csvHelp(lineOfText):
-        autoComplete = None
-        help = ""
-        params = lineOfText.split()
-        if params:
-            msgName = params[0]
-        else:
-            msgName = ''
-        # if there's no params beyond first word, try to auto-complete a message name
-        if len(params) <= 1 and not lineOfText.endswith(" "):
-            # search for messages that match us
-            matchingMsgNames = []
-            truncated = False
-            for aMsgName in sorted(Messaging.MsgClassFromName.keys()):
-                if aMsgName.startswith(msgName):
-                    # truncate to first dot after match
-                    firstdot = aMsgName.find('.',len(msgName))
-                    if firstdot > 0:
-                        aMsgName = aMsgName[0:firstdot+1]
-                        truncated = True
-                    if not matchingMsgNames or aMsgName != matchingMsgNames[-1]:
-                        matchingMsgNames.append(aMsgName)
-            if len(matchingMsgNames) == 1:
-                help = matchingMsgNames[0]
-                autoComplete = matchingMsgNames[0]
-                # if there's only one result and we don't match it exactly (because it's longer than us)
-                # accept it by giving it as autoComplete with a space at end
-                #if autoComplete != msgName:
-                if not truncated:
-                    autoComplete = autoComplete + ' '
-                return (autoComplete, help)
-            else:
-                help = '\n'.join(matchingMsgNames)
-                autoComplete = Messaging.long_substr(matchingMsgNames)
-                #print("long_substr returned " + autoComplete)
-                return (autoComplete, help)
-                
-        #print("param help")
-        # if we didn't auto-complete a message name above, then show help on params
-        paramstring = lineOfText.replace(msgName, "",1).strip()
-        params = paramstring.split(',')
-        if msgName in Messaging.MsgClassFromName:
-            helpOnJustParam = len(paramstring)
-            if not helpOnJustParam:
-                help = msgName + " "
-            msgClass = Messaging.MsgClassFromName[msgName]
-            msg = msgClass()
-            if msg.fields:
-                try:
-                    paramNumber = 0
-                    for fieldInfo in msgClass.fields:
-                        if(fieldInfo.count == 1):
-                            if len(fieldInfo.bitfieldInfo) == 0:
-                                if helpOnJustParam:
-                                    if paramNumber == len(params)-1:
-                                        return (None, Messaging.paramHelp(fieldInfo))
-                                    paramNumber+=1
-                                else:
-                                    help += fieldInfo.name + ", "
-                            else:
-                                for bitInfo in fieldInfo.bitfieldInfo:
-                                    if helpOnJustParam:
-                                        if paramNumber == len(params)-1:
-                                            return (None, Messaging.paramHelp(bitInfo))
-                                        paramNumber+=1
-                                    else:
-                                        help += bitInfo.name + ", "
-                        else:
-                            if helpOnJustParam:
-                                arrayList = []
-                                for i in range(0,fieldInfo.count):
-                                    if helpOnJustParam and paramNumber == len(params)-1:
-                                        return (None, Messaging.paramHelp(fieldInfo))
-                                    paramNumber+=1
-                            else:
-                                help += fieldInfo.name + "["+str(fieldInfo.count)+"], "
-                except IndexError:
-                    # if index error occurs on accessing params, then stop processing params
-                    # because we've processed them all
-                    print("done at index " + str(paramNumber))
-                    pass
-                if help.endswith(", "):
-                    help = help[:-2]
-        else:
-            return (None, "["+msgName+"] is not a message name!")
-        return (autoComplete, help)
-
+    # This is composed of all the header fields that are not length, time, and any ID fields.
+    # In some systems where one PC talks to one device, there may not be *any* fields that
+    # contribute to Route.  In other systems it could be a device ID on a CANbus, a source
+    # or destination field, or an IP Address or MAC address.
+    # The reason MsgRoute exists is to distinguish between traffic with the same ID, that
+    # is to, from, for, between different entities, so they aren't assumed to be two messages
+    # in one time sequence.  This is necessary for showing lists of data (like msginspector),
+    # showing plots of data as a time series, or showing the latest value of all data (msgscope).
     @staticmethod
     def MsgRoute(msg):
         hdr = msg.hdr
@@ -607,95 +323,6 @@ class Messaging:
                 if fieldInfo.idbits == 0 and fieldInfo.name != "DataLength" and fieldInfo.name != "Time":
                     msg_route.append(str(fieldInfo.get(msg.hdr)))
         return msg_route
-
-    class HeaderTranslator:
-        def __init__(self, hdr1, hdr2):
-            # Make a list of fields in the headers that have matching names.
-            self._correspondingFields = []
-            for fieldInfo1 in hdr1.fields:
-                if len(fieldInfo1.bitfieldInfo) == 0:
-                    fieldInfo2 = Messaging.findFieldInfo(hdr2.fields, fieldInfo1.name)
-                    if fieldInfo2 != None:
-                        self._correspondingFields.append([fieldInfo1, fieldInfo2])
-                else:
-                    for bitfieldInfo1 in fieldInfo1.bitfieldInfo:
-                        fieldInfo2 = Messaging.findFieldInfo(hdr2.fields, bitfieldInfo1.name)
-                        if fieldInfo2 != None:
-                            self._correspondingFields.append([bitfieldInfo1, fieldInfo2])
-            
-            HdrInfo = namedtuple('HdrInfo', 'type infoIndex timeField')
-            self._hdr1Info = HdrInfo(hdr1, 0, Messaging.findFieldInfo(hdr1.fields, "Time"))
-            self._hdr2Info = HdrInfo(hdr2, 1, Messaging.findFieldInfo(hdr2.fields, "Time"))
-
-        def translateHdrAndBody(self, fromHdr, body):
-            # figure out which direction to translate
-            if isinstance(fromHdr, self._hdr1Info.type):
-                fromHdrInfo = self._hdr1Info
-                toHdrInfo = self._hdr2Info
-            elif isinstance(fromHdr, self._hdr2Info.type):
-                fromHdrInfo = self._hdr2Info
-                toHdrInfo = self._hdr1Info
-            else:
-                print("ERROR!  type %s is not %s or %s!" % (type(fromHdr), self._hdr1Info.type, self._hdr2Info.type))
-                raise TypeError
-            
-            # allocate the message to translate to
-            toBuffer = ctypes.create_string_buffer(toHdrInfo.type.SIZE+fromHdr.GetDataLength())
-            toHdr = toHdrInfo.type(toBuffer)
-            toHdr.initialize()
-
-            # loop through fields using reflection, and transfer contents from
-            # one header to the other
-            for pair in self._correspondingFields:
-                fromFieldInfo = pair[fromHdrInfo.infoIndex]
-                toFieldInfo = pair[toHdrInfo.infoIndex]
-                Messaging.set(toHdr, toFieldInfo, Messaging.get(fromHdr, fromFieldInfo))
-            
-            # if the message ID can't be expressed in the new header, return None,
-            # because this message isn't translatable
-            if fromHdr.GetMessageID() != toHdr.GetMessageID():
-                if Messaging.debug:
-                    print("message ID 0x" + hex(fromHdr.GetMessageID()) + " translated to 0x" + hex(toHdr.GetMessageID()) + ", throwing away")
-                return None
-            # copy the body
-            for i in range(0,fromHdr.GetDataLength()):
-                toHdr.rawBuffer()[toHdr.SIZE+i] = body[i]
-            
-            # do special timestamp stuff to convert from relative to absolute time
-            if toHdrInfo.timeField != None:
-                if fromHdrInfo.timeField != None:
-                    if fromHdrInfo.timeField.fieldSize < toHdrInfo.timeField.fieldSize:
-                        # Detect time rolling
-                        thisTimestamp = fromHdr.GetTime()
-                        thisTime = datetime.now()
-                        timestampOffset = self.timestampOffset
-                        if thisTimestamp < self.lastTimestamp:
-                            # If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
-                            # and do not wrap again.
-                            if thisTime > self.lastWrapTime.addSecs(30):
-                                self.lastWrapTime = thisTime
-                                self.timestampOffset+=1
-                                timestampOffset = self.timestampOffset
-                        self.lastTimestamp = thisTimestamp
-                        # need to handle different size timestamps!
-                        toHdr.SetTime((timestampOffset << 16) + thisTimestamp)
-                    else:
-                        toHdr.SetTime(fromHdr.GetTime())
-                else:
-                    t = datetime.now().timestamp()
-                    if float(toHdrInfo.timeField.maxVal) <= 2**32:
-                        t = (datetime.fromtimestamp(t) - datetime.fromtimestamp(t).replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
-                    if toHdrInfo.timeField.units == "ms":
-                        t = t * 1000.0
-                    if toHdrInfo.timeField.type == "int":
-                        t = int(t)
-                    toHdr.SetTime(t)
-
-            return toHdr
-
-        def translate(self, fromHdr):
-            toHdr = self.translateHdrAndBody(fromHdr, fromHdr.rawBuffer()[type(fromHdr).SIZE:])
-            return toHdr
 
 class BitFieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum, idbits=0):
