@@ -34,23 +34,22 @@ class GoodListener(msgtools.lib.gui.Gui):
     def __init__(self, ThreadClass, parent=None):
 
         parser = argparse.ArgumentParser(description=DESCRIPTION)
-        parser.add_argument('inputfiles', nargs='+', help='''Optional results file, followed by
-            the log file to process.''')
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
+        parser.add_argument('--results', help='Optional results file', default=None)
+        parser.add_argument('--log', help='Optional log file to process.', default=None)
         args = parser.parse_args()
 
         # Override args to line this up for file processing in our shared class
         args.ip = None
         args.port = None
 
-        if len(args.inputfiles) > 1:
-            resultsFilename = args.inputfiles[0]
-            logFileName = None if len(args.inputfiles) < 2 else args.inputfiles[2]
-        else:
-            resultsFilename = None
-            logFileName = args.inputfiles[1]
-
-        args.connectionType = 'file'
-        args.connectionName = logFilename
+        resultsFilename = None
+        if args.results:
+            resultsFilename = args.results
+        logFileName = None
+        if args.log != None:
+            args.connectionType = 'file'
+            args.connectionName = args.log
 
         appName = "Good Listener 0.1, " + ThreadClass.__name__
         msgtools.lib.gui.Gui.__init__(self, appName, args, parent)
@@ -143,15 +142,15 @@ class ScriptThread(QtCore.QThread):
 # to use, make a subclass of ScriptThread, and define the following in it:
 class MyTest(ScriptThread):
     def __init__(self, listener):
-        super(AccelButtonTest, self).__init__(listener)
+        super(MyTest, self).__init__(listener)
     def run(self):
         try:
             for i in range (0,3):
                 self.output("waiting for msg1")
-                msg = self.listener.WaitForMsg('Msg1Name')
+                msg = self.listener.WaitForMsg('TestCase1')
                 self.output(msgtools.lib.json.toJson(msg))
                 self.output("waiting for msg2")
-                msg = self.listener.WaitForMsg('Msg2Name')
+                msg = self.listener.WaitForMsg('TestCase2')
                 self.output(msgtools.lib.json.toJson(msg))
         except MsgTimeoutError as e:
             self.output(">>>> " + str(e))
