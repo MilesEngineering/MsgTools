@@ -115,6 +115,9 @@ class MsgScript(QtWidgets.QMainWindow):
         debug_menu.addAction(runAction)
         debug_menu.addAction(pauseAction)
         debug_menu.addAction(stopAction)
+        runAction.triggered.connect(self.run_action)
+        pauseAction.triggered.connect(self.pause_action)
+        stopAction.triggered.connect(self.stop_action)
         
         # toolbars
         file_toolbar = self.addToolBar("File")
@@ -137,6 +140,7 @@ class MsgScript(QtWidgets.QMainWindow):
         self.setWindowTitle("MsgScript")
 
         self.editor = SimplePythonEditor()
+        self.editor.modificationChanged.connect(self.document_was_modified)
         self.setCentralWidget(self.editor)
         self.editor.setText("")
         self.current_filename = ""
@@ -174,7 +178,7 @@ class MsgScript(QtWidgets.QMainWindow):
         else:
             with file:
                 file.write(self.editor.text())
-                self.current_filename = filename
+                self.set_current_file(filename)
                 #self.statusBar()->showMessage("File saved", 2000)
         return True
     
@@ -186,10 +190,26 @@ class MsgScript(QtWidgets.QMainWindow):
             return
         else:
             with file:
-                self.current_filename = filename
+                self.set_current_file(filename)
                 self.editor.setText(file.read())
+                self.editor.setModified(False)
+                self.set_window_modified()
 
+    def set_current_file(self, filename):
+        self.editor.setModified(False)
+        self.current_filename = filename
+        self.set_window_modified()
+
+    def set_window_modified(self):
+        title = "MsgScript - %s" % self.current_filename
+        if self.editor.isModified():
+            title = title + " *"
+        self.setWindowTitle(title)
     
+    def document_was_modified(self, modified):
+        if modified:
+            self.set_window_modified()
+        
     def maybe_save(self):
         if not self.editor.isModified():
             return True
@@ -213,6 +233,15 @@ class MsgScript(QtWidgets.QMainWindow):
             ev.accept()
         else:
             ev.ignore()
+    
+    def run_action(self):
+        pass
+    
+    def pause_action(self):
+        pass
+    
+    def stop_action(self):
+        pass
 
 def main():
     # quiet icon warnings
