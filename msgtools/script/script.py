@@ -69,11 +69,6 @@ class SimplePythonEditor(QsciScintilla):
 # 32, "Courier New"         
         self.SendScintilla(QsciScintilla.SCI_STYLESETFONT, 1, text)
 
-        # Don't want to see the horizontal scrollbar at all
-        # Use raw message to Scintilla here (all messages are documented
-        # here: http://www.scintilla.org/ScintillaDoc.html)
-        self.SendScintilla(QsciScintilla.SCI_SETHSCROLLBAR, 0)
-
         # not too small
         self.setMinimumSize(600, 450)
 
@@ -91,20 +86,26 @@ class MsgScript(QtWidgets.QMainWindow):
         self.settings = QtCore.QSettings("MsgTools", 'MsgScript')
         self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))
         self.restoreState(self.settings.value("windowState", QtCore.QByteArray()))
+        
+        # status bar
+        self.statusBar().showMessage("")
                 
         # menu bar
         newAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("document-new"), '&New', self)
         openAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("document-open"), '&Open', self)
+        closeAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("document-close"), '&Close', self)
         saveAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("document-save"), '&Save', self)
-        saveAsAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("document-saveas"), 'Save &As', self)
+        saveAsAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("document-save-as"), 'Save &As', self)
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
         file_menu.addAction(newAction)
         file_menu.addAction(openAction)
+        file_menu.addAction(closeAction)
         file_menu.addAction(saveAction)
         file_menu.addAction(saveAsAction)
         newAction.triggered.connect(self.new_action)
         openAction.triggered.connect(self.open_action)
+        closeAction.triggered.connect(self.close_action)
         saveAction.triggered.connect(self.save_action)
         saveAsAction.triggered.connect(self.save_as_action)
 
@@ -124,6 +125,7 @@ class MsgScript(QtWidgets.QMainWindow):
         file_toolbar.setObjectName("file_toolbar")
         file_toolbar.addAction(newAction)
         file_toolbar.addAction(openAction)
+        file_toolbar.addAction(closeAction)
         file_toolbar.addAction(saveAction)
         file_toolbar.addAction(saveAsAction)
         
@@ -144,6 +146,9 @@ class MsgScript(QtWidgets.QMainWindow):
         self.setCentralWidget(self.editor)
         self.editor.setText("")
         self.current_filename = ""
+        last_filename = self.settings.value("last_filename", '')
+        if last_filename:
+            self.load_file(last_filename)
     
     def new_action(self):
         if self.maybe_save():
@@ -179,7 +184,7 @@ class MsgScript(QtWidgets.QMainWindow):
             with file:
                 file.write(self.editor.text())
                 self.set_current_file(filename)
-                #self.statusBar()->showMessage("File saved", 2000)
+                self.statusBar().showMessage("File saved", 2000)
         return True
     
     def load_file(self, filename):
@@ -217,19 +222,24 @@ class MsgScript(QtWidgets.QMainWindow):
                                    "The document has been modified.\nDo you want to save your changes?",
                                    QtWidgets.QMessageBox.Save | QtWidgets.QMessageBox.Discard | QtWidgets.QMessageBox.Cancel);
         if ret == QtWidgets.QMessageBox.Save:
-            return save()
+            return self.save_file()
         elif ret == QtWidgets.QMessageBox.Cancel:
             return False
 
         return True
 
     def close_action(self):
-        pass
+        self.maybe_save()
+        self.set_current_file('')
+        self.editor.setText('')
+        self.editor.setModified(False)
+        self.set_window_modified()
     
     def closeEvent(self, ev):
         if self.maybe_save():
             self.settings.setValue("geometry", self.saveGeometry())
             self.settings.setValue("windowState", self.saveState())
+            self.settings.setValue("last_filename", self.current_filename)
             ev.accept()
         else:
             ev.ignore()
