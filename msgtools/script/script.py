@@ -109,16 +109,20 @@ class MsgScript(QtWidgets.QMainWindow):
         saveAction.triggered.connect(self.save_action)
         saveAsAction.triggered.connect(self.save_as_action)
 
-        runAction = QtWidgets.QAction('&Run', self)
-        pauseAction = QtWidgets.QAction('&Pause', self)
-        stopAction = QtWidgets.QAction('&Stop', self)
+        pauseAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-pause"), "&Pause", self)
+        runAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-start"), "&Run", self)
+        stopAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-stop"), "&Stop", self)
+        clearAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-clear"), "&Clear", self)
+
         debug_menu = menubar.addMenu('&Debug')
         debug_menu.addAction(runAction)
         debug_menu.addAction(pauseAction)
         debug_menu.addAction(stopAction)
+        debug_menu.addAction(clearAction)
         runAction.triggered.connect(self.run_action)
         pauseAction.triggered.connect(self.pause_action)
         stopAction.triggered.connect(self.stop_action)
+        clearAction.triggered.connect(self.clear_action)
         
         # toolbars
         file_toolbar = self.addToolBar("File")
@@ -131,25 +135,31 @@ class MsgScript(QtWidgets.QMainWindow):
         
         debug_toolbar = self.addToolBar("Debug")
         debug_toolbar.setObjectName("debug_toolbar")
-        pause = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-pause"), "pause", self)
-        start = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-start"), "run", self)
-        stop = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-stop"), "stop", self)
-        debug_toolbar.addAction(start)
-        debug_toolbar.addAction(pause)
-        debug_toolbar.addAction(stop)
-        
+        debug_toolbar.addAction(runAction)
+        debug_toolbar.addAction(pauseAction)
+        debug_toolbar.addAction(stopAction)
+        debug_toolbar.addAction(clearAction)        
         
         self.setWindowTitle("MsgScript")
 
+        # editor/debug window
         self.editor = SimplePythonEditor()
         self.editor.modificationChanged.connect(self.document_was_modified)
-        self.setCentralWidget(self.editor)
         self.editor.setText("")
         self.current_filename = ""
         last_filename = self.settings.value("last_filename", '')
         if last_filename:
             self.load_file(last_filename)
-    
+            
+        # script output window
+        self.scriptOutput = QtWidgets.QPlainTextEdit(self)
+
+        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.splitter.addWidget(self.editor)
+        self.splitter.addWidget(self.scriptOutput)
+        self.setCentralWidget(self.splitter)
+        self.splitter.restoreState(self.settings.value("SplitterSize", self.splitter.saveState()));
+        
     def new_action(self):
         if self.maybe_save():
             self.editor.setText("")
@@ -240,6 +250,7 @@ class MsgScript(QtWidgets.QMainWindow):
             self.settings.setValue("geometry", self.saveGeometry())
             self.settings.setValue("windowState", self.saveState())
             self.settings.setValue("last_filename", self.current_filename)
+            self.settings.setValue("SplitterSize", self.splitter.saveState());
             ev.accept()
         else:
             ev.ignore()
@@ -252,6 +263,9 @@ class MsgScript(QtWidgets.QMainWindow):
     
     def stop_action(self):
         pass
+    
+    def clear_action(self):
+        self.scriptOutput.clear()
 
 def main():
     # quiet icon warnings
