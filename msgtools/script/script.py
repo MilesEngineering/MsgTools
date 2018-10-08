@@ -11,6 +11,7 @@
 # Use this as example of how to run/debug
 #    https://medium.freecodecamp.org/hacking-together-a-simple-graphical-python-debugger-efe7e6b1f9a8
 #    https://github.com/tryexceptpass/sofi-debugger/blob/master/debugger.py
+#    https://stackoverflow.com/questions/32277172/sys-settrace-only-getting-called-at-function-calls-not-every-line
 #-------------------------------------------------------------------------
 import sys, os
 
