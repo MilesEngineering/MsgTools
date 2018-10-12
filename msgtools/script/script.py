@@ -17,6 +17,23 @@ import sys, os
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.Qsci import QsciScintilla, QsciLexerPython
+import multiprocessing
+
+
+try:
+    from msgtools.script import debugger
+except ImportError:
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../../..")
+    sys.path.append(srcroot)
+    from msgtools.script import debugger
+
+NEW_FILE = '''\
+from msgtools.lib.messaging import Messaging as M
+from msgtools.console.SynchronousMsgClient import SynchronousMsgClient as client
+
+M.LoadAllMessages()
+cxn = client('example')
+'''
 
 class SimplePythonEditor(QsciScintilla):
     DEBUG_MARKER_NUM = 8
@@ -81,6 +98,7 @@ class SimplePythonEditor(QsciScintilla):
             self.markerAdd(nline, self.DEBUG_MARKER_NUM)
 
 class MsgScript(QtWidgets.QMainWindow):
+    TextOutput = QtCore.pyqtSignal(object)
     def __init__(self, parent=None):
         super(MsgScript, self).__init__(parent)
         
@@ -154,16 +172,52 @@ class MsgScript(QtWidgets.QMainWindow):
             
         # script output window
         self.scriptOutput = QtWidgets.QPlainTextEdit(self)
-
+        self.TextOutput.connect(self.output_text)
+        # capture stdout, stderr
+        sys.stdout = self
+        sys.stderr = self
+        
         self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.splitter.addWidget(self.editor)
         self.splitter.addWidget(self.scriptOutput)
         self.setCentralWidget(self.splitter)
         self.splitter.restoreState(self.settings.value("SplitterSize", self.splitter.saveState()));
         
+        # Initialize the debug and application queues for passing messages
+        self.debugq = multiprocessing.Queue()
+        self.applicationq = multiprocessing.Queue()
+        
+        timer = QtCore.QTimer(self)
+        timer.setSingleShot(False)
+        timer.timeout.connect(self.poll_output)
+        timer.start(100)
+
+    # poll output from the applicationq, which is another Process
+    def poll_output(self):
+        while not self.applicationq.empty():
+            appinfo = self.applicationq.get()
+            if 'exception' in appinfo:
+                self.write(str(appinfo['exception']))
+            elif 'stdout' in appinfo:
+                self.write(str(appinfo['stdout']))
+            elif 'stderr' in appinfo:
+                self.write(str(appinfo['stderr']))
+
+    # stdout/stderr
+    def write(self, data):
+        self.TextOutput.emit(str(data))
+    def flush(self):
+        pass
+
+    def output_text(self, s):
+        self.scriptOutput.appendPlainText(s)
+
     def new_action(self):
         if self.maybe_save():
-            self.editor.setText("")
+            self.set_current_file('')
+            self.editor.setText(NEW_FILE)
+            self.editor.setModified(False)
+            self.set_window_modified()
     
     def open_action(self):
         if self.maybe_save():
@@ -201,8 +255,8 @@ class MsgScript(QtWidgets.QMainWindow):
     def load_file(self, filename):
         try:
             file = open(filename, 'r')
-        except IOError:
-            QtWidgets.QMessageBox.warning(self, "Application", "Cannot read file %1" % (filename))
+        except (IOError, FileNotFoundError):
+            QtWidgets.QMessageBox.warning(self, "Application", "Cannot read file %s" % (filename))
             return
         else:
             with file:
@@ -233,7 +287,7 @@ class MsgScript(QtWidgets.QMainWindow):
                                    "The document has been modified.\nDo you want to save your changes?",
                                    QtWidgets.QMessageBox.Save | QtWidgets.QMessageBox.Discard | QtWidgets.QMessageBox.Cancel);
         if ret == QtWidgets.QMessageBox.Save:
-            return self.save_file()
+            return self.save_file(self.current_filename)
         elif ret == QtWidgets.QMessageBox.Cancel:
             return False
 
@@ -257,7 +311,11 @@ class MsgScript(QtWidgets.QMainWindow):
             ev.ignore()
     
     def run_action(self):
-        pass
+        # save the file
+        self.save_file(self.current_filename)
+        # Create the debug process
+        self.debugprocess = multiprocessing.Process(target=debugger.debug, args=(self.applicationq, self.debugq, self.current_filename))
+        self.debugprocess.start()
     
     def pause_action(self):
         pass
