@@ -194,8 +194,10 @@ class MsgScript(QtWidgets.QMainWindow):
     def flush(self):
         pass
 
-    def output_text(self, s):
-        self.scriptOutput.appendPlainText(s)
+    def output_text(self, message):
+        self.scriptOutput.moveCursor(QtGui.QTextCursor.End)
+        self.scriptOutput.insertPlainText(message)
+        self.scriptOutput.moveCursor(QtGui.QTextCursor.End)
 
     def new_action(self):
         if self.maybe_save():
