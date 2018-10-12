@@ -1,18 +1,3 @@
-#-------------------------------------------------------------------------
-# qsci_simple_pythoneditor.pyw
-#
-# QScintilla sample with PyQt
-#
-# Eli Bendersky (eliben@gmail.com)
-# This code is in the public domain
-# https://stackoverflow.com/questions/40002373/qscintilla-based-text-editor-in-pyqt5-with-clickable-functions-and-variables
-# https://eli.thegreenplace.net/2011/04/01/sample-using-qscintilla-with-pyqt
-#
-# Use this as example of how to run/debug
-#    https://medium.freecodecamp.org/hacking-together-a-simple-graphical-python-debugger-efe7e6b1f9a8
-#    https://github.com/tryexceptpass/sofi-debugger/blob/master/debugger.py
-#    https://stackoverflow.com/questions/32277172/sys-settrace-only-getting-called-at-function-calls-not-every-line
-#-------------------------------------------------------------------------
 import sys, os
 
 from PyQt5 import QtWidgets, QtCore, QtGui
