@@ -8,8 +8,8 @@
 import struct
 import ctypes
 from collections import OrderedDict
-from <MESSAGINGMODULE> import *
-import <MESSAGINGMODULE> as msg
+from msgtools.lib.messaging import *
+import msgtools.lib.messaging as msg
 
 class <MSGNAME> :
     SIZE = <MSGSIZE>
