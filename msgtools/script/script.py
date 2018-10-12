@@ -14,10 +14,11 @@ except ImportError:
 
 NEW_FILE = '''\
 from msgtools.lib.messaging import Messaging as M
-from msgtools.console.SynchronousMsgClient import SynchronousMsgClient as client
+from msgtools.lib.message import Message as Msg
+from msgtools.console.client import Client
 
 M.LoadAllMessages()
-cxn = client('example')
+cxn = Client('example')
 '''
 
 class SimplePythonEditor(QsciScintilla):

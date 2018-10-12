@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# SynchronousMsgServer is a class that contains a TCP server and Websocket server which run asynchronously
+# Server is a class that contains a TCP server and Websocket server which run asynchronously
 # in a background thread, and also allows synchronous code to send and receives messages with it.
 #
 # based on:
@@ -15,20 +15,20 @@ import janus
 import queue
 from msgtools.lib.messaging import Messaging
 
-class SynchronousMsgServer:
-    def __init__(self, rxtimeout=0):
+class Server:
+    def __init__(self, timeout=10):
         self.loop = asyncio.get_event_loop()
         from threading import Thread
         self.t = Thread(target=self.start)
         self.t.start()
-        self.timeout = rxtimeout
+        self.timeout = timeout
 
     def send(self, msg):
         self.synchronous_tx_queue.sync_q.put(msg.rawBuffer().raw)
     
     def recv(self, msgIds=[], timeout=None):
         # if user didn't pass a list, put the single param into a list
-        if not hasattr(msgIds, 'len'):
+        if not isinstance(msgIds, list):
             msgIds = [msgIds]
         # if they passed classes, get the ID of each
         for i in range(0,len(msgIds)):
