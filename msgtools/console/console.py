@@ -36,7 +36,7 @@ class MsgCmd(cmd.Cmd):
         # this translates the input command from CSV to a message, and sends it.
         msg = msgcsv.csvToMsg(line)
         if msg:
-            self._connection.send_message(msg)
+            self._connection.send(msg)
             print("sent " + msg.MsgName() + " " + msgcsv.toCsv(msg))
         else:
             print("ERROR! Invalid msg [%s]!" % (line))
@@ -61,11 +61,10 @@ class MsgCmd(cmd.Cmd):
         # this blocks until message received, or timeout occurs
         timeout = 10.0 # value in seconds
         try:
-            hdr = self._connection.get_message(timeout, msgIDs)
+            msg = self._connection.recv(msgIDs, timeout)
         except KeyboardInterrupt:
-            hdr = None
-        if hdr:
-            msg = Messaging.MsgFactory(hdr)
+            msg = None
+        if msg:
             # print as JSON for debug purposes
             json = msgjson.toJson(msg)
             print(json)
@@ -104,17 +103,9 @@ def main(args=None):
     Messaging.LoadAllMessages()
 
     if len(sys.argv) > 1 and sys.argv[1] == "server":
-        connection = SynchronousMsgServer(Messaging.hdr)
+        connection = SynchronousMsgServer()
     else:
-        connection = SynchronousMsgClient(Messaging.hdr)
-        # say my name
-        connectMsg = Messaging.Messages.Network.Connect()
-        connectMsg.SetName("CLI")
-        connection.send_message(connectMsg)
-        
-        # do default subscription to get *everything*
-        subscribeMsg = Messaging.Messages.Network.MaskedSubscription()
-        connection.send_message(subscribeMsg)
+        connection = SynchronousMsgClient("CLI")
         
     msg_cmd = MsgCmd(connection)
     try:
