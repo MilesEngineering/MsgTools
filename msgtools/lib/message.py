@@ -43,7 +43,7 @@ class Message:
 
     def __getattr__(self, attr):
         fn_name = 'Get' + attr
-        if fn_name in hasattr(type(self), fn_name):
+        if hasattr(type(self), fn_name):
             fn = getattr(self,fn_name)
             if callable(fn):
                 if fn.count > 1:
