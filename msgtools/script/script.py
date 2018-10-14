@@ -68,16 +68,11 @@ class SimplePythonEditor(QsciScintilla):
         self.setCaretLineBackgroundColor(QtGui.QColor("#ffe4e4"))
 
         # Set Python lexer
-        # Set style for Python comments (style number 1) to a fixed-width
-        # courier.
-        #
-
         lexer = QsciLexerPython()
         lexer.setDefaultFont(font)
         self.setLexer(lexer)
 
         text = bytearray(str.encode("Arial"))
-# 32, "Courier New"         
         self.SendScintilla(QsciScintilla.SCI_STYLESETFONT, 1, text)
 
         # not too small
@@ -86,14 +81,15 @@ class SimplePythonEditor(QsciScintilla):
         self.last_exec_line = 0
 
     def on_margin_clicked(self, nmargin, nline, modifiers):
-        # Toggle marker for the line the margin was clicked on
+        # Toggle debug marker for the line the margin was clicked on
         if self.markersAtLine(nline) != 0:
             self.markerDelete(nline, self.DEBUG_MARKER_NUM)
         else:
             self.markerAdd(nline, self.DEBUG_MARKER_NUM)
 
+    # function called to indicate we executed up to a line of code
     def ran_to_line(self, nline):
-        # change to zero based indexing!?!
+        # change line number to zero based indexing
         nline = nline - 1
         if self.markersAtLine(self.last_exec_line) != 0:
             self.markerDelete(self.last_exec_line, self.EXEC_MARKER_NUM)
@@ -102,7 +98,7 @@ class SimplePythonEditor(QsciScintilla):
         self.last_exec_line = nline
     
     def has_breakpoint(self, nline):
-        # change to zero based indexing!?!
+        # change line number to zero based indexing
         nline = nline - 1
         markerBitmask = self.markersAtLine(self.last_exec_line)
         if markerBitmask:
