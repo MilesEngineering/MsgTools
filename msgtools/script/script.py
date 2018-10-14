@@ -20,7 +20,6 @@ cxn = Client('example')
 '''
 
 class MsgScript(QtWidgets.QMainWindow):
-    TextOutput = QtCore.pyqtSignal(object)
     def __init__(self, parent=None):
         super(MsgScript, self).__init__(parent)
         
@@ -106,7 +105,6 @@ class MsgScript(QtWidgets.QMainWindow):
             
         # script output window
         self.scriptOutput = QtWidgets.QPlainTextEdit(self)
-        self.TextOutput.connect(self.write)
         
         self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.splitter.addWidget(self.editor)
@@ -253,6 +251,7 @@ class MsgScript(QtWidgets.QMainWindow):
     
     def closeEvent(self, ev):
         if self.maybe_save():
+            self.stop_action()
             self.settings.setValue("geometry", self.saveGeometry())
             self.settings.setValue("windowState", self.saveState())
             self.settings.setValue("last_filename", self.current_filename)
@@ -304,10 +303,20 @@ class MsgScript(QtWidgets.QMainWindow):
     def stop_action(self):
         self.isrunning = False
         if self.debugprocess != None:
+            i = 0
             while(self.debugprocess.is_alive()):
+                if i > 0:
+                    self.write("Tried to terminate and join(0.1), but still is_alive()!")
+                i+=1
+                if i > 5:
+                    self.write("Couldn't kill script!")
+                    return
                 self.debugprocess.terminate()
-                self.debugprocess.join()
+                # This can hang forever!  For some reason the join may block forever, but if
+                # we let it timeout is_alive() will return false and we break out of the loop!
+                self.debugprocess.join(0.1)
             self.debugprocess = None
+            self.editor.exited()
         else:
             self.editor.ran_to_line(0)
     
