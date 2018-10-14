@@ -2,6 +2,7 @@ from datetime import datetime
 import inspect
 import sys
 import traceback
+import signal
 
 def trace_lines(frame, event, arg):
     """Handler that executes with every line of code"""
@@ -12,20 +13,18 @@ def trace_lines(frame, event, arg):
 
     # Get a reference to the code object and source
     co = frame.f_code
-    source = inspect.getsourcelines(co)[0]
+    #source = inspect.getsourcelines(co)[0]
 
     # Send the UI information on the code we're currently executing
-    trace_lines.applicationq.put({ "co": { "file": co.co_filename,
-                                   "name": co.co_name,
-                                   "lineno": str(frame.f_lineno)
-                                   },
-                          "frame": { "lineno": frame.f_lineno,
-                                      "firstlineno": co.co_firstlineno,
-                                      "locals": str(frame.f_locals),
-                                      "source": source
-                                      },
-                           'trace': 'line'
-                          })
+    trace_lines.applicationq.put(
+        {"co": {"file": co.co_filename,
+                "name": co.co_name,
+                "lineno": frame.f_lineno},
+         #"frame": {"lineno": frame.f_lineno,
+         #          "firstlineno": co.co_firstlineno,
+         #          "locals": str(frame.f_locals),
+         #          "source": source},
+         'trace': 'line'})
 
     # Wait for a debug command
     cmd = trace_lines.debugq.get()
@@ -34,11 +33,10 @@ def trace_lines(frame, event, arg):
         # If stepping through code, return this handler
         return trace_lines
 
-    if cmd == "stop":
-        # If stopping execution, raise an exception
-        raise StopExecution()
-
     elif cmd == 'over':
+        # If stepping over, then return nothing, unless we're at top level
+        if co.co_name == "<module>":
+            return trace_lines
         # If stepping out of code, return the function callback
         return trace_calls
 
@@ -84,27 +82,22 @@ def trace_calls(frame, event, arg):
 
     # Get a reference for the code object and function name
     co = frame.f_code
-    func_name = co.co_name
 
-    # Only react to the functions we care about
-    if func_name in ['sample', 'xyz']:
+    if co.co_filename == trace_lines.debug_filename:
         # Get the source code from the code object
-        source = inspect.getsourcelines(co)[0]
+        #print("filename: " + co.co_filename)
+        #source = inspect.getsourcelines(co)[0]
 
         # Tell the UI to perform an update
-        trace_lines.applicationq.put({ "co": { "file": co.co_filename,
-                                       "name": co.co_name,
-                                       "lineno": str(frame.f_lineno)
-                                       },
-                              "frame": { "lineno": frame.f_lineno,
-                                          "firstlineno": co.co_firstlineno,
-                                          "locals": str(frame.f_locals),
-                                          "source": source
-                                          },
-                              "trace": "call"
-                              })
-
-        print('Call to %s on line %s of %s' % (func_name, frame.f_lineno, co.co_filename))
+        trace_lines.applicationq.put(
+            { "co": {"file": co.co_filename,
+                      "name": co.co_name,
+                      "lineno": frame.f_lineno},
+              #"frame": {"lineno": frame.f_lineno,
+              #          "firstlineno": co.co_firstlineno,
+              #          "locals": str(frame.f_locals),
+              #          "source": source},
+              "trace": "call"})
 
         # Wait for a debug command (we stop here right before stepping into or out of a function)
         cmd = trace_lines.debugq.get()
@@ -113,7 +106,9 @@ def trace_calls(frame, event, arg):
             # If stepping into the function, return the line callback
             return trace_lines
         elif cmd == 'over':
-            # If stepping over, then return nothing
+            # If stepping over, then return nothing, unless we're at top level
+            if co.co_name == "<module>":
+                return trace_lines
             return
 
     return
@@ -128,12 +123,16 @@ class stderr_capture:
 sout = stdout_capture()
 serr = stderr_capture()
 
+def exit_gracefully(signum, frame):
+    raise StopExecution()
+
 def debug(applicationq, debugq, filename):
     """Sets up and starts the debugger"""
 
     # Setup the debug and application queues as properties of the trace_lines functions
     trace_lines.debugq = debugq
     trace_lines.applicationq = applicationq
+    trace_lines.debug_filename = filename
 
     # capture output, to send to the applicationq
     sys.stdout = sout
@@ -141,12 +140,20 @@ def debug(applicationq, debugq, filename):
 
     # Enable debugging by setting the callback
     sys.settrace(trace_calls)
+    
+    # try to exit gracefully
+    signal.signal(signal.SIGINT, exit_gracefully)
+    signal.signal(signal.SIGTERM, exit_gracefully)
 
     # Execute the function we want to debug with its parameters
     name = filename.replace("/", "_")
     import importlib
     try:
         module = importlib.machinery.SourceFileLoader(name, filename).load_module(name)
+        print("Finished")
+        trace_lines.applicationq.put({'exit': True})
+    except StopExecution:
+        print("Stopped")
     except:
         etype, value, tb = sys.exc_info()
         exc = ''.join(traceback.format_exception(etype, value, tb))

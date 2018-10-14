@@ -23,6 +23,7 @@ cxn = Client('example')
 
 class SimplePythonEditor(QsciScintilla):
     DEBUG_MARKER_NUM = 8
+    EXEC_MARKER_NUM = 9
 
     def __init__(self, parent=None):
         super(SimplePythonEditor, self).__init__(parent)
@@ -48,8 +49,14 @@ class SimplePythonEditor(QsciScintilla):
         # Clickable margin 1 for showing markers
         self.setMarginSensitivity(1, True)
         self.marginClicked.connect(self.on_margin_clicked)
+        
+        # debug marker
         self.markerDefine(QsciScintilla.Circle, self.DEBUG_MARKER_NUM)
         self.setMarkerBackgroundColor(QtGui.QColor("#1111ee"), self.DEBUG_MARKER_NUM)
+
+        # execut emarker
+        self.markerDefine(QsciScintilla.Circle, self.EXEC_MARKER_NUM)
+        self.setMarkerBackgroundColor(QtGui.QColor("#11ee11"), self.EXEC_MARKER_NUM)
 
         # Brace matching: enable for a brace immediately before or after
         # the current position
@@ -75,6 +82,8 @@ class SimplePythonEditor(QsciScintilla):
 
         # not too small
         self.setMinimumSize(600, 450)
+        
+        self.last_exec_line = 0
 
     def on_margin_clicked(self, nmargin, nline, modifiers):
         # Toggle marker for the line the margin was clicked on
@@ -82,6 +91,15 @@ class SimplePythonEditor(QsciScintilla):
             self.markerDelete(nline, self.DEBUG_MARKER_NUM)
         else:
             self.markerAdd(nline, self.DEBUG_MARKER_NUM)
+
+    def ran_to_line(self, nline):
+        # change to zero based indexing!?!
+        nline = nline - 1
+        if self.markersAtLine(self.last_exec_line) != 0:
+            self.markerDelete(self.last_exec_line, self.EXEC_MARKER_NUM)
+        if nline >= 0:
+            self.markerAdd(nline, self.EXEC_MARKER_NUM)
+        self.last_exec_line = nline
 
 class MsgScript(QtWidgets.QMainWindow):
     TextOutput = QtCore.pyqtSignal(object)
@@ -115,9 +133,11 @@ class MsgScript(QtWidgets.QMainWindow):
         saveAsAction.triggered.connect(self.save_as_action)
 
         pauseAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-pause"), "&Pause", self)
+        stepAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-skip-forward"), "Step &Into", self)
+        stepOutAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-seek-forward"), "Step &Oout", self)
         runAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-start"), "&Run", self)
         stopAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-stop"), "&Stop", self)
-        clearAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-clear"), "&Clear", self)
+        clearAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("user-trash"), "&Clear", self)
 
         debug_menu = menubar.addMenu('&Debug')
         debug_menu.addAction(runAction)
@@ -125,6 +145,8 @@ class MsgScript(QtWidgets.QMainWindow):
         debug_menu.addAction(stopAction)
         debug_menu.addAction(clearAction)
         runAction.triggered.connect(self.run_action)
+        stepAction.triggered.connect(self.step_action)
+        stepOutAction.triggered.connect(self.step_out_action)
         pauseAction.triggered.connect(self.pause_action)
         stopAction.triggered.connect(self.stop_action)
         clearAction.triggered.connect(self.clear_action)
@@ -141,6 +163,8 @@ class MsgScript(QtWidgets.QMainWindow):
         debug_toolbar = self.addToolBar("Debug")
         debug_toolbar.setObjectName("debug_toolbar")
         debug_toolbar.addAction(runAction)
+        debug_toolbar.addAction(stepAction)
+        debug_toolbar.addAction(stepOutAction)
         debug_toolbar.addAction(pauseAction)
         debug_toolbar.addAction(stopAction)
         debug_toolbar.addAction(clearAction)        
@@ -173,9 +197,14 @@ class MsgScript(QtWidgets.QMainWindow):
         self.debugq = multiprocessing.Queue()
         self.applicationq = multiprocessing.Queue()
         
+        self.debugprocess = None
+        self.isrunning = False
+        
         timer = QtCore.QTimer(self)
         timer.setSingleShot(False)
         timer.timeout.connect(self.poll_output)
+        # this determines how quickly we notice the debugger did something,
+        # and in turn limits the rate of 'isrunning' auto-stepping
         timer.start(100)
 
     # poll output from the applicationq, which is another Process
@@ -183,11 +212,21 @@ class MsgScript(QtWidgets.QMainWindow):
         while not self.applicationq.empty():
             appinfo = self.applicationq.get()
             if 'exception' in appinfo:
-                self.write(str(appinfo['exception']))
+                self.write("Exception: " + str(appinfo['exception']))
             elif 'stdout' in appinfo:
                 self.write(str(appinfo['stdout']))
             elif 'stderr' in appinfo:
                 self.write(str(appinfo['stderr']))
+            elif 'exit' in appinfo:
+                self.stop_action()
+            elif 'trace' in appinfo:
+                tr = appinfo['trace']
+                co = appinfo['co']
+                #self.write("%s: line %d\n" % (co['file'], co['lineno']))
+                if self.debugprocess and self.debugprocess.is_alive():
+                    self.editor.ran_to_line(co['lineno'])
+                    if self.isrunning:
+                        self.debugq.put('step')
 
     # stdout/stderr
     def write(self, data):
@@ -298,18 +337,56 @@ class MsgScript(QtWidgets.QMainWindow):
         else:
             ev.ignore()
     
+    #We want to update the display as the script runs.  Therefore, we should never do "self.debugq.put('over')"
+    #We should always step through the code, but we should track if we're "running", and if so, have reading a trace cause another 'step'
     def run_action(self):
-        # save the file
-        self.save_file(self.current_filename)
-        # Create the debug process
-        self.debugprocess = multiprocessing.Process(target=debugger.debug, args=(self.applicationq, self.debugq, self.current_filename))
-        self.debugprocess.start()
+        if self.debugprocess != None:
+            if self.debugprocess.is_alive():
+                #self.debugq.put('over')
+                self.isrunning = True
+                if self.debugq.empty():
+                    self.debugq.put('step')
+            else:
+                self.debugprocess = None
+        if self.debugprocess == None:
+            # save the file
+            self.save_file(self.current_filename)
+            # clear the queues, in case there was anything left over from last run
+            self.debugq = multiprocessing.Queue()
+            self.applicationq = multiprocessing.Queue()
+            # Create the debug process
+            self.debugprocess = multiprocessing.Process(target=debugger.debug, args=(self.applicationq, self.debugq, self.current_filename))
+            self.debugprocess.start()
+            #self.debugprocess.exited.connect(self.process_ended)
+    
+    def step_action(self):
+        if self.debugprocess:
+            if self.debugq.empty():
+                self.debugq.put('step')
+        else:
+            self.write('not running')
+    
+    def step_out_action(self):
+        if self.debugprocess:
+            if self.debugq.empty():
+                self.debugq.put('over')
+        else:
+            self.write('not running')
     
     def pause_action(self):
+        self.isrunning = False
         pass
     
     def stop_action(self):
-        pass
+        self.isrunning = False
+        if self.debugprocess != None:
+            while(self.debugprocess.is_alive()):
+                self.debugprocess.terminate()
+                self.debugprocess.join()
+            self.debugprocess = None
+        else:
+            self.write('Not running')
+        self.editor.ran_to_line(0)
     
     def clear_action(self):
         self.scriptOutput.clear()
