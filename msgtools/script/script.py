@@ -56,6 +56,10 @@ class MsgScript(QtWidgets.QMainWindow):
         runAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-start"), "&Run", self)
         stopAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("media-playback-stop"), "&Stop", self)
         clearAction = QtWidgets.QAction(QtGui.QIcon.fromTheme("user-trash"), "&Clear", self)
+        stepTimeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        stepTimeSlider.setMinimum(0)
+        stepTimeSlider.setMaximum(3)
+        stepTimeSlider.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
 
         debug_menu = menubar.addMenu('&Debug')
         debug_menu.addAction(runAction)
@@ -85,7 +89,9 @@ class MsgScript(QtWidgets.QMainWindow):
         debug_toolbar.addAction(stepOutAction)
         debug_toolbar.addAction(pauseAction)
         debug_toolbar.addAction(stopAction)
-        debug_toolbar.addAction(clearAction)        
+        debug_toolbar.addAction(clearAction)
+        debug_toolbar.addWidget(QtWidgets.QLabel("Step Time"))
+        debug_toolbar.addWidget(stepTimeSlider)
         
         self.setWindowTitle("MsgScript")
 
@@ -100,10 +106,7 @@ class MsgScript(QtWidgets.QMainWindow):
             
         # script output window
         self.scriptOutput = QtWidgets.QPlainTextEdit(self)
-        self.TextOutput.connect(self.output_text)
-        # capture stdout, stderr
-        sys.stdout = self
-        sys.stderr = self
+        self.TextOutput.connect(self.write)
         
         self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.splitter.addWidget(self.editor)
@@ -118,12 +121,14 @@ class MsgScript(QtWidgets.QMainWindow):
         self.debugprocess = None
         self.isrunning = False
         
-        timer = QtCore.QTimer(self)
-        timer.setSingleShot(False)
-        timer.timeout.connect(self.poll_output)
+        self.debug_timer = QtCore.QTimer(self)
+        self.debug_timer.setSingleShot(False)
+        self.debug_timer.timeout.connect(self.poll_output)
         # this determines how quickly we notice the debugger did something,
         # and in turn limits the rate of 'isrunning' auto-stepping
-        timer.start(100)
+        stepTimeSlider.setValue(int(self.settings.value("step_time", 1)))
+        self.time_slider_changed(stepTimeSlider.value())
+        stepTimeSlider.valueChanged.connect(self.time_slider_changed)
 
     # poll output from the applicationq, which is another Process
     def poll_output(self):
@@ -135,25 +140,25 @@ class MsgScript(QtWidgets.QMainWindow):
                 self.write(str(appinfo['stdout']))
             elif 'stderr' in appinfo:
                 self.write(str(appinfo['stderr']))
+            elif 'error' in appinfo:
+                self.editor.crashed()
             elif 'exit' in appinfo:
                 self.stop_action()
             elif 'trace' in appinfo:
                 tr = appinfo['trace']
                 co = appinfo['co']
                 #self.write("%s: line %d\n" % (co['file'], co['lineno']))
-                if self.debugprocess and self.debugprocess.is_alive():
-                    self.editor.ran_to_line(co['lineno'])
-                    if self.isrunning:
-                        if not self.editor.has_breakpoint(co['lineno']):
-                            self.debugq.put('step')
+                if co['file'] == self.current_filename:
+                    if self.debugprocess and self.debugprocess.is_alive():
+                        self.editor.ran_to_line(co['lineno'])
+                        if self.isrunning:
+                            if not self.editor.has_breakpoint(co['lineno']):
+                                self.debugq.put('step')
+                else:
+                    #open another file, switch to it's tab, show the line we're at!?!?
+                    pass
 
-    # stdout/stderr
-    def write(self, data):
-        self.TextOutput.emit(str(data))
-    def flush(self):
-        pass
-
-    def output_text(self, message):
+    def write(self, message):
         self.scriptOutput.moveCursor(QtGui.QTextCursor.End)
         self.scriptOutput.insertPlainText(message)
         self.scriptOutput.moveCursor(QtGui.QTextCursor.End)
@@ -251,7 +256,7 @@ class MsgScript(QtWidgets.QMainWindow):
             self.settings.setValue("geometry", self.saveGeometry())
             self.settings.setValue("windowState", self.saveState())
             self.settings.setValue("last_filename", self.current_filename)
-            self.settings.setValue("SplitterSize", self.splitter.saveState());
+            self.settings.setValue("SplitterSize", self.splitter.saveState())
             ev.accept()
         else:
             ev.ignore()
@@ -304,11 +309,23 @@ class MsgScript(QtWidgets.QMainWindow):
                 self.debugprocess.join()
             self.debugprocess = None
         else:
-            self.write('Not running')
-        self.editor.ran_to_line(0)
+            self.editor.ran_to_line(0)
     
     def clear_action(self):
         self.scriptOutput.clear()
+    
+    def time_slider_changed(self, value):
+        self.settings.setValue("step_time", value)
+        time_val = 100
+        if value == 0:
+            time_val = 10
+        elif value == 1:
+            time_val = 100
+        elif value == 2:
+            time_val = 500
+        elif value == 3:
+            time_val = 1000
+        self.debug_timer.start(time_val)
 
 def main():
     # quiet icon warnings

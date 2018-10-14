@@ -83,6 +83,8 @@ def trace_calls(frame, event, arg):
     # Get a reference for the code object and function name
     co = frame.f_code
 
+    #TODO: If filename doesn't match, maybe still handle stepping,
+    # as long as its source we might want to debug?
     if co.co_filename == trace_lines.debug_filename:
         # Get the source code from the code object
         #print("filename: " + co.co_filename)
@@ -153,8 +155,10 @@ def debug(applicationq, debugq, filename):
         print("Finished")
         trace_lines.applicationq.put({'exit': True})
     except StopExecution:
+        trace_lines.applicationq.put({'error': True})
         print("Stopped")
     except:
+        trace_lines.applicationq.put({'error': True})
         etype, value, tb = sys.exc_info()
         exc = ''.join(traceback.format_exception(etype, value, tb))
         trace_lines.applicationq.put({'exception': exc})

@@ -4,6 +4,7 @@ from PyQt5.Qsci import QsciScintilla, QsciLexerPython
 class EditWindow(QsciScintilla):
     DEBUG_MARKER_NUM = 8
     EXEC_MARKER_NUM = 9
+    CRASH_MARKER_NUM = 10
 
     def __init__(self, parent=None):
         super(EditWindow, self).__init__(parent)
@@ -34,9 +35,13 @@ class EditWindow(QsciScintilla):
         self.markerDefine(QsciScintilla.Circle, self.DEBUG_MARKER_NUM)
         self.setMarkerBackgroundColor(QtGui.QColor("#1111ee"), self.DEBUG_MARKER_NUM)
 
-        # execut emarker
+        # execute marker
         self.markerDefine(QsciScintilla.Circle, self.EXEC_MARKER_NUM)
         self.setMarkerBackgroundColor(QtGui.QColor("#11ee11"), self.EXEC_MARKER_NUM)
+
+        # crash marker
+        self.markerDefine(QsciScintilla.Circle, self.CRASH_MARKER_NUM)
+        self.setMarkerBackgroundColor(QtGui.QColor("#ee1111"), self.CRASH_MARKER_NUM)
 
         # Brace matching: enable for a brace immediately before or after
         # the current position
@@ -66,6 +71,10 @@ class EditWindow(QsciScintilla):
             self.markerDelete(nline, self.DEBUG_MARKER_NUM)
         else:
             self.markerAdd(nline, self.DEBUG_MARKER_NUM)
+    
+    def crashed(self):
+        self.markerDelete(self.last_exec_line, self.EXEC_MARKER_NUM)
+        self.markerAdd(self.last_exec_line, self.CRASH_MARKER_NUM)
 
     # function called to indicate we executed up to a line of code
     def ran_to_line(self, nline):
@@ -73,6 +82,7 @@ class EditWindow(QsciScintilla):
         nline = nline - 1
         if self.markersAtLine(self.last_exec_line) != 0:
             self.markerDelete(self.last_exec_line, self.EXEC_MARKER_NUM)
+            self.markerDelete(self.last_exec_line, self.CRASH_MARKER_NUM)
         if nline >= 0:
             self.markerAdd(nline, self.EXEC_MARKER_NUM)
         self.last_exec_line = nline
