@@ -68,11 +68,6 @@ def trace_lines(frame, event, arg):
     # print("f_locals " + str(frame.f_locals))
     # print("f_trace " + str(frame.f_trace))
 
-class StopExecution(Exception):
-    """Custom exception for stopping code execution"""
-
-    pass
-
 def trace_calls(frame, event, arg):
     """Handler that executes on every invocation of a function call"""
 
@@ -126,7 +121,7 @@ sout = stdout_capture()
 serr = stderr_capture()
 
 def exit_gracefully(signum, frame):
-    raise StopExecution()
+    exit()
 
 def debug(applicationq, debugq, filename):
     """Sets up and starts the debugger"""
@@ -154,9 +149,9 @@ def debug(applicationq, debugq, filename):
         module = importlib.machinery.SourceFileLoader(name, filename).load_module(name)
         print("Finished")
         trace_lines.applicationq.put({'exit': True})
-    except StopExecution:
-        trace_lines.applicationq.put({'error': True})
+    except SystemExit:
         print("Stopped")
+        trace_lines.applicationq.put({'error': True})
     except:
         trace_lines.applicationq.put({'error': True})
         etype, value, tb = sys.exc_info()
