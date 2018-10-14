@@ -100,6 +100,15 @@ class SimplePythonEditor(QsciScintilla):
         if nline >= 0:
             self.markerAdd(nline, self.EXEC_MARKER_NUM)
         self.last_exec_line = nline
+    
+    def has_breakpoint(self, nline):
+        # change to zero based indexing!?!
+        nline = nline - 1
+        markerBitmask = self.markersAtLine(self.last_exec_line)
+        if markerBitmask:
+            if (1 << self.DEBUG_MARKER_NUM) & markerBitmask:
+                return True
+        return False
 
 class MsgScript(QtWidgets.QMainWindow):
     TextOutput = QtCore.pyqtSignal(object)
@@ -226,7 +235,8 @@ class MsgScript(QtWidgets.QMainWindow):
                 if self.debugprocess and self.debugprocess.is_alive():
                     self.editor.ran_to_line(co['lineno'])
                     if self.isrunning:
-                        self.debugq.put('step')
+                        if not self.editor.has_breakpoint(co['lineno']):
+                            self.debugq.put('step')
 
     # stdout/stderr
     def write(self, data):
