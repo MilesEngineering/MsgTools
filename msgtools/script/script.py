@@ -6,11 +6,9 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 try:
     from .edit_window import EditWindow
     from ..script import debugger as debugger
-    print('1')
 except:
     from edit_window import EditWindow
     import debugger
-    print('2')
 
 NEW_FILE = '''\
 from msgtools.lib.messaging import Messaging as M
