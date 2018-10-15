@@ -36,6 +36,7 @@ def elapsedSeconds(timestamp):
 
 class MsgPlot(QWidget):
     Paused = QtCore.pyqtSignal(bool)
+    AddLineError = QtCore.pyqtSignal(str)
     MAX_LENGTH = 500
     def __init__(self, msgClass, fieldInfo, subindex):
         super(QWidget,self).__init__()
@@ -85,14 +86,21 @@ class MsgPlot(QWidget):
             # don't add if it's already there!
             for line in self.lines:
                 if item.fieldInfo == line.fieldInfo:
+                    self.AddLineError.emit("Line %s already on plot" % item.fieldInfo.name)
                     return
-            if item.fieldInfo.units == self.units and type(item.msg) == self.msgClass:
-                fieldIndex = 0
-                try:
-                    fieldIndex = item.index
-                except AttributeError:
-                    pass
-                self.addPlot(type(item.msg), item.fieldInfo, fieldIndex)
+            if type(item.msg) != self.msgClass:
+                self.AddLineError.emit("Message %s != %s, cannot add to same plot" % (type(item.msg).__name__, self.msgClass.__name__))
+                return
+            if item.fieldInfo.units != self.units:
+                self.AddLineError.emit("Units %s != %s, not adding to plot" % (item.fieldInfo.units, self.units))
+                return
+            # index is zero unless the item has something else to use
+            fieldIndex = 0
+            try:
+                fieldIndex = item.index
+            except AttributeError:
+                pass
+            self.addPlot(type(item.msg), item.fieldInfo, fieldIndex)
         except AttributeError:
             pass
 
