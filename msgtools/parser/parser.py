@@ -151,6 +151,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
 
     # if there's no input, return without creating output
     if inputData == 0:
+        print("ERROR!  input is empty!")
         return
 
     # read the template file
@@ -219,10 +220,6 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 if oneOutputFilePerMsg:
                     outfileLen = outFile.tell()
                     outFile.close()
-                    # It's possible to have empty files as some YAML files can serve as a pure base 
-                    # for others that never generate code.  Clean up empty files
-                    if outfileLen == 0:
-                        os.remove(outputFilename)
                 else:
                     firstTime = False
 
@@ -234,10 +231,6 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     if not oneOutputFilePerMsg:
         outfileLen = outFile.tell()
         outFile.close()
-        if outfileLen == 0:
-            # It's possible to have empty files as some YAML files can serve as a pure base 
-            # for others that never generate code.  Clean up empty files
-            os.remove(outputFilename)
 
 def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplateFilename):
     # make the output directory
