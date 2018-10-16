@@ -7,7 +7,7 @@ from PyQt5 import QtGui, QtWidgets, QtCore, QtNetwork
 
 from .app import *
 
-import msgtools.lib.csv
+import msgtools.lib.msgcsv as msgcsv
 
 # tree widget item with support for sorting by a column
 class TreeWidgetItem(QtWidgets.QTreeWidgetItem):
@@ -291,7 +291,7 @@ class MsgCommandWidget(QtWidgets.QWidget):
     
     def tabPressed(self):
         lineOfText = self.lineEdit.text()
-        autocomplete, help = msgtools.lib.csv.csvHelp(lineOfText)
+        autocomplete, help = msgcsv.csvHelp(lineOfText)
         if autocomplete:
             self.lineEdit.setText(autocomplete)
         if help:
@@ -300,7 +300,7 @@ class MsgCommandWidget(QtWidgets.QWidget):
     def returnPressed(self):
         lineOfText = self.lineEdit.text()
         self.addText(lineOfText)
-        msg = msgtools.lib.csv.csvToMsg(lineOfText)
+        msg = msgcsv.csvToMsg(lineOfText)
         if msg:
             self.messageEntered.emit(msg)
             self.addText(" -> Msg\n")
