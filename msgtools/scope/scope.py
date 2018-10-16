@@ -325,6 +325,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
                 # Change title when plot is paused/resumed
                 msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
+                msgPlot.AddLineError.connect(lambda s: QMessageBox.warning(self, "Message Scope", s))
                 plotListForID.append(msgPlot)
                 return msgPlot
         

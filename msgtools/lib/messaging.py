@@ -1,5 +1,5 @@
 # for directory listing, exit function
-import os, glob, sys, struct
+import os, glob, sys, struct, time, json
 
 # for runtime module importing
 import importlib
@@ -53,6 +53,41 @@ def maxVal(arg):
         return fcn
     return _maxVal
 
+import collections
+
+# This simulates a hash table, but with lazy loading, where a module isn't
+# loaded until an attempt is made to use it.  Until then, only None is stored
+# at each hash table location, so that keys() still returns the expected list.
+class MessageNameLoader(collections.UserDict):
+    def __init__(self,*arg,**kw):
+        super(MessageNameLoader, self).__init__(*arg, **kw)
+
+    def __getitem__(self, key):
+        if key in self.data and self.data[key] != None:
+            return self.data[key]
+
+        if key in Messaging.MsgModuleFromName:
+            importlib.import_module(Messaging.MsgModuleFromName[key])
+        return self.data[key]
+
+# This simulates an object with attributes, but with lazy loading, where a module isn't
+# loaded until an attempt is made to use it.
+class MessageAttributeLoader(object):
+    def __init__(self, basename):
+        self.basename = basename
+    
+    def __getattr__(self, key):
+        if self.basename:
+            msgname = self.basename+"."+key
+        else:
+            msgname = key
+
+        if msgname in Messaging.MsgModuleFromName:
+            importlib.import_module(Messaging.MsgModuleFromName[msgname])
+        if key in vars(self):
+            return getattr(self, key)
+        raise AttributeError
+
 class Messaging:
     hdr=None
     hdrSize=0
@@ -60,13 +95,12 @@ class Messaging:
     # hash tables for msg lookups
     MsgNameFromID = {}
     MsgIDFromName = {}
-    MsgClassFromName = {}
+    MsgClassFromName = MessageNameLoader()
+    MsgModuleFromName = {}
 
-    # container for accessing message classes via dot notation.
-    # odd, in python, that using an empty lambda expression is a suitable container
-    # for this, and that some other Object doesn't work better.
-    Messages = lambda: None
-    
+    # container for accessing message classes via attributes.
+    Messages = MessageAttributeLoader("")
+        
     debug=0
 
     @staticmethod
@@ -134,64 +168,127 @@ class Messaging:
 
         # specify our header size, to come from the generated header we imported
         Messaging.hdrSize = Messaging.hdr.SIZE
+        
+        cache_filename = os.path.join(loadDir, 'msglib_cache.json')
+        try:
+            with open(cache_filename, 'r') as fp:
+                msglibinfo = json.load(fp)
+                Messaging.MsgNameFromID     = msglibinfo["MsgNameFromID"]
+                Messaging.MsgIDFromName     = msglibinfo["MsgIDFromName"]
+                Messaging.MsgModuleFromName = msglibinfo["MsgModuleFromName"]
+                for name in Messaging.MsgIDFromName:
+                    # initialize all class lookups to None.
+                    # this is a signal for MessageNameLoader to do a lookup, while
+                    # still providing keys() for users to access.
+                    Messaging.MsgClassFromName[name] = None
+                    
+                    # the below is used to populate the hierarchy of dot-notation,
+                    # *except* for the final class at the end (which will be done
+                    # with lazy lookup)
+                    
+                    # split up the name between periods, and add it to the Messaging object so it
+                    # can be accessed via dot notation
+                    nameParts = name.split(".")
+                    messagingVars = vars(Messaging.Messages)
+                    basename = ""
+                    for namePart in nameParts[:-1]:
+                        if basename:
+                            basename = basename + "." + namePart
+                        else:
+                            basename = namePart
+                        if namePart and not namePart in messagingVars:
+                            messagingVars[namePart] = MessageAttributeLoader(basename)
+                        messagingVars = vars(messagingVars[namePart])
+                
+                # now that cache is built, check if we need to load/reload
+                # any files because their python is newer than the cache
+                cache_file_timestamp = os.path.getmtime(cache_filename)
+        except FileNotFoundError:
+            cache_file_timestamp = 0
 
-        Messaging.LoadDir(loadDir, loadDir)
+        write_cache_file = Messaging.LoadDir(loadDir, loadDir, cache_file_timestamp=cache_file_timestamp)
+
+        if write_cache_file:
+            # store a cache message ID, name, and file data
+            msglibinfo = {
+                "MsgNameFromID":     Messaging.MsgNameFromID,
+                "MsgIDFromName":     Messaging.MsgIDFromName,
+                "MsgModuleFromName": Messaging.MsgModuleFromName
+            }
+            with open(cache_filename, 'w') as fp:
+                json.dump(msglibinfo, fp)
 
     @staticmethod
-    def LoadDir(loadDir, rootDir):
+    def LoadDir(loadDir, rootDir, cache_file_timestamp=0):
+        loaded = False
         for filename in os.listdir(loadDir):
             filepath = loadDir + '/' + filename
             if os.path.isdir(filepath):
                 if filename != 'headers':
                     if Messaging.debug:
                         print("descending into directory ", filepath)
-                    Messaging.LoadDir(filepath, rootDir)
+                    loaded_subdir = Messaging.LoadDir(filepath, rootDir, cache_file_timestamp)
+                    loaded = loaded or loaded_subdir
             elif filename.endswith('.py'):
-                # Build an import friendly module name
-                # Could've just passed the root length to be more efficient
-                # but felt the easier readability was better than the miniscule
-                # performance gain we could've had
-                modulename = filepath[len(rootDir)+1:]
-                modulename = modulename[0:modulename.rfind('.py')]
-                modulename = modulename.replace(os.sep, '.')
-                if Messaging.debug:
-                    print("loading module "+modulename)
-
-                importlib.import_module(modulename)
+                file_timestamp = os.path.getmtime(filepath)
+                if file_timestamp > cache_file_timestamp:
+                    if Messaging.debug and cache_file_timestamp != 0:
+                        print("%s out of date (%f > %f), reloading" % (filename, file_timestamp, cache_file_timestamp))
+                    # Build an import friendly module name
+                    # Could've just passed the root length to be more efficient
+                    # but felt the easier readability was better than the miniscule
+                    # performance gain we could've had
+                    modulename = filepath[len(rootDir)+1:]
+                    modulename = modulename[0:modulename.rfind('.py')]
+                    modulename = modulename.replace(os.sep, '.')
+                    if Messaging.debug:
+                        print("loading module "+modulename)
+        
+                    loaded = True
+                    importlib.import_module(modulename)
+        return loaded
 
     @staticmethod
     def Register(name, id, classDef):
         'add message to the global hash table of names by ID, and IDs by name'
 
-        id = hex(id)
+        hexid = hex(id)
         
         if Messaging.debug:
-            print("Registering", name, "as",id)
+            print("Registering", name, "as",hexid)
         
-        if(id in Messaging.MsgNameFromID):
-            print("WARNING! Trying to define message ", name, " for ID ", id, ", but ", Messaging.MsgNameFromID[id], " already uses that ID")
+        if(hexid in Messaging.MsgNameFromID and Messaging.MsgNameFromID[hexid] != name):
+            print("WARNING! Trying to define message ", name, " for ID ", hexid, ", but ", Messaging.MsgNameFromID[hexid], " already uses that ID")
         
-        Messaging.MsgNameFromID[id] = name
+        Messaging.MsgNameFromID[hexid] = name
 
         Messaging.AddAlias(name, id, classDef)
 
     @staticmethod
     def AddAlias(name, id, classDef):
         'add message to the global hash table of IDs by name'
+        
+        hexid = hex(id)
 
-        if(name in Messaging.MsgIDFromName):
-            print("WARNING! Trying to define message %s for ID %s(%d), but %s(%d) already uses that name" % (name, id, int(id, 0), Messaging.MsgIDFromName[name], int(Messaging.MsgIDFromName[name], 0)))
+        if(name in Messaging.MsgIDFromName and Messaging.MsgIDFromName[name] != hexid):
+            print("WARNING! Trying to define message %s for ID %s(%d), but %s(%d) already uses that name" % (name, hexid, id, Messaging.MsgIDFromName[name], int(Messaging.MsgIDFromName[name], 0)))
 
-        Messaging.MsgIDFromName[name] = id
+        Messaging.MsgIDFromName[name] = hexid
         Messaging.MsgClassFromName[name] = classDef
+        Messaging.MsgModuleFromName[name] = classDef.__module__
 
         # split up the name between periods, and add it to the Messaging object so it
         # can be accessed via dot notation
         nameParts = name.split(".")
         messagingVars = vars(Messaging.Messages)
+        basename = ""
         for namePart in nameParts[:-1]:
+            if basename:
+                basename = basename + "." + namePart
+            else:
+                basename = namePart
             if namePart and not namePart in messagingVars:
-                messagingVars[namePart] = lambda: None
+                messagingVars[namePart] = MessageAttributeLoader(basename)
             messagingVars = vars(messagingVars[namePart])
         messagingVars[nameParts[-1]] = classDef
 
