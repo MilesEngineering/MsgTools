@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# SynchronousMsgServer is a class that contains a TCP server and Websocket server which run asynchronously
+# Server is a class that contains a TCP server and Websocket server which run asynchronously
 # in a background thread, and also allows synchronous code to send and receives messages with it.
 #
 # based on:
@@ -13,26 +13,37 @@ import asyncio
 import websockets
 import janus
 import queue
+from msgtools.lib.messaging import Messaging
 
-class SynchronousMsgServer:
-    def __init__(self, hdr):
-        self.hdr = hdr
+class Server:
+    def __init__(self, timeout=10):
         self.loop = asyncio.get_event_loop()
         from threading import Thread
         self.t = Thread(target=self.start)
         self.t.start()
+        self.timeout = timeout
 
-    def send_message(self, msg):
+    def send(self, msg):
         self.synchronous_tx_queue.sync_q.put(msg.rawBuffer().raw)
     
-    def get_message(self, timeout, msgIds=[]):
+    def recv(self, msgIds=[], timeout=None):
+        # if user didn't pass a list, put the single param into a list
+        if not isinstance(msgIds, list):
+            msgIds = [msgIds]
+        # if they passed classes, get the ID of each
+        for i in range(0,len(msgIds)):
+            if hasattr(msgIds[i], 'ID'):
+                msgIds[i] = msgIds[i].ID
+        if timeout != None and self.timeout != timeout:
+            self.timeout = timeout
         while True:
             try:
-                data = self.synchronous_rx_queue.get(True, timeout)
-                hdr = self.hdr(data)
+                data = self.synchronous_rx_queue.get(True, self.timeout)
+                hdr = Messaging.hdr(data)
                 id = hdr.GetMessageID()
                 if len(msgIds) == 0 or id in msgIds:
-                    return hdr
+                    msg = Messaging.MsgFactory(hdr)
+                    return msg
             except queue.Empty:
                 return None
     
@@ -102,7 +113,7 @@ class SynchronousMsgServer:
     async def handle_tcp_client(self, client_reader):
         #print("handle_tcp_client")
         while True:
-            # we *should* read self.hdr.SIZE bytes,
+            # we *should* read Messaging.hdr.SIZE bytes,
             # then parse header to see body length,
             # then read those bytes.
             data = await client_reader.read(1024)

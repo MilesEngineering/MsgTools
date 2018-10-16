@@ -1,9 +1,6 @@
 # for directory listing, exit function
 import os, glob, sys, struct, time, json
 
-# for reflection/introspection (find a class's methods)
-import inspect
-
 # for runtime module importing
 import importlib
 
