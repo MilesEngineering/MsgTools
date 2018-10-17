@@ -8,32 +8,48 @@ class MessageException(Exception):
     pass
 
 # create a class to load YAML files, and any YAML files they include
-import yaml
-class YamlLoader(yaml.Loader):
-    def __init__(self, stream):
-        self._dirname = os.path.dirname(stream.name)
-        yaml.Loader.__init__(self, stream)
+import ruaml
+from ruamel.std.pathlib import Path
+from ruamel.yaml import YAML
 
-    def include(self, node):
-        filename = os.path.join(self._dirname, node.value)
-        try:
-            inFile = io.open(filename, 'r')
-            return yaml.load(inFile, YamlLoader)
-        except FileNotFoundError:
-            raise MessageException("Error loading " + filename + " for include statement [" + node.value + "]")
+yaml = YAML(typ='safe', pure=True)
+yaml.default_flow_style = False
 
-    def loadFile(self, node):
-        filename = os.path.join(self._dirname, node.value)
-        return "*Not* including " + filename
+def yaml_include(loader, node):
+    y = loader.loader
+    yaml = YAML(typ=y.typ, pure=y.pure)  # same values as including YAML
+    yaml.composer.anchors = loader.composer.anchors
+    return yaml.load(Path(node.value))
 
-YamlLoader.add_constructor('!include', YamlLoader.include)
-YamlLoader.add_constructor('!File', YamlLoader.loadFile)
+def yaml_file(loader, node):
+    pass
+
+def compose_doccument_creator(dict_generator):
+    def my_compose_document(self):
+        self.parser.get_event()
+        node = self.compose_node(None, None)
+        self.parser.get_event()
+        self.anchors = dict_generator(self.anchors)
+        return node
+
+yaml.Composer.compose_document = my_compose_document
+
+parsed_aliases = {}
+def parse_yaml_aliases(file):
+    private_yaml = YAML(typ='safe', pure=True)
+    private_yaml.default_flow_style = False
+    private_yaml.compose_document = compose_document_creator(lambda _: parsed_aliases)
+    private_yaml.load(io.open(filename))
+
+yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases.copy()) 
+yaml.Constructor.add_constructor("!include", yaml_include)
+yaml.Constructor.add_constructor("!File", yaml_file)
 
 def readFile(filename):
     #print("Processing ", filename)
     if filename.endswith(".yaml"):
-        inFile = io.open(filename)
-        return yaml.load(inFile, YamlLoader)
+        infile = io.open(filename)
+        return yaml.load(infile)
     elif filename.endswith(".json"):
         inFile = io.open(filename)
         return json.load(inFile)
