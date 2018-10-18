@@ -142,6 +142,13 @@ class Messaging:
     def LoadHeader(loaddir=None, searchdir=None, headerName="NetworkHeader"):
         loadDir = Messaging.DetermineLoadDir(loaddir, searchdir)
 
+        # if we didn't find valid auto-generated code, this will cause an import error!
+        # the fix is to point to valid auto-generated code!
+        headerModule = importlib.import_module("headers." + headerName)
+
+        # Set the global header class
+        Messaging.hdr = getattr(headerModule, headerName)
+
     @staticmethod
     def LoadAllMessages(loaddir=None, searchdir=None, headerName="NetworkHeader"):
         '''
@@ -163,7 +170,7 @@ class Messaging:
         # the fix is to point to valid auto-generated code!
         headerModule = importlib.import_module("headers." + headerName)
 
-        # Set the global header name
+        # Set the global header class
         Messaging.hdr = getattr(headerModule, headerName)
 
         # specify our header size, to come from the generated header we imported
