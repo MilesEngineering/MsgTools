@@ -66,7 +66,7 @@ setup(name='msgtools',
         'pyyaml',
         'websockets',
         'janus',
-        'ruamel',
+        'ruamel.yaml',
         'jinja2'
     ],
     extras_require={
