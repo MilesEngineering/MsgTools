@@ -264,14 +264,15 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 msgClass = Messaging.MsgClassFromName[msgName]
                 
                 fieldNames = plot.split(":")[1].split(",")
-                firstTime = True
-                for fieldInfo in msgClass.fields:
-                    if fieldInfo.name in fieldNames:
-                        if firstTime:
-                            msgPlot = self.addPlot(msg_key, msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
-                            firstTime = False
+                msgPlot = None
+                for fieldName in fieldNames:
+                    try:
+                        if msgPlot == None:
+                            msgPlot = self.addPlot(msg_key, msgClass, fieldName)
                         else:
-                            msgPlot.addPlot(msgClass, fieldInfo, 0) # non-zero for subsequent elements of arrays!
+                            msgPlot.addLine(msgClass, fieldName)
+                    except MsgPlot.PlotError as e:
+                        print(e)
         self.txSplitter.restoreState(self.settings.value("txSplitterSizes", self.txSplitter.saveState()));
         self.rxSplitter.restoreState(self.settings.value("rxSplitterSizes", self.rxSplitter.saveState()));
         self.hSplitter.restoreState(self.settings.value("hSplitterSizes", self.hSplitter.saveState()));
@@ -284,7 +285,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             for plot in plotListForID:
                 plotConfig = msg_key + ":"
                 for line in plot.lines:
-                    plotConfig += line.fieldInfo.name + ","
+                    plotConfig += "%s[%d]," % (line.fieldInfo.name, line.fieldSubindex)
                 plotConfig = plotConfig[:-1]
                 plotList += plotConfig + "|"
         if plotList:
@@ -305,42 +306,36 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.debugWidget.textEntryWidget.addToHistory(text)
         self.SendMsg(msg)
     
-    def addPlot(self, msg_key, msgClass, fieldInfo, fieldIndex):
+    def addPlot(self, msg_key, msgClass, fieldName):
         plotListForID = []
         if msg_key in self.msgPlots:
             plotListForID = self.msgPlots[msg_key]
         else:
             self.msgPlots[msg_key] = plotListForID
-        alreadyThere = False
-        for plot in plotListForID:
-            for line in plot.lines:
-                if line.fieldInfo == fieldInfo and line.fieldSubindex == fieldIndex:
-                    alreadyThere = True
-        if not alreadyThere:
-            plotName = msgClass.MsgName()
-            if plottingLoaded:
-                msgPlot = MsgPlot(msgClass, fieldInfo, fieldIndex)
-                # add a dock widget for new plot
-                dockWidget = ClosableDockWidget(plotName, self, msgPlot, plotListForID)
-                self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
-                # Change title when plot is paused/resumed
-                msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
-                msgPlot.AddLineError.connect(lambda s: QMessageBox.warning(self, "Message Scope", s))
-                plotListForID.append(msgPlot)
-                return msgPlot
+        plotName = msgClass.MsgName()
+        if plottingLoaded:
+            msgPlot = MsgPlot(msgClass, fieldName)
+            # add a dock widget for new plot
+            dockWidget = ClosableDockWidget(plotName, self, msgPlot, plotListForID)
+            self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
+            # Change title when plot is paused/resumed
+            msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
+            msgPlot.AddLineError.connect(lambda s: QMessageBox.warning(self, "Message Scope", s))
+            plotListForID.append(msgPlot)
+            return msgPlot
         
     def onRxMessageFieldSelected(self, rxWidgetItem):
         if isinstance(rxWidgetItem, txtreewidget.FieldItem) or isinstance(rxWidgetItem, txtreewidget.FieldArrayItem):
             fieldInfo = rxWidgetItem.fieldInfo
-            fieldIndex = 0
-            if isinstance(rxWidgetItem, txtreewidget.FieldArrayItem):
-                fieldIndex = rxWidgetItem.index
             msg_id = hex(rxWidgetItem.msg.hdr.GetMessageID())
             msg_key = ",".join(Messaging.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
-            msgPlot = self.addPlot(msg_key, type(rxWidgetItem.msg), fieldInfo, fieldIndex)
-            if msgPlot:
-                msgPlot.addData(rxWidgetItem.msg)
-
+            try:
+                msgPlot = self.addPlot(msg_key, type(rxWidgetItem.msg), rxWidgetItem.fieldName)
+                if msgPlot:
+                    msgPlot.addData(rxWidgetItem.msg)
+            except MsgPlot.PlotError as e:
+                QMessageBox.warning(self, "Message Scope", str(e))
+                
     def ProcessMessage(self, msg):
         self.debugWidget.ProcessMessage(msg)
 

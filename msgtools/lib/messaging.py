@@ -354,7 +354,7 @@ class Messaging:
         elif("float" in fieldInfo.type):
             value = float(value)
         
-        if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
+        if fieldInfo.count == 1:
             fieldInfo.set(msg, value)
         else:
             fieldInfo.set(msg, value, index)
@@ -362,7 +362,7 @@ class Messaging:
     @staticmethod
     def get(msg, fieldInfo, index=0):
         try:
-            if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
+            if fieldInfo.count == 1:
                 value = fieldInfo.get(msg)
             else:
                 value = fieldInfo.get(msg, index)
@@ -394,13 +394,11 @@ class Messaging:
     @staticmethod
     def findFieldInfo(fieldInfos, name):
         for fi in fieldInfos:
-            if len(fi.bitfieldInfo) == 0:
-                if name == fi.name:
-                    return fi
-            else:
-                for bfi in fi.bitfieldInfo:
-                    if name == bfi.name:
-                        return bfi
+            if name == fi.name:
+                return fi
+            for bfi in fi.bitfieldInfo:
+                if name == bfi.name:
+                    return bfi
         return None
 
     # This is composed of all the header fields that are not length, time, and any ID fields.
@@ -435,6 +433,7 @@ class BitFieldInfo(object):
         self.description=description
         self.get=get
         self.set=set
+        self.count=1
         self.enum=enum
         self.idbits=idbits
 

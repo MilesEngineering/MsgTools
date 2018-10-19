@@ -14,6 +14,7 @@ class FieldItem(QTreeWidgetItem):
         QTreeWidgetItem.__init__(self, None, column_strings)
         
         self.fieldInfo = fieldInfo
+        self.fieldName = fieldInfo.name
         self.msg = msg
         
     def data(self, column, role):
@@ -141,6 +142,10 @@ class FieldArrayItem(QTreeWidgetItem):
         QTreeWidgetItem.__init__(self, None, column_strings)
         
         self.fieldInfo = fieldInfo
+        if index == None:
+            self.fieldName = fieldInfo.name
+        else:
+            self.fieldName = "%s[%d]" % (fieldInfo.name, index)
         self.msg = msg
         self.index = index
 
