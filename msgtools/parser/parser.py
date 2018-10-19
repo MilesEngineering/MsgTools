@@ -343,7 +343,7 @@ def main():
         templateFilename = getTemplate(languageFilename, DEFAULT_TEMPLATE)
     if headerTemplateFilename is None:
         headerTemplateFilename = getTemplate(languageFilename, DEFAULT_HEADER_TEMPLATE)
-   
+    
     if args.aliases:
         parse_yaml_aliases(args.aliases)
 
