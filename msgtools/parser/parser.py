@@ -317,7 +317,7 @@ def main():
     parser.add_argument('-ht', '--headertemplate', dest='headertemplate', 
         help='''Header template applied to messages in the "headers" folder.  If unspecified defaults to the 
                 template provided by MsgTools.''')
-    parser.add_argument('-ya', '--anchors', dest='anchors',
+    parser.add_argument('-a', '--anchors', dest='anchors',
         help='''File to parse for anchors to predefine in YAML parser, to allow reuse of anchors between messages.''')
     args = parser.parse_args()
   

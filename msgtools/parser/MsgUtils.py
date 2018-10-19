@@ -19,7 +19,7 @@ def _node_path(loader, node):
 def yaml_include(loader, node):
     y = loader.loader
     yaml = YAML(typ=y.typ, pure=y.pure)  # same values as including YAML
-    yaml.Composer.compose_document = loader.Composer.compose_document # Preserve parsed_aliases
+    yaml.Composer.compose_document = y.Composer.compose_document # Preserve parsed_aliases
     filename = _node_path(y, node)
     try:
         inFile = io.open(filename, 'r')
@@ -42,7 +42,7 @@ def compose_document_creator(pre = lambda _:_, post = lambda _:_):
     return my_compose_document
 
 parsed_anchors = {}
-def parse_yaml_aliases(filename):
+def parse_yaml_anchors(filename):
     yaml = YAML(typ='safe', pure=True)
     yaml.default_flow_style = False
     yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_anchors) 
