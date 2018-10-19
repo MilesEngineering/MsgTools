@@ -41,18 +41,18 @@ def compose_document_creator(pre = lambda _:_, post = lambda _:_):
         return node
     return my_compose_document
 
-parsed_aliases = {}
+parsed_anchors = {}
 def parse_yaml_aliases(filename):
     yaml = YAML(typ='safe', pure=True)
     yaml.default_flow_style = False
-    yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases) 
+    yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_anchors) 
     try:
         inFile = io.open(filename, 'r')
         return yaml.load(inFile)
     except FileNotFoundError:
-        raise MessageException("Error loading " + filename + " for aliases!")
+        raise MessageException("Error loading " + filename + " for predefined anchors!")
 
-yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases.copy()) 
+yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_anchors.copy()) 
 yaml.Constructor.add_constructor("!include", yaml_include)
 yaml.Constructor.add_constructor("!File", yaml_file)
 

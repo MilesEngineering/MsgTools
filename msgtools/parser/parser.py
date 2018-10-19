@@ -317,8 +317,8 @@ def main():
     parser.add_argument('-ht', '--headertemplate', dest='headertemplate', 
         help='''Header template applied to messages in the "headers" folder.  If unspecified defaults to the 
                 template provided by MsgTools.''')
-    parser.add_argument('--aliases', 
-        help='''Anchors to preseed YAML parser with, to aid in preventing code reuse.''')
+    parser.add_argument('-ya', '--anchors', dest='anchors',
+        help='''File to parse for anchors to predefine in YAML parser, to allow reuse of anchors between messages.''')
     args = parser.parse_args()
   
     global inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename
@@ -344,8 +344,8 @@ def main():
     if headerTemplateFilename is None:
         headerTemplateFilename = getTemplate(languageFilename, DEFAULT_HEADER_TEMPLATE)
     
-    if args.aliases:
-        parse_yaml_aliases(args.aliases)
+    if args.anchors:
+        parse_yaml_anchors(args.anchors)
 
     if(os.path.exists(inputFilename)):
         if(os.path.isdir(inputFilename)):
