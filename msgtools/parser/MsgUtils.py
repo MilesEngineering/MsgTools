@@ -19,7 +19,7 @@ def _node_path(loader, node):
 def yaml_include(loader, node):
     y = loader.loader
     yaml = YAML(typ=y.typ, pure=y.pure)  # same values as including YAML
-    yaml.composer.anchors = loader.composer.anchors
+    yaml.Composer.compose_document = loader.Composer.compose_document # Preserve parsed_aliases
     filename = _node_path(y, node)
     try:
         inFile = io.open(filename, 'r')
@@ -46,7 +46,11 @@ def parse_yaml_aliases(filename):
     yaml = YAML(typ='safe', pure=True)
     yaml.default_flow_style = False
     yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases) 
-    yaml.load(io.open(filename))
+    try:
+        inFile = io.open(filename, 'r')
+        return yaml.load(inFile)
+    except FileNotFoundError:
+        raise MessageException("Error loading " + filename + " for aliases!")
 
 yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases.copy()) 
 yaml.Constructor.add_constructor("!include", yaml_include)
