@@ -5,6 +5,7 @@ matrix:
     before_install:
       - sudo apt-get install -y qt5-default qttools5-dev-tools
     install: "pip install pyyaml"
+    install: "pip install ruamel.yaml"
     script: make test
   - language: android
     jdk: oraclejdk8
