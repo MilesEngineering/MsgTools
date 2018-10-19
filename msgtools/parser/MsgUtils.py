@@ -13,23 +13,31 @@ from ruamel.yaml import YAML
 yaml = YAML(typ='safe', pure=True)
 yaml.default_flow_style = False
 
+def _node_path(loader, node):
+    return os.path.join(os.path.dirname(y.reader.name), node.value)
 
 def yaml_include(loader, node):
     y = loader.loader
     yaml = YAML(typ=y.typ, pure=y.pure)  # same values as including YAML
     yaml.composer.anchors = loader.composer.anchors
-    path = os.path.join(os.path.dirname(y._reader.name), node.value)
-    return yaml.load(io.open(path))
+    filename = _node_path(y, node)
+    try:
+        inFile = io.open(filename, 'r')
+        return yaml.load(inFile)
+    except FileNotFoundError:
+        raise MessageException("Error loading " + filename + " for include statement [" + node.value + "]")
 
 
 def yaml_file(loader, node):
-    pass
+    filename = _node_path(loader.loader, node)
+    return "*Not* including " + filename
 
-def compose_document_creator(dict_generator):
+def compose_document_creator(pre = lambda _:_, post = lambda _:_):
     def my_compose_document(self):
         self.parser.get_event()
-        self.anchors = dict_generator(self.anchors)
+        self.anchors = pre(self.anchors)
         node = self.compose_node(None, None)
+        self.anchors = post(self.anchors)
         self.parser.get_event()
         return node
     return my_compose_document
@@ -48,8 +56,8 @@ yaml.Constructor.add_constructor("!File", yaml_file)
 def readFile(filename):
     #print("Processing ", filename)
     if filename.endswith(".yaml"):
-        infile = io.open(filename)
-        return yaml.load(infile)
+        inFile = io.open(filename)
+        return yaml.load(inFile)
     elif filename.endswith(".json"):
         inFile = io.open(filename)
         return json.load(inFile)
