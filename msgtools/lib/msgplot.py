@@ -3,6 +3,7 @@
 Plot message data in scrolling window
 """
 import sys
+import argparse
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -35,11 +36,23 @@ def elapsedSeconds(timestamp):
     return timestamp
 
 class MsgPlot(QWidget):
+    class PlotError(Exception):
+        pass
+
+    class NewPlotError(PlotError):
+        pass
+
     Paused = QtCore.pyqtSignal(bool)
     AddLineError = QtCore.pyqtSignal(str)
     MAX_LENGTH = 500
-    def __init__(self, msgClass, fieldInfo, subindex):
+    def __init__(self, msgClass, fieldName):
         super(QWidget,self).__init__()
+        
+        newFieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
+        fieldInfo = Messaging.findFieldInfo(msgClass.fields, newFieldName)
+        if fieldInfo == None:
+            raise MsgPlot.PlotError("Invalid field %s for message %s" % (newFieldName, msgClass.MsgName()))
+
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.msgClass = msgClass
@@ -53,7 +66,7 @@ class MsgPlot(QWidget):
         self.plotWidget = pg.PlotWidget(labels={'left':yAxisLabel,'bottom':xAxisLabel})
         layout.addWidget(self.plotWidget)
         self.plotWidget.addLegend()
-        self.addPlot(msgClass, fieldInfo, subindex)
+        self.addLine(msgClass, fieldName)
 
         # set up click handler to pause graph
         self.plotWidget.scene().sigMouseClicked.connect(self.mouseClicked)
@@ -70,7 +83,17 @@ class MsgPlot(QWidget):
         self.plotWidget.dragMoveEvent = self.dragMoveEvent
         self.plotWidget.dropEvent = self.dropEvent
         self.plotWidget.setAcceptDrops(1)
-        
+
+    @staticmethod
+    def split_fieldname(fieldName):
+        fieldIndex = None
+        if '[' in fieldName  and ']' in fieldName:
+            splits = fieldName.split('[')
+            splits[1] = splits[1].replace(']','')
+            fieldName = splits[0]
+            fieldIndex = int(splits[1])
+        return (fieldName, fieldIndex)
+
     def dragEnterEvent(self, ev):
         # need to accept enter event, or we won't get move event
         ev.accept()
@@ -81,42 +104,72 @@ class MsgPlot(QWidget):
 
     def dropEvent(self, ev):
         ev.accept()
+        item = ev.source().currentItem()
         try:
-            item = ev.source().currentItem()
-            # don't add if it's already there!
-            for line in self.lines:
-                if item.fieldInfo == line.fieldInfo:
-                    self.AddLineError.emit("Line %s already on plot" % item.fieldInfo.name)
-                    return
-            if type(item.msg) != self.msgClass:
-                self.AddLineError.emit("Message %s != %s, cannot add to same plot" % (type(item.msg).__name__, self.msgClass.__name__))
-                return
-            if item.fieldInfo.units != self.units:
-                self.AddLineError.emit("Units %s != %s, not adding to plot" % (item.fieldInfo.units, self.units))
-                return
-            # index is zero unless the item has something else to use
-            fieldIndex = 0
-            try:
-                fieldIndex = item.index
-            except AttributeError:
-                pass
-            self.addPlot(type(item.msg), item.fieldInfo, fieldIndex)
-        except AttributeError:
-            pass
+            self.addLine(type(item.msg), item.fieldName)
+        except MsgPlot.PlotError as e:
+            self.AddLineError.emit(str(e))
 
-    def addPlot(self, msgClass, fieldInfo, subindex):
+    def addLine(self, msgClass, fieldName):
+        fieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
+        fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
+        if fieldInfo == None:
+            raise MsgPlot.PlotError("Invalid field %s for message %s" % (fieldName, msgClass.MsgName()))
+        
+        if fieldInfo.units == "ASCII":
+            raise MsgPlot.PlotError("Cannot plot %s.%s, it is a string" % (msgClass.MsgName(), fieldName))
+        
+        # don't add if it's already there!
+        for line in self.lines:
+            if fieldInfo == line.fieldInfo and fieldIndex == line.fieldSubindex:
+                name = fieldInfo.name
+                if fieldInfo.count > 1:
+                    name = "%s[%d]" % (name, fieldIndex)
+                raise MsgPlot.PlotError("Line %s already on plot" % name)
+        if msgClass != self.msgClass:
+            raise MsgPlot.NewPlotError("Message %s != %s, cannot add to same plot" % (msgClass.__name__, self.msgClass.__name__))
+        if fieldInfo.units != self.units:
+            raise MsgPlot.NewPlotError("Units %s != %s, not adding to plot" % (fieldInfo.units, self.units))
+        
+        if fieldIndex != None:
+            self._addLine(msgClass, fieldInfo, fieldIndex)
+        elif fieldInfo.count == 1:
+            self._addLine(msgClass, fieldInfo, 0)
+        else:
+            dups = []
+            for fieldIndex in range(0, fieldInfo.count):
+                duplicate = False
+                for line in self.lines:
+                    if fieldInfo == line.fieldInfo and fieldIndex == line.fieldSubindex:
+                        dups.append(fieldIndex)
+                        duplicate = True
+                        break
+                if not duplicate:
+                    self._addLine(msgClass, fieldInfo, fieldIndex)
+            if len(dups) > 0:
+                if len(dups) == 1:
+                    s = ' '+str(dups[0])
+                elif len(dups) == fieldInfo.count:
+                    s = 's %d-%d' % (0, fieldInfo.count)
+                else:
+                    s = 's '
+                    for d in dups:
+                        s += '%s,' % d
+                raise MsgPlot.PlotError("Line%s already on plot" % s)
+
+    def _addLine(self, msgClass, fieldInfo, fieldIndex):
         lineName = fieldInfo.name
         try:
             if fieldInfo.count != 1:
-                lineName += "["+str(self.fieldSubindex)+"]"
-        except AttributeError:
+                lineName += "["+str(fieldIndex)+"]"
+        except:
             pass
         dataArray = []
         timeArray = []
         ptr1 = 0
         self.useHeaderTime = 0
-        curve = self.plotWidget.plot(timeArray, dataArray, name=lineName, pen=(len(self.lines),3))
-        lineInfo = LineInfo(fieldInfo, subindex, dataArray, timeArray, curve, ptr1)
+        curve = self.plotWidget.plot(timeArray, dataArray, name=lineName, pen=(len(self.lines)))
+        lineInfo = LineInfo(fieldInfo, fieldIndex, dataArray, timeArray, curve, ptr1)
         self.lines.append(lineInfo)
         
     def mouseClicked(self, ev):
@@ -127,7 +180,14 @@ class MsgPlot(QWidget):
     def addData(self, msg):
         # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
         for line in self.lines:
-            newDataPoint = Messaging.getFloat(msg, line.fieldInfo, line.fieldSubindex)
+            try:
+                newDataPoint = Messaging.getFloat(msg, line.fieldInfo, line.fieldSubindex)
+            except ValueError:
+                print("ERROR! Plot of %s.%s cannot accept value %s" % (
+                    self.msgClass.MsgName(),
+                    line.fieldInfo.name,
+                    Messaging.get(msg, line.fieldInfo, line.fieldSubindex)))
+                continue
             try:
                 timestamp = msg.hdr.GetTime()
                 if Messaging.findFieldInfo(msg.hdr.fields, "Time").units == "ms":
@@ -162,56 +222,82 @@ class MsgPlot(QWidget):
                 line.curve.setData(timeArray, dataArray)
                 line.curve.setPos(line.ptr1, 0)
 
+    @staticmethod
+    def plotFactory(msgPlot, new_plot, msgClass, fieldNames):
+        if len(fieldNames) == 0:
+            fieldNames = [fieldInfo.name for fieldInfo in msgClass.fields]
+        for fieldName in fieldNames:
+            # if there's a plot widget, try adding a line to it
+            if msgPlot != None:
+                try:
+                    msgPlot.addLine(msgClass, fieldName)
+                except MsgPlot.NewPlotError as e:
+                    # if error on adding to existing plot, then make a new plot
+                    msgPlot = None
+                except MsgPlot.PlotError as e:
+                    print(str(e))
+            
+            # make new plot
+            if msgPlot == None:
+                try:
+                    msgPlot = MsgPlot(msgClass, fieldName)
+                    new_plot(msgPlot)
+                except MsgPlot.PlotError as e:
+                    print(str(e))
+        return msgPlot
+
+
 import msgtools.lib.gui
 
 class MessagePlotGui(msgtools.lib.gui.Gui):
     def __init__(self, argv, parent=None):
-        msgtools.lib.gui.Gui.__init__(self, "Message Plot 0.1", argv, [], parent)
+        parser = argparse.ArgumentParser(description="Tool to plot message fields")
+        parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
+        args=parser.parse_args([arg for arg in argv[1:] if not '=' in arg])
 
-        vbox = QVBoxLayout()
+        msgtools.lib.gui.Gui.__init__(self, "Message Plot 0.1", args, parent)
+
+        self.plotlayout = QVBoxLayout()
         centralWidget = QWidget()
-        centralWidget.setLayout(vbox)
+        centralWidget.setLayout(self.plotlayout)
         self.setCentralWidget(centralWidget)
         self.msgPlots = {}
         self.RxMsg.connect(self.ProcessMessage)
 
-        if len(sys.argv) < 1:
+        if len(sys.argv) < 2:
             sys.stderr.write('Usage: ' + sys.argv[0] + ' msg1=field1[,field2] [msg2=field1,field2,field3]\n')
             sys.exit(1)
         
+        msgPlot = None
         for arg in argv[1:]:
             argComponentList = arg.split("=")
             msgName = argComponentList[0]
             fieldNameList = argComponentList[1]
 
-            self.msgClass = Messaging.MsgClassFromName[msgName]
+            try:
+                msgClass = Messaging.MsgClassFromName[msgName]
+            except KeyError:
+                print("ERROR!  Invalid message name " + msgName)
+                continue
             
-            fieldNames = fieldNameList.split(",")
-            firstField = 1
-            for fieldName in fieldNames:
-                fieldInfo = Messaging.findFieldInfo(self.msgClass.fields, fieldName)
-                if fieldInfo != None:
-                    if firstField:
-                        plot = MsgPlot(self.msgClass, fieldInfo, 0)
-                        vbox.addWidget(plot.plotWidget)
-                        firstField = 0
-                        plotListForID = []
-                        if self.msgClass.ID in self.msgPlots:
-                            plotListForID = self.msgPlots[self.msgClass.ID]
-                        else:
-                            self.msgPlots[self.msgClass.ID] = plotListForID
-                        plotListForID.append(plot)
-                    else:
-                        plot.addPlot(self.msgClass, fieldInfo, 0)
+            if fieldNameList:
+                fieldNames = fieldNameList.split(",")
+            else:
+                fieldNames = []
+            msgPlot = MsgPlot.plotFactory(msgPlot, self.newPlot, msgClass, fieldNames)
 
+    def newPlot(self, plot):
+        self.plotlayout.addWidget(QLabel(plot.msgClass.MsgName()))
+        self.plotlayout.addWidget(plot)
+        if not plot.msgClass.ID in self.msgPlots:
+            self.msgPlots[plot.msgClass.ID] = []
+        self.msgPlots[plot.msgClass.ID].append(plot)
+    
     def ProcessMessage(self, msg):
-        try:
-            if self.msgClass.ID in self.msgPlots:
-                plotListForID = self.msgPlots[msg.ID]
-                for plot in plotListForID:
-                    plot.addData(msg)
-        except AttributeError:
-            pass
+        if msg.ID in self.msgPlots:
+            plotListForID = self.msgPlots[msg.ID]
+            for plot in plotListForID:
+                plot.addData(msg)
 
 def main(args=None):
     app = QApplication(sys.argv)

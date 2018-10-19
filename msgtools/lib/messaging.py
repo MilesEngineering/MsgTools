@@ -142,6 +142,13 @@ class Messaging:
     def LoadHeader(loaddir=None, searchdir=None, headerName="NetworkHeader"):
         loadDir = Messaging.DetermineLoadDir(loaddir, searchdir)
 
+        # if we didn't find valid auto-generated code, this will cause an import error!
+        # the fix is to point to valid auto-generated code!
+        headerModule = importlib.import_module("headers." + headerName)
+
+        # Set the global header class
+        Messaging.hdr = getattr(headerModule, headerName)
+
     @staticmethod
     def LoadAllMessages(loaddir=None, searchdir=None, headerName="NetworkHeader"):
         '''
@@ -163,7 +170,7 @@ class Messaging:
         # the fix is to point to valid auto-generated code!
         headerModule = importlib.import_module("headers." + headerName)
 
-        # Set the global header name
+        # Set the global header class
         Messaging.hdr = getattr(headerModule, headerName)
 
         # specify our header size, to come from the generated header we imported
@@ -347,7 +354,7 @@ class Messaging:
         elif("float" in fieldInfo.type):
             value = float(value)
         
-        if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
+        if fieldInfo.count == 1:
             fieldInfo.set(msg, value)
         else:
             fieldInfo.set(msg, value, index)
@@ -355,7 +362,7 @@ class Messaging:
     @staticmethod
     def get(msg, fieldInfo, index=0):
         try:
-            if not hasattr(fieldInfo, "count") or fieldInfo.count == 1:
+            if fieldInfo.count == 1:
                 value = fieldInfo.get(msg)
             else:
                 value = fieldInfo.get(msg, index)
@@ -387,13 +394,11 @@ class Messaging:
     @staticmethod
     def findFieldInfo(fieldInfos, name):
         for fi in fieldInfos:
-            if len(fi.bitfieldInfo) == 0:
-                if name == fi.name:
-                    return fi
-            else:
-                for bfi in fi.bitfieldInfo:
-                    if name == bfi.name:
-                        return bfi
+            if name == fi.name:
+                return fi
+            for bfi in fi.bitfieldInfo:
+                if name == bfi.name:
+                    return bfi
         return None
 
     # This is composed of all the header fields that are not length, time, and any ID fields.
@@ -428,6 +433,7 @@ class BitFieldInfo(object):
         self.description=description
         self.get=get
         self.set=set
+        self.count=1
         self.enum=enum
         self.idbits=idbits
 
