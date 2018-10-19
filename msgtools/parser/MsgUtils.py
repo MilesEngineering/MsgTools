@@ -27,7 +27,6 @@ def yaml_include(loader, node):
     except FileNotFoundError:
         raise MessageException("Error loading " + filename + " for include statement [" + node.value + "]")
 
-
 def yaml_file(loader, node):
     filename = _node_path(loader.loader, node)
     return "*Not* including " + filename
@@ -44,10 +43,10 @@ def compose_document_creator(pre = lambda _:_, post = lambda _:_):
 
 parsed_aliases = {}
 def parse_yaml_aliases(filename):
-    private_yaml = YAML(typ='safe', pure=True)
-    private_yaml.default_flow_style = False
-    private_yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases) 
-    private_yaml.load(io.open(filename))
+    yaml = YAML(typ='safe', pure=True)
+    yaml.default_flow_style = False
+    yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases) 
+    yaml.load(io.open(filename))
 
 yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases.copy()) 
 yaml.Constructor.add_constructor("!include", yaml_include)
