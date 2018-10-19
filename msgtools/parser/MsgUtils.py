@@ -14,7 +14,7 @@ yaml = YAML(typ='safe', pure=True)
 yaml.default_flow_style = False
 
 def _node_path(loader, node):
-    return os.path.join(os.path.dirname(y.reader.name), node.value)
+    return os.path.join(os.path.dirname(loader.reader.name), node.value)
 
 def yaml_include(loader, node):
     y = loader.loader
