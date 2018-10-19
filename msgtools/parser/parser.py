@@ -345,7 +345,6 @@ def main():
         headerTemplateFilename = getTemplate(languageFilename, DEFAULT_HEADER_TEMPLATE)
    
     if args.aliases:
-        print("Parsing aliases from "+args.aliases)
         parse_yaml_aliases(args.aliases)
 
     if(os.path.exists(inputFilename)):

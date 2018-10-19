@@ -8,20 +8,19 @@ class MessageException(Exception):
     pass
 
 # create a class to load YAML files, and any YAML files they include
-from ruamel.std.pathlib import Path
 from ruamel.yaml import YAML
 
 yaml = YAML(typ='safe', pure=True)
 yaml.default_flow_style = False
 
 
-
 def yaml_include(loader, node):
     y = loader.loader
     yaml = YAML(typ=y.typ, pure=y.pure)  # same values as including YAML
     yaml.composer.anchors = loader.composer.anchors
-    path = os.path.join(os.path.dirname(y._reader.name), Path(node.value))
+    path = os.path.join(os.path.dirname(y._reader.name), node.value)
     return yaml.load(io.open(path))
+
 
 def yaml_file(loader, node):
     pass
@@ -29,9 +28,9 @@ def yaml_file(loader, node):
 def compose_document_creator(dict_generator):
     def my_compose_document(self):
         self.parser.get_event()
+        self.anchors = dict_generator(self.anchors)
         node = self.compose_node(None, None)
         self.parser.get_event()
-        self.anchors = dict_generator(self.anchors).update(self.anchors)
         return node
     return my_compose_document
 
@@ -39,8 +38,8 @@ parsed_aliases = {}
 def parse_yaml_aliases(filename):
     private_yaml = YAML(typ='safe', pure=True)
     private_yaml.default_flow_style = False
+    private_yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases) 
     private_yaml.load(io.open(filename))
-    import pdb; pdb.set_trace()
 
 yaml.Composer.compose_document = compose_document_creator(lambda _: parsed_aliases.copy()) 
 yaml.Constructor.add_constructor("!include", yaml_include)
