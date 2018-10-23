@@ -247,7 +247,7 @@ class Messaging:
                     # performance gain we could've had
                     modulename = filepath[len(rootDir)+1:]
                     modulename = modulename[0:modulename.rfind('.py')]
-                    modulename = modulename.replace(os.sep, '.')
+                    modulename = modulename.replace('/', '.')
                     if Messaging.debug:
                         print("loading module "+modulename)
         
