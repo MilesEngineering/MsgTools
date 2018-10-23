@@ -120,9 +120,10 @@ class Messaging:
                 if lastsearchdir == searchdir:
                     # if we're at root of filesystem, just give up!
                     loadDir = None
-                    #print("\nERROR! Auto-generated python code not found!")
-                    #print("cd to a directory downstream from a parent of obj/CodeGenerator/Python\n")
-                    break
+                    raise RuntimeError('''
+ERROR! Auto-generated python code not found!
+cd to a directory downstream from a parent of obj/CodeGenerator/Python
+or specify that directory with --msgdir=PATH''')
                 loadDir = searchdir + "/obj/CodeGenerator/Python/"
                 if Messaging.debug:
                     print("search for objdir in " + loadDir)
