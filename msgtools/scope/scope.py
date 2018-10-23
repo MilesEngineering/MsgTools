@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 import struct
 from datetime import datetime
@@ -11,13 +12,14 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
-try:
-    from msgtools.lib.messaging import Messaging
-except ImportError:
-    import os
+# if started via invoking this file directly (like would happen with source sitting on disk),
+# insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
+# any other already in the path.
+if __name__ == '__main__':
     srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-    sys.path.append(srcroot)
-    from msgtools.lib.messaging import Messaging
+    sys.path.insert(1, srcroot)
+from msgtools.lib.messaging import Messaging
+
 import msgtools.lib.gui
 import msgtools.lib.msgcsv as msgcsv
 import msgtools.debug.debug

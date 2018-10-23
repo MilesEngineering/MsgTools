@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
 import re
 import collections
+import os
 import sys
 import struct
 import argparse
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-try:
-    from msgtools.lib.messaging import Messaging
-except ImportError:
-    import os
-    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../../MsgTools")
-    sys.path.append(srcroot)
-    try:
-        from msgtools.lib.messaging import Messaging
-    except ImportError:
-        print("ERROR!  You must have MsgTools in a place that can be found!")
-        print("If you don't have it installed via pip, clone it from git and do 'make develop' in MsgTools")
-        sys.exit(1)
-
+# if started via invoking this file directly (like would happen with source sitting on disk),
+# insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
+# any other already in the path.
+if __name__ == '__main__':
+    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
+    sys.path.insert(1, srcroot)
+from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 import msgtools.lib.msgjson as msgjson
 

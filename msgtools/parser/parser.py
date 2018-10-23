@@ -23,13 +23,13 @@ EPILOG = '''Built-in languages have precedence over plugins.  If your plugin
 DEFAULT_TEMPLATE = 'Template.'
 DEFAULT_HEADER_TEMPLATE = 'HeaderTemplate.'
 
-try:
-    from msgtools.parser.MsgUtils import *
-except ImportError:
-    import os
+# if started via invoking this file directly (like would happen with source sitting on disk),
+# insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
+# any other already in the path.
+if __name__ == '__main__':
     srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-    sys.path.append(srcroot)
-    from msgtools.parser.MsgUtils import *
+    sys.path.insert(1, srcroot)
+from msgtools.parser.MsgUtils import *
 
 def Messages(inputData):
     return inputData["Messages"]

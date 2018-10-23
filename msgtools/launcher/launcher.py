@@ -3,15 +3,6 @@ import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pkg_resources
 
-try:
-    from msgtools.lib.messaging import Messaging
-except ImportError:
-    import os
-    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-    sys.path.append(srcroot)
-    from msgtools.lib.messaging import Messaging
-import msgtools.lib.gui
-
 DESCRIPTION='''MsgLauncher launches msgtools applications.  It gives them relevant settings (like server
 IP address and port) when it starts them.'''
 
