@@ -153,4 +153,7 @@ def main(args=None):
 
 # main starts here
 if __name__ == '__main__':
-    main()
+    print("\nERROR!\n")
+    print("msglauncher only supports use with msgtools installed, and invoked via 'msglauncher'!\n")
+    print("That is because msglauncher uses pkg_resources to discover apps to launch,")
+    print("and that doesn't work without msgtools being installed.")
