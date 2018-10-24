@@ -256,9 +256,13 @@ class MessageServer(QtWidgets.QMainWindow):
         vbox = QtWidgets.QVBoxLayout()
 
         # Components
-        self.addPluginButton = QtWidgets.QPushButton("Load Plugin")
-        self.addPluginButton.pressed.connect(self.onAddPluginClicked)
-        vbox.addWidget(self.addPluginButton)
+
+        # if started via invoking this file directly (like would happen with source sitting on disk),
+        # do not show the button to load plugins, since that only works with installed plugins.
+        if __name__ != "__main__":
+            self.addPluginButton = QtWidgets.QPushButton("Load Plugin")
+            self.addPluginButton.pressed.connect(self.onAddPluginClicked)
+            vbox.addWidget(self.addPluginButton)
 
         self.logButton = QtWidgets.QPushButton("Start Logging")
         self.logButton.pressed.connect(self.onLogButtonClicked)
