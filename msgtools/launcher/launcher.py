@@ -3,15 +3,6 @@ import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pkg_resources
 
-try:
-    from msgtools.lib.messaging import Messaging
-except ImportError:
-    import os
-    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-    sys.path.append(srcroot)
-    from msgtools.lib.messaging import Messaging
-import msgtools.lib.gui
-
 DESCRIPTION='''MsgLauncher launches msgtools applications.  It gives them relevant settings (like server
 IP address and port) when it starts them.'''
 
@@ -162,4 +153,7 @@ def main(args=None):
 
 # main starts here
 if __name__ == '__main__':
-    main()
+    print("\nERROR!\n")
+    print("msglauncher only supports use with msgtools installed, and invoked via 'msglauncher'!\n")
+    print("That is because msglauncher uses pkg_resources to discover apps to launch,")
+    print("and that doesn't work without msgtools being installed.")

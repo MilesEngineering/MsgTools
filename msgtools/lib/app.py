@@ -102,20 +102,22 @@ class App(QtWidgets.QMainWindow):
 
         try:
             Messaging.LoadAllMessages(searchdir=msgLoadDir, headerName=headerName)
-
-            if args.msg is not None:
-                # Validate all message names are valid
-                for msg in args.msg:
-                    if msg not in Messaging.MsgIDFromName:
-                        print('{0} is not a valid message name!'.format(msg))
-                        sys.exit(1)
-                port = args.port
-
-        except ImportError:
-            print("\nERROR! Auto-generated python code not found!")
-            print("cd to a directory downstream from a parent of obj/CodeGenerator/Python")
-            print("or specify that directory with --msgdir=PATH\n")
+        except RuntimeError as e:
+            print(e)
             quit()
+        except:
+            import traceback
+            print(traceback.format_exc())
+            quit()
+
+        if args.msg is not None:
+            # Validate all message names are valid
+            for msg in args.msg:
+                if msg not in Messaging.MsgIDFromName:
+                    print('{0} is not a valid message name!'.format(msg))
+                    sys.exit(1)
+
+        port = args.port
         
         self.OpenConnection()
 

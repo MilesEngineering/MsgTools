@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
+import os
 import sys
 import argparse
 import traceback
 import pkg_resources
 
-try:
-    from msgtools.lib.messaging import Messaging
-except ImportError:
-    import os
+# if started via invoking this file directly (like would happen with source sitting on disk),
+# insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
+# any other already in the path.
+if __name__ == '__main__':
     srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-    sys.path.append(srcroot)
-    from msgtools.lib.messaging import Messaging
+    sys.path.insert(1, srcroot)
+from msgtools.lib.messaging import Messaging
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
@@ -255,9 +256,13 @@ class MessageServer(QtWidgets.QMainWindow):
         vbox = QtWidgets.QVBoxLayout()
 
         # Components
-        self.addPluginButton = QtWidgets.QPushButton("Load Plugin")
-        self.addPluginButton.pressed.connect(self.onAddPluginClicked)
-        vbox.addWidget(self.addPluginButton)
+
+        # if started via invoking this file directly (like would happen with source sitting on disk),
+        # do not show the button to load plugins, since that only works with installed plugins.
+        if __name__ != "__main__":
+            self.addPluginButton = QtWidgets.QPushButton("Load Plugin")
+            self.addPluginButton.pressed.connect(self.onAddPluginClicked)
+            vbox.addWidget(self.addPluginButton)
 
         self.logButton = QtWidgets.QPushButton("Start Logging")
         self.logButton.pressed.connect(self.onLogButtonClicked)

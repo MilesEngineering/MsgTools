@@ -2,6 +2,7 @@
 """
 Plot message data in scrolling window
 """
+import os
 import sys
 import argparse
 
@@ -13,13 +14,13 @@ import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
 
-try:
-    from msgtools.lib.messaging import Messaging
-except ImportError:
-    import os
+# if started via invoking this file directly (like would happen with source sitting on disk),
+# insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
+# any other already in the path.
+if __name__ == '__main__':
     srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-    sys.path.append(srcroot)
-    from msgtools.lib.messaging import Messaging
+    sys.path.insert(1, srcroot)
+from msgtools.lib.messaging import Messaging
 
 from datetime import datetime
 from datetime import timedelta
