@@ -3,8 +3,7 @@ import os
 import sys
 import argparse
 from datetime import datetime
-from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtCore import QTimer
+from PyQt5 import QtGui, QtWidgets, QtCore
 
 # if started via invoking this file directly (like would happen with source sitting on disk),
 # insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
@@ -41,20 +40,34 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         
         self.currentTime = 0
         
-        self.msgTimer = QTimer(self)
-        self.msgTimer.setInterval(10)
+        self.msgTimer = QtCore.QTimer(self)
+        self.msgTimer.setInterval(50)
         self.msgTimer.timeout.connect(self.msgTimeout)
+
+        vbox = QtWidgets.QVBoxLayout()
+        w = QtWidgets.QWidget(self)
+        w.setLayout(vbox)
+        self.setCentralWidget(w)
+
+        self.timeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.timeSlider.setMinimum(1)
+        self.timeSlider.setMaximum(5)
+        vbox.addWidget(self.timeSlider)
+
+        t = int(self.settings.value('time_slider', 10))
+        self.timeSlider.setValue(t)
+        self.timeSlider.valueChanged.emit(t)
 
         self.startStop = QtWidgets.QPushButton(self)
         self.startStop.setText('Stop')
         self.startStop.clicked.connect(self.startStopFn)
-        self.setCentralWidget(self.startStop)
+        vbox.addWidget(self.startStop)
         
         # check if user specified which messages we should output
         msgs = args.msgs
         
         # find a few messages to send at specified rates
-        period = 0.3
+        period = 0.1
         self.fieldNumber = 0
         self.msgPeriod = {}
         self.msgTxTime = {}
@@ -64,7 +77,9 @@ class NoiseMaker(msgtools.lib.gui.Gui):
                     continue
                 print("found message " + msgName)
                 self.msgPeriod[msgName] = period
-                period = period + 0.020
+                period = period + 0.050
+                if period > 0.5:
+                    period = 0.1
                 self.msgTxTime[msgName] = 0
        
         self.msgTimer.start()
@@ -82,7 +97,7 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         for msgName in self.msgTxTime:
             if self.currentTime > self.msgTxTime[msgName]:
                 msgClass = Messaging.MsgClassFromName[msgName]
-                self.msgTxTime[msgName] = self.currentTime + self.msgPeriod[msgName]
+                self.msgTxTime[msgName] = self.currentTime + self.msgPeriod[msgName] * self.timeSlider.value()**2
                 self.sendMsg(msgClass)
     
     def fieldValue(self, fieldInfo):
@@ -133,6 +148,9 @@ class NoiseMaker(msgtools.lib.gui.Gui):
 
     def ProcessMessage(self, msg):
         pass
+    
+    def on_close(self):
+        self.settings.setValue('time_slider', self.timeSlider.value())
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
