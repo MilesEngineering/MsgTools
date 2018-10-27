@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys, os
+import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pkg_resources
 
@@ -17,6 +18,17 @@ class DetachableProcess(QtCore.QProcess):
 class MsgLauncher(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         QtWidgets.QMainWindow.__init__(self,parent)
+        
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser.add_argument('--connectionName', default=None,
+            help='''The connection name.  For socket connections this is an IP and port e.g. 127.0.0.1:5678.  
+                    You may prepend ws:// to indicate you want to use a Websocket instead.  For file 
+                    connection types, this is the filename to use as a message source.
+                    This parameter is overridden by the --ip and --port options.''')
+        parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
+        args = parser.parse_args()
+        args.msgdir = None if hasattr(args, 'msgdir') == False else args.msgdir
+        self.msgdir = args.msgdir
 
         # persistent settings
         self.settings = QtCore.QSettings("MsgTools", "launcher")
@@ -24,6 +36,9 @@ class MsgLauncher(QtWidgets.QMainWindow):
         self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))
 
         self.connectionName = self.settings.value("connection", "")
+        
+        if args.connectionName != None:
+            self.connectionName = args.connectionName
         
         settingsAction = QtWidgets.QAction('&Settings', self)
         menubar = self.menuBar()
@@ -147,14 +162,20 @@ class MsgLauncher(QtWidgets.QMainWindow):
         sender = self.sender()
         program_name = sender.program_name
         args = []
+        is_msgserver = (program_name == 'msgserver')
         if len(program_name) == 2:
             args = [program_name[1]]
             program_name = program_name[0]
-        if self.connectionName and sender.program_name != "msgserver":
+            is_msgserver = args[0].endswith('msgtools/server/server.py')
+        if self.connectionName and not is_msgserver:
             args = args + ['--connectionName='+self.connectionName]
+        if self.msgdir:
+            args.append("--msgdir="+self.msgdir)
 
         proc = DetachableProcess()
         proc.finished.connect(self.process_exited)
+        proc.readyReadStandardOutput.connect(self.printStdOut)
+        proc.readyReadStandardError.connect(self.printStdErr)
         proc.start(program_name, args)
         self.procs.append(proc)
 
@@ -186,6 +207,14 @@ class MsgLauncher(QtWidgets.QMainWindow):
                 for p in self.procs:
                     p.detach()
         super(QtWidgets.QMainWindow, self).closeEvent(event)
+    
+    def printStdOut(self):
+        sender = self.sender()
+        print(str(sender.readAllStandardOutput(), encoding='utf-8'))
+
+    def printStdErr(self):
+        sender = self.sender()
+        print(str(sender.readAllStandardError(), encoding='utf-8'))
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
