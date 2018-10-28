@@ -42,7 +42,7 @@ def readFile(filename):
 
 def fieldSize(field):
     fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
-    return fieldSizes[str.lower(field["Type"])]
+    return fieldSizes[field["Type"]]
 
 def msgSize(msg):
     offset = 0
@@ -55,7 +55,7 @@ def fieldIsInt(field):
     isInt  = 0
     if "NumBits" in field:
         isInt = 1
-    if "Type" in field and "int" in str.lower(field["Type"]):
+    if "Type" in field and "int" in field["Type"]:
         isInt = 1
     return isInt
 
@@ -64,7 +64,7 @@ def fieldNumBits(field):
     if "Type" in field or "NumBits" in field:
         numBits = fieldItem(field, "NumBits", 0)
     if "Type" in field:
-        fieldType = str.lower(field["Type"])
+        fieldType = field["Type"]
         if "int" in fieldType:
             numBits = fieldSize(field) * 8
             if fieldType.startswith("int"):
@@ -74,7 +74,7 @@ def fieldNumBits(field):
 def fieldIsSigned(field):
     isSigned = 0
     if "Type" in field:
-        fieldType = str.lower(field["Type"])
+        fieldType = field["Type"]
         if "int" in fieldType:
             if fieldType.startswith("int"):
                 isSigned = 1
@@ -95,9 +95,9 @@ def fieldMin(field):
         else:
             minVal = 0
         minVal = transformInt(field, minVal)
-    elif "Type" in field and str.lower(field["Type"]) == 'float64':
+    elif "Type" in field and field["Type"] == 'float64':
         minVal = "DBL_MIN"
-    elif "Type" in field and str.lower(field["Type"]) == 'float32':
+    elif "Type" in field and field["Type"] == 'float32':
         minVal = "FLT_MIN"
     minVal = fieldItem(field, "Min", minVal)
     return minVal
@@ -110,9 +110,9 @@ def fieldMax(field):
         else:
             maxVal = 2**numBits-1
         maxVal = transformInt(field, maxVal)
-    elif "Type" in field and str.lower(field["Type"]) == 'float64':
+    elif "Type" in field and field["Type"] == 'float64':
         maxVal = "DBL_MAX"
-    elif "Type" in field and str.lower(field["Type"]) == 'float32':
+    elif "Type" in field and field["Type"] == 'float32':
         maxVal = "FLT_MAX"
     maxVal = fieldItem(field, "Max", maxVal)
     return maxVal
@@ -393,8 +393,8 @@ def PatchStructs(inputData):
                 if 'Fields' in msg:
                     outfields = []
                     for field in msg['Fields']:
-                        if field['Type'] in structs:
-                            s = structs[field['Type']]
+                        if field["Type"] in structs:
+                            s = structs[field["Type"]]
                             for subfield in s['Fields']:
                                 subfieldcopy = copy.deepcopy(subfield)
                                 subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']

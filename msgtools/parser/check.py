@@ -79,7 +79,7 @@ def ProcessMsg(filename, msg, subdirComponent, enums, isHeader):
                 raise MessageException('Duplicate field name [' + field["Name"]+"] in message "+msgName(msg))
             fieldNames[field["Name"]] = field["Name"]
             if not fieldTypeValid(field):
-                raise MessageException('field ' + field["Name"] + ' has invalid type ' + field['Type']+ " in message "+msgName(msg))
+                raise MessageException('field ' + field["Name"] + ' has invalid type ' + field["Type"]+ " in message "+msgName(msg))
             if "Enum" in field:
                 if not field["Enum"] in enumNames:
                     raise MessageException('bad enum [' + field["Enum"]+"] in message "+msgName(msg))

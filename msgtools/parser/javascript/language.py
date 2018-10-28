@@ -10,7 +10,7 @@ def fieldType(field):
     {"uint64":"long", "uint32":"long","uint16": "int",   "uint8": "short",
      "int64":"long",   "int32":"int",  "int16": "short",  "int8": "char",
       "float64":"double", "float32":"float"}
-    typeStr = str.lower(field["Type"])
+    typeStr = field["Type"]
     return field["Type"].capitalize()
 
 def fnHdr(field):

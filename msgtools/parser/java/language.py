@@ -6,7 +6,7 @@ def fieldType(field):
     {"uint64":"error", "uint32":"long","uint16": "int",   "uint8": "short",
      "int64":"long",   "int32":"int",  "int16": "short",  "int8": "byte",
       "float64":"double", "float32":"float"}
-    typeStr = str.lower(field["Type"])
+    typeStr = field["Type"]
     return fieldTypeDict[typeStr]
 
 def fieldAccessorType(field):
@@ -14,7 +14,7 @@ def fieldAccessorType(field):
     {"uint64":"long", "uint32":"int", "uint16": "short", "uint8": "",
      "int64":"long",   "int32":"int",  "int16": "short",  "int8": "",
       "float64":"double", "float32":"float"}
-    typeStr = str.lower(field["Type"])
+    typeStr = field["Type"]
     type = fieldTypeDict[typeStr]
     return type.capitalize()
 
@@ -23,14 +23,14 @@ def fieldCastType(field):
     {"uint64":"long", "uint32":"int", "uint16": "short", "uint8": "byte",
      "int64":"long",   "int32":"int",  "int16": "short",  "int8": "byte",
       "float64":"double", "float32":"float"}
-    typeStr = str.lower(field["Type"])
+    typeStr = field["Type"]
     type = fieldTypeDict[typeStr]
     return type.capitalize()
 
 def fieldPromotionFn(field):
     fieldTypeDict = \
     {"uint64":"error", "uint32":"FieldAccess.toUnsignedLong", "uint16": "FieldAccess.toUnsignedInt", "uint8": "FieldAccess.toUnsignedInt"}
-    typeStr = str.lower(field["Type"])
+    typeStr = field["Type"]
     return fieldTypeDict[typeStr]
 
 def fnHdr(field):

@@ -5,9 +5,9 @@ def fieldType(field):
     typeStr = field["Type"]
     if "int" in typeStr:
         return typeStr.title()
-    if str.lower(typeStr) == "float32":
+    if typeStr == "float32":
         return "Float32";
-    if str.lower(typeStr) == "float64":
+    if typeStr == "float64":
         return "Float64";
     return "?"
     
@@ -17,7 +17,7 @@ def returnType(field, bits):
         if "Offset" in field or "Scale" in field or (bits and ("Offset" in bits or "Scale" in bits)):
             return "double";
         return "int"
-    elif str.lower(typeStr) == "float32" or str.lower(typeStr) == "float64":
+    elif typeStr == "float32" or typeStr == "float64":
         return "double";
     return "?"
     
@@ -208,7 +208,7 @@ def enums(e):
 
 def fieldReflectionType(field):
     ret = fieldType(field)
-    if str.lower(field["Type"]) == "float32" or str.lower(field["Type"]) == "float64":
+    if field["Type"] == "float32" or field["Type"] == "float64":
         return "FloatFieldInfo"
 
     if ret.lower().startswith("int"):
@@ -229,7 +229,7 @@ def fieldReflectionType(field):
 
 def fieldReflectionBitsType(field, bits):
     ret = fieldType(field)
-    if str.lower(field["Type"]) == "float32" or str.lower(field["Type"]) == "float64":
+    if field["Type"] == "float32" or field["Type"] == "float64":
         return "FloatFieldInfo"
 
     if ret.lower().startswith("int"):
