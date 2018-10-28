@@ -19,21 +19,20 @@ def Usage():
 def Messages(inputData):
     return inputData["Messages"]
 
-def ProcessDir(outFile, msgDir, subdirComponent):
+def ProcessDir(outFile, msgDir, subdirComponent, isHeaderDir):
     for filename in sorted(os.listdir(msgDir)):
         global inputFilename
         inputFilename = msgDir + '/' + filename
         if os.path.isdir(inputFilename):
-            if filename != 'headers':
-                subdirParam = filename
-                if subdirComponent != "":
-                    subdirParam = subdirComponent + "/" + subdirParam
-                ProcessDir(outFile, inputFilename, subdirParam)
+            subdirParam = filename
+            if subdirComponent != "":
+                subdirParam = subdirComponent + "/" + subdirParam
+            ProcessDir(outFile, inputFilename, subdirParam, filename=='headers' or isHeaderDir)
         else:
             try:
                 inputData = readFile(inputFilename)
                 if inputData != 0:
-                    ProcessFile(filename, outFile, inputData, subdirComponent)
+                    ProcessFile(filename, outFile, inputData, subdirComponent, isHeaderDir)
             except MessageException as e:
                 sys.stderr.write('Error in ' + inputFilename)
                 sys.stderr.write('\n'+str(e)+'\n')
@@ -53,21 +52,22 @@ def fieldTypeValid(field):
       "float64", "float32"]
     return field["Type"] in allowedFieldTypes
 
-def ProcessMsg(filename, msg, subdirComponent, enums):
+def ProcessMsg(filename, msg, subdirComponent, enums, isHeader):
     enumNames = {}
     for enum in enums:
         enumNames[enum["Name"]] = enum
     
-    id = msgID(msg, enums, -1)
-    idInt = int(id, 0)
-    if idInt:
-        global msgNames
-        fullMsgName = subdirComponent+'/'+msgName(msg)
-        if idInt in msgNames:
-            raise MessageException('\nERROR! '+fullMsgName+' uses id '+str(id)+', but already used by '+msgNames[idInt]+'\n\n')
-        if fullMsgName in msgNames:
-            raise MessageException('\nERROR! '+fullMsgName+' being processed, but name already used by '+msg['Name']+'.\n\n')
-        msgNames[idInt] = fullMsgName
+    if not isHeader:
+        id = msgID(msg, enums, -1)
+        idInt = int(id, 0)
+        if idInt:
+            global msgNames
+            fullMsgName = subdirComponent+'/'+msgName(msg)
+            if idInt in msgNames:
+                raise MessageException('\nERROR! '+fullMsgName+' uses id '+str(id)+', but already used by '+msgNames[idInt]+'\n\n')
+            if fullMsgName in msgNames:
+                raise MessageException('\nERROR! '+fullMsgName+' being processed, but name already used by '+msg['Name']+'.\n\n')
+            msgNames[idInt] = fullMsgName
     offset = 0
     if "Fields" in msg:
         fieldNames = {}
@@ -105,10 +105,11 @@ def ProcessMsg(filename, msg, subdirComponent, enums):
             #if offset % fieldSize(field) != 0:
             #    raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(fieldSize(field)))
             offset += fieldSize(field) * fieldCount(field)
-    
+    if isHeader:
+        return ''
     return (subdirComponent+'/'+msgName(msg)).ljust(35) +" "+(subdirComponent+'/'+filename).ljust(40) +" "+ str(id).rjust(10)+'\n'
 
-def ProcessFile(filename, outFile, inputData, subdirComponent):
+def ProcessFile(filename, outFile, inputData, subdirComponent, isHeader):
     enums = Enums(inputData)
     ids = MsgIDs(inputData)
     
@@ -117,7 +118,7 @@ def ProcessFile(filename, outFile, inputData, subdirComponent):
     if "Messages" in inputData:
         for msg in Messages(inputData):
             msg["ids"] = ids
-            outFile.write(ProcessMsg(filename, msg, subdirComponent, enums))
+            outFile.write(ProcessMsg(filename, msg, subdirComponent, enums, isHeader))
 
 def main(args=None):
     if len(sys.argv) < 3:
@@ -134,10 +135,10 @@ def main(args=None):
         pass
     with open(outputFilename,'w') as outFile:
         # loop over input message files
-        ProcessDir(outFile, msgDir, "")
+        ProcessDir(outFile, msgDir, "", msgDir.endswith('/headers'))
         if len(sys.argv) > 3:
             msgDir = sys.argv[3]
-            ProcessDir(outFile, msgDir, "")
+            ProcessDir(outFile, msgDir, "", msgDir.endswith('/headers'))
 
 # main starts here
 if __name__ == '__main__':
