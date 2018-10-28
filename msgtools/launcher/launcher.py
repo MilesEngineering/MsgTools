@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import sys
+import sys, os
+import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pkg_resources
 
@@ -17,6 +18,17 @@ class DetachableProcess(QtCore.QProcess):
 class MsgLauncher(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         QtWidgets.QMainWindow.__init__(self,parent)
+        
+        parser = argparse.ArgumentParser(description=DESCRIPTION)
+        parser.add_argument('--connectionName', default=None,
+            help='''The connection name.  For socket connections this is an IP and port e.g. 127.0.0.1:5678.  
+                    You may prepend ws:// to indicate you want to use a Websocket instead.  For file 
+                    connection types, this is the filename to use as a message source.
+                    This parameter is overridden by the --ip and --port options.''')
+        parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
+        args = parser.parse_args()
+        args.msgdir = None if hasattr(args, 'msgdir') == False else args.msgdir
+        self.msgdir = args.msgdir
 
         # persistent settings
         self.settings = QtCore.QSettings("MsgTools", "launcher")
@@ -24,6 +36,9 @@ class MsgLauncher(QtWidgets.QMainWindow):
         self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))
 
         self.connectionName = self.settings.value("connection", "")
+        
+        if args.connectionName != None:
+            self.connectionName = args.connectionName
         
         settingsAction = QtWidgets.QAction('&Settings', self)
         menubar = self.menuBar()
@@ -78,42 +93,90 @@ class MsgLauncher(QtWidgets.QMainWindow):
         self.setCentralWidget(w)
         self.adjustSize()
         self.setFixedSize(self.size())
-    
+
     def programs_to_launch(self):
-        progs = {}
+        # class to store info.  can't used collections.namedtuple because it's not mutable
+        class LauncherInfo:
+            def __init__(self, icon_text, program_name, icon_filename, module_name):
+                self.icon_text = icon_text
+                self.program_name = program_name
+                self.icon_filename = icon_filename
+                self.module_name = module_name
+
+        # Make a list of programs to launch
+        progs = []
+        exclude_msgtools = False
+        # check if we were launched from source on disk, or via an installed package entry point
+        if __name__ == "__main__":
+            # exclude anything from installed python packages
+            exclude_msgtools = True
+
+            # look for source near our file location on disk
+            basedir = os.path.abspath(os.path.dirname(__file__)) + '/..'
+            for filename in os.listdir(basedir):
+                if filename == "launcher":
+                    continue
+                dirname = os.path.abspath(basedir + "/" + filename)
+                png_name = dirname+'/'+filename+'.png'
+                if os.path.exists(dirname+'/launcher.py') and os.path.exists(png_name):
+                    progs.append(LauncherInfo(filename, [sys.executable, dirname+'/'+filename+'.py'], png_name, 'msgtools.'+filename+'.launcher'))
+
+        # use pkg_resources to find programs to launch
         for entry_point in pkg_resources.iter_entry_points("msgtools.launcher.plugin"):
             launcher_info_fn = entry_point.load()
             launcher_info = launcher_info_fn()
+            if exclude_msgtools and entry_point.module_name.startswith('msgtools.'):
+                continue
+            progs.append(LauncherInfo(*launcher_info, module_name=entry_point.module_name))
+
+        # put the list into a hash table that has keys that can be sorted
+        # alphabetically to give the order we want.
+        ret = {}
+        for launcher_info in progs:
             # come up with a sorted name to prioritize the core apps
             # above the non-core apps, even within the msgtools package.
             sort_name = launcher_info.icon_text
-            if entry_point.module_name.startswith('msgtools.'):
+            if launcher_info.module_name.startswith('msgtools.'):
                 sort_name = '@'+ sort_name
-                if entry_point.module_name.startswith('msgtools.server'):
+                if launcher_info.module_name.startswith('msgtools.server'):
                     sort_name = '@1'+ sort_name
-                elif entry_point.module_name.startswith('msgtools.scope'):
+                elif launcher_info.module_name.startswith('msgtools.scope'):
                     sort_name = '@2'+ sort_name
-                elif entry_point.module_name.startswith('msgtools.script'):
+                elif launcher_info.module_name.startswith('msgtools.script'):
                     sort_name = '@3'+ sort_name
-                elif (entry_point.module_name.startswith('msgtools.debug') or
-                      entry_point.module_name.startswith('msgtools.inspector')):
+                elif (launcher_info.module_name.startswith('msgtools.debug') or
+                      launcher_info.module_name.startswith('msgtools.inspector')):
                     sort_name = '@'+ sort_name
                 else:
                     # any msgtools. items that *aren't* in the above if/elif, will
                     # sorted after those that are.
                     pass
-            progs[sort_name] = launcher_info
-        return progs
+            if len(launcher_info.program_name) == 2:
+                launcher_info.icon_text = './' + launcher_info.icon_text
+                sort_name = './' + sort_name
+            ret[sort_name] = launcher_info
+
+        return ret
 
     def launch(self):
         sender = self.sender()
-        if self.connectionName and sender.program_name != "msgserver":
-            args = ['--connectionName='+self.connectionName]
-        else:
-            args = []
+        program_name = sender.program_name
+        args = []
+        is_msgserver = (program_name == 'msgserver')
+        if len(program_name) == 2:
+            args = [program_name[1]]
+            program_name = program_name[0]
+            is_msgserver = args[0].endswith('msgtools/server/server.py')
+        if self.connectionName and not is_msgserver:
+            args = args + ['--connectionName='+self.connectionName]
+        if self.msgdir:
+            args.append("--msgdir="+self.msgdir)
+
         proc = DetachableProcess()
         proc.finished.connect(self.process_exited)
-        proc.start(sender.program_name, args)
+        proc.readyReadStandardOutput.connect(self.printStdOut)
+        proc.readyReadStandardError.connect(self.printStdErr)
+        proc.start(program_name, args)
         self.procs.append(proc)
 
     def chooseHost(self):
@@ -144,6 +207,14 @@ class MsgLauncher(QtWidgets.QMainWindow):
                 for p in self.procs:
                     p.detach()
         super(QtWidgets.QMainWindow, self).closeEvent(event)
+    
+    def printStdOut(self):
+        sender = self.sender()
+        print(str(sender.readAllStandardOutput(), encoding='utf-8'))
+
+    def printStdErr(self):
+        sender = self.sender()
+        print(str(sender.readAllStandardError(), encoding='utf-8'))
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
@@ -153,7 +224,4 @@ def main(args=None):
 
 # main starts here
 if __name__ == '__main__':
-    print("\nERROR!\n")
-    print("msglauncher only supports use with msgtools installed, and invoked via 'msglauncher'!\n")
-    print("That is because msglauncher uses pkg_resources to discover apps to launch,")
-    print("and that doesn't work without msgtools being installed.")
+    main()

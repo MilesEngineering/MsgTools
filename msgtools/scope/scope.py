@@ -5,7 +5,6 @@ import struct
 from datetime import datetime
 import collections
 import functools
-import threading
 import argparse
 
 from PyQt5.QtGui import *
@@ -39,43 +38,6 @@ except RuntimeError as e:
 DESCRIPTION='''MsgScope provides a graphical interface that allow syou to view, plot, and send
     messages.  It requires defined messages in Python.  A list of discovered messages will be
     displayed in the upper left of the UI.'''
-
-class RxRateCalculatorThread(QObject):
-    rates_updated = pyqtSignal(object)
-
-    def __init__(self, rx_msg_deque, thread_lock):
-        super(RxRateCalculatorThread, self).__init__()
-
-        self.rx_msg_deque = rx_msg_deque
-        self.thread_lock = thread_lock
-
-    def run(self):
-        rates = {}
-
-        if self.thread_lock.acquire():
-            for msg_key, rx_msg_deque in self.rx_msg_deque.items():
-                rates[msg_key] = self.calculate_rate_for_msg(msg_key, rx_msg_deque)
-
-            self.thread_lock.release()
-            self.rates_updated.emit(rates)
-
-    def calculate_rate_for_msg(self, msg_key, rx_msg_deque):
-        if len(rx_msg_deque) <= 1:
-            return None
-
-        deltas = []
-        for i in range(0, len(rx_msg_deque) - 1):
-            deltas.append((rx_msg_deque[i] - rx_msg_deque[i + 1]).total_seconds())
-        
-        average_time_delta = sum(deltas) / float(len(deltas))
-        if(average_time_delta == 0):
-            average_time_delta = 1
-        average_rate = 1 / average_time_delta
-
-        rx_msg_deque.pop()
-
-        return average_rate
-
 
 def slim_vbox(a, b):
     vLayout = QVBoxLayout()
@@ -176,15 +138,9 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 
     def configure_rx_message_list(self, parent):
         self.rx_msg_list = {}
-        self.rx_msg_list_timestamps = {}
-        
-        self.thread_lock = threading.Lock()
-        rx_rate_calculator = RxRateCalculatorThread(self.rx_msg_list_timestamps, self.thread_lock)
-        rx_rate_calculator.rates_updated.connect(self.show_rx_msg_rates)
-        timer = QTimer(self)
 
-        # TODO: Why do I have to use a lambda? connecting directly to the run slot does not seem to work
-        timer.timeout.connect(lambda: rx_rate_calculator.run())
+        timer = QTimer(self)
+        timer.timeout.connect(self.show_rx_msg_rates)
         timer.start(1000)
 
         rxMessageList = QTreeWidget(parent)
@@ -364,39 +320,32 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             msg_list_item = QTreeWidgetItem([ widget_name, rx_time.strftime('%H:%M:%S.%f')[:-3], "- Hz" ])
             msg_list_item.msg_key = msg_key
             msg_list_item.msg = msg
+            msg_list_item.rx_count = 1
+            msg_list_item.avg_rate = 1.0
 
             self.rx_message_list.addTopLevelItem(msg_list_item)
             self.rx_message_list.resizeColumnToContents(0)
             self.rx_msg_list[msg_key] = msg_list_item
 
-            # Initialize a Deque with an empty iterable with a maxlen of 10
-            if self.thread_lock.acquire():
-                self.rx_msg_list_timestamps[msg_key] = collections.deque([], 10)
-                self.thread_lock.release()
-
-        if self.thread_lock.acquire():
-            self.rx_msg_list_timestamps[msg_key].appendleft(rx_time)
-            self.thread_lock.release()
-
         self.rx_msg_list[msg_key].setText(1, rx_time.strftime('%H:%M:%S.%f')[:-3])
         self.rx_msg_list[msg_key].msg = msg
+        self.rx_msg_list[msg_key].rx_count += 1
 
-    def show_rx_msg_rates(self, rx_rates):
-        for msg_key, rate in rx_rates.items():
-            rate = rx_rates[msg_key]
-            output = ""
+    def show_rx_msg_rates(self):
+        weight = 0.5
+        for msg_key, widget in self.rx_msg_list.items():
+            rate = float(widget.rx_count)
+            widget.rx_count = 0
+            widget.avg_rate = weight * widget.avg_rate + (1-weight) * rate
 
-            if rate is None:
-                output = "-- Hz"
+            if widget.avg_rate > 0.05:
+                output = "{0:0.1f} Hz".format(widget.avg_rate)
+            elif widget.avg_rate > 0.01:
+                output = "0 Hz"
             else:
-                output = "{0:0.1f} Hz".format(rate)
+                output = "-- Hz"
 
-            try:
-                self.rx_msg_list[msg_key].setText(2, output)
-            except KeyError:
-                # ignore errors relates to the item disappearing from the rx_msg_list.
-                # these are caused by the list getting cleared
-                pass
+            self.rx_msg_list[msg_key].setText(2, output)
 
     def add_message_to_rx_tree(self, msg_key, msg):
         if not msg_key in self.rx_msg_widgets:
@@ -416,11 +365,8 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 plot.addData(msg)
     
     def clear_rx_list(self):
-        if self.thread_lock.acquire():
-            self.rx_msg_list = {}
-            self.rx_msg_list_timestamps = {}
-            self.rx_message_list.clear()
-            self.thread_lock.release()
+        self.rx_msg_list = {}
+        self.rx_message_list.clear()
 
     def clear_rx_msgs(self):
         self.rx_msg_widgets = {}
