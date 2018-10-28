@@ -11,9 +11,9 @@ def fieldType(field):
     typeStr = field["Type"]
     if "int" in typeStr:
         return typeStr
-    if str.lower(typeStr) == "float32":
+    if typeStr == "float32":
         return "single";
-    if str.lower(typeStr) == "float64":
+    if typeStr == "float64":
         return "double";
     return "?"
 

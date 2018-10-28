@@ -10,9 +10,9 @@ def paramType(field):
         typeStr = typeStr.replace("u", "U")
         typeStr = typeStr.replace("i", "I")
         return typeStr
-    if str.lower(typeStr) == "float32":
+    if typeStr == "float32":
         return "Float";
-    if str.lower(typeStr) == "float64":
+    if typeStr == "float64":
         return "Double";
     return "?"
 
@@ -23,9 +23,9 @@ def fieldType(field):
         typeStr = typeStr.replace("u", "U")
         typeStr = typeStr.replace("i", "I")
         return typeStr
-    if str.lower(typeStr) == "float32":
+    if typeStr == "float32":
         return "Float";
-    if str.lower(typeStr) == "float64":
+    if typeStr == "float64":
         return "Double";
     return "?"
 

@@ -7,7 +7,7 @@ def fieldType(field):
     {"uint64":">Q", "uint32":">L", "uint16": ">H", "uint8": "B",
       "int64":">q",  "int32":">l",  "int16": ">h",  "int8": "b",
       "float64":">d", "float32":">f"}
-    typeStr = str.lower(field["Type"])
+    typeStr = field["Type"]
     return fieldTypeDict[typeStr]
 
 def pythonFieldCount(field):

@@ -59,3 +59,6 @@ clean clobber::
 $(DIGEST): $(addprefix $(mdir)/,$(MSG_FILES)) $(CG_DIR)check.py
 	$(call colorecho,Checking message validity)
 	$(CHECK) $(call CYGPATH,$(DIGEST)) $(mdir)
+
+remove_timestamps:
+	find $(MSGDIR) -type f | xargs sed -i -e 's/    Created.*//'

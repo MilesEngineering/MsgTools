@@ -120,11 +120,11 @@ class NoiseMaker(msgtools.lib.gui.Gui):
                 
     def sendMsg(self, msgClass):
         msg = msgClass()
-        if self.timeInfo.units:
+        if self.timeInfo:
             hdr = Messaging.hdr(msg.rawBuffer())
-            #Messaging.set(hdr, self.timeInfo, self.currentTime)
             t = self.currentTime
             maxTime = self.timeInfo.maxVal
+            # if the timestamp field is small, assume the user wants relative times since midnight.
             if maxTime != "DBL_MAX" and (maxTime == 'FLT_MAX' or float(maxTime) <= 2**32):
                 t = (datetime.fromtimestamp(self.currentTime) - datetime.fromtimestamp(self.currentTime).replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
             if self.timeInfo.units == "ms":
