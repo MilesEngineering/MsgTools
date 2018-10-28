@@ -236,9 +236,6 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
     # make the output directory
     try:
         os.makedirs(outDir)
-
-        # Make sure we have __init__.py to make Python2 imports happy
-        open(os.path.join(outDir, '__init__.py'), 'at').close()
     except:
         pass
     for filename in os.listdir(msgDir):
