@@ -236,6 +236,11 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
     # make the output directory
     try:
         os.makedirs(outDir)
+
+        # Give the language module a chance to do any language specific processing.
+        # For example, Python creates __init__.py for Python 2 module support.
+        if hasattr(language, 'onNewOutputDirectory'):
+            language.onNewOutputDirectory(msgDir, outDir)
     except:
         pass
     for filename in os.listdir(msgDir):
