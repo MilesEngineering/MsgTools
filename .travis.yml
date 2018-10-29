@@ -11,7 +11,7 @@ matrix:
     before_install:
       - sudo add-apt-repository ppa:jonathonf/python-3.6
       - sudo apt-get update
-      - sudo apt-get install python3.6 python3.6-pip
+      - sudo apt-get install -y python3.6 python3.6-pip
       - sudo pip3 install pyyaml ccorp-yaml-include
     install:
       - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2"
