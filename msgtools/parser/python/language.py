@@ -313,3 +313,14 @@ def getMsgID(msg):
     
 def setMsgID(msg):
     return baseSetMsgID("self.", "", 0, 1, msg)
+
+#
+# MsgParser "event" handling functions
+#
+def onNewOutputDirectory(msgDir, outDir):
+    '''Invoked by MsgParser when it's creating a new output directory.
+    We need to create an empty __init__.py module in Python output
+    directories so Python 2 can properly resolve modules.'''
+    filename = os.path.join(outDir, '__init__.py')
+    print('Creating %s' % filename)
+    open(filename, 'at').close()
