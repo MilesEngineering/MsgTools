@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(name='msgtools',
     python_requires='~=3.5',
-    version='0.29.53',
+    version='0.30.0',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -64,6 +64,7 @@ setup(name='msgtools',
     },
     install_requires=[
         'pyyaml',
+        'ccorp-yaml-include',
         'websockets',
         'janus',
         'jinja2'
