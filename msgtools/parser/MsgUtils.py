@@ -7,33 +7,19 @@ import copy
 class MessageException(Exception):
     pass
 
-# create a class to load YAML files, and any YAML files they include
-import yaml
-class YamlLoader(yaml.Loader):
-    def __init__(self, stream):
-        self._dirname = os.path.dirname(stream.name)
-        yaml.Loader.__init__(self, stream)
+from ccorp.ruamel.yaml.include import YAML
+def load_file(self, node):
+    filename = os.path.join(self.dirname(self.loader.reader.name), node.value)
+    return '*Not* including ' + filename
 
-    def include(self, node):
-        filename = os.path.join(self._dirname, node.value)
-        try:
-            inFile = io.open(filename, 'r')
-            return yaml.load(inFile, YamlLoader)
-        except FileNotFoundError:
-            raise MessageException("Error loading " + filename + " for include statement [" + node.value + "]")
-
-    def loadFile(self, node):
-        filename = os.path.join(self._dirname, node.value)
-        return "*Not* including " + filename
-
-YamlLoader.add_constructor('!include', YamlLoader.include)
-YamlLoader.add_constructor('!File', YamlLoader.loadFile)
+yaml = YAML(typ='safe', pure=True)
+yaml.Constructor.add_constructor('!File', load_file)
 
 def readFile(filename):
     #print("Processing ", filename)
     if filename.endswith(".yaml"):
         inFile = io.open(filename)
-        return yaml.load(inFile, YamlLoader)
+        return yaml.load(inFile)
     elif filename.endswith(".json"):
         inFile = io.open(filename)
         return json.load(inFile)
