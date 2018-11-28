@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(name='msgtools',
     python_requires='~=3.5',
-    version='0.29.53',
+    version='0.30.1',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -66,7 +66,8 @@ setup(name='msgtools',
         'pyyaml',
         'websockets',
         'janus',
-        'jinja2'
+        'jinja2',
+        'qscintilla'
     ],
     extras_require={
         'gui':  ["pyqtgraph", "pyqt5"],
