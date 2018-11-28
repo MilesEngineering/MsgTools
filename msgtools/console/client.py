@@ -71,8 +71,8 @@ class Client:
                         print("didn't get whole body, error!")
                         continue
 
-                    # read out what we peek'd.  throw it away because we already peek'd it.
-                    junk = self.sock.recv(Messaging.hdr.SIZE + hdr.GetDataLength())
+                    # read out what we peek'd.
+                    data = self.sock.recv(Messaging.hdr.SIZE + hdr.GetDataLength())
 
                     # reset the header based on appended data
                     hdr = Messaging.hdr(data)
