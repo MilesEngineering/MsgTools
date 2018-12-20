@@ -1,12 +1,12 @@
 include ../../makefile.inc
 
-.PHONY: testCpp testPython testJava
+.PHONY: testCpp testPython testJava testKotlin
 
 mdir:=messages
 
 CG_DIR := ../
 
-install all:: testCpp testPython testJava
+install all:: testCpp testPython testJava testKotlin
 
 testCpp:
 	$(PYTHON) TestCpp.py
@@ -19,6 +19,9 @@ testJava:
 
 testSwift: swiftmsgs
 	cd swiftObj && swift build
+
+testKotlin:
+	$(PYTHON) TestKotlin.py
 
 swiftmsgs:
 	msgparser messages swiftObj/Sources/messages swift  Template.swift HeaderTemplate.swift
