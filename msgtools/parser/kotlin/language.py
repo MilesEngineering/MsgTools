@@ -125,7 +125,7 @@ fun get%s(%s): %s {
 %s
 fun get%sString(): String {
     var value = ""
-    for (i in 0 until Math.min(%s, header.getDataLength().toInt() - %s)) {
+    for (i in 0 until minOf(%s, header.getDataLength().toInt() - %s)) {
         val nextChar = get%s(i)
         if (nextChar == 0.toUByte()) {
             break
