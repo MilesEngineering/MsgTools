@@ -3,17 +3,25 @@ from .messaging import Messaging
 # for reading CSV
 import csv
 
-def toCsv(msg):
+def toCsv(msg, name=True):
+    def add_param(v):
+        if v.strip() == '':
+            v = '"%s"' % v
+        if ',' in v and not((v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'"))):
+            v = '"%s"' % v
+        return v + ", "
     ret = ""
+    if name:
+        ret = msg.MsgName() + ", "
     for fieldInfo in Messaging.MsgClass(msg.hdr).fields:
         if(fieldInfo.count == 1):
-            columnText = str(Messaging.get(msg, fieldInfo)) + ", "
+            columnText = add_param(str(Messaging.get(msg, fieldInfo)))
             for bitInfo in fieldInfo.bitfieldInfo:
-                columnText += str(Messaging.get(msg, bitInfo)) + ", "
+                columnText += add_param(str(Messaging.get(msg, bitInfo)))
         else:
             columnText = ""
             for i in range(0,fieldInfo.count):
-                columnText += str(Messaging.get(msg, fieldInfo, i)) + ", "
+                columnText += add_param(str(Messaging.get(msg, fieldInfo, i)))
         ret += columnText
     return ret
 
@@ -32,8 +40,8 @@ def escapeCommasInQuotedString(line):
 def csvToMsg(lineOfText):
     if lineOfText == '':
         return None
-    params = lineOfText.split(" ", 1)
-    msgName = params[0]
+    params = lineOfText.split(",", 1)
+    msgName = params[0].strip()
     if len(params) == 1:
         params = []
     else:
