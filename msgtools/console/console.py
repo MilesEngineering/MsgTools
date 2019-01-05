@@ -44,8 +44,7 @@ class MsgCmd(cmd.Cmd):
         msg = msgcsv.csvToMsg(line)
         if msg:
             self._connection.send(msg)
-            #print("sent " + msgcsv.toCsv(msg))
-            print("sent " + str(msg))
+            print("sent " + msgcsv.toCsv(msg))
         else:
             print("ERROR! Invalid msg [%s]!" % (line))
     

@@ -37,11 +37,15 @@ def escapeCommasInQuotedString(line):
         ret = ret + c
     return ret
 
-def csvToMsg(lineOfText):
-    if lineOfText == '':
-        return None
-    params = lineOfText.split(",", 1)
-    msgName = params[0].strip()
+def msgNameAndParams(lineOfText):
+    # check for message name followed by space
+    params = lineOfText.split(" ", 1)
+    msgName = params[0]
+    if msgName in Messaging.MsgClassFromName:
+        pass
+    else:
+        params = lineOfText.split(",", 1)
+        msgName = params[0].strip()
     if len(params) == 1:
         params = []
     else:
@@ -50,6 +54,12 @@ def csvToMsg(lineOfText):
         # use CSV reader module
         params = list(csv.reader([line], quotechar='"', delimiter=',', quoting=csv.QUOTE_NONE, skipinitialspace=True, escapechar='\\'))[0]
         #print("params is " + str(params))
+    return msgName, params
+    
+def csvToMsg(lineOfText):
+    if lineOfText == '':
+        return None
+    msgName, params = msgNameAndParams(lineOfText)
     if msgName in Messaging.MsgClassFromName:
         msgClass = Messaging.MsgClassFromName[msgName]
         msg = msgClass()
@@ -122,12 +132,21 @@ def csvToMsg(lineOfText):
         pass
     return None
 
-def long_substr(data):
+def long_substr(string_array):
+    if len(string_array) == 0:
+        return ''
+    if len(string_array) == 1:
+        return string_array[0]
+    if len(string_array[0]) == 0:
+        return string_array[0]
     substr = ''
-    if len(data) > 1 and len(data[0]) > 0:
-        for j in range(len(data[0])-1):
-            if j > len(substr) and all(data[0][0:j] in x for x in data):
-                substr = data[0][0:j]
+    # iterate over chars in first string
+    for c in range(len(string_array[0])):
+        # check if it matches all other strings
+        for s in range(1,len(string_array)):
+            if len(string_array[s]) <= c or string_array[0][c] != string_array[s][c]:
+                return substr
+        substr += string_array[0][c]
     return substr
 
 def paramHelp(field):
@@ -141,13 +160,9 @@ def paramHelp(field):
 def csvHelp(lineOfText):
     autoComplete = None
     help = ""
-    params = lineOfText.split()
-    if params:
-        msgName = params[0]
-    else:
-        msgName = ''
+    msgName, params = msgNameAndParams(lineOfText)
     # if there's no params beyond first word, try to auto-complete a message name
-    if len(params) <= 1 and not lineOfText.endswith(" "):
+    if len(params) == 0 and not lineOfText.endswith(" ") and not lineOfText.endswith(","):
         # search for messages that match us
         matchingMsgNames = []
         truncated = False
@@ -164,10 +179,10 @@ def csvHelp(lineOfText):
             help = matchingMsgNames[0]
             autoComplete = matchingMsgNames[0]
             # if there's only one result and we don't match it exactly (because it's longer than us)
-            # accept it by giving it as autoComplete with a space at end
+            # accept it by giving it as autoComplete with a comma at end
             #if autoComplete != msgName:
             if not truncated:
-                autoComplete = autoComplete + ' '
+                autoComplete = autoComplete + ','
             return (autoComplete, help)
         else:
             help = '\n'.join(matchingMsgNames)
@@ -175,14 +190,10 @@ def csvHelp(lineOfText):
             #print("long_substr returned " + autoComplete)
             return (autoComplete, help)
             
-    #print("param help")
-    # if we didn't auto-complete a message name above, then show help on params
-    paramstring = lineOfText.replace(msgName, "",1).strip()
-    params = paramstring.split(',')
     if msgName in Messaging.MsgClassFromName:
-        helpOnJustParam = len(paramstring)
+        helpOnJustParam = len(params)>1 or (len(params) == 1 and params[0] != '')
         if not helpOnJustParam:
-            help = msgName + " "
+            help = msgName + ", "
         msgClass = Messaging.MsgClassFromName[msgName]
         msg = msgClass()
         if msg.fields:
@@ -192,16 +203,16 @@ def csvHelp(lineOfText):
                     if(fieldInfo.count == 1):
                         if len(fieldInfo.bitfieldInfo) == 0:
                             if helpOnJustParam:
-                                if paramNumber == len(params)-1:
-                                    return (None, Messaging.paramHelp(fieldInfo))
+                                if paramNumber == len(params):
+                                    return (None, paramHelp(fieldInfo))
                                 paramNumber+=1
                             else:
                                 help += fieldInfo.name + ", "
                         else:
                             for bitInfo in fieldInfo.bitfieldInfo:
                                 if helpOnJustParam:
-                                    if paramNumber == len(params)-1:
-                                        return (None, Messaging.paramHelp(bitInfo))
+                                    if paramNumber == len(params):
+                                        return (None, paramHelp(bitInfo))
                                     paramNumber+=1
                                 else:
                                     help += bitInfo.name + ", "
@@ -209,8 +220,8 @@ def csvHelp(lineOfText):
                         if helpOnJustParam:
                             arrayList = []
                             for i in range(0,fieldInfo.count):
-                                if helpOnJustParam and paramNumber == len(params)-1:
-                                    return (None, Messaging.paramHelp(fieldInfo))
+                                if helpOnJustParam and paramNumber == len(params):
+                                    return (None, paramHelp(fieldInfo))
                                 paramNumber+=1
                         else:
                             help += fieldInfo.name + "["+str(fieldInfo.count)+"], "
