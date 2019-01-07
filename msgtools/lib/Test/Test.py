@@ -3,6 +3,8 @@ import unittest
 import os
 import sys
 import ctypes
+import copy
+import traceback
 
 # if started via invoking this file directly (like would happen with source sitting on disk),
 # insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
@@ -104,27 +106,91 @@ class TestClass(unittest.TestCase):
          ('TestCase4 1, 2,3,4, 5,6,7, "eight;"',     {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "eight;"}}),
          ('TestCase4 1, 2,3,4, 5,6,7, "eig,ht";',    {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "eig,ht"}, "hdr" : {"DataLength": ";"}}),
          ("TestCase4 1, 2,3,4, 5,6,7, ei ght;",      {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "ei ght"}, "hdr" : {"DataLength": ";"}})]
+        commaTestData = []
+        for tc in testData:
+            newTestCase = (tc[0].replace("TestCase4 ", "TestCase4,"), tc[1])
+            commaTestData.append(newTestCase)
+        testData.extend(commaTestData)
 
         tcNum = 0
         for tc in testData:
-            msg = msgcsv.csvToMsg(tc[0])
-            json = msgjson.toJson(msg)
-            msg2 = msgjson.jsonToMsg(tc[1])
-            #print("csv is " + tc[0])
-            self.assertEqual(msg.hdr.GetDataLength(), msg2.hdr.GetDataLength(), self.info(tc, tcNum, "hdr.DataLength"))
-            #print("json of csv is " + json)
-            for fieldInfo in type(msg).fields:
-                if(fieldInfo.count == 1):
-                    if len(fieldInfo.bitfieldInfo) == 0:
-                        self.assertEqual(Messaging.get(msg, fieldInfo), Messaging.get(msg2, fieldInfo), self.info(tc, tcNum, fieldInfo.name))
+            try:
+                msg = msgcsv.csvToMsg(tc[0])
+                json = msgjson.toJson(msg)
+                msg2 = msgjson.jsonToMsg(tc[1])
+                #print("csv is " + tc[0])
+                self.assertEqual(msg.hdr.GetDataLength(), msg2.hdr.GetDataLength(), self.info(tc, tcNum, "hdr.DataLength"))
+                #print("json of csv is " + json)
+                for fieldInfo in type(msg).fields:
+                    if(fieldInfo.count == 1):
+                        if len(fieldInfo.bitfieldInfo) == 0:
+                            self.assertEqual(Messaging.get(msg, fieldInfo), Messaging.get(msg2, fieldInfo), self.info(tc, tcNum, fieldInfo.name))
+                        else:
+                            for bitInfo in fieldInfo.bitfieldInfo:
+                                self.assertEqual(Messaging.get(msg, bitInfo), Messaging.get(msg2, bitInfo), self.info(tc, tcNum, fieldInfo.name+"."+bitInfo.name))
                     else:
-                        for bitInfo in fieldInfo.bitfieldInfo:
-                            self.assertEqual(Messaging.get(msg, bitInfo), Messaging.get(msg2, bitInfo), self.info(tc, tcNum, fieldInfo.name+"."+bitInfo.name))
-                else:
-                    for i in range(0,fieldInfo.count):
-                        self.assertEqual(Messaging.get(msg, fieldInfo, i), Messaging.get(msg2, fieldInfo, i), self.info(tc, tcNum, fieldInfo.name+"["+str(i)+"]"))
+                        for i in range(0,fieldInfo.count):
+                            self.assertEqual(Messaging.get(msg, fieldInfo, i), Messaging.get(msg2, fieldInfo, i), self.info(tc, tcNum, fieldInfo.name+"["+str(i)+"]"))
+            except AssertionError:
+                print("test_csv_and_json test case %d" % (tcNum))
+                raise
+            except:
+                print("Exception on test case %d, [%s] != [%s]" % (tcNum, tc[0], tc[1]))
+                print(traceback.format_exc())
+                self.assertEqual(True, False)
             tcNum += 1
             #print("\n\n")
+
+    def test_long_substr(self):
+        testData = [
+         (['123', 'abc'], ''),
+         (['123', '12'], '12'),
+         (['12', '123'], '12'),
+         (['123', '123'], '123'),
+         (['123', '124'], '12'),
+         (['123', '12456', '123'], '12')
+        ]
+        tcNum = 0
+        for tc in testData:
+            try:
+                observed = msgcsv.long_substr(tc[0])
+                expected = tc[1]
+                self.assertEqual(observed, expected)
+            except AssertionError:
+                print("test_long_substr test case %d" % (tcNum))
+                raise
+            except:
+                print("Exception on test case %d, [%s] != [%s]" % (tcNum, tc[0], tc[1]))
+                print(traceback.format_exc())
+                self.assertEqual(True, False)
+            tcNum += 1
+        
+    def test_tab_complete(self):
+        testData = [
+         ('TestC',     'TestCase', 'TestCase1\nTestCase2\nTestCase3\nTestCase4'),
+         ('TestCa',    'TestCase', 'TestCase1\nTestCase2\nTestCase3\nTestCase4'),
+         ('TestCase',  'TestCase', 'TestCase1\nTestCase2\nTestCase3\nTestCase4'),
+         ('TestCase3', 'TestCase3,', 'TestCase3'),
+         ('TestCase3,', None, 'TestCase3, Latitude, Field1[3], BitsA, BitsB, BitsC, Field3, Field4'),
+         ('TestCase3,1', None, 'Field1(m/s)# Test Field 1'), # csv specified first array elem of Field1
+         ('TestCase3,1,2', None, 'Field1(m/s)# Test Field 1'), # csv specified 2 array elems of Field1
+         ('TestCase3,1,2,3', None, 'Field1(m/s)# Test Field 1'), #  csv specified all 3 array elems of Field1
+         ('TestCase3,1,2,3,4', None, 'BitsA(m/s)') # csv specified all of Field1 and first bitfield of Field2
+        ]
+        tcNum = 0
+        for tc in testData:
+            try:
+                autocomplete, help = msgcsv.csvHelp(tc[0])
+                self.assertEqual(autocomplete, tc[1])
+                self.assertEqual(help, tc[2])
+            except AssertionError:
+                print("test_tab_complete test case %d" % (tcNum))
+                raise
+            except:
+                print("Exception on test case %d, [%s] != [%s]" % (tcNum, tc[0], tc[1]))
+                print(traceback.format_exc())
+                self.assertEqual(True, False)
+            tcNum += 1
 
 def main(args=None):
     unittest.main()

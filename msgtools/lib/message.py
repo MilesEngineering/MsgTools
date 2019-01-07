@@ -81,7 +81,10 @@ class Message:
         else:
             raise AttributeError('Message %s has no field %s' % (self.MsgName(), attr))
 
-# these can be installed by monkey patching the Message class, when msgjson.py or msgcsv.py is imported!
+# these could be installed by monkey patching the Message class, when msgjson.py or msgcsv.py is imported!
+# doing that would prevent the dependency of this file importing msgjson and msgcsv, but would still
+# allow easy conversion of messages to/from CSV and JSON, if those files are imported elsewhere.
+# it would also extend to other conversions, like protobufs for example
 #   Message.fromJson = msgjson.jsonToMsg
 #   Message.fromCsv  = msgcsv.csvToMsg
 #   Message.toJson   = msgjson.toJson
@@ -94,9 +97,58 @@ class Message:
     @staticmethod
     def fromCsv(s):
         return msgcsv.csvToMsg(s)
+    
+    # we should add support for msgname(p1,p2,p3, [p4a, p4b, p4c])
+    # and also msgname(f1=p1, f3=p3, f4=[p4a, p4b, p4c], f2=p2)
+    # it'll be useful because it's the exact same syntax as the message constructor takes,
+    # so will make it possible for the msgtools.lib.gui.LineEditWithHistory to use same
+    # syntax as python scripts do.  it also matches what Message.__str__ outputs.
+    
+    # alternatively, should we have one fromStr function that accepts all of:
+    # 1) json
+    # 2) csv
+    # 3) string that works as python object constructor
+    # ?
+    @staticmethod
+    def fromStr(s):
+        pass
 
     def toJson(self):
         return msgjson.toJson(self)
 
     def toCsv(self):
         return msgjson.toCsv(self)
+
+    def __repr__(self):
+        def add_param(n, v):
+            if v == '':
+                v = '""'
+            if ',' in v and not((v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'"))):
+                v = '"%s"' % v
+            return n + " = " + v + ", "
+        ret = ''
+        msgClass = Messaging.MsgClass(self.hdr)
+        for fieldInfo in msgClass.fields:
+            if(fieldInfo.count == 1):
+                if self.hdr.GetDataLength() < int(fieldInfo.get.offset) + int(fieldInfo.get.size):
+                    break
+                if len(fieldInfo.bitfieldInfo) == 0:
+                    ret += add_param(fieldInfo.name, str(Messaging.get(self, fieldInfo)))
+                else:
+                    for bitInfo in fieldInfo.bitfieldInfo:
+                        ret += add_param(bitInfo.name, str(Messaging.get(self, bitInfo)))
+            else:
+                arrayList = []
+                terminate = 0
+                for i in range(0,fieldInfo.count):
+                    if self.hdr.GetDataLength() < int(fieldInfo.get.offset) + i*int(fieldInfo.get.size):
+                        terminate = 1
+                        break
+                    arrayList.append(str(Messaging.get(self, fieldInfo, i)))
+                ret += add_param(fieldInfo.name, "[" + ','.join(arrayList) + "]")
+                if terminate:
+                    break
+
+        if ret.endswith(", "):
+            ret = ret[:-2]
+        return "%s(%s)" % (self.MsgName(), ret)

@@ -125,7 +125,7 @@ class Lumberjack(msgtools.lib.gui.Gui):
         except AttributeError:
             text = "unknown, "
 
-        text += msgcsv.toCsv(msg)
+        text += msgcsv.toCsv(msg, name=False)
         text += '\n'
         outputFile.write(text)
 

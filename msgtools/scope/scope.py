@@ -259,7 +259,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
     def on_tx_message_send(self, msg):
         if not self.connected:
             self.OpenConnection()
-        text = msg.MsgName() + " " + msgcsv.toCsv(msg)
+        text = msgcsv.toCsv(msg)
         self.debugWidget.textEntryWidget.addText(text + " -> Msg\n> ")
         self.debugWidget.textEntryWidget.addToHistory(text)
         self.SendMsg(msg)

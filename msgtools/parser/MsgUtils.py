@@ -15,7 +15,7 @@ class YamlLoader(yaml.Loader):
         yaml.Loader.__init__(self, stream)
 
     def include(self, node):
-        filename = os.path.join(self._dirname, node.value)
+        filename = os.path.abspath(os.path.join(self._dirname, node.value))
         try:
             inFile = io.open(filename, 'r')
             return yaml.load(inFile, YamlLoader)
@@ -253,33 +253,33 @@ def msgID(msg, enums, undefinedMsgId):
     ret = undefinedMsgId
     # check if there was an externally specified list of ID fields
     if msg["ids"]:
-        try:
-            ret = 0
-            # iterate over list of ids
-            shiftValue = 0
-            for id in msg["ids"]:
+        ret = 0
+        # iterate over list of ids
+        shiftValue = 0
+        for id in msg["ids"]:
+            try:
                 value = msg[id["Name"]]
-                #print("got value " + str(value))
-                try:
-                    value = int(value)
-                except ValueError:
-                    for enum in enums:
-                        enumType = enum["Name"]
-                        for option in enum["Options"]:
-                            if value == enumType + "." + option["Name"] or (enum["Name"] == id["Name"]+"s" and value == option["Name"]):
-                                enumName = value
-                                value = int(option["Value"])
-                                #print("found value " + str(value) + " for " + enumType + "." + str(enumName))
-                                break
-                try:
-                    value = int(value)
-                except ValueError:
-                    raise MessageException("ERROR! Can't find value for " + str(value))
-                shiftValue = id["Bits"]
-                #print("ID " + id["Name"] + " is " + str(value) + ", " + str(id["Bits"]) + " bits")
-                ret = (ret << shiftValue) + value
-        except KeyError:
-            pass
+            except KeyError:
+                value = 0
+            #print("got value " + str(value))
+            try:
+                value = int(value)
+            except ValueError:
+                for enum in enums:
+                    enumType = enum["Name"]
+                    for option in enum["Options"]:
+                        if value == enumType + "." + option["Name"] or (enum["Name"] == id["Name"]+"s" and value == option["Name"]):
+                            enumName = value
+                            value = int(option["Value"])
+                            #print("found value " + str(value) + " for " + enumType + "." + str(enumName))
+                            break
+            try:
+                value = int(value)
+            except ValueError:
+                raise MessageException("ERROR! Can't find value for " + str(value))
+            shiftValue = id["Bits"]
+            #print("ID " + id["Name"] + " is " + str(value) + ", " + str(id["Bits"]) + " bits")
+            ret = (ret << shiftValue) + value
     if "ID" in msg:
         ret = msg["ID"]
     #print("message " + msg["Name"] + " has ID " + hex(ret))
@@ -292,7 +292,7 @@ def msgDescriptor(msg, inputFilename):
     # add the filename as a namespace, unless it's already there
     if not basename == name and not basename+'_' in name:
         name = basename + '.' + name
-        print("adding basename " + basename + " to " + name)
+        #print("adding basename " + basename + " to " + name)
     if name.startswith(subdir+"_"):
         return name.replace("_", ".")
     if subdir and not name.startswith(subdir):
@@ -371,12 +371,12 @@ def Enums(inputData):
     return enumList
 
 def Structs(inputData):
-    structList = []
+    structList = {}
     if "Structs" in inputData:
         structList = inputData["Structs"]
     if "includes" in inputData:
         for data in inputData["includes"]:
-            structList = structList + Structs(data)
+            structList.update(Structs(data))
     return structList
 
 # this replaces fields that are references to structs with the fields from the referenced struct

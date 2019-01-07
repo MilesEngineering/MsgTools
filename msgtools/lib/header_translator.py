@@ -94,5 +94,24 @@ class HeaderTranslator:
 
     def translate(self, fromHdr):
         toHdr = self.translateHdrAndBody(fromHdr, fromHdr.rawBuffer()[type(fromHdr).SIZE:])
+        self.promoteIdFields(toHdr)
         return toHdr
 
+    # Handle message body ID fields by populating them in message header.
+    # This is to handle systems where some message body fields are conditionally
+    # used as ID fields.
+    def promoteIdFields(self, hdr):
+        # if any message body fields are marked as IDs, look for header fields with
+        # same name if header field is zero, set it to value of body field.
+        id = hdr.GetMessageID()
+        keep_going = True
+        while(keep_going):
+            keep_going = False
+            msgClass = messaging.MsgClass(hdr)
+            msg = msgClass(hdr)
+            for fieldInfo in msg.fields:
+                if fieldInfo.idbits != 0:
+                    hdrFieldInfo = messaging.findFieldInfo(hdr.fields, fieldInfo.name)
+                    if hdrFieldInfo and hdrFieldInfo.get(hdr) == 0:
+                        hdrFieldInfo.set(hdr, fieldInfo.get(msg))
+                        keep_going = True
