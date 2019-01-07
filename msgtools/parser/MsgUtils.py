@@ -376,7 +376,7 @@ def Structs(inputData):
         structList = inputData["Structs"]
     if "includes" in inputData:
         for data in inputData["includes"]:
-            structList = {**structList, **Structs(data)}
+            structList.update(Structs(data))
     return structList
 
 # this replaces fields that are references to structs with the fields from the referenced struct
