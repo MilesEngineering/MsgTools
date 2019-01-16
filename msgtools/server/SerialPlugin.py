@@ -2,11 +2,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, QtSerialPort
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import QDateTime
-from PyQt5.QtSerialPort import QSerialPortInfo
 from PyQt5.QtSerialPort import QSerialPort
 
 from msgtools.lib.messaging import Messaging
 from msgtools.lib.header_translator import HeaderTranslator
+from msgtools.server import SerialportDialog
 
 import ctypes
 import struct
@@ -25,74 +25,15 @@ def Crc16(data):
         crc = 0xFFFF & crc
     return crc
 
-class SelectSerialportDialog(QtWidgets.QDialog):
-    portChanged = QtCore.pyqtSignal(str)
-    @staticmethod
-    def naIfEmpty(value):
-        if not value:
-            return "N/A"
-        return value
-    @staticmethod
-    def naIfEmptyHex(value):
-        if not value:
-            return "N/A"
-        try:
-            return hex(int(value))
-        except ValueError:
-            pass
-        return value
-    def __init__(self, parent=None):
-        super(SelectSerialportDialog, self).__init__(parent)
-        self.setWindowModality(QtCore.Qt.ApplicationModal)
-        self.setWindowTitle("Select a Port")
-        
-        self.resize(600, 200)
-
-        self.portsList = QtWidgets.QTreeWidget()
-        openButton = QtWidgets.QPushButton("Open")
-        openButton.clicked.connect(self.openPort)
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.portsList)
-        layout.addWidget(openButton)
-        self.setLayout(layout)
-
-        tableHeader = ["Name", "Description", "Mfg", "Location", "VendorID", "ProductID"]
-        self.portsList.setHeaderLabels(tableHeader)
-        for info in QSerialPortInfo.availablePorts():
-            list = []
-            description = info.description()
-            manufacturer = info.manufacturer()
-            serialNumber = info.serialNumber()
-            list.append(info.portName())
-            list.append(self.naIfEmpty(description))
-            list.append(self.naIfEmpty(manufacturer))
-            #list.append(self.naIfEmpty(serialNumber))
-            list.append(info.systemLocation())
-            list.append(self.naIfEmptyHex(info.vendorIdentifier()))
-            list.append(self.naIfEmptyHex(info.productIdentifier()))
-
-            self.portsList.addTopLevelItem(QtWidgets.QTreeWidgetItem(None, list))
-        for i in range(0, len(tableHeader)):
-            self.portsList.resizeColumnToContents(i)
-        
-    def openPort(self):
-        cur_item = self.portsList.currentItem()
-        if cur_item is not None:
-            self.portChanged.emit(cur_item.text(0))
-            self.close()
-
-class SerialConnection(QObject):
+class BaseSerialConnection(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     messagereceived = QtCore.pyqtSignal(object)
     disconnected = QtCore.pyqtSignal(object)
-
-    def __init__(self, hdr, portName):
-        super(SerialConnection, self).__init__(None)
-
-        self.hdr = hdr
+    def __init__(self, name, portName):
+        super(BaseSerialConnection, self).__init__(None)
         
-        self.settings = QtCore.QSettings("MsgTools", "MessageServer/SerialPlugin")
+        self.base_name = name
+        self.settings = QtCore.QSettings("MsgTools", "MessageServer/"+self.base_name)
         
         # button to open/close serial port
         self.openCloseButton = QtWidgets.QPushButton("button")
@@ -118,24 +59,9 @@ class SerialConnection(QObject):
         self.serialPort.setParity(QSerialPort.NoParity);
         self.serialPort.setDataBits(QSerialPort.Data8);
         self.serialPort.setStopBits(QSerialPort.OneStop);
-        self.rxBuffer = bytearray()
-        self.gotHeader = 0
-        self.rxMsgCount = 0
 
         self.serialPort.readyRead.connect(self.onReadyRead)
-        self.name = "Serial " + self.serialPort.portName()
-
-        self.hdrTranslator = HeaderTranslator(hdr, Messaging.hdr)
-
-        self.serialStartSeqField = Messaging.findFieldInfo(hdr.fields, "StartSequence")
-        if self.serialStartSeqField != None:
-            self.startSequence = int(hdr.GetStartSequence.default)
-            self.startSeqSize = int(hdr.GetStartSequence.size)
-        try:
-            self.hdrCrcRegion = int(hdr.GetHeaderChecksum.offset)
-        except AttributeError:
-            self.hdrCrcRegion = None
-        self.tmpRxHdr = ctypes.create_string_buffer(0)
+        self.name = self.base_name + " " + self.serialPort.portName()
 
     def widget(self, index):
         if index == 0:
@@ -160,7 +86,7 @@ class SerialConnection(QObject):
             else:
                 self.statusUpdate.emit("Can't open SerialPort on port "+str(self.serialPort.portName())+"!")
                 self.openCloseButton.setText("Open")
-        self.name = "Serial " + self.serialPort.portName()
+        self.name = self.base_name + " " + self.serialPort.portName()
         self.statusLabel.setText(self.name)
 
     def portChanged(self, portName):
@@ -171,7 +97,7 @@ class SerialConnection(QObject):
         self.openCloseSwitch()
 
     def selectPort(self):
-        d = SelectSerialportDialog()
+        d = SerialportDialog.SelectSerialportDialog()
         d.portChanged.connect(self.portChanged)
         d.exec_()
 
@@ -181,6 +107,32 @@ class SerialConnection(QObject):
     def gotRxError(self, errType):
         print("Got rx error " + errType)
         sys.stdout.flush()
+
+    def stop(self):
+        pass
+
+
+class SerialConnection(BaseSerialConnection):
+    def __init__(self, hdr, portName):
+        super(SerialConnection, self).__init__("Serial", portName)
+
+        self.hdr = hdr
+        
+        self.rxBuffer = bytearray()
+        self.gotHeader = 0
+        self.rxMsgCount = 0
+
+        self.hdrTranslator = HeaderTranslator(hdr, Messaging.hdr)
+
+        self.serialStartSeqField = Messaging.findFieldInfo(hdr.fields, "StartSequence")
+        if self.serialStartSeqField != None:
+            self.startSequence = int(hdr.GetStartSequence.default)
+            self.startSeqSize = int(hdr.GetStartSequence.size)
+        try:
+            self.hdrCrcRegion = int(hdr.GetHeaderChecksum.offset)
+        except AttributeError:
+            self.hdrCrcRegion = None
+        self.tmpRxHdr = ctypes.create_string_buffer(0)
 
     def onReadyRead(self):
         while self.serialPort.bytesAvailable() > 0:
@@ -270,9 +222,6 @@ class SerialConnection(QObject):
         if self.serialPort.isOpen():
             self.serialPort.write(serialMsg.rawBuffer().raw)
     
-    def stop(self):
-        pass
-
 def PluginConnection(param=None):
     from SerialHeader import SerialHeader
     return SerialConnection(SerialHeader, param)
