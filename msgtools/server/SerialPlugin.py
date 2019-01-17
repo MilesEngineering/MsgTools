@@ -29,7 +29,7 @@ class BaseSerialConnection(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     messagereceived = QtCore.pyqtSignal(object)
     disconnected = QtCore.pyqtSignal(object)
-    def __init__(self, name, portName):
+    def __init__(self, name, portName, baud_rate=QSerialPort.Baud115200, parity=QSerialPort.NoParity):
         super(BaseSerialConnection, self).__init__(None)
         
         self.base_name = name
@@ -55,11 +55,11 @@ class BaseSerialConnection(QObject):
             portName = self.settings.value("portName", None)
 
         self.serialPort = QSerialPort(portName)
-        self.serialPort.setBaudRate(QSerialPort.Baud115200);
-        self.serialPort.setFlowControl(QSerialPort.NoFlowControl);
-        self.serialPort.setParity(QSerialPort.NoParity);
-        self.serialPort.setDataBits(QSerialPort.Data8);
-        self.serialPort.setStopBits(QSerialPort.OneStop);
+        self.serialPort.setBaudRate(baud_rate)
+        self.serialPort.setFlowControl(QSerialPort.NoFlowControl)
+        self.serialPort.setParity(parity)
+        self.serialPort.setDataBits(QSerialPort.Data8)
+        self.serialPort.setStopBits(QSerialPort.OneStop)
 
         self.serialPort.readyRead.connect(self.onReadyRead)
         self.name = self.base_name + " " + self.serialPort.portName()
