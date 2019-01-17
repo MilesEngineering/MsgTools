@@ -44,6 +44,7 @@ class BaseSerialConnection(QObject):
         self.selectPortButton.pressed.connect(self.selectPort)
 
         self.statusLabel = QtWidgets.QLabel()
+        self.rxMsgCount = 0
         self.subscriptions = {}
         self.subMask = 0
         self.subValue = 0
@@ -120,7 +121,6 @@ class SerialConnection(BaseSerialConnection):
         
         self.rxBuffer = bytearray()
         self.gotHeader = 0
-        self.rxMsgCount = 0
 
         self.hdrTranslator = HeaderTranslator(hdr, Messaging.hdr)
 
