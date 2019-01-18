@@ -29,15 +29,16 @@ class <MSGNAME>
         }
         <ENUMERATIONS>
         <FIELDINFOS>
-        void SetMessageID(uint32_t id)
+        void SetMessageID(MessageIdType id)
         {
             <SETMSGID>;
         }
-        uint32_t GetMessageID()
+        MessageIdType GetMessageID()
         {
             return <GETMSGID>;
         }
         <ACCESSORS>
+#ifdef ENABLE_REFLECTION
         static MsgInfo* ReflectionInfo()
         {
             static bool firstTime = true;
@@ -49,6 +50,7 @@ class <MSGNAME>
             }
             return &msgInfo;
         }
+#endif
     public:
         uint8_t m_data[SIZE];
 };
