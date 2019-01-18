@@ -10,6 +10,8 @@
 
 #define UNDEFINED_MSGID (-1)
 
+#define MessageIdType uint64_t
+
 #include <Cpp/headers/NetworkHeader.h>
 
 template <class HeaderClass>
@@ -22,27 +24,26 @@ class HeaderWrapper : public HeaderClass
         }
         void InitializeTime()
         {
-            /** \todo How to set 32-bit rolling ms counter? */
-            if(fieldInfo("Time"))
-                fieldInfo("Time")->SetValue(QString("%1").arg(0), HeaderClass::m_data);
+            /** \todo How to set 32-bit rolling ms counter?
+                      Or absolute timestamp as uint64, float64? */
+            SetTime(0);
         }
         void SetTime(uint32_t time)
         {
-            if(fieldInfo("Time"))
-                fieldInfo("Time")->SetValue(QString("%1").arg(time), HeaderClass::m_data);
+            SetTime(time);
         }
         uint32_t GetTime()
         {
-            if(fieldInfo("Time"))
-                return fieldInfo("Time")->Value(HeaderClass::m_data).toInt();
-            return 0;
+            return GetTime();
         }
 
     private:
+#ifdef ENABLE_REFLECTION
         static const FieldInfo* fieldInfo(const QString& name)
         {
             return HeaderClass::ReflectionInfo()->GetField(name);
         }
+#endif
 };
 
 typedef HeaderWrapper<NetworkHeader> NetworkHeaderWrapper;

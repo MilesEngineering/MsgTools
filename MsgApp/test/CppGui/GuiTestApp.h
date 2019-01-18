@@ -1,13 +1,17 @@
 #ifndef GUI_TEST_APP_H
 #define GUI_TEST_APP_H
 
-#include "MsgApp/MessageGuiApp.h"
-#include "MsgApp/Reflection.h"
-
 //# For reflection to be enabled, there needs to be one place in your application
 //# that defines #ENABLE_REFLECTION, and then #includes all auto-generated headers
 //# you want reflection info for.  This should be an auto-generated file!
 #define ENABLE_REFLECTION
+
+#include "MsgApp/FieldInfo.h"
+#include "MsgApp/MsgInfo.h"
+#include "MsgApp/MessageClient.h"
+#include "MsgApp/MessageGuiApp.h"
+#include "MsgApp/Reflection.h"
+
 #include "Cpp/TestCase1.h"
 #include "Cpp/TestCase2.h"
 #include "Cpp/TestCase3.h"
