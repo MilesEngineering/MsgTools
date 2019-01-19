@@ -165,20 +165,23 @@ def accessors(msg):
 
     return gets+sets+arrayAccessors
 
-def fieldDefault(field):
+def fieldDefault(field, as_enum=False):
     ret = field["Default"]
     if("Type" in field and "int" in field["Type"]) and ret > 2**31:
         ret = str(ret)+'u'
+    if as_enum and "Enum" in field:
+        retType = "<MSGNAME>Message::"+field["Enum"]
+        ret = "%s(%s)" % (retType, ret)
     return ret
 
 def initField(field):
     if "Default" in field:
         if MsgParser.fieldCount(field) > 1:
             ret = "for (int i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
-            ret += "    "+namespace+"Set" + field["Name"] + "(" + params(firstParam, str(fieldDefault(field))) + ", i);" 
+            ret += "    "+namespace+"Set" + field["Name"] + "(" + params(firstParam, str(fieldDefault(field, True))) + ", i);" 
             return ret;
         else:
-            return  namespace+"Set" + field["Name"] + "(" + params(firstParam, str(fieldDefault(field))) + ");"
+            return  namespace+"Set" + field["Name"] + "(" + params(firstParam, str(fieldDefault(field, True))) + ");"
     return ""
 
 def initBitfield(field, bits):
