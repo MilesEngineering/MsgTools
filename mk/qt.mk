@@ -41,7 +41,7 @@ else
 QMAKE_FOUND := $(shell command -v qmake 2> /dev/null)
 
 ifdef QMAKE_FOUND
-QMAKE := qmake
+QMAKE := qmake -qt=qt5
 MAKE_FOR_QT := make
 QSPEC := -spec  linux-g++
 endif
