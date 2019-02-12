@@ -4,9 +4,9 @@ from msgtools.parser.MsgUtils import *
 oneOutputFilePerMsg = True
 
 if MsgParser.big_endian:
-    endian_string = 'false'
+    endian_string = ''
 else:
-    endian_string = 'true'
+    endian_string = ', true'
 
 def paramType(field):
     fieldTypeDict = \
@@ -116,7 +116,7 @@ def getFn(field, offset):
 %s
 fun get%s(%s): %s {
 ''' % (fnHdr(field), field["Name"], param, retType)
-    access = "data.get%s(%s, %s)" % (fieldType(field), loc, endian_string)
+    access = "data.get%s(%s%s)" % (fieldType(field), loc, endian_string)
     if ("Offset" in field or "Scale" in field):
         ret += '    val valI : '+fieldType(field)+' = '+access+'\n'
         access = getMath("valI", field, "Double")
@@ -154,7 +154,7 @@ def setFn(field, offset):
     ret = '''\
 %s
 fun set%s(%s) {
-    data.set%s(%s, %s, %s)
+    data.put%s(%s, %s%s)
 }''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString, endian_string)
     return ret
 
