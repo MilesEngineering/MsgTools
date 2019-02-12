@@ -336,8 +336,17 @@ class MessageServer(QtWidgets.QMainWindow):
                 return
 
     def load_plugin(self, entry_point, param):
-        pluginCreatorFn = entry_point.load()
-        pluginPort = pluginCreatorFn()
+        try:
+            # load the module, create the plugin
+            pluginCreatorFn = entry_point.load()
+            pluginPort = pluginCreatorFn()
+        except:
+            a,b,c = sys.exc_info()
+            exc = ''.join(traceback.format_exception(a,b,c))
+            self.onStatusUpdate("Exception loading plugin:\n%s" % (exc))
+            return
+        
+        # connect plugin to our status update function
         pluginPort.statusUpdate.connect(self.onStatusUpdate)
         
         # try to allow plugin to emit new connections
