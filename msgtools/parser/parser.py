@@ -190,17 +190,12 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     
     # set endianness 
     global big_endian
-    found_endian = False
     if "Endian" in inputData:
         big_endian = isBigEndian(inputData)
-        found_endian = True
     elif "includes" in inputData:
         for data in inputData["includes"]:
-            big_endian = isBigEndian(data)
-            found_endian = True
-    if not found_endian:
-        print('defaulting to big_endian = %d' % big_endian)
-        sys.exit(1)
+            if "Endian" in data:
+                big_endian = isBigEndian(data)
     
     firstTime = True
     if "Messages" in inputData:
