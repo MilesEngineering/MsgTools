@@ -1,6 +1,8 @@
 
 package msgtools;
 
+// TODO: Add support for big and little endian!
+
 public class FieldAccess {
     public static int toUnsignedInt(byte b) {
         return 0x000000FF & b;        

@@ -3,10 +3,16 @@ from msgtools.parser.MsgUtils import *
 
 # >/</= means big/little/native endian, see docs for struct.pack_into or struct.unpack_from.
 def fieldType(field):
-    fieldTypeDict = \
-    {"uint64":">Q", "uint32":">L", "uint16": ">H", "uint8": "B",
-      "int64":">q",  "int32":">l",  "int16": ">h",  "int8": "b",
-      "float64":">d", "float32":">f"}
+    if MsgParser.big_endian:
+        fieldTypeDict = \
+        {"uint64":">Q", "uint32":">L", "uint16": ">H", "uint8": "B",
+          "int64":">q",  "int32":">l",  "int16": ">h",  "int8": "b",
+          "float64":">d", "float32":">f"}
+    else:
+        fieldTypeDict = \
+        {"uint64":"<Q", "uint32":"<L", "uint16": "<H", "uint8": "B",
+          "int64":"<q",  "int32":"<l",  "int16": "<h",  "int8": "b",
+          "float64":"<d", "float32":"<f"}
     typeStr = field["Type"]
     return fieldTypeDict[typeStr]
 
