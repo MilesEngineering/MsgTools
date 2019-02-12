@@ -9,12 +9,10 @@ endif
 all :: WebConsole.html
 
 WebConsole.html: MakeHtml.py
-	$(PYTHON) ../msgtools/webapp/webapp.py WebConsole ../obj/CodeGenerator/javascript/ ./
-	mkdir -p obj/CodeGenerator
-	cp -r ../obj/CodeGenerator/javascript ./obj/CodeGenerator/
+	$(PYTHON) ../msgtools/webapp/webapp.py -s WebConsole ../obj/CodeGenerator/javascript/ ./
 
 clean::
 	rm -f WebConsole.html
-	rm -r obj
+	rm -rf messages
 	rm -f index.html
 	rm -f *.js

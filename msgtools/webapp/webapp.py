@@ -81,7 +81,7 @@ def copyFiles(srcpath, destpath):
         shutil.copy2(src, dest)
 
 
-def buildApp(htmlTemplate, jsTemplate, jinjaArgs, msgdir, outputdir):
+def buildApp(htmlTemplate, jsTemplate, jinjaArgs, msgdir, outputdir, copyMessagesTo):
     '''We're  just going to iterate each file in the directlry and build a message entry for it.
     Then we'll run Jinja to build a custom web app based on the messages we've processed'''
 
@@ -104,6 +104,10 @@ def buildApp(htmlTemplate, jsTemplate, jinjaArgs, msgdir, outputdir):
     # call will fail...
     print('Copying library files...')
     copyFiles(os.path.join(apppath, 'lib'), outputdir)
+
+    if copyMessagesTo is not None:
+        print('Copying message code to %s to make standalone app...' % copyMessagesTo)
+        shutil.copytree(msgdir, copyMessagesTo)
 
 
 def getTemplate(templatePath, defaultTemplate):
@@ -131,6 +135,9 @@ def main():
                         help='''Arguments to pass to the template engine as a set of key/value pairs. This argument is first interpreted
                 as a path to a JSON formatted file.  If it is not a valid file, then the argument is treated as a
                 JSON string.  Literal JSON example: \'{"key":"value"}\' ''')
+    parser.add_argument('-s', '--standalone', dest='standAlone', action='store_true',
+                        help='''Create a standalone webapp hostable right out of the base directory.  Copies message
+                        code into a subfolder called messages.  Overrides -w option with 'messages' if specified.''')
     parser.add_argument('appname', help='The name of the app.')
     parser.add_argument(
         'msgdir', help='The basepath for where generated message code is placed.  For example, obj/CodeGenerator/Javascript')
@@ -176,8 +183,16 @@ def main():
                 print(e)
                 sys.exit(1)
 
+    # Some special handling for standalone apps.  If -s is spec'd then override webdir
+    # with messages and handle the copy.
+    copyMessagesTo = None
+    if args.standAlone is True:
+        jinjaArgs['webdir'] = 'messages'
+        copyMessagesTo = os.path.join(args.outputdir, 'messages')
+    else:
+        jinjaArgs['webdir'] = webdir = args.msgdir if args.webdir is None else args.webdir
+
     jinjaArgs['appname'] = args.appname
-    jinjaArgs['webdir'] = args.msgdir if args.webdir is None else args.webdir
     jinjaArgs['widgets'] = args.widgets
 
     # Verify the message basepath exists
@@ -189,7 +204,7 @@ def main():
     if os.path.exists(args.outputdir) is False or os.path.isdir(args.outputdir) is False:
         os.mkdir(args.outputdir)
 
-    buildApp(htmlTemplate, jsTemplate, jinjaArgs, args.msgdir, args.outputdir)
+    buildApp(htmlTemplate, jsTemplate, jinjaArgs, args.msgdir, args.outputdir, copyMessagesTo)
 
     print('DONE')
 
