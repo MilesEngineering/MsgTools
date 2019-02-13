@@ -72,13 +72,27 @@ class MsgPlot(QWidget):
         # set up click handler to pause graph
         self.plotWidget.scene().sigMouseClicked.connect(self.mouseClicked)
         
+        hLayout = QHBoxLayout()
+        layout.addLayout(hLayout)
+        
+        # add a Pause/Run button
+        self.runButton = QPushButton("Pause")
+        self.runButton.clicked.connect(self.pauseOrRun)
+        hLayout.addWidget(self.runButton)
+
+        # add a 'Clear' button
+        clearButton = QPushButton("Clear Data")
+        clearButton.clicked.connect(self.clearData)
+        hLayout.addWidget(clearButton)
+
         # add slider bar to control time scale
         self.timeSlider = QSlider(Qt.Horizontal)
         self.timeSlider.setMinimum(50)
         self.timeSlider.setMaximum(MsgPlot.MAX_LENGTH)
         self.timeSlider.setSingleStep(10)
         self.timeSlider.setPageStep(50)
-        layout.addWidget(self.timeSlider)
+        hLayout.addWidget(QLabel("Time Scale"))
+        hLayout.addWidget(self.timeSlider)
         
         self.plotWidget.dragEnterEvent = self.dragEnterEvent
         self.plotWidget.dragMoveEvent = self.dragMoveEvent
@@ -110,6 +124,13 @@ class MsgPlot(QWidget):
             self.addLine(type(item.msg), item.fieldName)
         except MsgPlot.PlotError as e:
             self.AddLineError.emit(str(e))
+    
+    def clearData(self):
+        for line in self.lines:
+            line.dataArray.clear()
+            line.timeArray.clear()
+            line.curve.setData(line.timeArray, line.dataArray)
+            line.curve.setPos(line.ptr1, 0)
 
     def addLine(self, msgClass, fieldName):
         fieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
@@ -173,10 +194,14 @@ class MsgPlot(QWidget):
         lineInfo = LineInfo(fieldInfo, fieldIndex, dataArray, timeArray, curve, ptr1)
         self.lines.append(lineInfo)
         
+    def pauseOrRun(self):
+        self.pause = not self.pause
+        self.runButton.setText("Run" if self.pause else "Pause")
+        self.Paused.emit(self.pause)
+
     def mouseClicked(self, ev):
         if ev.button() == QtCore.Qt.LeftButton:
-            self.pause = not self.pause
-        self.Paused.emit(self.pause)
+            self.pauseOrRun()
 
     def addData(self, msg):
         # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
