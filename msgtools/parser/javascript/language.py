@@ -5,9 +5,9 @@ from msgtools.parser.MsgUtils import *
 # https://github.com/kig/DataStream.js
 # https://www.html5rocks.com/en/tutorials/websockets/basics/
 if MsgParser.big_endian:
-    endian_string = 'false'
+    endian_string = ''
 else:
-    endian_string = 'true'
+    endian_string = ', true'
 
 def fieldType(field):
     fieldTypeDict = \
@@ -49,7 +49,7 @@ def getFn(field, offset):
         if param != "":
             param += ", "
         param += "enumAsInt=false"
-    access = "(this.m_data.get%s(%s, %s))" % (fieldType(field), loc, endian_string)
+    access = "(this.m_data.get%s(%s%s))" % (fieldType(field), loc, endian_string)
     access = getMath(access, field, "")
     cleanup = ""
     if "Enum" in field:
@@ -93,7 +93,7 @@ def setFn(field, offset):
 %s
 <MSGSHORTNAME>.prototype.Set%s = function(%s)
 {
-    %sthis.m_data.set%s(%s, %s, %s);
+    %sthis.m_data.set%s(%s, %s%s);
 };''' % (fnHdr(field), field["Name"], param, lookup, fieldType(field), loc, valueString, endian_string)
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
