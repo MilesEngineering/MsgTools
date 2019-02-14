@@ -1,5 +1,6 @@
 import Foundation
 
+//TODO need big and little endian version!
 extension NSMutableData
 {
     public func SetField<AccessType>(offset: Int, value: AccessType)

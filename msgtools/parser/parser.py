@@ -31,6 +31,19 @@ if __name__ == '__main__':
     sys.path.insert(1, srcroot)
 from msgtools.parser.MsgUtils import *
 
+# default to big endian, to match Network Byte Order
+# can be overridden globally.
+big_endian = True
+def isBigEndian(inputData):
+    endian_string = inputData["Endian"]
+    if "big" in endian_string.lower():
+        return True
+    elif "little" in endian_string.lower():
+        return False
+    else:
+        print('Error!  Invalid endian "%s"' % endian_string)
+        sys.exit(1)
+
 def Messages(inputData):
     return inputData["Messages"]
 
@@ -174,6 +187,15 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     ids = MsgIDs(inputData)
     
     PatchStructs(inputData)
+    
+    # set endianness 
+    global big_endian
+    if "Endian" in inputData:
+        big_endian = isBigEndian(inputData)
+    elif "includes" in inputData:
+        for data in inputData["includes"]:
+            if "Endian" in data:
+                big_endian = isBigEndian(data)
     
     firstTime = True
     if "Messages" in inputData:

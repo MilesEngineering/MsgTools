@@ -37,7 +37,9 @@ def getFn(msg, field, offset):
     loc = str(offset)
     end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     param = "obj"
-    access = "swapbytes(typecast(obj.m_data(%s:%s), '%s'))" % (loc, end_loc, fieldType(field))
+    access = "typecast(obj.m_data(%s:%s), '%s')" % (loc, end_loc, fieldType(field))
+    if MsgParser.big_endian:
+        access = "swapbytes(%s)" % access
     access = getMath(access, field, typeForScaledInt(field))
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
@@ -74,10 +76,14 @@ def setFn(msg, field, offset):
 %s
 function obj = set.%s%s(obj, value)
 ''' % (fnHdr(field), matlabFieldName(msg,field), asInt)
+    if MsgParser.big_endian:
+        swap = "swapbytes"
+    else:
+        swap = ""
     ret += '''\
-    obj.m_data(%s:%s) = typecast(swapbytes(%s(%s)), 'uint8');
+    obj.m_data(%s:%s) = typecast(%s(%s(%s)), 'uint8');
 end
-''' % (loc, end_loc, fieldType(field), valueString)
+''' % (loc, end_loc, swap, fieldType(field), valueString)
     if "Enum" in field:
         ret += '''\
 %s
