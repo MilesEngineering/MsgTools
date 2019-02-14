@@ -81,7 +81,7 @@ class MsgPlot(QWidget):
         hLayout.addWidget(self.runButton)
 
         # add a 'Clear' button
-        clearButton = QPushButton("Clear Data")
+        clearButton = QPushButton("Clear")
         clearButton.clicked.connect(self.clearData)
         hLayout.addWidget(clearButton)
 
@@ -91,6 +91,7 @@ class MsgPlot(QWidget):
         self.timeSlider.setMaximum(MsgPlot.MAX_LENGTH)
         self.timeSlider.setSingleStep(10)
         self.timeSlider.setPageStep(50)
+        self.timeSlider.valueChanged.connect(self.timeScaleChanged)
         hLayout.addWidget(QLabel("Time Scale"))
         hLayout.addWidget(self.timeSlider)
         
@@ -129,8 +130,7 @@ class MsgPlot(QWidget):
         for line in self.lines:
             line.dataArray.clear()
             line.timeArray.clear()
-            line.curve.setData(line.timeArray, line.dataArray)
-            line.curve.setPos(line.ptr1, 0)
+            self.refreshLine(line)
 
     def addLine(self, msgClass, fieldName):
         fieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
@@ -239,14 +239,21 @@ class MsgPlot(QWidget):
                 line.timeArray.append(newTime)
 
             if not self.pause:
-                timeArray = line.timeArray
-                dataArray = line.dataArray
-                count = self.timeSlider.value()
-                if len(line.dataArray) > count:
-                    timeArray = timeArray[-count:]
-                    dataArray = dataArray[-count:]
-                line.curve.setData(timeArray, dataArray)
-                line.curve.setPos(line.ptr1, 0)
+                self.refreshLine(line)
+
+    def refreshLine(self, line):
+        timeArray = line.timeArray
+        dataArray = line.dataArray
+        count = self.timeSlider.value()
+        if len(line.dataArray) > count:
+            timeArray = timeArray[-count:]
+            dataArray = dataArray[-count:]
+        line.curve.setData(timeArray, dataArray)
+        line.curve.setPos(line.ptr1, 0)
+    
+    def timeScaleChanged(self):
+        for line in self.lines:
+            self.refreshLine(line)
 
     @staticmethod
     def plotFactory(msgPlot, new_plot, msgClass, fieldNames):
