@@ -22,8 +22,16 @@ class InfluxServerPlugin(QtCore.QObject):
         self.isHardwareLink = False
         self.statusLabel = QtWidgets.QLabel("influxdb %s:%d" % (self.db.hostname, self.db.port))
 
+        self.removeClient = QtWidgets.QPushButton("Remove")
+        self.removeClient.pressed.connect(self.onDisconnected)
+
+    def onDisconnected(self):
+        self.disconnected.emit(self)
+
     def widget(self, index):
         if index == 0:
+            return self.removeClient
+        if index == 1:
             return self.statusLabel
         return None
 
