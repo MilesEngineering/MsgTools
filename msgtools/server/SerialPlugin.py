@@ -35,6 +35,9 @@ class BaseSerialConnection(QObject):
         self.base_name = name
         self.settings = QtCore.QSettings("MsgTools", "MessageServer/"+self.base_name)
         
+        self.removeClient = QtWidgets.QPushButton("Remove")
+        self.removeClient.pressed.connect(self.onDisconnected)
+
         # button to open/close serial port
         self.openCloseButton = QtWidgets.QPushButton("button")
         self.openCloseButton.pressed.connect(self.openCloseSwitch)
@@ -64,12 +67,17 @@ class BaseSerialConnection(QObject):
         self.serialPort.readyRead.connect(self.onReadyRead)
         self.name = self.base_name + " " + self.serialPort.portName()
 
+    def onDisconnected(self):
+        self.disconnected.emit(self)
+
     def widget(self, index):
         if index == 0:
-            return self.openCloseButton
+            return self.removeClient
         if index == 1:
-            return self.selectPortButton
+            return self.openCloseButton
         if index == 2:
+            return self.selectPortButton
+        if index == 3:
             return self.statusLabel
         return None
 
