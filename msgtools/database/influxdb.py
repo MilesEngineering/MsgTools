@@ -8,7 +8,7 @@ if __name__ == '__main__':
     srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
     sys.path.insert(1, srcroot)
 from msgtools.lib.messaging import Messaging
-from msgtools.console.SynchronousMsgClient import SynchronousMsgClient
+import msgtools.console.client
 
 from influxdb import InfluxDBClient
 from influxdb.client import InfluxDBClientError
@@ -162,7 +162,7 @@ class InfluxDBMsgClient:
     def __init__(self):
         Messaging.LoadAllMessages()
 
-        self.connection = SynchronousMsgClient(Messaging.hdr)
+        self.connection = msgtools.console.client(Messaging.hdr)
         # say my name
         connectMsg = Messaging.Messages.Network.Connect()
         connectMsg.SetName("InfluxDB")
