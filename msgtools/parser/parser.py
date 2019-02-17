@@ -141,6 +141,7 @@ def OutputFile(inputFilename, inputName, outDir):
         if sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
             lineEndings="\r\n"
         print("Creating " + outputFilename)
+        sys.stdout.flush()
         return outputFilename, open(outputFilename,'w', newline=lineEndings)
     return outputFilename, None
 
