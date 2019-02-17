@@ -107,7 +107,6 @@ class Messaging:
     def DetermineLoadDir(loaddir, searchdir):
         if loaddir:
             loadDir = loaddir
-            pass
         else:
             if not searchdir or not os.path.isdir(searchdir):
                 searchdir = os.getcwd()
@@ -116,11 +115,16 @@ class Messaging:
                 lastsearchdir = searchdir
                 searchdir = os.path.abspath(os.path.join(searchdir, os.pardir))
                 # checking if joining with pardir returns the same dir is the easiest way to
-                # determine if we're at root of filesystem
+                # determine if we're at root of filesystem, and our upward search has to stop.
                 if lastsearchdir == searchdir:
-                    # if we're at root of filesystem, just give up!
-                    loadDir = None
-                    raise RuntimeError('''
+                    # check for global path to generated code
+                    if os.path.isdir("/opt/msgtools/obj/CodeGenerator/Python/"):
+                        loadDir = "/opt/msgtools/obj/CodeGenerator/Python/"
+                        break
+                    else:
+                        # if we're at root of filesystem, just give up!
+                        loadDir = None
+                        raise RuntimeError('''
 ERROR! Auto-generated python code not found!
 cd to a directory downstream from a parent of obj/CodeGenerator/Python
 or specify that directory with --msgdir=PATH''')
