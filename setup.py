@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(name='msgtools',
     python_requires='~=3.5',
-    version='0.32.1',
+    version='0.33.0',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
