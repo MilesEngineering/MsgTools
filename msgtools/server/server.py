@@ -180,6 +180,14 @@ class MessageServer(QtWidgets.QMainWindow):
         parser.add_argument('--port', type=int, 
             help='The TCP port to use.  Websockets are always TCP port + 1.')
 
+        # if we had plugins before, but no cmdline args now, add simulated
+        # cmdline args for our old plugins
+        if len(sys.argv) == 1:
+            last_plugins = self.settings.value("pluginsLoaded", "", str).split("|")
+            for plugin in last_plugins:
+                if plugin:
+                    sys.argv.append("--"+plugin)
+
         args = parser.parse_args()
         
         try:
@@ -205,14 +213,14 @@ class MessageServer(QtWidgets.QMainWindow):
         if args.port is not None:
             tcpport = args.port
             wsport = tcpport+1
-
+        
         for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
             # check for argparse data for the plugin
             plugin_option = getattr(args, entry_point.name)
             plugin_last_option = getattr(args, 'last'+entry_point.name)
             if plugin_last_option is not False or plugin_option is not None:
                 param = plugin_option if plugin_option is not None else None
-                self.load_plugin(entry_point, param)
+                self.load_plugin(entry_point.name, entry_point, param)
 
         # load plugin via path to .py file
         if args.plugin is not None:
@@ -332,14 +340,15 @@ class MessageServer(QtWidgets.QMainWindow):
     def pluginSelected(self, plugin_name):
         for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
             if entry_point.name == plugin_name:
-                self.load_plugin(entry_point, None)
+                self.load_plugin(plugin_name, entry_point, None)
                 return
 
-    def load_plugin(self, entry_point, param):
+    def load_plugin(self, plugin_name, entry_point, param):
         try:
             # load the module, create the plugin
             pluginCreatorFn = entry_point.load()
             pluginPort = pluginCreatorFn()
+            pluginPort.plugin_name = plugin_name
         except:
             a,b,c = sys.exc_info()
             exc = ''.join(traceback.format_exception(a,b,c))
@@ -375,9 +384,14 @@ class MessageServer(QtWidgets.QMainWindow):
                 break
             self.grid.addWidget(widget, clientRow, i)
             i+=1
-
+    
     def onConnectionDied(self, connection):
         self.onStatusUpdate("removing connection[" + connection.name+"]")
+        # remove the plugin, if it is one
+        try:
+            self.pluginPorts.remove(connection)
+        except ValueError:
+            pass
         i = 0
         while(1):
             widget = connection.widget(i)
@@ -479,8 +493,14 @@ class MessageServer(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())
+        pluginNames = []
         for pluginPort in self.pluginPorts:
+            try:
+                pluginNames.append(pluginPort.plugin_name)
+            except AttributeError:
+                pass
             pluginPort.stop()
+        self.settings.setValue("pluginsLoaded", "|".join(pluginNames))
         super(MessageServer, self).closeEvent(event)
 
     def readSettings(self):
