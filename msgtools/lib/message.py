@@ -117,7 +117,7 @@ class Message:
         return msgjson.toJson(self)
 
     def toCsv(self):
-        return msgjson.toCsv(self)
+        return msgcsv.toCsv(self)
 
     def __repr__(self):
         def add_param(n, v):
