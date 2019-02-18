@@ -17,7 +17,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
 from msgtools.server.TcpServer import *
 from msgtools.server.WebSocketServer import *
-import msgtools.lib.msgjson as msgjson
 
 DESCRIPTION='''
     MsgServer acts as a central routing hub for one or more message clients.
@@ -295,6 +294,10 @@ class MessageServer(QtWidgets.QMainWindow):
         if self.logFile:
             self.logFile.close()
             self.logFile = None
+        if logFileName.endswith("json"):
+            self.logFileType = "JSON"
+        elif logFileName.endswith("csv"):
+            self.logFileType = "CSV"
         self.logFile = QtCore.QFile(logFileName)
         self.logFile.open(QtCore.QIODevice.Append)
         fileInfo = QtCore.QFileInfo(logFileName)
@@ -317,6 +320,8 @@ class MessageServer(QtWidgets.QMainWindow):
                 logStatusMsg.SetLogFileName(self.logFile.fileName())
                 if self.logFileType == "JSON":
                     logStatusMsg.SetLogFileType("JSON")
+                elif self.logFileType == "CSV":
+                    logStatusMsg.SetLogFileType("CSV")
             for client in self.clients.values():
                 client.sendMsg(logStatusMsg.hdr)
 
@@ -326,7 +331,7 @@ class MessageServer(QtWidgets.QMainWindow):
         else:
             currentDateTime = QtCore.QDateTime.currentDateTime()
             defaultFilename = currentDateTime.toString("yyyyMMdd-hhmmss") + ".log"
-            logFileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save File", self.settings.value("logging/filename", ".")+"/"+defaultFilename, "Log Files (*.log)")
+            logFileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save File", self.settings.value("logging/filename", ".")+"/"+defaultFilename, "Log Files (*.log);;JSON Files (*.json);;CSV Files (*.csv)")
             # if they hit cancel, don't do anything
             if not logFileName:
                 return
@@ -411,7 +416,10 @@ class MessageServer(QtWidgets.QMainWindow):
         if self.logFile != None:
             if self.logFileType and self.logFileType == "JSON":
                 msgObj = Messaging.MsgFactory(hdr)
-                self.logFile.write(msgjson.toJson(msgObj).encode('utf-8'))
+                self.logFile.write(msgObj.toJson().encode('utf-8'))
+            elif self.logFileType and self.logFileType == "CSV":
+                msgObj = Messaging.MsgFactory(hdr)
+                self.logFile.write((msgObj.toCsv()+'\n').encode('utf-8'))
             else:
                 self.logFile.write(hdr.rawBuffer().raw)
 
