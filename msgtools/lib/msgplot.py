@@ -256,7 +256,8 @@ class MsgPlot(QWidget):
             self.refreshLine(line)
 
     @staticmethod
-    def plotFactory(msgPlot, new_plot, msgClass, fieldNames):
+    def plotFactory(new_plot, msgClass, fieldNames):
+        msgPlot = None
         if len(fieldNames) == 0:
             fieldNames = [fieldInfo.name for fieldInfo in msgClass.fields]
         for fieldName in fieldNames:
@@ -296,28 +297,60 @@ class MessagePlotGui(msgtools.lib.gui.Gui):
         self.setCentralWidget(centralWidget)
         self.msgPlots = {}
         self.RxMsg.connect(self.ProcessMessage)
+        self.logFileType = None
+        self.logFile = None
 
         if len(sys.argv) < 2:
             sys.stderr.write('Usage: ' + sys.argv[0] + ' msg1=field1[,field2] [msg2=field1,field2,field3]\n')
             sys.exit(1)
         
-        msgPlot = None
         for arg in argv[1:]:
             argComponentList = arg.split("=")
-            msgName = argComponentList[0]
-            fieldNameList = argComponentList[1]
-
-            try:
-                msgClass = Messaging.MsgClassFromName[msgName]
-            except KeyError:
-                print("ERROR!  Invalid message name " + msgName)
-                continue
-            
-            if fieldNameList:
-                fieldNames = fieldNameList.split(",")
+            if argComponentList[0] == "--log":
+                log_type = argComponentList[1]
+                if log_type.endswith('csv'):
+                    self.logFileType = "csv"
+                elif log_type.endswith('json'):
+                    self.logFileType = "json"
+                elif log_type.endswith('bin'):
+                    self.logFileType = "bin"
+                else:
+                    print("ERROR!  Invalid log type " + log_type)
+                    continue
+                if "." in log_type:
+                    # if there's a ., assume the specified an exact filename to use
+                    logFileName = log_type
+                else:
+                    # if not, generate a filename based on current date/time
+                    currentDateTime = QtCore.QDateTime.currentDateTime()
+                    logFileName = currentDateTime.toString("yyyyMMdd-hhmmss") + "." + self.logFileType
+                self.logFile = QtCore.QFile(logFileName)
+                self.logFile.open(QtCore.QIODevice.Append)
             else:
-                fieldNames = []
-            msgPlot = MsgPlot.plotFactory(msgPlot, self.newPlot, msgClass, fieldNames)
+                msgName = argComponentList[0]
+                fieldNameList = argComponentList[1]
+
+                try:
+                    msgClass = Messaging.MsgClassFromName[msgName]
+                except KeyError:
+                    print("ERROR!  Invalid message name " + msgName)
+                    continue
+                
+                if fieldNameList:
+                    fieldNames = fieldNameList.split(",")
+                else:
+                    fieldNames = []
+                MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames)
+
+    def logMsg(self, msg):
+        if self.logFile:
+            if self.logFileType == "csv":
+                log = (msg.toCsv()+'\n').encode('utf-8')
+            elif self.logFileType == "json":
+                log = (msg.toJson()+'\n').encode('utf-8')
+            elif self.logFileType == "bin":
+                log = msg.rawBuffer().raw
+            self.logFile.write(log)
 
     def newPlot(self, plot):
         self.plotlayout.addWidget(QLabel(plot.msgClass.MsgName()))
@@ -328,6 +361,7 @@ class MessagePlotGui(msgtools.lib.gui.Gui):
     
     def ProcessMessage(self, msg):
         if msg.ID in self.msgPlots:
+            self.logMsg(msg)
             plotListForID = self.msgPlots[msg.ID]
             for plot in plotListForID:
                 plot.addData(msg)
