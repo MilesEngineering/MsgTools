@@ -13,6 +13,12 @@ class UnknownMsg :
 
         self.hdr = Messaging.hdr(messageBuffer)
 
+    # This is a hack to make UnknownMsgs appear to have a ID property
+    def __getattr__(self, attr):
+        if attr == 'ID':
+            return self.hdr.GetMessageID()
+        return getattr(self, attr)
+
     def rawBuffer(self):
         # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
         return self.msg_buffer_wrapper["msg_buffer"]
