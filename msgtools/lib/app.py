@@ -41,6 +41,7 @@ class App(QtWidgets.QMainWindow):
                     Taxonomy/Candidae.AFox''')
         parser.add_argument('--msgdir', help=''''The directory to load Python message source from.''')
         parser.add_argument('--serial', action='store_true', help='Set if you want to use a SerialHeader instead of a NetworkHeader.')
+        parser.add_argument('--log', help='The log file type (csv/json/bin) or complete log file name.')
 
         return parser
     
@@ -117,6 +118,11 @@ class App(QtWidgets.QMainWindow):
                     print('{0} is not a valid message name!'.format(msg))
                     sys.exit(1)
 
+        self.logFileType = None
+        self.logFile = None
+        if args.log is not None:
+            self.startLog(args.log)
+
         port = args.port
         
         self.OpenConnection()
@@ -186,8 +192,28 @@ class App(QtWidgets.QMainWindow):
             print("\nERROR!\nneed to specify socket or file")
             sys.exit()
 
-        self.connection;
-    
+        self.connection
+
+    def startLog(self, log_type):
+        if log_type.endswith('csv'):
+            self.logFileType = "csv"
+        elif log_type.endswith('json'):
+            self.logFileType = "json"
+        elif log_type.endswith('bin'):
+            self.logFileType = "bin"
+        else:
+            print("ERROR!  Invalid log type " + log_type)
+            sys.exit(1)
+        if "." in log_type:
+            # if there's a ., assume the specified an exact filename to use
+            logFileName = log_type
+        else:
+            # if not, generate a filename based on current date/time
+            currentDateTime = QtCore.QDateTime.currentDateTime()
+            logFileName = currentDateTime.toString("yyyyMMdd-hhmmss") + "." + self.logFileType
+        self.logFile = QtCore.QFile(logFileName)
+        self.logFile.open(QtCore.QIODevice.Append)
+
     def onConnected(self):
         self.connected = True
         self.connectionChanged.emit(True)
@@ -289,6 +315,16 @@ class App(QtWidgets.QMainWindow):
             self.sendBytesFn(msg.rawBuffer().raw[0:computedSize])
         else:
             self.sendBytesFn(msg.rawBuffer().raw)
+
+    def logMsg(self, msg):
+        if self.logFile:
+            if self.logFileType == "csv":
+                log = (msg.toCsv()+'\n').encode('utf-8')
+            elif self.logFileType == "json":
+                log = (msg.toJson()+'\n').encode('utf-8')
+            elif self.logFileType == "bin":
+                log = msg.rawBuffer().raw
+            self.logFile.write(log)
 
     # this function reads messages (perhaps from a file, like in LumberJack), and calls the message handler.
     # unclear if it ever makes sense to use this in a application that talks to a socket or UART, because
