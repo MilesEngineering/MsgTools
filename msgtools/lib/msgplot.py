@@ -287,7 +287,7 @@ class MessagePlotGui(msgtools.lib.gui.Gui):
     def __init__(self, argv, parent=None):
         parser = argparse.ArgumentParser(description="Tool to plot message fields")
         parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
-        args=parser.parse_args([arg for arg in argv[1:] if not '=' in arg or arg.startswith("log")])
+        args=parser.parse_args([arg for arg in argv[1:] if not '=' in arg])
 
         msgtools.lib.gui.Gui.__init__(self, "Message Plot 0.1", args, parent)
 
