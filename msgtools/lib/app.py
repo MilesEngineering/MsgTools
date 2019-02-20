@@ -319,12 +319,13 @@ class App(QtWidgets.QMainWindow):
     def logMsg(self, msg):
         if self.logFile:
             if self.logFileType == "csv":
-                log = (msg.toCsv()+'\n').encode('utf-8')
+                log = ("%s, %s\n" % (str(msg.hdr.GetTime()), msg.toCsv())).encode('utf-8')
             elif self.logFileType == "json":
                 log = (msg.toJson()+'\n').encode('utf-8')
             elif self.logFileType == "bin":
                 log = msg.rawBuffer().raw
             self.logFile.write(log)
+            self.logFile.flush()
 
     # this function reads messages (perhaps from a file, like in LumberJack), and calls the message handler.
     # unclear if it ever makes sense to use this in a application that talks to a socket or UART, because
