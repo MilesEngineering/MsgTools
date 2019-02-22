@@ -315,6 +315,7 @@ class MessagePlotGui(msgtools.lib.gui.Gui):
             sys.stderr.write('Usage: ' + sys.argv[0] + ' msg1=field1[,field2] [msg2=field1,field2,field3]\n')
             sys.exit(1)
         
+        firstPlot = None
         for arg in argv[1:]:
             if not "=" in arg:
                 continue
@@ -335,7 +336,19 @@ class MessagePlotGui(msgtools.lib.gui.Gui):
                     fieldNames = fieldNameList.split(",")
                 else:
                     fieldNames = []
-                MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames)
+                if firstPlot:
+                    MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, **plotargs)
+                else:
+                    firstPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, displayControls=False)
+                    plotargs = {"runButton":firstPlot.runButton, "clearButton":firstPlot.clearButton, "timeSlider":firstPlot.timeSlider, "displayControls":False}
+        # add plot controls
+        hLayout = QHBoxLayout()
+        self.plotlayout.addLayout(hLayout)
+        hLayout.addWidget(firstPlot.runButton)
+        hLayout.addWidget(firstPlot.clearButton)
+        hLayout.addWidget(QLabel("Time Scale"))
+        hLayout.addWidget(firstPlot.timeSlider)
+
 
     def newPlot(self, plot):
         self.plotlayout.addWidget(QLabel(plot.msgClass.MsgName()))
