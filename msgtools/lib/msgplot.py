@@ -46,7 +46,7 @@ class MsgPlot(QWidget):
     Paused = QtCore.pyqtSignal(bool)
     AddLineError = QtCore.pyqtSignal(str)
     MAX_LENGTH = 500
-    def __init__(self, msgClass, fieldName):
+    def __init__(self, msgClass, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True):
         super(QWidget,self).__init__()
         
         newFieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
@@ -76,24 +76,36 @@ class MsgPlot(QWidget):
         layout.addLayout(hLayout)
         
         # add a Pause/Run button
-        self.runButton = QPushButton("Pause")
+        if runButton == None:
+            self.runButton = QPushButton("Pause")
+        else:
+            self.runButton = runButton
         self.runButton.clicked.connect(self.pauseOrRun)
-        hLayout.addWidget(self.runButton)
+        if displayControls:
+            hLayout.addWidget(self.runButton)
 
         # add a 'Clear' button
-        clearButton = QPushButton("Clear")
-        clearButton.clicked.connect(self.clearData)
-        hLayout.addWidget(clearButton)
+        if clearButton == None:
+            self.clearButton = QPushButton("Clear")
+        else:
+            self.clearButton = clearButton
+        self.clearButton.clicked.connect(self.clearData)
+        if displayControls:
+            hLayout.addWidget(self.clearButton)
 
         # add slider bar to control time scale
-        self.timeSlider = QSlider(Qt.Horizontal)
-        self.timeSlider.setMinimum(50)
-        self.timeSlider.setMaximum(MsgPlot.MAX_LENGTH)
-        self.timeSlider.setSingleStep(10)
-        self.timeSlider.setPageStep(50)
+        if timeSlider == None:
+            self.timeSlider = QSlider(Qt.Horizontal)
+            self.timeSlider.setMinimum(50)
+            self.timeSlider.setMaximum(MsgPlot.MAX_LENGTH)
+            self.timeSlider.setSingleStep(10)
+            self.timeSlider.setPageStep(50)
+        else:
+            self.timeSlider = timeSlider
         self.timeSlider.valueChanged.connect(self.timeScaleChanged)
-        hLayout.addWidget(QLabel("Time Scale"))
-        hLayout.addWidget(self.timeSlider)
+        if displayControls:
+            hLayout.addWidget(QLabel("Time Scale"))
+            hLayout.addWidget(self.timeSlider)
         
         self.plotWidget.dragEnterEvent = self.dragEnterEvent
         self.plotWidget.dragMoveEvent = self.dragMoveEvent
@@ -201,7 +213,8 @@ class MsgPlot(QWidget):
 
     def mouseClicked(self, ev):
         if ev.button() == QtCore.Qt.LeftButton:
-            self.pauseOrRun()
+            self.runButton.clicked.emit()
+            #self.pauseOrRun()
 
     def addData(self, msg):
         # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
@@ -256,7 +269,7 @@ class MsgPlot(QWidget):
             self.refreshLine(line)
 
     @staticmethod
-    def plotFactory(new_plot, msgClass, fieldNames):
+    def plotFactory(new_plot, msgClass, fieldNames, runButton = None, clearButton = None, timeSlider = None, displayControls=True):
         msgPlot = None
         if len(fieldNames) == 0:
             fieldNames = [fieldInfo.name for fieldInfo in msgClass.fields]
@@ -274,7 +287,7 @@ class MsgPlot(QWidget):
             # make new plot
             if msgPlot == None:
                 try:
-                    msgPlot = MsgPlot(msgClass, fieldName)
+                    msgPlot = MsgPlot(msgClass, fieldName, runButton, clearButton, timeSlider, displayControls)
                     new_plot(msgPlot)
                 except MsgPlot.PlotError as e:
                     print(str(e))
