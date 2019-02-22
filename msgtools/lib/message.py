@@ -19,6 +19,10 @@ class Message:
                 messageBuffer = newbuf
         # this is a trick to get us to store a copy of a pointer to a buffer, rather than making a copy of the buffer
         self.msg_buffer_wrapper = { "msg_buffer": messageBuffer }
+        
+        # this is a trick to allow the creation of fake fields that aren't actually in a message,
+        # but that we want to act like fields of the message
+        self.fake_fields = {}
 
         self.hdr = Messaging.hdr(messageBuffer)
 
@@ -56,6 +60,8 @@ class Message:
                     return ret
                 else:
                     return fn()
+        elif attr in self.fake_fields:
+            return self.fake_fields[attr]
         raise AttributeError('Message %s has no field %s' % (self.MsgName(), attr))
 
     def __setattr__(self, attr, val):
@@ -75,7 +81,7 @@ class Message:
                 else:
                     fn(val)
                     return
-        allowed_attributes = ['msg_buffer_wrapper', 'hdr']
+        allowed_attributes = ['msg_buffer_wrapper', 'hdr', 'fake_fields']
         if attr in allowed_attributes:
             super(Message, self).__setattr__(attr, val)
         else:

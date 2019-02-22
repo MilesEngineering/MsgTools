@@ -359,13 +359,25 @@ or specify that directory with --msgdir=PATH''')
         elif("float" in fieldInfo.type):
             value = float(value)
         
-        if fieldInfo.count == 1:
+        if fieldInfo.set == None:
+            if fieldInfo.count == 1:
+                msg.fake_fields[fieldInfo.name] = value
+            else:
+                if not fieldInfo.name in msg.fake_fields:
+                    msg.fake_fields[fieldInfo.name] = []
+                msg.fake_fields[fieldInfo.name][index] = value
+        elif fieldInfo.count == 1:
             fieldInfo.set(msg, value)
         else:
             fieldInfo.set(msg, value, index)
 
     @staticmethod
     def get(msg, fieldInfo, index=0):
+        if fieldInfo.get == None:
+            try:
+                return str(msg.fake_fields[fieldInfo.name])
+            except KeyError:
+                return "INVALID"
         try:
             if fieldInfo.count == 1:
                 value = fieldInfo.get(msg)
@@ -405,6 +417,13 @@ or specify that directory with --msgdir=PATH''')
                 if name == bfi.name:
                     return bfi
         return None
+    
+    # Create a fake field.  This is useful if we want to compute data based on an
+    # existing message's fields that we want to plot or log.
+    @staticmethod
+    def createFakeField(msg_class, name, units="", minVal="", maxVal="", description="Fake field!", count=1):
+        new_fi = FieldInfo(name, type="", units=units, minVal=minVal, maxVal=maxVal, description=description, get=None, set=None, count=count, bitfieldInfo=[], enum=[])
+        msg_class.fields.append(new_fi)
 
     # This is composed of all the header fields that are not length, time, and any ID fields.
     # In some systems where one PC talks to one device, there may not be *any* fields that
