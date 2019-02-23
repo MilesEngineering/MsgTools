@@ -63,6 +63,107 @@ class TreeWidget(QtWidgets.QTreeWidget):
         clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(copiedText)
 
+# text widget that allows us to push msg data directly into the text fields
+class MsgTextWidget(QtWidgets.QWidget):
+    def __init__(self, msgClass):
+        super(MsgTextWidget, self).__init__()
+        self.grid = QtWidgets.QGridLayout()
+        self.setLayout(self.grid)
+        from msgtools.lib.unknownmsg import UnknownMsg
+        if msgClass == UnknownMsg:
+            self.showHeader = True
+        else:
+            self.showHeader = False
+        tableHeader = []
+        timeUnits = Messaging.findFieldInfo(Messaging.hdr.fields, "Time").units
+        if timeUnits == "ms":
+            timeUnits = "s"
+        tableHeader.append("Time ("+timeUnits+")")
+        if self.showHeader:
+            for fieldInfo in Messaging.hdr.fields:
+                if len(fieldInfo.bitfieldInfo) == 0:
+                    tableHeader.append(fieldInfo.name)
+                else:
+                    for bitInfo in fieldInfo.bitfieldInfo:
+                        tableHeader.append(bitInfo.name)
+        for fieldInfo in msgClass.fields:
+            tableHeader.append(fieldInfo.name)
+            for bitInfo in fieldInfo.bitfieldInfo:
+                tableHeader.append(bitInfo.name)
+        self.setHeaderLabels(tableHeader)
+
+    def setHeaderLabels(self, headerLabels):
+        i = 0
+        for h in headerLabels:
+            self.grid.addWidget(QtWidgets.QLabel(h), 0, i)
+            self.grid.addWidget(QtWidgets.QLabel(''), 1, i)
+            i += 1
+    
+    def setDataLabels(self, dataLabels, dataAlerts):
+        i = 0
+        for t in dataLabels:
+            self.grid.itemAtPosition(1,i).widget().setText(t)
+            if dataAlerts[i]:
+                #TODO Change text color
+                pass
+            i += 1
+
+    def addData(self, msg, autoscroll=1):
+        msgStringList = []
+        columnAlerts = []
+        try:
+            timeVal = msg.hdr.GetTime()
+            timeInfo = Messaging.findFieldInfo(msg.hdr.fields, "Time")
+            if timeInfo.units == "ms":
+                timeVal = timeVal / 1000.0
+            timeVal = datetime.datetime.fromtimestamp(timeVal, datetime.timezone.utc)
+        except AttributeError:
+            timeVal = datetime.datetime.now()
+        timeVal = timeVal.strftime('%H:%M:%S.%f')[:-3]
+        msgStringList.append(timeVal)
+        columnAlerts.append(0)
+        columnCounter = 1
+        if self.showHeader:
+            for fieldInfo in Messaging.hdr.fields:
+                if len(fieldInfo.bitfieldInfo) == 0:
+                    fieldValue = str(Messaging.get(msg.hdr, fieldInfo))
+                    msgStringList.append(fieldValue)
+                    columnCounter += 1
+                else:
+                    for bitInfo in fieldInfo.bitfieldInfo:
+                        fieldValue = str(Messaging.get(msg.hdr, bitInfo))
+                        msgStringList.append(fieldValue)
+                        columnCounter += 1
+        for fieldInfo in type(msg).fields:
+            if(fieldInfo.count == 1):
+                fieldValue = str(Messaging.get(msg, fieldInfo))
+                msgStringList.append(fieldValue)
+                columnAlerts.append(Messaging.getAlert(msg, fieldInfo))
+                columnCounter += 1
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    fieldValue = str(Messaging.get(msg, bitInfo))
+                    msgStringList.append(fieldValue)
+                    columnAlerts.append(Messaging.getAlert(msg, bitInfo))
+                    columnCounter += 1
+            else:
+                columnText = ""
+                alert = 0
+                for i in range(0,fieldInfo.count):
+                    fieldValue = Messaging.get(msg, fieldInfo, i)
+                    # if the value is what is given when we go off the end of an array, break.
+                    if fieldInfo.type == "int" and fieldValue == "UNALLOCATED":
+                        break
+                    columnText += str(fieldValue)
+                    if Messaging.getAlert(msg, fieldInfo, i):
+                        alert = 1
+                    if(i<fieldInfo.count-1):
+                        columnText += ", "
+                msgStringList.append(columnText)
+                columnAlerts.append(alert)
+                columnCounter += 1
+
+        self.setDataLabels(msgStringList, columnAlerts)
+
 # tree widget that allows us to push msg data directly into the tree
 class MsgTreeWidget(TreeWidget):
     MAX_ROWS = 1000
