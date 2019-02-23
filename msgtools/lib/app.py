@@ -214,6 +214,11 @@ class App(QtWidgets.QMainWindow):
         self.logFile = QtCore.QFile(logFileName)
         self.logFile.open(QtCore.QIODevice.Append)
 
+    def stopLog(self):
+        if self.logFile is not None:
+            self.logFile.close()
+            self.logFile = None
+
     def onConnected(self):
         self.connected = True
         self.connectionChanged.emit(True)
