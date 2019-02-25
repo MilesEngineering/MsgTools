@@ -6,8 +6,8 @@ function connectToServer() {
     })
     client.addEventListener('message', (event)=>{
         console.log('New Message')
-        console.log(msgtools.toJSON(msg));
-        console.log(reflectionExampleFn(msg));
+        console.log(msgtools.toJSON(event.detail.message))
+        console.log(reflectionExampleFn(event.detail.message))
 
     })
     client.addEventListener('disconnected', ()=>{
