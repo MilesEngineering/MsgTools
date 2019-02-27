@@ -133,8 +133,7 @@ class Message:
                 v = '"%s"' % v
             return n + " = " + v + ", "
         ret = ''
-        msgClass = Messaging.MsgClass(self.hdr)
-        for fieldInfo in msgClass.fields:
+        for fieldInfo in self.fields:
             if(fieldInfo.count == 1):
                 if self.hdr.GetDataLength() < int(fieldInfo.get.offset) + int(fieldInfo.get.size):
                     break
