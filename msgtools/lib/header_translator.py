@@ -107,11 +107,11 @@ class HeaderTranslator:
         keep_going = True
         while(keep_going):
             keep_going = False
-            msgClass = messaging.MsgClass(hdr)
-            msg = msgClass(hdr)
+            msgClass = Messaging.MsgClass(hdr)
+            msg = msgClass(hdr.rawBuffer())
             for fieldInfo in msg.fields:
                 if fieldInfo.idbits != 0:
-                    hdrFieldInfo = messaging.findFieldInfo(hdr.fields, fieldInfo.name)
+                    hdrFieldInfo = Messaging.findFieldInfo(hdr.fields, fieldInfo.name)
                     if hdrFieldInfo and hdrFieldInfo.get(hdr) == 0:
                         hdrFieldInfo.set(hdr, fieldInfo.get(msg))
                         keep_going = True
