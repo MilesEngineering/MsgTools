@@ -65,7 +65,7 @@ class TreeWidget(QtWidgets.QTreeWidget):
 
 # text widget that allows us to push msg data directly into the text fields
 class MsgTextWidget(QtWidgets.QWidget):
-    def __init__(self, msgClass):
+    def __init__(self, msgClass, allowedFields=[]):
         super(MsgTextWidget, self).__init__()
         self.grid = QtWidgets.QGridLayout()
         self.setLayout(self.grid)
@@ -74,23 +74,34 @@ class MsgTextWidget(QtWidgets.QWidget):
             self.showHeader = True
         else:
             self.showHeader = False
+        self.allowedFields = dict((fieldName,True) for fieldName in allowedFields)
         tableHeader = []
-        timeUnits = Messaging.findFieldInfo(Messaging.hdr.fields, "Time").units
-        if timeUnits == "ms":
-            timeUnits = "s"
-        tableHeader.append("Time ("+timeUnits+")")
+        if self.fieldAllowed("Time"):
+            timeUnits = Messaging.findFieldInfo(Messaging.hdr.fields, "Time").units
+            if timeUnits == "ms":
+                timeUnits = "s"
+            tableHeader.append("Time ("+timeUnits+")")
         if self.showHeader:
             for fieldInfo in Messaging.hdr.fields:
                 if len(fieldInfo.bitfieldInfo) == 0:
-                    tableHeader.append(fieldInfo.name)
+                    if self.fieldAllowed(fieldInfo.name):
+                        tableHeader.append(fieldInfo.name)
                 else:
                     for bitInfo in fieldInfo.bitfieldInfo:
-                        tableHeader.append(bitInfo.name)
+                        if self.fieldAllowed(bitInfo.name):
+                            tableHeader.append(bitInfo.name)
         for fieldInfo in msgClass.fields:
-            tableHeader.append(fieldInfo.name)
+            if self.fieldAllowed(fieldInfo.name):
+                tableHeader.append(fieldInfo.name)
             for bitInfo in fieldInfo.bitfieldInfo:
-                tableHeader.append(bitInfo.name)
+                if self.fieldAllowed(bitInfo.name):
+                    tableHeader.append(bitInfo.name)
         self.setHeaderLabels(tableHeader)
+    
+    def fieldAllowed(self, fieldName):
+        if len(self.allowedFields) == 0:
+            return True
+        return fieldName in self.allowedFields
 
     def setHeaderLabels(self, headerLabels):
         i = 0
@@ -111,56 +122,56 @@ class MsgTextWidget(QtWidgets.QWidget):
     def addData(self, msg, autoscroll=1):
         msgStringList = []
         columnAlerts = []
-        try:
-            timeVal = msg.hdr.GetTime()
-            timeInfo = Messaging.findFieldInfo(msg.hdr.fields, "Time")
-            if timeInfo.units == "ms":
-                timeVal = timeVal / 1000.0
-            timeVal = datetime.datetime.fromtimestamp(timeVal, datetime.timezone.utc)
-        except AttributeError:
-            timeVal = datetime.datetime.now()
-        timeVal = timeVal.strftime('%H:%M:%S.%f')[:-3]
-        msgStringList.append(timeVal)
-        columnAlerts.append(0)
-        columnCounter = 1
+        if self.fieldAllowed("Time"):
+            try:
+                timeVal = msg.hdr.GetTime()
+                timeInfo = Messaging.findFieldInfo(msg.hdr.fields, "Time")
+                if timeInfo.units == "ms":
+                    timeVal = timeVal / 1000.0
+                timeVal = datetime.datetime.fromtimestamp(timeVal, datetime.timezone.utc)
+            except AttributeError:
+                timeVal = datetime.datetime.now()
+            timeVal = timeVal.strftime('%H:%M:%S.%f')[:-3]
+            msgStringList.append(timeVal)
+            columnAlerts.append(0)
         if self.showHeader:
             for fieldInfo in Messaging.hdr.fields:
                 if len(fieldInfo.bitfieldInfo) == 0:
-                    fieldValue = str(Messaging.get(msg.hdr, fieldInfo))
-                    msgStringList.append(fieldValue)
-                    columnCounter += 1
+                    if self.fieldAllowed(fieldInfo.name):
+                        fieldValue = str(Messaging.get(msg.hdr, fieldInfo))
+                        msgStringList.append(fieldValue)
                 else:
                     for bitInfo in fieldInfo.bitfieldInfo:
-                        fieldValue = str(Messaging.get(msg.hdr, bitInfo))
-                        msgStringList.append(fieldValue)
-                        columnCounter += 1
+                        if self.fieldAllowed(bitInfo.name):
+                            fieldValue = str(Messaging.get(msg.hdr, bitInfo))
+                            msgStringList.append(fieldValue)
         for fieldInfo in type(msg).fields:
             if(fieldInfo.count == 1):
-                fieldValue = str(Messaging.get(msg, fieldInfo))
-                msgStringList.append(fieldValue)
-                columnAlerts.append(Messaging.getAlert(msg, fieldInfo))
-                columnCounter += 1
-                for bitInfo in fieldInfo.bitfieldInfo:
-                    fieldValue = str(Messaging.get(msg, bitInfo))
+                if self.fieldAllowed(fieldInfo.name):
+                    fieldValue = str(Messaging.get(msg, fieldInfo))
                     msgStringList.append(fieldValue)
-                    columnAlerts.append(Messaging.getAlert(msg, bitInfo))
-                    columnCounter += 1
+                    columnAlerts.append(Messaging.getAlert(msg, fieldInfo))
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    if self.fieldAllowed(bitInfo.name):
+                        fieldValue = str(Messaging.get(msg, bitInfo))
+                        msgStringList.append(fieldValue)
+                        columnAlerts.append(Messaging.getAlert(msg, bitInfo))
             else:
-                columnText = ""
-                alert = 0
-                for i in range(0,fieldInfo.count):
-                    fieldValue = Messaging.get(msg, fieldInfo, i)
-                    # if the value is what is given when we go off the end of an array, break.
-                    if fieldInfo.type == "int" and fieldValue == "UNALLOCATED":
-                        break
-                    columnText += str(fieldValue)
-                    if Messaging.getAlert(msg, fieldInfo, i):
-                        alert = 1
-                    if(i<fieldInfo.count-1):
-                        columnText += ", "
-                msgStringList.append(columnText)
-                columnAlerts.append(alert)
-                columnCounter += 1
+                if self.fieldAllowed(fieldInfo.name):
+                    columnText = ""
+                    alert = 0
+                    for i in range(0,fieldInfo.count):
+                        fieldValue = Messaging.get(msg, fieldInfo, i)
+                        # if the value is what is given when we go off the end of an array, break.
+                        if fieldInfo.type == "int" and fieldValue == "UNALLOCATED":
+                            break
+                        columnText += str(fieldValue)
+                        if Messaging.getAlert(msg, fieldInfo, i):
+                            alert = 1
+                        if(i<fieldInfo.count-1):
+                            columnText += ", "
+                    msgStringList.append(columnText)
+                    columnAlerts.append(alert)
 
         self.setDataLabels(msgStringList, columnAlerts)
 
