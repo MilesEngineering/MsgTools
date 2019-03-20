@@ -96,15 +96,7 @@ class Lumberjack(msgtools.lib.gui.Gui):
             self.outputFiles[id] = outputFile
             
             # add table header, one column for each message field
-            timeUnits = Messaging.findFieldInfo(msg.hdr.fields, "Time").units
-            if timeUnits == "ms":
-                timeUnits = "s"
-            tableHeader = "Time ("+timeUnits+"), "
-            for fieldInfo in type(msg).fields:
-                tableHeader += fieldInfo.name + ", "
-                for bitInfo in fieldInfo.bitfieldInfo:
-                    tableHeader += bitInfo.name + ", "
-            tableHeader += '\n'
+            tableHeader = msgcsv.csvHeader(msg, nameColumn=False, timeColumn=True) + '\n'
             outputFile.write(tableHeader)
         
         try:
@@ -125,7 +117,7 @@ class Lumberjack(msgtools.lib.gui.Gui):
         except AttributeError:
             text = "unknown, "
 
-        text += msgcsv.toCsv(msg, name=False)
+        text += msgcsv.toCsv(msg, nameColumn=False, timeColumn=False)
         text += '\n'
         outputFile.write(text)
 

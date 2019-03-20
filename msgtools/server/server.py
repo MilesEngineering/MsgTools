@@ -290,17 +290,24 @@ class MessageServer(QtWidgets.QMainWindow):
         self.setWindowTitle("MessageServer 0.1")
         self.statusBar()
 
-    def startLog(self, logFileName):
+    def startLog(self, log_name):
         if self.logFile:
             self.logFile.close()
             self.logFile = None
-        if logFileName.endswith("json"):
-            self.logFileType = "JSON"
-        elif logFileName.endswith("csv"):
-            self.logFileType = "CSV"
-        self.logFile = QtCore.QFile(logFileName)
+        if log_name.endswith("json"):
+            self.logFileType = "json"
+        elif log_name.endswith("csv"):
+            self.logFileType = "csv"
+            # hash table of booleans for if each type of message has had it's header
+            # put into this log file already.
+            self.loggedMsgHeaderRow = {}
+        elif log_name.endswith('bin') or log_name.endswith('log'):
+            self.logFileType = "bin"
+        else:
+            print("ERROR!  Invalid log type " + log_name)
+        self.logFile = QtCore.QFile(log_name)
         self.logFile.open(QtCore.QIODevice.Append)
-        fileInfo = QtCore.QFileInfo(logFileName)
+        fileInfo = QtCore.QFileInfo(log_name)
         self.settings.setValue("logging/filename", fileInfo.dir().absolutePath())
         self.logButton.setText("Stop " + fileInfo.fileName())
         self.queryLog()
@@ -318,10 +325,12 @@ class MessageServer(QtWidgets.QMainWindow):
             if self.logFile != None:
                 logStatusMsg.SetLogOpen(1)
                 logStatusMsg.SetLogFileName(self.logFile.fileName())
-                if self.logFileType == "JSON":
+                if self.logFileType == "json":
                     logStatusMsg.SetLogFileType("JSON")
-                elif self.logFileType == "CSV":
+                elif self.logFileType == "csv":
                     logStatusMsg.SetLogFileType("CSV")
+                elif self.logFileType == "bin":
+                    logStatusMsg.SetLogFileType("BIN")
             for client in self.clients.values():
                 client.sendMsg(logStatusMsg.hdr)
 
@@ -411,17 +420,23 @@ class MessageServer(QtWidgets.QMainWindow):
         else:
             self.onStatusUpdate("cnx not in list!")
 
-    def logMessage(self, hdr):
+    def logMsg(self, hdr):
         #write to log, if log is open
         if self.logFile != None:
-            if self.logFileType and self.logFileType == "JSON":
-                msgObj = Messaging.MsgFactory(hdr)
-                self.logFile.write(msgObj.toJson().encode('utf-8'))
-            elif self.logFileType and self.logFileType == "CSV":
-                msgObj = Messaging.MsgFactory(hdr)
-                self.logFile.write((msgObj.toCsv()+'\n').encode('utf-8'))
-            else:
-                self.logFile.write(hdr.rawBuffer().raw)
+            log = ''
+            if self.logFileType == "csv":
+                msg = Messaging.MsgFactory(hdr)
+                if not msg.MsgName() in self.loggedMsgHeaderRow:
+                    self.loggedMsgHeaderRow[msg.MsgName()] = True
+                    log = (msg.csvHeader(timeColumn=True)+'\n').encode('utf-8')
+                log += (msg.toCsv(timeColumn=True)+'\n').encode('utf-8')
+            elif self.logFileType == "json":
+                msg = Messaging.MsgFactory(hdr)
+                log = (msg.toJson()+'\n').encode('utf-8')
+            elif self.logFileType == "bin":
+                log = hdr.rawBuffer().raw
+            self.logFile.write(log)
+            self.logFile.flush()
 
     def onMessageReceived(self, hdr):
         c = self.sender()
@@ -462,7 +477,7 @@ class MessageServer(QtWidgets.QMainWindow):
         elif hasattr(self.networkMsgs, 'Note') and hdr.GetMessageID() == self.networkMsgs.Note.ID:
             # The Note message allows a user to annotate a log.  We want to drop it into the log, but not
             # forward to all other clients.
-            self.logMessage(hdr)
+            self.logMsg(hdr)
 
         elif hasattr(self.networkMsgs, 'PrivateSubscriptionList') and  hdr.GetMessageID() == self.networkMsgs.PrivateSubscriptionList.ID:
             subListMsg = self.networkMsgs.PrivateSubscriptionList(hdr.rawBuffer())
@@ -479,7 +494,7 @@ class MessageServer(QtWidgets.QMainWindow):
             self.onStatusUpdate("adding Private subscription for "+c.name+": " + ', '.join(hex(x) for x in privateSubs))
         else:
             # Log the message
-            self.logMessage(hdr)
+            self.logMsg(hdr)
 
             # Route to all clients
             for client in self.clients.values():

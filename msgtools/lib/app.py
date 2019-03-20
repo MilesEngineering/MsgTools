@@ -194,23 +194,25 @@ class App(QtWidgets.QMainWindow):
 
         self.connection
 
-    def startLog(self, log_type):
-        if log_type.endswith('csv'):
+    def startLog(self, log_name, log_suffix=''):
+        if log_name.endswith('csv'):
             self.logFileType = "csv"
-        elif log_type.endswith('json'):
+            # hash table of booleans for if each type of message has had it's header
+            # put into this log file already.
+            self.loggedMsgHeaderRow = {}
+        elif log_name.endswith('json'):
             self.logFileType = "json"
-        elif log_type.endswith('bin'):
+        elif log_name.endswith('bin') or log_name.endswith('log'):
             self.logFileType = "bin"
         else:
-            print("ERROR!  Invalid log type " + log_type)
-            sys.exit(1)
-        if "." in log_type:
-            # if there's a ., assume the specified an exact filename to use
+            print("ERROR!  Invalid log type " + log_name)
+        if "." in log_name:
+            # if there's a ., assume they specified an exact filename to use
             logFileName = log_type
         else:
             # if not, generate a filename based on current date/time
             currentDateTime = QtCore.QDateTime.currentDateTime()
-            logFileName = currentDateTime.toString("yyyyMMdd-hhmmss") + "." + self.logFileType
+            logFileName = currentDateTime.toString("yyyyMMdd-hhmmss") + log_suffix + "." + self.logFileType
         self.logFile = QtCore.QFile(logFileName)
         self.logFile.open(QtCore.QIODevice.Append)
 
@@ -260,6 +262,7 @@ class App(QtWidgets.QMainWindow):
         msg = Messaging.MsgFactory(hdr)
         if self._messageAllowed(msg):
             self.RxMsg.emit(msg)
+            self.logMsg(msg)
 
     def _messageAllowed(self, msg):
         '''Check msg against the list of allowed messages.
@@ -323,8 +326,12 @@ class App(QtWidgets.QMainWindow):
 
     def logMsg(self, msg):
         if self.logFile:
+            log = ''
             if self.logFileType == "csv":
-                log = ("%s, %s\n" % (str(msg.hdr.GetTime()), msg.toCsv())).encode('utf-8')
+                if not msg.MsgName() in self.loggedMsgHeaderRow:
+                    self.loggedMsgHeaderRow[msg.MsgName()] = True
+                    log = (msg.csvHeader(timeColumn=True)+'\n').encode('utf-8')
+                log += (msg.toCsv(timeColumn=True)+'\n').encode('utf-8')
             elif self.logFileType == "json":
                 log = (msg.toJson()+'\n').encode('utf-8')
             elif self.logFileType == "bin":

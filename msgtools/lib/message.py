@@ -122,8 +122,11 @@ class Message:
     def toJson(self):
         return msgjson.toJson(self)
 
-    def toCsv(self):
-        return msgcsv.toCsv(self)
+    def toCsv(self, nameColumn=True, timeColumn=False):
+        return msgcsv.toCsv(self, nameColumn=nameColumn, timeColumn=timeColumn)
+    
+    def csvHeader(self, nameColumn=True, timeColumn=False):
+        return msgcsv.csvHeader(self, nameColumn=nameColumn, timeColumn=timeColumn)
 
     def __repr__(self):
         def add_param(n, v):

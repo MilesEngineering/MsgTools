@@ -3,7 +3,7 @@ from .messaging import Messaging
 # for reading CSV
 import csv
 
-def toCsv(msg, name=True):
+def toCsv(msg, nameColumn=True, timeColumn=False):
     def add_param(v):
         if v.strip() == '':
             v = '"%s"' % v
@@ -11,8 +11,13 @@ def toCsv(msg, name=True):
             v = '"%s"' % v
         return v + ", "
     ret = ""
-    if name:
-        ret = msg.MsgName() + ", "
+    if timeColumn:
+        t = msg.hdr.GetTime()
+        if Messaging.findFieldInfo(msg.hdr.fields, "Time").units == "ms":
+            t = t / 1000
+        ret += str(t) + ', '
+    if nameColumn:
+        ret += msg.MsgName() + ", "
     for fieldInfo in Messaging.MsgClass(msg.hdr).fields:
         if(fieldInfo.count == 1):
             columnText = add_param(str(Messaging.get(msg, fieldInfo)))
@@ -23,7 +28,26 @@ def toCsv(msg, name=True):
             for i in range(0,fieldInfo.count):
                 columnText += add_param(str(Messaging.get(msg, fieldInfo, i)))
         ret += columnText
-    return ret
+    # drop last two chars (', ') off end
+    return ret[:-2]
+
+def csvHeader(msg, nameColumn=True, timeColumn=False):
+    tableHeader = ''
+    if timeColumn:
+        timeUnits = Messaging.findFieldInfo(msg.hdr.fields, "Time").units
+        if timeUnits == "ms":
+            timeUnits = "s"
+        if timeUnits:
+            timeUnits = " (%s)" % timeUnits
+        tableHeader = "Time"+timeUnits+", "
+    if nameColumn:
+        tableHeader += msg.MsgName() + ", "
+    for fieldInfo in type(msg).fields:
+        tableHeader += fieldInfo.name + ", "
+        for bitInfo in fieldInfo.bitfieldInfo:
+            tableHeader += bitInfo.name + ", "
+    # drop last two chars (', ') off end
+    return tableHeader[:-2]
 
 def escapeCommasInQuotedString(line):
     ret = ""
