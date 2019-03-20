@@ -330,10 +330,12 @@ class App(QtWidgets.QMainWindow):
             if self.logFileType == "csv":
                 if not msg.MsgName() in self.loggedMsgHeaderRow:
                     self.loggedMsgHeaderRow[msg.MsgName()] = True
-                    log = (msg.csvHeader(timeColumn=True)+'\n').encode('utf-8')
-                log += (msg.toCsv(timeColumn=True)+'\n').encode('utf-8')
+                    log = msg.csvHeader(timeColumn=True)+'\n'
+                log += msg.toCsv(timeColumn=True)+'\n'
+                log = log.encode('utf-8')
             elif self.logFileType == "json":
-                log = (msg.toJson()+'\n').encode('utf-8')
+                log = msg.toJson()+'\n'
+                log = log.encode('utf-8')
             elif self.logFileType == "bin":
                 log = msg.rawBuffer().raw
             self.logFile.write(log)
