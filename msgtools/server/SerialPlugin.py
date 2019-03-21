@@ -63,12 +63,24 @@ class BaseSerialConnection(QObject):
         self.serialPort.setParity(parity)
         self.serialPort.setDataBits(QSerialPort.Data8)
         self.serialPort.setStopBits(QSerialPort.OneStop)
+        self.serialPort.errorOccurred.connect(self.onSerialError)
 
         self.serialPort.readyRead.connect(self.onReadyRead)
         self.name = self.base_name + " " + self.serialPort.portName()
+        self.statusLabel.setText(self.name)
 
     def onDisconnected(self):
         self.disconnected.emit(self)
+    
+    def onSerialError(self, error):
+        if error == QSerialPort.NoError:
+            pass
+        elif error == QSerialPort.ReadError:
+            self.statusUpdate.emit("Error, Closing SerialPort on port "+str(self.serialPort.portName()))
+            self._closeSerialPort()
+            QtCore.QTimer.singleShot(1000, self._openSerialPort)
+        elif error == QSerialPort.ResourceError:
+            pass
 
     def widget(self, index):
         if index == 0:
@@ -80,29 +92,38 @@ class BaseSerialConnection(QObject):
         if index == 3:
             return self.statusLabel
         return None
+    
+    def _openSerialPort(self):
+        if self.serialPort.open(QSerialPort.ReadWrite):
+            self.statusUpdate.emit("Opened SerialPort on port "+str(self.serialPort.portName()))
+            self.openCloseButton.setText("Close")
+            self.settings.setValue("portName", self.serialPort.portName())
+            return True
+        else:
+            self.openCloseButton.setText("Open")
+            QtCore.QTimer.singleShot(1000, self._openSerialPort)
+            return False
+
+    def _closeSerialPort(self):
+        self.serialPort.close()
+        self.openCloseButton.setText("Open")
 
     def openCloseSwitch(self):
         # open or close the port
         if self.serialPort.isOpen():
+            self._closeSerialPort()
             self.statusUpdate.emit("Closed SerialPort on port "+str(self.serialPort.portName()))
-            self.serialPort.close()
-            self.openCloseButton.setText("Open")
         else:
-            if self.serialPort.open(QSerialPort.ReadWrite):
-                self.statusUpdate.emit("Opened SerialPort on port "+str(self.serialPort.portName()))
-                self.openCloseButton.setText("Close")
-                self.settings.setValue("portName", self.serialPort.portName())
-            else:
+            if not self._openSerialPort():
                 self.statusUpdate.emit("Can't open SerialPort on port "+str(self.serialPort.portName())+"!")
-                self.openCloseButton.setText("Open")
-        self.name = self.base_name + " " + self.serialPort.portName()
-        self.statusLabel.setText(self.name)
 
     def portChanged(self, portName):
         self.statusUpdate.emit("switching to serial port " + portName)
         if self.serialPort.isOpen():
             self.serialPort.close()
         self.serialPort.setPortName(portName)
+        self.name = self.base_name + " " + self.serialPort.portName()
+        self.statusLabel.setText(self.name)
         self.openCloseSwitch()
 
     def selectPort(self):
