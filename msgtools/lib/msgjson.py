@@ -4,9 +4,25 @@ from .messaging import Messaging
 from collections import OrderedDict
 import json
 
-def toJson(msg):
-    msgClass = Messaging.MsgClass(msg.hdr)
+def toJson(msg, includeHeader=False):
     pythonObj = OrderedDict()
+    if includeHeader:
+        pythonObj['hdr'] = OrderedDict()
+        for fieldInfo in msg.hdr.fields:
+            if(fieldInfo.count == 1):
+                if len(fieldInfo.bitfieldInfo) == 0:
+                    pythonObj['hdr'][fieldInfo.name] = str(Messaging.get(msg.hdr, fieldInfo))
+                else:
+                    for bitInfo in fieldInfo.bitfieldInfo:
+                        pythonObj['hdr'][bitInfo.name] = str(Messaging.get(msg.hdr, bitInfo))
+            else:
+                arrayList = []
+                terminate = 0
+                for i in range(0,fieldInfo.count):
+                    arrayList.append(str(Messaging.get(msg.hdr, fieldInfo, i)))
+                pythonObj['hdr'][fieldInfo.name] = arrayList
+
+    msgClass = Messaging.MsgClass(msg.hdr)
     for fieldInfo in msgClass.fields:
         if(fieldInfo.count == 1):
             if msg.hdr.GetDataLength() < int(fieldInfo.get.offset) + int(fieldInfo.get.size):

@@ -334,7 +334,7 @@ class App(QtWidgets.QMainWindow):
                 log += msg.toCsv(timeColumn=True)+'\n'
                 log = log.encode('utf-8')
             elif self.logFileType == "json":
-                log = msg.toJson()+'\n'
+                log = msg.toJson(includeHeader=True)+'\n'
                 log = log.encode('utf-8')
             elif self.logFileType == "bin":
                 log = msg.rawBuffer().raw

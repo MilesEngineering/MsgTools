@@ -119,8 +119,8 @@ class Message:
     def fromStr(s):
         pass
 
-    def toJson(self):
-        return msgjson.toJson(self)
+    def toJson(self, includeHeader=False):
+        return msgjson.toJson(self, includeHeader)
 
     def toCsv(self, nameColumn=True, timeColumn=False):
         return msgcsv.toCsv(self, nameColumn=nameColumn, timeColumn=timeColumn)

@@ -433,7 +433,7 @@ class MessageServer(QtWidgets.QMainWindow):
                 log = log.encode('utf-8')
             elif self.logFileType == "json":
                 msg = Messaging.MsgFactory(hdr)
-                log = msg.toJson()+'\n'
+                log = msg.toJson(includeHeader=True)+'\n'
                 log = log.encode('utf-8')
             elif self.logFileType == "bin":
                 log = hdr.rawBuffer().raw
