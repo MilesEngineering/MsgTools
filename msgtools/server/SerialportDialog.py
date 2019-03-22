@@ -1,3 +1,4 @@
+import os
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtSerialPort import QSerialPortInfo
 
@@ -17,12 +18,21 @@ class SelectSerialportDialog(QtWidgets.QDialog):
         except ValueError:
             pass
         return value
+    def serialPortAlias(self, info):
+        for name in os.listdir("/dev/"):
+            if name not in (os.curdir, os.pardir):
+                full = os.path.join("/dev", name)
+                if os.path.islink(full):
+                    if info.portName() == os.readlink(full):
+                        return full.replace("/dev/","")
+        return ""
+
     def __init__(self, parent=None):
         super(SelectSerialportDialog, self).__init__(parent)
         self.setWindowModality(QtCore.Qt.ApplicationModal)
         self.setWindowTitle("Select a Port")
         
-        self.resize(600, 200)
+        self.resize(800, 200)
 
         self.portsList = QtWidgets.QTreeWidget()
         openButton = QtWidgets.QPushButton("Open")
@@ -33,7 +43,7 @@ class SelectSerialportDialog(QtWidgets.QDialog):
         layout.addWidget(openButton)
         self.setLayout(layout)
 
-        tableHeader = ["Name", "Description", "Mfg", "Location", "VendorID", "ProductID"]
+        tableHeader = ["Name", "Alias", "Description", "Mfg", "Serial#", "Location", "VendorID", "ProductID"]
         self.portsList.setHeaderLabels(tableHeader)
         for info in QSerialPortInfo.availablePorts():
             list = []
@@ -41,9 +51,10 @@ class SelectSerialportDialog(QtWidgets.QDialog):
             manufacturer = info.manufacturer()
             serialNumber = info.serialNumber()
             list.append(info.portName())
+            list.append(self.serialPortAlias(info))
             list.append(self.naIfEmpty(description))
             list.append(self.naIfEmpty(manufacturer))
-            #list.append(self.naIfEmpty(serialNumber))
+            list.append(self.naIfEmpty(serialNumber))
             list.append(info.systemLocation())
             list.append(self.naIfEmptyHex(info.vendorIdentifier()))
             list.append(self.naIfEmptyHex(info.productIdentifier()))
