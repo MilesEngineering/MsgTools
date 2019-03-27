@@ -122,7 +122,6 @@ svg {
         var y = 5;
         for (var name in this.dataSets) {
             let group = this.dataSets[name];
-            console.log("name: " + name);
             group.path = this.paths.append('path')
                 .attr('d', 'M 0,0')
                 .attr('class', name + ' group')
@@ -142,7 +141,6 @@ svg {
 
         for (var name in this.dataSets)
         {
-            console.log("name: " + name)
             this.dataSets[name].pathData = [ ];
             for(var i=0; i<this.timestamps.length; i++) {
                 this.dataSets[name].pathData.push(((this.timestamps[i]-this.shift)*this.pixelPerSecond)+","+this.yScale(this.dataSets[name].data[i]));
