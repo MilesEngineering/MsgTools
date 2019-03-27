@@ -404,7 +404,7 @@
                         // or other specific messages and raise a specific event for that
                         var msg = null
                         var hdr = new NetworkHeader(event.data)
-                        var id = hdr.GetMessageID() >>> 0;
+                        var id = hdr.GetMessageID();
                         if(MessageDictionary.has(id))
                         {
                             var msgClass = MessageDictionary.get(id)
