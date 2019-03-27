@@ -1,10 +1,11 @@
 import msgtools.parser.parser as MsgParser
 from msgtools.parser.MsgUtils import *
 
-if MsgParser.big_endian:
-    endian_string = ''
-else:
-    endian_string = ', Endian.little'
+def endian_string():
+    if MsgParser.big_endian:
+        return ''
+    else:
+        return ', Endian.little'
 
 def fieldType(field):
     typeStr = field["Type"]
@@ -57,7 +58,7 @@ def getFn(field, offset):
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldSize(field))
         param += "int idx"
-    access = "_data.get%s(%s%s)" % (fieldType(field), loc, endian_string)
+    access = "_data.get%s(%s%s)" % (fieldType(field), loc, endian_string())
     access = getMath(access, field)
     retType = returnType(field, None)
     #elif "Enum" in field:
@@ -102,7 +103,7 @@ def setFn(field, offset):
 void Set%s(%s)
 {
     _data.set%s(%s, %s%s);
-}''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString, endian_string)
+}''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString, endian_string())
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
 %s
