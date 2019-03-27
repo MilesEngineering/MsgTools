@@ -2,7 +2,7 @@
 // it should be modified to work with any number of lines, specified by constructor parameters
 // perhaps allow user to pass in an array of names and colors?
 var svgns = "http://www.w3.org/2000/svg";
-class TimeSeries extends HTMLElement {
+class TimeSeries extends HTMLDivElement {
     constructor() {
         super();
 
@@ -47,25 +47,20 @@ svg {
         // #a09344
         // #7f64b9
         // #c36785
-        this.dataSets = {
-            X: {
+        let labels = this.getAttribute('labels').split(",");
+        let colors = ['rgb(219,109,0)', '#000000', 'rgb(0,109,219)', 'rgb(109,219,0)','rgb(109,0,219)'];
+        var color=0;
+        this.dataSets = {};
+        for (var i in labels) {
+            var label = labels[i];
+            this.dataSets[label] = {
                 value: 0,
-                color: 'rgb(219,109,0)',
+                color: colors[color],
                 data: [],
-                pathData: []
-            },
-            Y: {
-                value: 0,
-                color: '#000000',
-                data: [],
-                pathData: []
-            },
-            Z: {
-                value: 0,
-                color: 'rgb(0,109,219)',
-                data: [],
-                pathData: []
+                pathData: [],
+                name: label
             }
+            color++;
         }
         this.timestamps = [];
 
@@ -123,41 +118,31 @@ svg {
 
         this.paths = this.svg_selector.append('g');
 
+        this.labels = {};
+        var y = 5;
         for (var name in this.dataSets) {
-            let group = this.dataSets[name]
+            let group = this.dataSets[name];
+            console.log("name: " + name);
             group.path = this.paths.append('path')
                 .attr('d', 'M 0,0')
                 .attr('class', name + ' group')
                 .style('stroke', group.color)
                 .style('stroke-width', 1);
+            
+            this.labels[name] = 
+                this.svg_selector.append('text')
+                    .attr('class', 'value xvalue')
+                    .attr('x', this.yAxisLabelWidth+10)
+                    .attr('y', y)
+                    .attr('fill', group.color)
+                    .attr('dominant-baseline', 'text-before-edge')
+                    .text(name);
+            y += 15;
         }
-
-        this.xlabel = this.svg_selector.append('text')
-            .attr('class', 'value xvalue')
-            .attr('x', this.yAxisLabelWidth+10)
-            .attr('y', 5)
-            .attr('fill', 'rgb(219,109,0)')
-            .attr('dominant-baseline', 'text-before-edge')
-            .text('X ');
-
-        this.ylabel = this.svg_selector.append('text')
-            .attr('class', 'value yvalue')
-            .attr('x', this.yAxisLabelWidth+10)
-            .attr('y', 20)
-            .attr('fill', '#000000')
-            .attr('dominant-baseline', 'text-before-edge')
-            .text('Y ');
-
-        this.zlabel = this.svg_selector.append('text')
-            .attr('class', 'value zvalue')
-            .attr('x', this.yAxisLabelWidth+10)
-            .attr('y', 35)
-            .attr('fill', 'rgb(0,109,219)')
-            .attr('dominant-baseline', 'text-before-edge')
-            .text('Z ');
 
         for (var name in this.dataSets)
         {
+            console.log("name: " + name)
             this.dataSets[name].pathData = [ ];
             for(var i=0; i<this.timestamps.length; i++) {
                 this.dataSets[name].pathData.push(((this.timestamps[i]-this.shift)*this.pixelPerSecond)+","+this.yScale(this.dataSets[name].data[i]));
@@ -169,9 +154,28 @@ svg {
     }
 
     setValues(values) {
-        this.xlabel.text((values[0] < 0 ? 'X' : 'X ') + Math.round(values[0]));
-        this.ylabel.text((values[1] < 0 ? 'Y' : 'Y ') + Math.round(values[1]));
-        this.zlabel.text((values[2] < 0 ? 'Z' : 'Z ') + Math.round(values[2]));
+        var i = 0;
+        var hit_limit = 0;
+        for (var name in this.labels) {
+            var val = values[i];
+            this.labels[name].text((val < 0 ? name : name+' ') + Math.round(val));
+            i += 1;
+            if(val < this.yMin) {
+                this.yMin = val;
+                hit_limit = 1;
+            }
+            if(val > this.yMax) {
+                this.yMax = val;
+                hit_limit = 1;
+            }
+        }
+        // TODO This doesn't work, it only changes where the point is put on screen,
+        // it doesn't change points already plotted, and it doesn't change axis labels
+        if(0 && hit_limit) {
+            this.yScale = d3.scale.linear()
+                .domain([this.yMin, this.yMax])
+                .range([this.height-this.xAxisLabelHeight, 0])
+        }
     }
     
     adjustTimeLimit(newLimit) {
@@ -188,7 +192,8 @@ svg {
     }
 
     plot(time, newData) {
-        time /= 1000.0;
+        this.setValues(newData);
+        //time /= 1000.0;
         this.now = time;
         // Add new values
         if(this.shift === null) {
