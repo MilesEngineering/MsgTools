@@ -4,10 +4,11 @@ from msgtools.parser.MsgUtils import *
 # https://www.html5rocks.com/en/tutorials/webgl/typed_arrays/
 # https://github.com/kig/DataStream.js
 # https://www.html5rocks.com/en/tutorials/websockets/basics/
-if MsgParser.big_endian:
-    endian_string = ''
-else:
-    endian_string = ', true'
+def endian_string():
+    if MsgParser.big_endian:
+        return ''
+    else:
+        return ', true'
 
 def fieldType(field):
     fieldTypeDict = \
@@ -49,7 +50,7 @@ def getFn(field, offset):
         if param != "":
             param += ", "
         param += "enumAsInt=false"
-    access = "(this.m_data.get%s(%s%s))" % (fieldType(field), loc, endian_string)
+    access = "(this.m_data.get%s(%s%s))" % (fieldType(field), loc, endian_string())
     access = getMath(access, field, "")
     cleanup = ""
     if "Enum" in field:
@@ -94,7 +95,7 @@ def setFn(field, offset):
 <MSGSHORTNAME>.prototype.Set%s = function(%s)
 {
     %sthis.m_data.set%s(%s, %s%s);
-};''' % (fnHdr(field), field["Name"], param, lookup, fieldType(field), loc, valueString, endian_string)
+};''' % (fnHdr(field), field["Name"], param, lookup, fieldType(field), loc, valueString, endian_string())
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
 %s
@@ -108,7 +109,7 @@ def setFn(field, offset):
     return ret
 
 def getBitsFn(field, bits, offset, bitOffset, numBits):
-    access = "(this.Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+    access = "(this.Get%s() / 2**%s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
     access = getMath(access, bits, "")
     param = ""
     if "Enum" in bits:
@@ -135,7 +136,7 @@ def setBitsFn(field, bits, offset, bitOffset, numBits):
 %s
 <MSGSHORTNAME>.prototype.Set%s = function(value)
 {
-    %sthis.Set%s((this.Get%s() & ~(%s << %s)) | ((%s & %s) << %s));
+    %sthis.Set%s((this.Get%s() & ~(%s * 2**%s)) | ((%s & %s) * 2**%s));
 };''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), lookup, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
@@ -343,10 +344,10 @@ def declarations(msg):
     return []
 
 def getMsgID(msg):
-    return baseGetMsgID("this.", "", 0, 1, msg)
+    return baseGetMsgID("this.", "", 0, 1, msg).replace("<<", " * 2**")
     
 def setMsgID(msg):
-    return baseSetMsgID("this.", "", 0, 1, msg)
+    return baseSetMsgID("this.", "", 0, 1, msg).replace(">>", " / 2**")
 
 def structUnpacking(msg):
     ret = []
