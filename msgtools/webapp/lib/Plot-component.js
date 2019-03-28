@@ -2,7 +2,7 @@
 // it should be modified to work with any number of lines, specified by constructor parameters
 // perhaps allow user to pass in an array of names and colors?
 var svgns = "http://www.w3.org/2000/svg";
-class TimeSeries extends HTMLDivElement {
+class TimeSeries extends HTMLElement {
     constructor() {
         super();
 
@@ -237,4 +237,4 @@ svg {
 // tag have been defined, so that our calls to getAttribute will succeed.
 // (Also after any remaining dependencies are loaded.)
 // Best plan is just to import this whole file at the end of your HTML.
-customElements.define('plot-timeseries', TimeSeries, { extends: 'div' });
+customElements.define('plot-timeseries', TimeSeries);
