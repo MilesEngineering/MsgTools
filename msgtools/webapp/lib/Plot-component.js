@@ -41,8 +41,15 @@ svg {
         
         this.timeLimit = parseFloat(this.getAttribute('timeLimit')); // seconds
         this.duration = 750;
-        this.yMin = parseFloat(this.getAttribute('yMin'));
-        this.yMax = parseFloat(this.getAttribute('yMax'));;
+        if(this.hasAttribute('yMin') || this.hasAttribute('yMax')) {
+            this.yMin = parseFloat(this.getAttribute('yMin'));
+            this.yMax = parseFloat(this.getAttribute('yMax'));
+            this.autoscale = 0;
+        } else {
+            this.yMin = 0;
+            this.yMax = 1;
+            this.autoscale = 1;
+        }
     
         // #a09344
         // #7f64b9
@@ -153,26 +160,37 @@ svg {
 
     setValues(values) {
         var i = 0;
-        var hit_limit = 0;
         for (var name in this.labels) {
             var val = values[i];
             this.labels[name].text((val < 0 ? name : name+' ') + Math.round(val));
             i += 1;
-            if(val < this.yMin) {
-                this.yMin = val;
-                hit_limit = 1;
-            }
-            if(val > this.yMax) {
-                this.yMax = val;
-                hit_limit = 1;
+        }
+    }
+    
+    autoscaleYAxis() {
+        var newMin = Number.POSITIVE_INFINITY;
+        var newMax = Number.NEGATIVE_INFINITY;
+        var hit_limit = 0;
+        for (var name in this.labels) {
+            for(i in this.dataSets[name].data) {
+                var val = this.dataSets[name].data[i];
+                if(val < newMin) {
+                    newMin = val;
+                }
+                if(val > newMax) {
+                    newMax = val;
+                }
             }
         }
-        // TODO This doesn't work, it only changes where the point is put on screen,
-        // it doesn't change points already plotted, and it doesn't change axis labels
-        if(0 && hit_limit) {
+        if((newMax > this.yMax || newMax < this.yMax)||
+           (newMin < this.yMin || newMin > this.yMin)) {
+            this.yMax = newMax;
+            this.yMin = newMin;
             this.yScale = d3.scale.linear()
                 .domain([this.yMin, this.yMax])
                 .range([this.height-this.xAxisLabelHeight, 0])
+            this.emptySVG();
+            this.initFromData();
         }
     }
     
@@ -191,6 +209,9 @@ svg {
 
     plot(time, newData) {
         this.setValues(newData);
+        if(this.autoscale) {
+            this.autoscaleYAxis();
+        }
         //time /= 1000.0;
         this.now = time;
         // Add new values
@@ -217,7 +238,7 @@ svg {
             this.dataSets[name].data.splice(0, expired);
             this.dataSets[name].pathData.splice(0, expired);
         }
-
+        
         this.timestamps.push(time);
         var dataNum = 0;
         for (var name in this.dataSets)
