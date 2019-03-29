@@ -24,7 +24,8 @@ class WebSocketClientConnection(QObject):
         self.webSocket.binaryMessageReceived.connect(self.processBinaryMessage)
         self.webSocket.disconnected.connect(self.onDisconnected)
 
-        self.name = "Web Client " + self.webSocket.peerAddress().toString()
+        self.name = "Web Client"
+        self.hostLabel = QtWidgets.QLabel(self.webSocket.peerAddress().toString().replace("::ffff:",""))
         self.statusLabel.setText(self.name)
 
     def widget(self, index):
@@ -32,6 +33,8 @@ class WebSocketClientConnection(QObject):
             return self.removeClient
         if index == 1:
             return self.statusLabel
+        if index == 2:
+            return self.hostLabel
         return None
             
     def processBinaryMessage(self, bytes):

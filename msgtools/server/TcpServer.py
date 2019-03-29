@@ -25,7 +25,8 @@ class TcpClientConnection(QObject):
 
         self.rxBuffer = bytearray()
 
-        self.name = "TCP Client " + self.tcpSocket.peerAddress().toString()
+        self.name = "TCP Client"
+        self.hostLabel = QtWidgets.QLabel(self.tcpSocket.peerAddress().toString().replace("::ffff:",""))
         self.statusLabel.setText(self.name)
 
     def widget(self, index):
@@ -33,6 +34,8 @@ class TcpClientConnection(QObject):
             return self.removeClient
         if index == 1:
             return self.statusLabel
+        if index == 2:
+            return self.hostLabel
         return None
             
     def onReadyRead(self):
