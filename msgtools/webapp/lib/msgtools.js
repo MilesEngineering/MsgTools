@@ -297,8 +297,10 @@
             // Override defaults...
             if (options !== undefined && options !== null && options instanceof Map) {
                 if (options.has('server')) {
-                    server = options.get('server')
-                    serverOption = true
+                    if(options.get('server') != "") {
+                        server = options.get('server')
+                        serverOption = true
+                    }
                 }
 
                 if (options.has('port')) {
