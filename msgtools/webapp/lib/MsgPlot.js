@@ -1,4 +1,7 @@
-class MsgPlot extends BasePlot {
+/*
+ * Plots fields of a message.
+ */
+ class MsgPlot extends BasePlot {
     constructor() {
         super();
         msgtools.DelayedInit.add(this);
@@ -17,7 +20,7 @@ class MsgPlot extends BasePlot {
             this.fieldInfos.push(msgtools.findFieldInfo(this.msgClass, fieldNames[i]));
         }
 
-        //TODO this has to happen on our MessagingClient object, not the class!
+        // Register to receive our messages so we can plot fields from them.
         msgtools.MessagingClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.plot.bind(this));
     }
 

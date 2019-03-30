@@ -1,6 +1,7 @@
-// right now this works with exactly 3 lines.
-// it should be modified to work with any number of lines, specified by constructor parameters
-// perhaps allow user to pass in an array of names and colors?
+/*
+ * Plots a time series of data, with configurable number of lines and names.
+ */
+
 var svgns = "http://www.w3.org/2000/svg";
 class BasePlot extends HTMLElement {
     constructor() {

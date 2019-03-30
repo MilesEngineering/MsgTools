@@ -1,4 +1,7 @@
-class MsgFieldLabel extends HTMLElement {
+/*
+ * Displays values of fields of messages, in rows or columns (or just one).
+ */
+ class MsgFieldLabel extends HTMLElement {
     constructor() {
         super();
         msgtools.DelayedInit.add(this);
@@ -47,7 +50,7 @@ class MsgFieldLabel extends HTMLElement {
             }
         }
     
-        //TODO this has to happen on our MessagingClient object, not the class!
+        // Register to receive our messages so we can display fields.
         msgtools.MessagingClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.processMsg.bind(this));
     }
 

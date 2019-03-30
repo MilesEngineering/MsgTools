@@ -3,7 +3,7 @@
  * This module exposes a number of connectivity and utility functions 
  * and classes available for writing web apps based on MsgTools.
  *
- * This module is Promises frienndly where needed
+ * This module is Promises friendly where needed
  */
 
 
