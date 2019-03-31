@@ -5,6 +5,8 @@
     constructor() {
         super();
         this.msgName = this.getAttribute('msgName');
+        this.showHeader = this.hasAttribute('showHeader') ? this.getAttribute('showHeader').toLowerCase() === 'true' : true;
+        this.showMsgName = this.hasAttribute('showMsgName') ? this.getAttribute('showMsgName').toLowerCase() === 'true' : false;
         this.shadow = this.attachShadow({mode: 'open'});
         this.shadow.innerHTML = 'MsgFieldLabel:' + this.msgName;
         msgtools.DelayedInit.add(this);
@@ -80,7 +82,12 @@
         }
     }
     setValues(values) {
-        var table = "<tr><td colspan='"+values.length+"'>"+this.msgName+"</td></tr>"+this.header + "<tr><td>"+values.join("</td><td>") + "</td></tr>";
+        var table = "";
+        if(this.showMsgName)
+            table += "<tr><td colspan='"+values.length+"'>"+this.msgName+"</td></tr>";
+        if(this.showHeader)
+            table += this.header;
+        table += "<tr><td>"+values.join("</td><td>") + "</td></tr>";
         console.log(table);
         this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
     }
@@ -88,9 +95,14 @@
 
 class MsgLabelsColumn extends MsgLabelsRow {
     setValues(values) {
-        var table = "<tr><td colspan='2'>"+this.msgName+"</td></tr>\n";
+        var table = '';
+        if(this.showMsgName)
+            table += "<tr><td colspan='2'>"+this.msgName+"</td></tr>\n";
         for(var i=0; i<values.length; i++) {
-            table += "<tr><td>"+this.fieldNames[i]+"</td><td>"+values[i]+"</td></tr>\n";
+            table += "<tr>"
+            if(this.showHeader)
+                table += "<td>"+this.fieldNames[i]+"</td>";
+            table += "<td>"+values[i]+"</td></tr>\n";
         }
         console.log(table);
         this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
