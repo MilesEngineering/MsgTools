@@ -1,14 +1,16 @@
 /*
  * Displays values of fields of messages, in rows or columns (or just one).
  */
- class MsgFieldLabel extends HTMLElement {
+ class MsgLabelsRow extends HTMLElement {
     constructor() {
         super();
+        this.msgName = this.getAttribute('msgName');
+        this.shadow = this.attachShadow({mode: 'open'});
+        this.shadow.innerHTML = 'MsgFieldLabel:' + this.msgName;
         msgtools.DelayedInit.add(this);
     }
     init() {
-        var msgName = this.getAttribute('msgName');
-        this.msgClass = msgtools.findMessageByName(msgName);
+        this.msgClass = msgtools.findMessageByName(this.msgName);
         
         var fieldNames;
         if(this.hasAttribute('fields')) {
@@ -40,20 +42,28 @@
         if(fieldNames.length === 0) {
             for(var i=0; i<this.msgClass.prototype.fields.length; i++) {
                 var fi = this.msgClass.prototype.fields[i];
-                console.log(fi);
                 this.fieldInfos.push(fi);
+                fieldNames.push(fi.name);
             }
         } else {
             for(var i=0; i<this.fieldInfos.length; i++) {
                 fi = msgtools.findFieldInfo(this.msgClass, fieldNames[i]);
-                this.fieldInfos.push(fi);
+                if(fieldNames.includes(fi.name)) {
+                    this.fieldInfos.push(fi);
+                }
             }
         }
+        
+        this.fieldNames = fieldNames;
+        this.header = "<tr><th>"+fieldNames.join("</th><th>") + "</th></tr>";
+        var initValues = new Array(fieldNames.length);
+        initValues.fill('?');
+        this.setValues(initValues);
     
         // Register to receive our messages so we can display fields.
         msgtools.MessagingClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.processMsg.bind(this));
     }
-
+    
     processMsg(msg) {
         //TODO use this.row (boolean for row vs. column)
         for(var i=0; i<this.fieldInfos.length; i++) {
@@ -69,10 +79,27 @@
             //TODO turn purple
         }
     }
+    setValues(values) {
+        var table = "<tr><td colspan='"+values.length+"'>"+this.msgName+"</td></tr>"+this.header + "<tr><td>"+values.join("</td><td>") + "</td></tr>";
+        console.log(table);
+        this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
+    }
+}
+
+class MsgLabelsColumn extends MsgLabelsRow {
+    setValues(values) {
+        var table = "<tr><td colspan='2'>"+this.msgName+"</td></tr>\n";
+        for(var i=0; i<values.length; i++) {
+            table += "<tr><td>"+this.fieldNames[i]+"</td><td>"+values[i]+"</td></tr>\n";
+        }
+        console.log(table);
+        this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
+    }
 }
 
 // This should be run after we're confident that all of the uses of the
 // tag have been defined, so that our calls to getAttribute will succeed.
 // (Also after any remaining dependencies are loaded.)
 // Best plan is just to import this whole file at the end of your HTML.
-customElements.define('msgtools-msgfieldlabel', MsgFieldLabel);
+customElements.define('msgtools-msglabelsrow', MsgLabelsRow);
+customElements.define('msgtools-msglabelscolumn', MsgLabelsColumn);
