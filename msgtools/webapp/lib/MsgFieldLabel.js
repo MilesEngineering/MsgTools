@@ -1,7 +1,7 @@
 /*
- * Displays values of fields of messages, in rows or columns (or just one).
+ * Creates a widget based on definition of a message.
  */
- class MsgLabelsRow extends HTMLElement {
+ class MsgElement extends HTMLElement {
     constructor() {
         super();
         this.msgName = this.getAttribute('msgName');
@@ -48,22 +48,14 @@
                 fieldNames.push(fi.name);
             }
         } else {
-            for(var i=0; i<this.fieldInfos.length; i++) {
+            for(var i=0; i<this.fieldNames.length; i++) {
                 fi = msgtools.findFieldInfo(this.msgClass, fieldNames[i]);
-                if(fieldNames.includes(fi.name)) {
-                    this.fieldInfos.push(fi);
-                }
+                this.fieldInfos.push(fi);
             }
         }
         
         this.fieldNames = fieldNames;
-        this.header = "<tr><th>"+fieldNames.join("</th><th>") + "</th></tr>";
-        var initValues = new Array(fieldNames.length);
-        initValues.fill('?');
-        this.setValues(initValues);
-    
-        // Register to receive our messages so we can display fields.
-        msgtools.MessagingClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.processMsg.bind(this));
+        this.header = "<tr><th>"+this.fieldNames.join("</th><th>") + "</th></tr>";
     }
     
     processMsg(msg) {
@@ -75,12 +67,37 @@
             console.log(fieldInfo.name + ": " + value);
         }
     }
-    
+}
+
+/*
+ * Displays field values for a message. 
+ */
+class MsgLabels extends MsgElement {
+    constructor() {
+        super();
+    }
+    init() {
+        super.init();
+
+        // initialize to empty
+        var initValues = new Array(this.fieldNames.length);
+        initValues.fill('?');
+        this.setValues(initValues);
+
+        // Register to receive our messages so we can display fields.
+        msgtools.MessagingClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.processMsg.bind(this));
+    }
     checkAging(now) {
         if(now > this.rxTime + this.maxAge()) {
             //TODO turn purple
         }
     }
+}
+
+/*
+ * Displays as row
+ */
+class MsgLabelsRow extends MsgLabels {
     setValues(values) {
         var table = "";
         if(this.showMsgName)
@@ -88,12 +105,15 @@
         if(this.showHeader)
             table += this.header;
         table += "<tr><td>"+values.join("</td><td>") + "</td></tr>";
-        console.log(table);
+        //console.log(table);
         this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
     }
 }
 
-class MsgLabelsColumn extends MsgLabelsRow {
+/*
+ * Displays as column.
+ */
+class MsgLabelsColumn extends MsgLabels {
     setValues(values) {
         var table = '';
         if(this.showMsgName)
@@ -104,10 +124,72 @@ class MsgLabelsColumn extends MsgLabelsRow {
                 table += "<td>"+this.fieldNames[i]+"</td>";
             table += "<td>"+values[i]+"</td></tr>\n";
         }
+        //console.log(table);
+        this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
+    }
+}
+
+/*
+ * Edit field values for a message. 
+ */
+class MsgEdit extends MsgElement {
+    constructor() {
+        super();
+    }
+    init() {
+        super.init();
+        this.createEditFields();
+    }
+}
+
+/*
+ * Edit field values for a message in a row.
+ */
+class MsgEditRow extends MsgEdit {
+    createEditFields() {
+        var table = "";
+        if(this.showMsgName)
+            table += "<tr><td colspan='"+this.fieldInfos.length+"'>"+this.msgName+"</td></tr>";
+        if(this.showHeader)
+            table += this.header;
+        table += "<tr>";
+        for(var i=0; i<this.fieldInfos.length; i++) {
+            var fieldInfo = this.fieldInfos[i];
+            var fname = this.getAttribute('id') +"_"+ this.msgName +"_"+ fieldInfo.name;
+            table += "<td>" + '<input type="text" id="'+fname+'">' + "</td>";
+        }
+        table += "</tr>";
+        table += "<tr><td colspan='"+this.fieldInfos.length+"'>Send</td></tr>\n"
+        table += "</tr>";
+
         console.log(table);
         this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
     }
 }
+
+/*
+ * Edit field values for a message in a column.
+ */
+class MsgEditColumn extends MsgEdit {
+    createEditFields(values) {
+        var table = '';
+        if(this.showMsgName)
+            table += "<tr><td colspan='2'>"+this.msgName+"</td></tr>\n";
+        for(var i=0; i<this.fieldInfos.length; i++) {
+            var fieldInfo = this.fieldInfos[i];
+            var fname = this.getAttribute('id') +"_"+ this.msgName +"_"+ fieldInfo.name;
+            table += "<tr>"
+            if(this.showHeader)
+                table += "<td>"+this.fieldNames[i]+"</td>";
+            table += "<td>" + '<input type="text" id="'+fname+'">' + "</td>";
+            table += "</tr>\n";
+        }
+        table += "<tr><td colspan='2'>Send</td></tr>\n"
+        //console.log(table);
+        this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
+    }
+}
+
 
 // This should be run after we're confident that all of the uses of the
 // tag have been defined, so that our calls to getAttribute will succeed.
@@ -115,3 +197,5 @@ class MsgLabelsColumn extends MsgLabelsRow {
 // Best plan is just to import this whole file at the end of your HTML.
 customElements.define('msgtools-msglabelsrow', MsgLabelsRow);
 customElements.define('msgtools-msglabelscolumn', MsgLabelsColumn);
+customElements.define('msgtools-msgeditrow', MsgEditRow);
+customElements.define('msgtools-msgeditcolumn', MsgEditColumn);
