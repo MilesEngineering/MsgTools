@@ -1,7 +1,11 @@
 /*
  * Creates a widget based on definition of a message.
  */
- class MsgElement extends HTMLElement {
+
+//TODO Global variables are lame, there must be a better way to do this!
+var client;
+ 
+class MsgElement extends HTMLElement {
     constructor() {
         super();
         this.msgName = this.getAttribute('msgName');
@@ -177,7 +181,8 @@ class MsgEdit extends MsgElement {
             var value = this.fields[i].value;
             msg[fieldInfo.set](value);
         }
-        console.log("MsgEdit.Send: "+msgtools.toJSON(msg));
+        //console.log("MsgEdit.Send: "+msgtools.toJSON(msg));
+        client.sendMessage(msg);
     }
     sendButton() {
         var i = document.createElement('input');
