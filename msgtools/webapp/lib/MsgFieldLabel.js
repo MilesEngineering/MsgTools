@@ -8,7 +8,6 @@
         this.showHeader = this.hasAttribute('showHeader') ? this.getAttribute('showHeader').toLowerCase() === 'true' : true;
         this.showMsgName = this.hasAttribute('showMsgName') ? this.getAttribute('showMsgName').toLowerCase() === 'true' : false;
         this.shadow = this.attachShadow({mode: 'open'});
-        this.shadow.innerHTML = 'MsgFieldLabel:' + this.msgName;
         msgtools.DelayedInit.add(this);
     }
     init() {
@@ -55,17 +54,9 @@
         }
         
         this.fieldNames = fieldNames;
-        this.header = "<tr><th>"+this.fieldNames.join("</th><th>") + "</th></tr>";
-    }
-    
-    processMsg(msg) {
-        //TODO use this.row (boolean for row vs. column)
-        for(var i=0; i<this.fieldInfos.length; i++) {
-            var fieldInfo = this.fieldInfos[i];
-            var value = msg[fieldInfo.get]();
-            // TODO Check red and yellow limits
-            console.log(fieldInfo.name + ": " + value);
-        }
+
+        this.fields = [];
+        this.createFields();
     }
 }
 
@@ -79,13 +70,17 @@ class MsgLabels extends MsgElement {
     init() {
         super.init();
 
-        // initialize to empty
-        var initValues = new Array(this.fieldNames.length);
-        initValues.fill('?');
-        this.setValues(initValues);
-
         // Register to receive our messages so we can display fields.
         msgtools.MessagingClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.processMsg.bind(this));
+    }
+    processMsg(msg) {
+        for(var i=0; i<this.fieldInfos.length; i++) {
+            var fieldInfo = this.fieldInfos[i];
+            var value = msg[fieldInfo.get]();
+            this.fields[i].textContent = value;
+            // TODO Check red and yellow limits
+            //console.log(fieldInfo.name + ": " + value);
+        }
     }
     checkAging(now) {
         if(now > this.rxTime + this.maxAge()) {
@@ -98,15 +93,38 @@ class MsgLabels extends MsgElement {
  * Displays as row
  */
 class MsgLabelsRow extends MsgLabels {
-    setValues(values) {
-        var table = "";
-        if(this.showMsgName)
-            table += "<tr><td colspan='"+values.length+"'>"+this.msgName+"</td></tr>";
-        if(this.showHeader)
-            table += this.header;
-        table += "<tr><td>"+values.join("</td><td>") + "</td></tr>";
-        //console.log(table);
-        this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
+    createFields() {
+        var table = document.createElement('table');
+        table.setAttribute('border', 1);
+        if(this.showMsgName) {
+            var tr = document.createElement('tr');
+            var td = document.createElement('td');
+            td.textContent = this.msgName;
+            td.setAttribute('colspan', this.fieldInfos.length);
+            tr.appendChild(td);
+            table.appendChild(tr);
+        }
+        if(this.showHeader) {
+            var row = document.createElement('tr');
+            for(var i=0; i<this.fieldNames.length; i++) {
+                var td = document.createElement('td');
+                td.textContent = this.fieldNames[i];
+                row.appendChild(td);
+            }
+            table.appendChild(row);
+        }
+        var row = document.createElement('tr');
+        for(var i=0; i<this.fieldInfos.length; i++) {
+            var fieldInfo = this.fieldInfos[i];
+            var fname = this.getAttribute('id') +"_"+ this.msgName +"_"+ fieldInfo.name;
+            var td = document.createElement('td');
+            td.textContent = '?';
+            this.fields.push(td);
+            row.appendChild(td);
+        }
+        table.appendChild(row);
+
+        this.shadow.appendChild(table);
     }
 }
 
@@ -114,18 +132,31 @@ class MsgLabelsRow extends MsgLabels {
  * Displays as column.
  */
 class MsgLabelsColumn extends MsgLabels {
-    setValues(values) {
-        var table = '';
-        if(this.showMsgName)
-            table += "<tr><td colspan='2'>"+this.msgName+"</td></tr>\n";
-        for(var i=0; i<values.length; i++) {
-            table += "<tr>"
-            if(this.showHeader)
-                table += "<td>"+this.fieldNames[i]+"</td>";
-            table += "<td>"+values[i]+"</td></tr>\n";
+    createFields() {
+        var table = document.createElement('table');
+        table.setAttribute('border', 1);
+        if(this.showMsgName) {
+            var row = document.createElement('tr');
+            var td = document.createElement('td');
+            td.setAttribute('colspan', '2');
+            td.textContent = this.msgName;
+            row.appendChild(td);
+            table.appendChild(row);
         }
-        //console.log(table);
-        this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
+        for(var i=0; i<this.fieldInfos.length; i++) {
+            var row = document.createElement('tr');
+            if(this.showHeader) {
+                var td = document.createElement('td');
+                td.textContent = this.fieldNames[i];
+                row.appendChild(td);
+            }
+            var td = document.createElement('td');
+            td.textContent = '?';
+            this.fields.push(td);
+            row.appendChild(td);
+            table.appendChild(row);
+        }
+        this.shadow.appendChild(table);
     }
 }
 
@@ -138,7 +169,23 @@ class MsgEdit extends MsgElement {
     }
     init() {
         super.init();
-        this.createEditFields();
+    }
+    sendClicked() {
+        var msg = new this.msgClass();
+        for(var i=0; i<this.fieldInfos.length; i++) {
+            var fieldInfo = this.fieldInfos[i];
+            var value = this.fields[i].value;
+            msg[fieldInfo.set](value);
+        }
+        console.log("MsgEdit.Send: "+msgtools.toJSON(msg));
+    }
+    sendButton() {
+        var i = document.createElement('input');
+        i.setAttribute('type', 'button');
+        i.setAttribute('value', 'Send');
+        i.setAttribute('style', 'width: 100%');
+        i.onclick = this.sendClicked.bind(this);
+        return i;
     }
 }
 
@@ -146,24 +193,47 @@ class MsgEdit extends MsgElement {
  * Edit field values for a message in a row.
  */
 class MsgEditRow extends MsgEdit {
-    createEditFields() {
-        var table = "";
-        if(this.showMsgName)
-            table += "<tr><td colspan='"+this.fieldInfos.length+"'>"+this.msgName+"</td></tr>";
-        if(this.showHeader)
-            table += this.header;
-        table += "<tr>";
+    createFields() {
+        var table = document.createElement('table');
+        table.setAttribute('border', 1);
+        if(this.showMsgName) {
+            var row = document.createElement('tr');
+            var td = document.createElement('td');
+            td.setAttribute('colspan', this.fieldInfos.length);
+            td.textContent = this.msgName;
+            row.appendChild(td);
+            table.appendChild(row);
+        }
+        if(this.showHeader) {
+            var row = document.createElement('tr');
+            for(var i=0; i<this.fieldNames.length; i++) {
+                var td = document.createElement('td');
+                td.textContent = this.fieldNames[i];
+                row.appendChild(td);
+            }
+            table.appendChild(row);
+        }
+        var row = document.createElement('tr');
         for(var i=0; i<this.fieldInfos.length; i++) {
             var fieldInfo = this.fieldInfos[i];
             var fname = this.getAttribute('id') +"_"+ this.msgName +"_"+ fieldInfo.name;
-            table += "<td>" + '<input type="text" id="'+fname+'">' + "</td>";
+            var td = document.createElement('td');
+            row.appendChild(td);
+            var textEdit = document.createElement('input');
+            textEdit.setAttribute('type', 'text');
+            textEdit.setAttribute('id', fname);
+            this.fields.push(textEdit);
+            td.appendChild(textEdit);
         }
-        table += "</tr>";
-        table += "<tr><td colspan='"+this.fieldInfos.length+"'>Send</td></tr>\n"
-        table += "</tr>";
+        table.appendChild(row);
+        var row = document.createElement('tr');
+        var td = document.createElement('td');
+        td.setAttribute('colspan', this.fieldInfos.length);
+        td.appendChild(this.sendButton());
+        row.appendChild(td);
+        table.appendChild(row);
 
-        console.log(table);
-        this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
+        this.shadow.appendChild(table);
     }
 }
 
@@ -171,22 +241,42 @@ class MsgEditRow extends MsgEdit {
  * Edit field values for a message in a column.
  */
 class MsgEditColumn extends MsgEdit {
-    createEditFields(values) {
-        var table = '';
-        if(this.showMsgName)
-            table += "<tr><td colspan='2'>"+this.msgName+"</td></tr>\n";
+    createFields() {
+        var table = document.createElement('table');
+        table.setAttribute('border', 1);
+        if(this.showMsgName) {
+            var row = document.createElement('tr');
+            var td = document.createElement('td');
+            td.setAttribute('colspan', '2');
+            td.textContent = this.msgName;
+            row.appendChild(td);
+            table.appendChild(row);
+        }
         for(var i=0; i<this.fieldInfos.length; i++) {
             var fieldInfo = this.fieldInfos[i];
             var fname = this.getAttribute('id') +"_"+ this.msgName +"_"+ fieldInfo.name;
-            table += "<tr>"
+            var row = document.createElement('tr');
             if(this.showHeader)
-                table += "<td>"+this.fieldNames[i]+"</td>";
-            table += "<td>" + '<input type="text" id="'+fname+'">' + "</td>";
-            table += "</tr>\n";
+                var td = document.createElement('td');
+                td.textContent = this.fieldNames[i];
+                row.appendChild(td);
+            var td = document.createElement('td');
+            var textEdit = document.createElement('input');
+            textEdit.setAttribute('type', 'text');
+            textEdit.setAttribute('id', fname);
+            this.fields.push(textEdit);
+            td.appendChild(textEdit);
+            row.appendChild(td);
+            table.appendChild(row);
         }
-        table += "<tr><td colspan='2'>Send</td></tr>\n"
-        //console.log(table);
-        this.shadow.innerHTML = "<table border='1'>"+table+"</table>";
+        var row = document.createElement('tr');
+        var td = document.createElement('td');
+        td.setAttribute('colspan', '2');
+        td.appendChild(this.sendButton());
+        row.appendChild(td);
+        table.appendChild(row);
+
+        this.shadow.appendChild(table);
     }
 }
 
