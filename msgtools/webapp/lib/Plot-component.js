@@ -82,14 +82,37 @@ svg {
         this.svg_selector = d3.select(this.svg);
 
         window.addEventListener('resize', this.resize.bind(this));
+        window.addEventListener('visibilitychange', this.resize.bind(this));
         this.resize();
     }
 
     resize()
     {
-        var p = this.parentElement;
-        this.width = p.clientWidth - parseFloat(window.getComputedStyle(p, null).getPropertyValue('padding-left')) - parseFloat(window.getComputedStyle(p, null).getPropertyValue('padding-right'));
-        this.height = p.clientHeight - parseFloat(window.getComputedStyle(p, null).getPropertyValue('padding-top')) - parseFloat(window.getComputedStyle(p, null).getPropertyValue('padding-bottom'));
+        // if the element is hidden, don't do anything.
+        if(this.offsetParent === null) {
+            return;
+        }
+        var rect = this.parentElement.getBoundingClientRect();
+        //console.log(rect);
+        //console.log(this.getBoundingClientRect());
+        this.width = rect.width;
+        this.height = rect.height;
+        if(this.hasAttribute('height')) {
+            var height = this.getAttribute('height');
+            if(height.includes("%")) {
+                this.height = this.height * height.replace("%","") / 100;
+            } else {
+                this.height = height;
+            }
+        }
+        if(this.hasAttribute('width')) {
+            var width = this.getAttribute('width');
+            if(width.includes("%")) {
+                this.width = this.width * width.replace("%","") / 100;
+            } else {
+                this.width = width;
+            }
+        }
         this.emptySVG();
         this.pixelPerSecond = ((this.width-2.0*this.yAxisLabelWidth)/this.timeLimit);
         this.initFromData();
