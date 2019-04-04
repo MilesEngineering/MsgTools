@@ -87,6 +87,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         txClearBtn = QPushButton("Clear")
         self.debugWidget = msgtools.debug.debug.MsgDebugWidget([], parent)
         self.debugWidget.messageOutput.connect(self.SendMsg)
+        self.debugWidget.autocompleted.connect(self.textAutocomplete)
         # tracking what reply to expect
         self.expectedReply = None
         
@@ -374,6 +375,28 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 
     def clear_tx(self):
         self.txMsgs.clear()
+    
+    # when text edit autocomplete occurs, find the corresponding item
+    # in the tx dictionary
+    def textAutocomplete(self, autocomplete):
+        def item_matches(item, sequence):
+            # look in reverse at sequence of parts, verifying
+            # that each part matches the item and it's parents.
+            for part in reversed(sequence):
+                if part == '':
+                    continue
+                if item.text(0) != part:
+                    return False
+                item = item.parent()
+            return True
+        msgname_parts = autocomplete.replace(',', '').split('.')
+        for msgpart in msgname_parts:
+            # find all matches...
+            matches = self.txDictionary.findItems(msgpart, Qt.MatchExactly | Qt.MatchRecursive, 0)
+            for item in matches:
+                # ... then for each match, make sure all parts match
+                if item_matches(item, msgname_parts):
+                    self.txDictionary.setCurrentItem(item)
 
 def main():
     # Setup a command line processor...

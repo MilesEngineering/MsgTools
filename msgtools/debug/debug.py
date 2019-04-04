@@ -32,6 +32,7 @@ DESCRIPTION='''DebugPrint provides a graphical interface that allows you to view
 # 3) separate tabs for debug text output
 class MsgDebugWidget(QtWidgets.QWidget):
     messageOutput = QtCore.pyqtSignal(object)
+    autocompleted   = QtCore.pyqtSignal(str)
     def __init__(self, argv=[], parent=None):
         super(MsgDebugWidget, self).__init__()
         
@@ -59,6 +60,7 @@ class MsgDebugWidget(QtWidgets.QWidget):
         self.tabWidget.addTab(self.textEntryWidget, "Cmd/Reply")
         self.textEntryWidget.commandEntered.connect(self.newCommandEntered)
         self.textEntryWidget.messageEntered.connect(self.newMessageEntered)
+        self.textEntryWidget.autocompleted.connect(self.autocompleted)
         
         # tracking what reply to expect
         self.expectedReply = None

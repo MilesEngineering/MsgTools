@@ -388,6 +388,7 @@ class LineEditWithHistory(QtWidgets.QLineEdit):
 class MsgCommandWidget(QtWidgets.QWidget):
     commandEntered = QtCore.pyqtSignal(str)
     messageEntered = QtCore.pyqtSignal(object)
+    autocompleted   = QtCore.pyqtSignal(str)
     def __init__(self, parent=None):
         super(MsgCommandWidget, self).__init__()
         self.textBox = QtWidgets.QPlainTextEdit()
@@ -406,6 +407,7 @@ class MsgCommandWidget(QtWidgets.QWidget):
         autocomplete, help = msgcsv.csvHelp(lineOfText)
         if autocomplete:
             self.lineEdit.setText(autocomplete)
+            self.autocompleted.emit(autocomplete)
         if help:
             self.addText('\n'+help+'\n>\n')
 
