@@ -21,7 +21,7 @@
         }
 
         // Register to receive our messages so we can plot fields from them.
-        msgtools.MessagingClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.plot.bind(this));
+        msgtools.MessageClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.plot.bind(this));
     }
 
     plot(msg) {

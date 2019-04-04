@@ -15,7 +15,7 @@
     var MessageNameDictionary = new Map()
 
     // Base messasge directory we load generated messages from
-    // You must call setMsgDirectory to initialize this method and load all
+    // You must call load to initialize this method and load all
     // of our dependent messages.
     var msgDir = undefined
     var dependenciesLoaded = false
@@ -35,13 +35,18 @@
      * @return A Promise that can be used to wait for, and confirm dependencies are loaded
      * If an error occurs the error response is an array of message urls that failed to load.
      */
-    function setMsgDirectory(baseMsgDir) {
+    function load(baseMsgDir, msgs) {
         // First set the base directory
         if (baseMsgDir.length > 0 && baseMsgDir[baseMsgDir.length-1] != '/')
             baseMsgDir += '/'
 
         msgDir = baseMsgDir
 
+        // If we were handed a single message then wrap it in an array
+        // so we can symmetrically process one or multiple...
+        if (msgs instanceof Array == false )
+            msgs = [msgs]
+        
         // All the messages this module depends on
         let dependencies = ['Network.Connect', 'Network.MaskedSubscription', 
             'Network.StartLog', 'Network.StopLog', 'Network.LogStatus', 'Network.QueryLog', 
@@ -53,6 +58,7 @@
         // Network header is ALWAYS required, and should be the first because
         // other messages depend on it
         dependencies = ['headers.NetworkHeader'].concat(dependencies)
+        dependencies = dependencies.concat(msgs);
 
         return new Promise((resolve, reject)=>{
             if (dependenciesLoaded == false)
@@ -78,22 +84,10 @@
      * you would specify headers/NetworkHeader or headers.NetworkHeader as the message name.  This function
      * will take care of the base directory mapping, and make your message request a proper url for script loading.
      *
-     * @param {string} baseMsgDir - override our module base directory to load one or more messages from
-     * the indicated base instead.
-     *
      * @return A Promise for async loading.  The error response will be an array of urls we couldn't load
      */
-    function loadMessages(msgs, baseMsgDir=undefined) {
+    function loadMessages(msgs) {
         return new Promise((resolve, reject)=> {
-
-            // If we were handed a single message then wrap it in an array
-            // so we can symmetrically process one or multiple...
-            if (msgs instanceof Array == false )
-                msgs = [msgs]
-
-            var baseDir = baseMsgDir === undefined ? msgDir : baseMsgDir
-            if (baseDir.length > 0 && baseDir[baseDir.length-1] != '/')
-                baseDir += '/'
 
             var errors = new Array()
             var scriptsProcessed = 0
@@ -103,7 +97,7 @@
                 msgId = msg.replace(/\//g, '.')
                 msg = msg.replace(/\./g, '/') 
 
-                url = baseDir + msg + '.js'
+                url = msgDir + msg + '.js'
 
                 loadScript(url, msgId, (event)=>{
                     if (event.type == 'load')
@@ -188,25 +182,25 @@
     DelayedInit.widgets = [];
     class MessageDispatch {
         constructor() {
-            this.m_Listeners = {};
+            this.m_listeners = {};
         }
         
         register(id, handler) {
-            if(!(id in this.m_Listeners)) {
-                this.m_Listeners[id] = [];
+            if(!(id in this.m_listeners)) {
+                this.m_listeners[id] = [];
             }
-            this.m_Listeners[id].push(handler);
+            this.m_listeners[id].push(handler);
         }
 
-        removeEventListener(id, handler) {
-            var listeners = this.m_Listeners[id];
+        remove(id, handler) {
+            var listeners = this.m_listeners[id];
             if (listeners !== undefined) {
                 listeners.delete(handler);
             }
         }
         
         deliver(msg) {
-            var listeners = this.m_Listeners[msg.hdr.GetMessageID()];
+            var listeners = this.m_listeners[msg.hdr.GetMessageID()];
             if (listeners !== undefined) {
                 for( let l of listeners ) {
                     l(msg);
@@ -216,14 +210,14 @@
     }
 
     /**
-     * MsgServer client class.  This class communicates over Websockets and is 
+     * Message client class.  This class communicates over Websockets and is 
      * designed to run in a browser.  It provides basic connectivity events
      * mirroring the underlying Websocket and also encapsulates some core MsgTools
      * logic for identifying the client by name, and masking
      */
-    class MessagingClient {
+    class MessageClient {
         /**
-         * Contruct a new MessagingClient
+         * Contruct a new MessageClient
          *
          * @param {string} name - the name of this messaging client.  Will be emitted on the Connect
          * message if Connect is defined and you request it.  If undefined we don't send a connect message.
@@ -235,8 +229,10 @@
          */
         constructor(name='', hostWindow=null, subscriptionMask = 0, subscriptionValue = 0) {
             if (dependenciesLoaded==false)
-                throw 'You must call setMsgDirectory() before a MessagingClient can be created.'
+                throw 'You must call load() before a MessageClient can be created.'
 
+            // make a MessageClient easily globally accessible.
+            msgtools.client = this;
             msgtools.DelayedInit.init();
 
             this.m_Name = name
@@ -368,7 +364,7 @@
             }
 
             // do message delivery based on message ID
-            MessagingClient.dispatch.deliver(msg)
+            MessageClient.dispatch.deliver(msg)
                 
             if(typeof this.onmessage === "function") {
                 this.onmessage(msg);
@@ -460,7 +456,7 @@
         // ondisconnected
         // onerror
     }
-    MessagingClient.dispatch = new MessageDispatch();
+    MessageClient.dispatch = new MessageDispatch();
 
     /**
      * If we have no idea what a message is (because it's definition wasn't loaded) then return an UnknownMsg
@@ -530,17 +526,6 @@
     }
 
     /**
-     * Convert the array buffer to a hex string
-     *
-     * @param {ArrayBuffer} buffer - the buffer to convert to a string
-     *
-     * @return hex string representation of the given buffer
-     */
-    function buf2hex(buffer) { // buffer is an ArrayBuffer
-      return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
-    }
-
-    /**
      * Retrieve the websocket server params from the given window
      * 
      * @param {Window} hostWindow - the host window from which to rerieve query params
@@ -575,50 +560,16 @@
         return MessageNameDictionary.get(msgname);
     }
 
-    // Make a pretty log output.  This is also an example of how to iterate over 
-    // the fields of a message, getting metadata about each field (and bitfield), 
-    // and getting the value of the field using the get function called with 
-    // bracket notation obj[fnName](), instead of obj.fn()
-    function prettyPrint(obj) {
-        var ret = "Reflection information obtained by iterating over list of fields\n";
-        var proto = Object.getPrototypeOf(obj);
-        for(var i=0; i<proto.fields.length; i++)
-        {
-            var field = proto.fields[i];
-            var numBitfields = field.bitfieldInfo.length;
-            if(numBitfields == 0)
-            {
-                ret += "name: " + field.name;
-                if(field.count != 1)
-                    ret += "[" + field.count + "]";
-                ret +=", type="+field.type+ ", value="+obj[field.get]()+", " + "desc=" + field.description + ", range=("+field.minVal + ","+field.maxVal+")"+ "\n";
-            }
-            else
-            {
-                for(var j=0; j<field.bitfieldInfo.length; j++)
-                {
-                    bitfield = field.bitfieldInfo[j];
-                    ret += "name: " + field.name+"."+bitfield.name;
-                    ret += ", type="+bitfield.type+", value="+obj[bitfield.get]()+", " + "desc=" + bitfield.description + ", range=("+bitfield.minVal + ","+bitfield.maxVal+")"+ "\n";
-                }
-            }
-        }
-        return ret;
-    }
-
     // Module Exports...
     return {
-        setMsgDirectory : setMsgDirectory,
-        loadMessages : loadMessages,
+        load : load,
         registerMessage : registerMessage,
         findMessageByName : findMessageByName,
         findFieldInfo : findFieldInfo,
-        MessagingClient : MessagingClient,
+        MessageClient : MessageClient,
         DelayedInit : DelayedInit,
         UnknownMsg : UnknownMsg,
         toJSON : toJSON,
-        buf2hex : buf2hex,
-        getWebsocketURLParams : getWebsocketURLParams,
-        prettyPrint : prettyPrint
+        getWebsocketURLParams : getWebsocketURLParams
     }
 })()

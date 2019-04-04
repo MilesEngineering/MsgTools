@@ -1,10 +1,12 @@
+function createChildElement(parent, childName) {
+    child = document.createElement(childName)
+    parent.appendChild(child)
+    return child
+}
+
 /*
  * Creates a widget based on definition of a message.
  */
-
-//TODO Global variables are lame, there must be a better way to do this!
-var client;
- 
 class MsgElement extends HTMLElement {
     constructor() {
         super();
@@ -24,25 +26,7 @@ class MsgElement extends HTMLElement {
             fieldNames = [];
         }
 
-        this.row = false;
-        if(fieldNames.length > 1) {
-            if(this.hasAttribute("row")) {
-                row_attr = this.getAttribute("row");
-                if(row_attr.toLowerCase() === 'true') {
-                    this.row = true;
-                } else {
-                    console.log("row is " + row_attr);
-                }
-            }
-        }
-        
-        if(this.hasAttribute('maxAge')) {
-            this.maxAge = parseFloat(this.getAttribute('maxAge'));
-        } else {
-            this.maxAge = -1;
-        }
-        this.rxTime = 0;
-
+        // list of Field Info objects from auto-generated JavaScript code.
         this.fieldInfos = [];
         if(fieldNames.length === 0) {
             for(var i=0; i<this.msgClass.prototype.fields.length; i++) {
@@ -51,15 +35,24 @@ class MsgElement extends HTMLElement {
                 fieldNames.push(fi.name);
             }
         } else {
-            for(var i=0; i<this.fieldNames.length; i++) {
+            for(var i=0; i<fieldNames.length; i++) {
                 fi = msgtools.findFieldInfo(this.msgClass, fieldNames[i]);
                 this.fieldInfos.push(fi);
             }
         }
-        
         this.fieldNames = fieldNames;
 
+        // list with a HTML element for each field
         this.fields = [];
+
+        // a table that holds everything else
+        this.table = createChildElement(this.shadow, 'table');
+        if(this.hasAttribute('border')) {
+            this.table.setAttribute('border', this.getAttribute('border'));
+        } else {
+            //TODO default border for table
+            //this.table.setAttribute('border', 1);
+        }
         this.createFields();
     }
 }
@@ -70,25 +63,55 @@ class MsgElement extends HTMLElement {
 class MsgLabels extends MsgElement {
     constructor() {
         super();
+
+        // used for coloring display according to age.
+        if(this.hasAttribute('maxAge')) {
+            this.maxAge = parseFloat(this.getAttribute('maxAge'));
+        } else {
+            this.maxAge = -1;
+        }
+        // time of last reception
+        this.rxTime = 0;
     }
     init() {
         super.init();
 
         // Register to receive our messages so we can display fields.
-        msgtools.MessagingClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.processMsg.bind(this));
+        msgtools.MessageClient.dispatch.register(this.msgClass.prototype.MSG_ID, this.processMsg.bind(this));
     }
     processMsg(msg) {
         for(var i=0; i<this.fieldInfos.length; i++) {
             var fieldInfo = this.fieldInfos[i];
             var value = msg[fieldInfo.get]();
             this.fields[i].textContent = value;
-            // TODO Check red and yellow limits
-            //console.log(fieldInfo.name + ": " + value);
+            var color = 'black'
+            if(fieldInfo.type === "enumeration") {
+                let int_value = msg[fieldInfo.get](true);
+                // if value was the same as int_value, then it didn't get decoded,
+                // which should count as a red value
+                if(int_value === value) {
+                    color = 'red';
+                }
+                value = int_value;
+            }
+            if(value < fieldInfo.minVal || value > fieldInfo.maxVal) {
+                color = 'red';
+            }
+            //TODO Need a way to check yellow limits
+            else if (value < fieldInfo.minVal || value > fieldInfo.maxVal) {
+                color = 'yellow';
+            }
+            this.fields[i].setAttribute('style', 'color: '+color);
+        }
+        if(this.maxAge>0) {
+            timer.start(this.maxAge, this.rxTimeout.bind(this));
         }
     }
-    checkAging(now) {
+    rxTimeout() {
         if(now > this.rxTime + this.maxAge()) {
-            //TODO turn purple
+            for(var i=0; i<this.fieldInfos.length; i++) {
+                this.fields[i].setAttribute('style', 'color: purple');
+            }
         }
     }
 }
@@ -98,37 +121,25 @@ class MsgLabels extends MsgElement {
  */
 class MsgLabelsRow extends MsgLabels {
     createFields() {
-        var table = document.createElement('table');
-        table.setAttribute('border', 1);
         if(this.showMsgName) {
-            var tr = document.createElement('tr');
-            var td = document.createElement('td');
-            td.textContent = this.msgName;
+            var tr = createChildElement(this.table, 'tr');
+            var td = createChildElement(tr, 'td');
             td.setAttribute('colspan', this.fieldInfos.length);
-            tr.appendChild(td);
-            table.appendChild(tr);
+            td.textContent = this.msgName;
         }
         if(this.showHeader) {
-            var row = document.createElement('tr');
+            var tr = createChildElement(this.table, 'tr');
             for(var i=0; i<this.fieldNames.length; i++) {
-                var td = document.createElement('td');
+                var td = createChildElement(tr, 'td');
                 td.textContent = this.fieldNames[i];
-                row.appendChild(td);
             }
-            table.appendChild(row);
         }
-        var row = document.createElement('tr');
+        var tr = createChildElement(this.table, 'tr');
         for(var i=0; i<this.fieldInfos.length; i++) {
-            var fieldInfo = this.fieldInfos[i];
-            var fname = this.getAttribute('id') +"_"+ this.msgName +"_"+ fieldInfo.name;
-            var td = document.createElement('td');
+            var td = createChildElement(tr, 'td');
             td.textContent = '?';
             this.fields.push(td);
-            row.appendChild(td);
         }
-        table.appendChild(row);
-
-        this.shadow.appendChild(table);
     }
 }
 
@@ -137,30 +148,22 @@ class MsgLabelsRow extends MsgLabels {
  */
 class MsgLabelsColumn extends MsgLabels {
     createFields() {
-        var table = document.createElement('table');
-        table.setAttribute('border', 1);
         if(this.showMsgName) {
-            var row = document.createElement('tr');
-            var td = document.createElement('td');
+            var tr = createChildElement(this.table, 'tr');
+            var td = createChildElement(tr, 'td');
             td.setAttribute('colspan', '2');
             td.textContent = this.msgName;
-            row.appendChild(td);
-            table.appendChild(row);
         }
         for(var i=0; i<this.fieldInfos.length; i++) {
-            var row = document.createElement('tr');
+            var tr = createChildElement(this.table, 'tr');
             if(this.showHeader) {
-                var td = document.createElement('td');
+                var td = createChildElement(tr, 'td');
                 td.textContent = this.fieldNames[i];
-                row.appendChild(td);
             }
-            var td = document.createElement('td');
+            var td = createChildElement(tr, 'td');
             td.textContent = '?';
             this.fields.push(td);
-            row.appendChild(td);
-            table.appendChild(row);
         }
-        this.shadow.appendChild(table);
     }
 }
 
@@ -182,15 +185,34 @@ class MsgEdit extends MsgElement {
             msg[fieldInfo.set](value);
         }
         //console.log("MsgEdit.Send: "+msgtools.toJSON(msg));
-        client.sendMessage(msg);
+        msgtools.client.sendMessage(msg);
+    }
+    editWidget(fieldInfo) {
+        var w;
+        if(fieldInfo.type === "enumeration") {
+            // make a dropdown list for enums
+            w = document.createElement('select');
+            let lookup = fieldInfo.enumLookup[0]; // forward lookup is #0
+            for(var name in lookup) {
+                var value = lookup[name];
+                var option = createChildElement(w, 'option');
+                option.setAttribute('value', value);
+                option.textContent = name;
+            }
+        } else {
+            // make a text edit for anything else
+            w = document.createElement('input');
+            w.setAttribute('type', 'text');
+        }
+        return w;
     }
     sendButton() {
-        var i = document.createElement('input');
-        i.setAttribute('type', 'button');
-        i.setAttribute('value', 'Send');
-        i.setAttribute('style', 'width: 100%');
-        i.onclick = this.sendClicked.bind(this);
-        return i;
+        var sendBtn = document.createElement('input');
+        sendBtn.setAttribute('type', 'button');
+        sendBtn.setAttribute('value', 'Send');
+        sendBtn.onclick = this.sendClicked.bind(this);
+        sendBtn.setAttribute('style', 'width: 100%');
+        return sendBtn;
     }
 }
 
@@ -199,46 +221,31 @@ class MsgEdit extends MsgElement {
  */
 class MsgEditRow extends MsgEdit {
     createFields() {
-        var table = document.createElement('table');
-        table.setAttribute('border', 1);
         if(this.showMsgName) {
-            var row = document.createElement('tr');
-            var td = document.createElement('td');
+            var tr = createChildElement(this.table, 'tr');
+            var td = createChildElement(tr, 'td');
             td.setAttribute('colspan', this.fieldInfos.length);
             td.textContent = this.msgName;
-            row.appendChild(td);
-            table.appendChild(row);
         }
         if(this.showHeader) {
-            var row = document.createElement('tr');
+            var tr = createChildElement(this.table, 'tr');
             for(var i=0; i<this.fieldNames.length; i++) {
-                var td = document.createElement('td');
+                var td = createChildElement(tr, 'td');
                 td.textContent = this.fieldNames[i];
-                row.appendChild(td);
             }
-            table.appendChild(row);
         }
-        var row = document.createElement('tr');
+        var tr = createChildElement(this.table, 'tr');
         for(var i=0; i<this.fieldInfos.length; i++) {
             var fieldInfo = this.fieldInfos[i];
-            var fname = this.getAttribute('id') +"_"+ this.msgName +"_"+ fieldInfo.name;
-            var td = document.createElement('td');
-            row.appendChild(td);
-            var textEdit = document.createElement('input');
-            textEdit.setAttribute('type', 'text');
-            textEdit.setAttribute('id', fname);
-            this.fields.push(textEdit);
-            td.appendChild(textEdit);
+            var td = createChildElement(tr, 'td');
+            var editWidget = this.editWidget(fieldInfo);
+            this.fields.push(editWidget);
+            td.appendChild(editWidget);
         }
-        table.appendChild(row);
-        var row = document.createElement('tr');
-        var td = document.createElement('td');
+        var tr = createChildElement(this.table, 'tr');
+        var td = createChildElement(tr, 'td');
         td.setAttribute('colspan', this.fieldInfos.length);
         td.appendChild(this.sendButton());
-        row.appendChild(td);
-        table.appendChild(row);
-
-        this.shadow.appendChild(table);
     }
 }
 
@@ -247,41 +254,28 @@ class MsgEditRow extends MsgEdit {
  */
 class MsgEditColumn extends MsgEdit {
     createFields() {
-        var table = document.createElement('table');
-        table.setAttribute('border', 1);
         if(this.showMsgName) {
-            var row = document.createElement('tr');
-            var td = document.createElement('td');
+            var tr = createChildElement(this.table, 'tr');
+            var td = createChildElement(tr, 'td');
             td.setAttribute('colspan', '2');
             td.textContent = this.msgName;
-            row.appendChild(td);
-            table.appendChild(row);
         }
         for(var i=0; i<this.fieldInfos.length; i++) {
             var fieldInfo = this.fieldInfos[i];
-            var fname = this.getAttribute('id') +"_"+ this.msgName +"_"+ fieldInfo.name;
-            var row = document.createElement('tr');
-            if(this.showHeader)
-                var td = document.createElement('td');
+            var tr = createChildElement(this.table, 'tr');
+            if(this.showHeader) {
+                var td = createChildElement(tr, 'td');
                 td.textContent = this.fieldNames[i];
-                row.appendChild(td);
-            var td = document.createElement('td');
-            var textEdit = document.createElement('input');
-            textEdit.setAttribute('type', 'text');
-            textEdit.setAttribute('id', fname);
-            this.fields.push(textEdit);
-            td.appendChild(textEdit);
-            row.appendChild(td);
-            table.appendChild(row);
+            }
+            var td = createChildElement(tr, 'td');
+            var editWidget = this.editWidget(fieldInfo);
+            this.fields.push(editWidget);
+            td.appendChild(editWidget);
         }
-        var row = document.createElement('tr');
-        var td = document.createElement('td');
+        var tr = createChildElement(this.table, 'tr');
+        var td = createChildElement(tr, 'td');
         td.setAttribute('colspan', '2');
         td.appendChild(this.sendButton());
-        row.appendChild(td);
-        table.appendChild(row);
-
-        this.shadow.appendChild(table);
     }
 }
 
