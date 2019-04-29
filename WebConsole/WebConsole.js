@@ -1,25 +1,26 @@
 
-function connectToServer() {
-    var client = new msgtools.MessagingClient('WebConsole', window)
-    client.addEventListener('connected', ()=>{
+class WebConsole extends msgtools.MessagingClient {
+    constructor() {
+        super('WebConsole', window);
+    }
+    onconnected() {
         console.log('Connected')
-    })
-    client.addEventListener('message', (event)=>{
+    }
+    onmessage(msg) {
         console.log('New Message')
-        console.log(msgtools.toJSON(event.detail.message))
-        console.log(reflectionExampleFn(event.detail.message))
-
-    })
-    client.addEventListener('disconnected', ()=>{
+        console.log(msgtools.toJSON(msg))
+        console.log(reflectionExampleFn(msg))
+    }
+    ondisconnected() {
         console.log('Disconnected')
-    })
-    client.addEventListener('error', ()=>{
-        console.log('Error')
-    })
-    client.addEventListener('logstatus', (event)=>{
-        console.log('LogStatus')
-        console.log(event.detail)
-    })
+    }
+    onerror(errorEvent) {
+        console.log('Error: ' + errorEvent)
+    }
+}
+
+function connectToServer() {
+    var client = new WebConsole()
 
     var options = new Map()
     //options.set('secureSocket', true)

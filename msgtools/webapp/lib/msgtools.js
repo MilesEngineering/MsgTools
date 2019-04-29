@@ -3,7 +3,7 @@
  * This module exposes a number of connectivity and utility functions 
  * and classes available for writing web apps based on MsgTools.
  *
- * This module is Promises frienndly where needed
+ * This module is Promises friendly where needed
  */
 
 
@@ -11,9 +11,11 @@
     // Used to store a dictionary of all messages - key is the msg ID,
     // and the value is a reference to the message class itself
     var MessageDictionary = new Map()
+    // same, but mapping from name to message class.
+    var MessageNameDictionary = new Map()
 
     // Base messasge directory we load generated messages from
-    // You must call setMsgDirectory to initialize this method and load all
+    // You must call load to initialize this method and load all
     // of our dependent messages.
     var msgDir = undefined
     var dependenciesLoaded = false
@@ -33,13 +35,18 @@
      * @return A Promise that can be used to wait for, and confirm dependencies are loaded
      * If an error occurs the error response is an array of message urls that failed to load.
      */
-    function setMsgDirectory(baseMsgDir) {
+    function load(baseMsgDir, msgs) {
         // First set the base directory
         if (baseMsgDir.length > 0 && baseMsgDir[baseMsgDir.length-1] != '/')
             baseMsgDir += '/'
 
         msgDir = baseMsgDir
 
+        // If we were handed a single message then wrap it in an array
+        // so we can symmetrically process one or multiple...
+        if (msgs instanceof Array == false )
+            msgs = [msgs]
+        
         // All the messages this module depends on
         let dependencies = ['Network.Connect', 'Network.MaskedSubscription', 
             'Network.StartLog', 'Network.StopLog', 'Network.LogStatus', 'Network.QueryLog', 
@@ -51,6 +58,7 @@
         // Network header is ALWAYS required, and should be the first because
         // other messages depend on it
         dependencies = ['headers.NetworkHeader'].concat(dependencies)
+        dependencies = dependencies.concat(msgs);
 
         return new Promise((resolve, reject)=>{
             if (dependenciesLoaded == false)
@@ -76,22 +84,10 @@
      * you would specify headers/NetworkHeader or headers.NetworkHeader as the message name.  This function
      * will take care of the base directory mapping, and make your message request a proper url for script loading.
      *
-     * @param {string} baseMsgDir - override our module base directory to load one or more messages from
-     * the indicated base instead.
-     *
      * @return A Promise for async loading.  The error response will be an array of urls we couldn't load
      */
-    function loadMessages(msgs, baseMsgDir=undefined) {
+    function loadMessages(msgs) {
         return new Promise((resolve, reject)=> {
-
-            // If we were handed a single message then wrap it in an array
-            // so we can symmetrically process one or multiple...
-            if (msgs instanceof Array == false )
-                msgs = [msgs]
-
-            var baseDir = baseMsgDir === undefined ? msgDir : baseMsgDir
-            if (baseDir.length > 0 && baseDir[baseDir.length-1] != '/')
-                baseDir += '/'
 
             var errors = new Array()
             var scriptsProcessed = 0
@@ -101,7 +97,7 @@
                 msgId = msg.replace(/\//g, '.')
                 msg = msg.replace(/\./g, '/') 
 
-                url = baseDir + msg + '.js'
+                url = msgDir + msg + '.js'
 
                 loadScript(url, msgId, (event)=>{
                     if (event.type == 'load')
@@ -129,8 +125,9 @@
      * Message registration.  This is called by each message as it loads.  Unless you're hand crafting your
      * own message outside the generator, you shouldn't need this...
      */
-    function registerMessage(id, msg) {
-        MessageDictionary.set(id, msg)
+    function registerMessage(id, msgClass) {
+        MessageDictionary.set(id, msgClass);
+        MessageNameDictionary.set(msgClass.name, msgClass);
     }
 
     /**
@@ -171,16 +168,56 @@
           head.appendChild(script);
         }
     }
+    
+    class DelayedInit {
+        static add(w) {
+            DelayedInit.widgets.push(w);
+        }
+        static init() {
+            while(DelayedInit.widgets.length > 0) {
+                DelayedInit.widgets.pop().init();
+            }
+        }
+    }
+    DelayedInit.widgets = [];
+    class MessageDispatch {
+        constructor() {
+            this.m_listeners = {};
+        }
+        
+        register(id, handler) {
+            if(!(id in this.m_listeners)) {
+                this.m_listeners[id] = [];
+            }
+            this.m_listeners[id].push(handler);
+        }
+
+        remove(id, handler) {
+            var listeners = this.m_listeners[id];
+            if (listeners !== undefined) {
+                listeners.delete(handler);
+            }
+        }
+        
+        deliver(msg) {
+            var listeners = this.m_listeners[msg.hdr.GetMessageID()];
+            if (listeners !== undefined) {
+                for( let l of listeners ) {
+                    l(msg);
+                }
+            }
+        }
+    }
 
     /**
-     * MsgServer client class.  This class communicates over Websockets and is 
+     * Message client class.  This class communicates over Websockets and is 
      * designed to run in a browser.  It provides basic connectivity events
      * mirroring the underlying Websocket and also encapsulates some core MsgTools
      * logic for identifying the client by name, and masking
      */
-    class MessagingClient {
+    class MessageClient {
         /**
-         * Contruct a new MessagingClient
+         * Contruct a new MessageClient
          *
          * @param {string} name - the name of this messaging client.  Will be emitted on the Connect
          * message if Connect is defined and you request it.  If undefined we don't send a connect message.
@@ -190,73 +227,19 @@
          * and has a ws and/or port query param, this class will use these values for the server and port
          * when connecting.
          */
-        constructor(name='', hostWindow=null) {
-
-            // Because Safari doesn't support EventTarget as an actual constructable class, and Chrome
-            // appears to spuriously send events to disconnected DOM elements that result in 
-            // unexpected messages to client we'll need to implement our own EventTarget API.
-            this.m_Listeners = {}
-            this.m_Listeners.message = new Set()
-            this.m_Listeners.connected = new Set()
-            this.m_Listeners.disconnected = new Set()
-            this.m_Listeners.error = new Set()
-            this.m_Listeners.logstatus = new Set()
-
+        constructor(name='', hostWindow=null, subscriptionMask = 0, subscriptionValue = 0) {
             if (dependenciesLoaded==false)
-                throw 'You must call setMsgDirectory() before a MessageClient can be created.'
+                throw 'You must call load() before a MessageClient can be created.'
+
+            // make a MessageClient easily globally accessible.
+            msgtools.client = this;
+            msgtools.DelayedInit.init();
 
             this.m_Name = name
             this.m_WebSocket = null
             this.m_HostWindow = hostWindow
-        }
-
-        //
-        // Emulate Event Target
-        //
-
-        /**
-         * Add an event listener.  
-         * @param {string} - The type of message this listener is interested in.  Valid values are
-         * message, connected, disconnected, error, logstatus.
-         * @param {EventListener} - The event listener to register
-         */
-        addEventListener(type, listener) {
-            var listeners = this.m_Listeners[type]
-            if (listeners !== undefined) {
-                listeners.add(listener)
-            }
-        }
-
-        /**
-         * Removes the indicated listener from the indicated messsge type
-         * @param {string} type - See add listener for the list of valid types
-         * @param {EventListener} - The event listener to remove
-         */
-        removeEventListener(type, listener) {
-            var listeners = this.m_Listeners[type]
-            if (listeners !== undefined) {
-                listeners.delete(listener)
-            }
-        }
-        
-        /**
-         * Send the indicated event to all registered listeners
-         */
-        dispatchEvent(event) {
-            var listeners = this.m_Listeners[event.type]
-            if (listeners !== undefined) {
-                for( let l of listeners ) {
-                    try {
-                        if ( typeof(l) == 'function') 
-                            l(event)
-                        else if (l.handleEvent !== undefined)
-                            l.handleEvent(event)
-                    }
-                    catch(e) {
-                        // Nothing - carry on
-                    }
-                }
-            }
+            this.m_subscriptionMask = subscriptionMask;
+            this.m_subscriptionValue = subscriptionValue;
         }
 
         /**
@@ -273,24 +256,12 @@
          *  automatically select secure or insecure sockets based on the page source then pass a host window
          *  into the constructor and set secureSocket to false.  Otherwise this option will always override 
          *  the window.  Default false.
-         *  'subscriptionMask - uint32 mask for messages of interest - 0=don't care, 1=accept only.  
-         *  Default=0 (accept all)
-         *  'subscriptionValue - uint32 value for a message of interest. Default = 0 (all messages).'
-         *  'suppressConnect' - true if you don't want to send a Connect message on connection. Default=false.
-         *  'suppressMaskedSubscription' - true if you don't want to send a MaskedSubscription message on connection.
-         *   Default=false.
-         *  'suppressQueryLog' - true if you don't want to send a QueryLog message on connection.
          */
         connect(options) {
             // Setup defaults...
             var server = '127.0.0.1'
             var port = 5679
             var secureSocket = false
-            var subscriptionMask = 0
-            var subscriptionValue = 0
-            var suppressConnect = false
-            var suppressMaskedSubscription = false
-            var suppressQueryLog = false
             var serverOption = false
             var portOption = false
 
@@ -309,16 +280,6 @@
                 } 
 
                 secureSocket = options.has('secureSocket') ? options.get('secureSocket') : secureSocket
-                subscriptionMask = options.has('subscriptionMask') ? 
-                    options.get('subscriptionMask') : subscriptionMask
-                subscriptionValue = options.has('subscriptionValue') ? 
-                    options.get('subscriptionValue') : subscriptionValue
-                suppressConnect = options.has('suppressConnect') ?
-                    options.get('suppressConnect') : suppressConnect
-                suppressMaskedSubscription = options.has('suppressMaskedSubscription') ?
-                    options.get('suppressMaskedSubscription') : suppressMaskedSubscription
-                suppressQueryLog = options.has('suppressQueryLog') ?
-                    options.get('suppressQueryLog') : suppressQueryLog
             }
 
             // If we're already connected then disconnect the old socket and let it go...
@@ -347,151 +308,15 @@
                 // Create a new Websocket for our comms...
                 this.m_WebSocket = new WebSocket(protocol + server + ':' + port);
                 this.m_WebSocket.binaryType = 'arraybuffer';
-              
-                var eventListener = (event)=>{
 
-                    // Open event indicating the WS is open
-                    if (event.type === 'open') {
-                        var sentConnected = false
-                        var sentSubscription = false
-                        try {
-                            if (suppressConnect == false && typeof Connect == 'function') {
-                                var cm = new Connect();
-                                cm.SetNameString(''+this.m_Name);
-                                this.sendMessage(cm);
-                                sentConnected = true
-                            }
-
-                            // default values will make us receive all messages
-                            if (suppressMaskedSubscription == false && typeof MaskedSubscription == 'function') {
-                                var sm = new MaskedSubscription();
-                                sm.SetMask(subscriptionMask)
-                                sm.SetValue(subscriptionValue)
-                                this.sendMessage(sm);
-                                sentSubscription = true
-                            }
-
-                            // Request log status
-                            var sentQueryLog = false
-                            if (suppressQueryLog == false && typeof QueryLog == 'function') {
-                                var ql = new QueryLog()
-                                this.sendMessage(ql)
-                                sentQueryLog = true
-                            }
-                        }
-                        catch(e) {
-                            // Just move on...
-                        }
-
-                        // Dispatch an onconnected event with some hopefully 
-                        // useful info...
-                        var connectedEvent = new CustomEvent('connected', {
-                            detail: {
-                                connectionUrl: this.m_WebSocket.url,
-                                sentConnected: sentConnected,
-                                sentSubscription: sentSubscription,
-                                sentLogQuery: sentQueryLog
-                            }
-                        })
-
-                        this.dispatchEvent(connectedEvent)
-
-                        if(typeof this.onconnected === "function") {
-                            this.onconnected(connectedEvent);
-                        }
-                    }
-
-                    else if (event.type==='message') {
-                        // TODO: At some point try to interpret log status
-                        // or other specific messages and raise a specific event for that
-                        var msg = null
-                        var hdr = new NetworkHeader(event.data)
-                        var id = hdr.GetMessageID();
-                        if(MessageDictionary.has(id))
-                        {
-                            var msgClass = MessageDictionary.get(id)
-                            msg = new msgClass(event.data)
-                        }
-                        else {
-                            msg = new UnknownMsg(event.data)
-                        }
-
-                        // If this is a log status message then raise a special event for that
-                        // Otherwise emit as a generic message
-                        if (id==LogStatus.prototype.MSG_ID) {
-                            var evt = new CustomEvent( 'logstatus',
-                                { detail: {
-                                    logIsOpen: msg.GetLogOpen(),
-                                    logType: msg.GetLogFileType(),
-                                    logFilename: msg.GetLogFileNameString()
-                                }
-                            })
-
-                            this.dispatchEvent(evt)
-
-                            if (typeof this.onlogstatus=='function') {
-                                this.onlogstatus(evt)
-                            }
-                        }
-                        else {
-                            var evt = new CustomEvent('message', 
-                                {detail: {
-                                    message: msg,
-                                    data: event.data
-                                }
-                            })
-
-                            this.dispatchEvent(evt)
-
-                            if(typeof this.onconnect === "function") {
-                                this.onmessage(evt);
-                            }
-                        }
-                    }
-
-                    else if (event.type==='close') {
-                        var disconnectedEvent = new CustomEvent( 'disconnected', {
-                            detail: {
-                                code: event.code,
-                                reason: event.reason,
-                                wasClean: event.wasClean
-                            }
-                        })
-
-                        this.dispatchEvent(disconnectedEvent)
-
-                        if(typeof this.ondisconnected === "function") {
-                            this.ondisconnected(disconnectedEvent);
-                        }       
-
-                        // Stop receiving events and cleanup the WebSocket
-                        this.m_WebSocket.removeEventListener('open', eventListener)
-                        this.m_WebSocket.removeEventListener('message', eventListener)
-                        this.m_WebSocket.removeEventListener('close', eventListener)
-                        this.m_WebSocket.removeEventListener('error', eventListener)
-                        this.m_WebSocket = null
-                    }
-
-                    else if (event.type==='error') {
-                        if(typeof this.onerror === "function") {
-                            this.onerror(event);
-                        }            
-                    }
-                }
-
-                // Sign up for WS events...
-                this.m_WebSocket.addEventListener('open', eventListener)
-                this.m_WebSocket.addEventListener('message', eventListener)
-                this.m_WebSocket.addEventListener('close', eventListener)
-                this.m_WebSocket.addEventListener('error', eventListener)
+                this.m_WebSocket.onopen = this.on_ws_open.bind(this);
+                this.m_WebSocket.onclose = this.on_ws_close.bind(this);
+                this.m_WebSocket.onmessage = this.on_ws_message.bind(this);
+                this.m_WebSocket.onerror = this.on_ws_error.bind(this);
             }
             catch (e) {
                 if ( this.m_WebSocket !== null) {
                     this.m.WebSocket.close()
-                    this.m_WebSocket.removeEventListener('open', eventListener)
-                    this.m_WebSocket.removeEventListener('message', eventListener)
-                    this.m_WebSocket.removeEventListener('close', eventListener)
-                    this.m_WebSocket.removeEventListener('error', eventListener)
                 }
 
                 this.m_WebSocket = null
@@ -499,7 +324,68 @@
                 throw e
             }
         }
+                
+        // Open event indicating the WS is open
+        on_ws_open(event) {
+            try {
+                if (typeof Connect == 'function') {
+                    var cm = new Connect();
+                    cm.SetNameString(''+this.m_Name);
+                    this.sendMessage(cm);
+                }
 
+                if (typeof MaskedSubscription == 'function') {
+                    var sm = new MaskedSubscription();
+                    sm.SetMask(this.m_subscriptionMask)
+                    sm.SetValue(this.m_subscriptionValue)
+                    this.sendMessage(sm);
+                }
+            }
+            catch(e) {
+                // Just move on...
+            }
+
+            if(typeof this.onconnected === "function") {
+                this.onconnected();
+            }
+        }
+
+        on_ws_message(event) {
+            var msg = null;
+            var hdr = new NetworkHeader(event.data);
+            var id = hdr.GetMessageID();
+            if(MessageDictionary.has(id))
+            {
+                var msgClass = MessageDictionary.get(id);
+                msg = new msgClass(event.data);
+            }
+            else {
+                msg = new UnknownMsg(event.data);
+            }
+
+            // do message delivery based on message ID
+            MessageClient.dispatch.deliver(msg)
+                
+            if(typeof this.onmessage === "function") {
+                this.onmessage(msg);
+            }
+        }
+
+        on_ws_close(event) {
+            if(typeof this.ondisconnected === "function") {
+                this.ondisconnected();
+            }       
+
+            // cleanup the WebSocket
+            this.m_WebSocket = null
+        }
+
+        on_ws_error(event) {
+            if(typeof this.onerror === "function") {
+                this.onerror(event);
+            }            
+        }
+    
         /**
          * Send a message on the underlying Websocket.
          *
@@ -535,10 +421,6 @@
                 try {
                     // 1000 is a normal/expected closure
                     this.m_WebSocket.close(1000, 'disconnect() called')
-                    this.m_WebSocket.removeEventListener('open', eventListener)
-                    this.m_WebSocket.removeEventListener('message', eventListener)
-                    this.m_WebSocket.removeEventListener('close', eventListener)
-                    this.m_WebSocket.removeEventListener('error', eventListener)
                 }
                 finally {
                 }
@@ -562,78 +444,19 @@
          */
         get readyState() {
             if (this.m_WebSocket !== null) {
-                return m_WebSocket.readyState
+                return m_WebSocket.readyState;
             }
 
-            return -1
+            return -1;
         }
 
-        //===== Server logging interface
-        startLogging() {
-            if (this.m_WebSocket !== null && typeof StartLog == 'function') {
-                var sl = new StartLog();
-                sl.SetLogFileType("Binary")
-                this.sendMessage(sl)
-            }
-        }
-
-        stopLogging() {
-            if (this.m_WebSocket !== null && typeof StopLog == 'function') {
-                var sl = new StopLog()
-                this.sendMessage(sl)
-            }
-        }
-
-        clearLogs() {
-            if (this.m_WebSocket !== null && typeof ClearLogs == 'function') {
-                var sl = new ClearLogs()
-                this.sendMessage(sl)
-            }
-        }
-
-        logNote(message) {
-            if (this.m_WebSocket !== null && typeof Note == 'function') {
-                var sl = new Note()
-                sl.SetTextString(message)
-                this.sendMessage(sl)
-            }
-        }
-
-        //===== EVENTS 
-        // These are all function pointers to your preferred callback.
-        //All of these events are also dispatched as part of this class as a 
-        //EventTarget - you may use addEventListener to register multiple handlers 
-        //if needed
-
-        /**
-         * Function callback called when  we've connected.  Emits a CustomEvent that
-         * inlcudes the WS url, and booleans indicated if a Connect and Subscription
-         * and LoqQuery messages were sent.
-         */
+        // Virtual functions that subclasses can implement:
         // onconnected
-
-        /**
-         * Function callback called when a new Websocket message arrives.  Emits a CustomEvent
-         * with the parsed message (and raw data) as part of the detail.
-         */
         // onmessage
-
-        /**
-         * Function callback called when the underlying socket connection is disconnected.
-         * Emits a CustomEvent with details about why the connection was closed.
-         */
         // ondisconnected
-
-        /**
-         * Function callback called when there is an error - forwarded from the underlying Websocket
-         */
         // onerror
-
-        /**
-         * Function callback called when we receive a log status message (will passs a LogStatus message)
-         */
-        // onlogstatus
     }
+    MessageClient.dispatch = new MessageDispatch();
 
     /**
      * If we have no idea what a message is (because it's definition wasn't loaded) then return an UnknownMsg
@@ -703,17 +526,6 @@
     }
 
     /**
-     * Convert the array buffer to a hex string
-     *
-     * @param {ArrayBuffer} buffer - the buffer to convert to a string
-     *
-     * @return hex string representation of the given buffer
-     */
-    function buf2hex(buffer) { // buffer is an ArrayBuffer
-      return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
-    }
-
-    /**
      * Retrieve the websocket server params from the given window
      * 
      * @param {Window} hostWindow - the host window from which to rerieve query params
@@ -733,48 +545,31 @@
 
         return {websocketServer: ws, websocketPort:port}    
     }
-
-    // Make a pretty log output.  This is also an example of how to iterate over 
-    // the fields of a message, getting metadata about each field (and bitfield), 
-    // and getting the value of the field using the get function called with 
-    // bracket notation obj[fnName](), instead of obj.fn()
-    function prettyPrint(obj) {
-        var ret = "Reflection information obtained by iterating over list of fields\n";
-        var proto = Object.getPrototypeOf(obj);
-        for(var i=0; i<proto.fields.length; i++)
-        {
-            var field = proto.fields[i];
-            var numBitfields = field.bitfieldInfo.length;
-            if(numBitfields == 0)
-            {
-                ret += "name: " + field.name;
-                if(field.count != 1)
-                    ret += "[" + field.count + "]";
-                ret +=", type="+field.type+ ", value="+obj[field.get]()+", " + "desc=" + field.description + ", range=("+field.minVal + ","+field.maxVal+")"+ "\n";
-            }
-            else
-            {
-                for(var j=0; j<field.bitfieldInfo.length; j++)
-                {
-                    bitfield = field.bitfieldInfo[j];
-                    ret += "name: " + field.name+"."+bitfield.name;
-                    ret += ", type="+bitfield.type+", value="+obj[bitfield.get]()+", " + "desc=" + bitfield.description + ", range=("+bitfield.minVal + ","+bitfield.maxVal+")"+ "\n";
-                }
+    
+    function findFieldInfo(msgClass, fieldName) {
+        for(var i=0; i<msgClass.prototype.fields.length; i++) {
+            var fieldInfo = msgClass.prototype.fields[i];
+            if(fieldInfo.name == fieldName) {
+                return fieldInfo;
             }
         }
-        return ret;
+        return null;
+    }
+    
+    function findMessageByName(msgname) {
+        return MessageNameDictionary.get(msgname);
     }
 
     // Module Exports...
     return {
-        setMsgDirectory : setMsgDirectory,
-        loadMessages : loadMessages,
+        load : load,
         registerMessage : registerMessage,
-        MessagingClient : MessagingClient,
+        findMessageByName : findMessageByName,
+        findFieldInfo : findFieldInfo,
+        MessageClient : MessageClient,
+        DelayedInit : DelayedInit,
         UnknownMsg : UnknownMsg,
         toJSON : toJSON,
-        buf2hex : buf2hex,
-        getWebsocketURLParams : getWebsocketURLParams,
-        prettyPrint : prettyPrint
+        getWebsocketURLParams : getWebsocketURLParams
     }
 })()

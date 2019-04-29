@@ -1,8 +1,9 @@
-// right now this works with exactly 3 lines.
-// it should be modified to work with any number of lines, specified by constructor parameters
-// perhaps allow user to pass in an array of names and colors?
+/*
+ * Plots a time series of data, with configurable number of lines and names.
+ */
+
 var svgns = "http://www.w3.org/2000/svg";
-class TimeSeries extends HTMLElement {
+class BasePlot extends HTMLElement {
     constructor() {
         super();
 
@@ -81,14 +82,37 @@ svg {
         this.svg_selector = d3.select(this.svg);
 
         window.addEventListener('resize', this.resize.bind(this));
+        window.addEventListener('visibilitychange', this.resize.bind(this));
         this.resize();
     }
 
     resize()
     {
-        var p = this.parentElement;
-        this.width = p.clientWidth - parseFloat(window.getComputedStyle(p, null).getPropertyValue('padding-left')) - parseFloat(window.getComputedStyle(p, null).getPropertyValue('padding-right'));
-        this.height = p.clientHeight - parseFloat(window.getComputedStyle(p, null).getPropertyValue('padding-top')) - parseFloat(window.getComputedStyle(p, null).getPropertyValue('padding-bottom'));
+        // if the element is hidden, don't do anything.
+        if(this.offsetParent === null) {
+            return;
+        }
+        var rect = this.parentElement.getBoundingClientRect();
+        //console.log(rect);
+        //console.log(this.getBoundingClientRect());
+        this.width = rect.width;
+        this.height = rect.height;
+        if(this.hasAttribute('height')) {
+            var height = this.getAttribute('height');
+            if(height.includes("%")) {
+                this.height = this.height * height.replace("%","") / 100;
+            } else {
+                this.height = height;
+            }
+        }
+        if(this.hasAttribute('width')) {
+            var width = this.getAttribute('width');
+            if(width.includes("%")) {
+                this.width = this.width * width.replace("%","") / 100;
+            } else {
+                this.width = width;
+            }
+        }
         this.emptySVG();
         this.pixelPerSecond = ((this.width-2.0*this.yAxisLabelWidth)/this.timeLimit);
         this.initFromData();
@@ -208,10 +232,10 @@ svg {
     }
 
     plot(time, newData) {
-        this.setValues(newData);
         if(this.autoscale) {
             this.autoscaleYAxis();
         }
+        this.setValues(newData);
         //time /= 1000.0;
         this.now = time;
         // Add new values
@@ -258,4 +282,4 @@ svg {
 // tag have been defined, so that our calls to getAttribute will succeed.
 // (Also after any remaining dependencies are loaded.)
 // Best plan is just to import this whole file at the end of your HTML.
-customElements.define('plot-timeseries', TimeSeries);
+customElements.define('msgtools-plot', BasePlot);
