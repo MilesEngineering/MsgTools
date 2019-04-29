@@ -44,6 +44,16 @@ def fieldSize(field):
     fieldSizes = {"uint64":8, "uint32":4, "uint16": 2, "uint8": 1, "int64":8, "int32":4, "int16": 2, "int8": 1, "float64":8, "float32":4}
     return fieldSizes[field["Type"]]
 
+def fieldLocation(field):
+    return field['Location']
+
+# offset between elements of an array of this field.
+# same as field size for most fields, except when this is an element of an array of structs
+def fieldArrayElementOffset(field):
+    if 'StructSize' in field:
+        return int(field['StructSize'])
+    return fieldSize(field)
+
 def msgSize(msg):
     offset = 0
     if "Fields" in msg:
@@ -379,31 +389,54 @@ def Structs(inputData):
             structList.update(Structs(data))
     return structList
 
-# this replaces fields that are references to structs with the fields from the referenced struct
+# this replaces fields that are references to structs with the fields from the referenced struct,
+# and also sets a few items of field meta-data (Location, StructSize, Count)
 def PatchStructs(inputData):
     # loop twice, so that references to structs inside structs are also replaced
     for i in range(2):
         structs = Structs(inputData)
-        if not structs:
-            return
+        #if not structs:
+        #    return
         
         # need to make a new list, because we'll be inserting elements as we iterate
         if 'Messages' in inputData:
             for msg in inputData["Messages"]:
                 if 'Fields' in msg:
+                    location = 0
                     outfields = []
                     for field in msg['Fields']:
                         if field["Type"] in structs:
                             s = structs[field["Type"]]
+                            # Compute the size of the structure and store it in each field in the structure.
+                            # This is useful for finding subsequent elements of fields of arrays of structs,
+                            # because we'll treat them as parallel arrays in the generated code, not as
+                            # hierarchical structs.
+                            structSize = 0
+                            for subfield in s['Fields']:
+                                structSize += fieldSize(subfield)
+                            # track field offsets within struct
+                            subfieldLocation = 0
                             for subfield in s['Fields']:
                                 subfieldcopy = copy.deepcopy(subfield)
                                 subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']
+                                subfieldcopy['StructSize'] = structSize
+                                # inherit count from parent field, so that if it's an array,
+                                # we'll be an array too.
+                                subfieldcopy['Count'] = fieldCount(field)
+                                subfieldcopy['Location'] = location + subfieldLocation
+                                #TODO How to handle array of bitfields?!?
                                 if "Bitfields" in subfieldcopy:
                                     for bits in subfieldcopy["Bitfields"]:
                                         bits['Name'] = field['Name'] + "_" + bits['Name']
                                 outfields.append(subfieldcopy)
+                                subfieldLocation += fieldSize(subfield)
+                            # add size of struct times struct count to running total of field location
+                            location += subfieldLocation * fieldCount(field)
                         else:
                             outfields.append(field)
+                            if not 'Location' in field:
+                                field['Location'] = location
+                            location += fieldSize(field) * fieldCount(field)
                     msg['Fields'] = outfields
 
 # sanitize the option name, to have valid identifier characters

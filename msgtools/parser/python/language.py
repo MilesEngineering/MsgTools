@@ -152,8 +152,8 @@ def reverseEnumLookup(msg, field):
     lookup += "        value = " + msgName(msg) + ".Reverse" + str(field["Enum"]) + ".get(value, value)\n    "
     return lookup
 
-def getFn(msg, field, offset):
-    loc = msgName(msg) + ".MSG_OFFSET + " + str(offset)
+def getFn(msg, field):
+    loc = msgName(msg) + ".MSG_OFFSET + " + str(MsgParser.fieldLocation(field))
     type = "'"+fieldType(field)+"'"
     count = MsgParser.fieldCount(field)
     cleanup = ""
@@ -172,18 +172,18 @@ def getFn(msg, field, offset):
     value = str(value)[2:ascii_len]
     ''' 
         else:
-            loc += "+idx*" + str(MsgParser.fieldSize(field))
+            loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     if "Offset" in field or "Scale" in field:
         cleanup = "value = " + MsgParser.getMath("value", field, "")+"\n    "
     ret = '''\
 %s%s
     value = struct.unpack_from(%s, self.rawBuffer(), %s)[0]
     %sreturn value
-''' % (fnHdr(field,offset,count, "Get"+field["Name"]), preface, type, loc, cleanup)
+''' % (fnHdr(field,MsgParser.fieldLocation(field),count, "Get"+field["Name"]), preface, type, loc, cleanup)
     return ret
 
-def setFn(msg, field, offset):
-    loc = msgName(msg) + ".MSG_OFFSET + " + str(offset)
+def setFn(msg, field):
+    loc = msgName(msg) + ".MSG_OFFSET + " + str(MsgParser.fieldLocation(field))
     count = MsgParser.fieldCount(field)
     type = fieldType(field)
     lookup = ""
@@ -201,15 +201,15 @@ def setFn(msg, field, offset):
             count = 1
             math = "tmp = value.encode('utf-8')"
         else:
-            loc += "+idx*" + str(MsgParser.fieldSize(field))
+            loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     ret  = '''\
 %s
     %s
     struct.pack_into('%s', self.rawBuffer(), %s, tmp)
-''' % (fnHdr(field,offset,count, "Set"+field["Name"]), math, type, loc)
+''' % (fnHdr(field,MsgParser.fieldLocation(field),count, "Set"+field["Name"]), math, type, loc)
     return ret
 
-def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
+def getBitsFn(msg, field, bits, bitOffset, numBits):
     access = "(self.Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
     access = MsgParser.getMath(access, bits, "float")
     cleanup = ""
@@ -220,10 +220,10 @@ def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
 %s
     value = %s
     %sreturn value
-''' % (fnHdr(bits,offset,1,"Get"+MsgParser.BitfieldName(field, bits)), access, cleanup)
+''' % (fnHdr(bits,MsgParser.fieldLocation(field),1,"Get"+MsgParser.BitfieldName(field, bits)), access, cleanup)
     return ret
 
-def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
+def setBitsFn(msg, field, bits, bitOffset, numBits):
     lookup = ""
     if "Enum" in bits:
         # find index that corresponds to string input param
@@ -234,26 +234,24 @@ def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
 %s
     %s
     self.Set%s((self.Get%s() & ~(%s << %s)) | ((%s & %s) << %s))
-''' % (fnHdr(bits,offset,1,"Set"+MsgParser.BitfieldName(field, bits)), math, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
+''' % (fnHdr(bits,MsgParser.fieldLocation(field),1,"Set"+MsgParser.BitfieldName(field, bits)), math, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):
     gets = []
     sets = []
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
-            gets.append(getFn(msg, field, offset))
-            sets.append(setFn(msg, field, offset))
+            gets.append(getFn(msg, field))
+            sets.append(setFn(msg, field))
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    gets.append(getBitsFn(msg, field, bits, offset, bitOffset, numBits))
-                    sets.append(setBitsFn(msg, field, bits, offset, bitOffset, numBits))
+                    gets.append(getBitsFn(msg, field, bits, bitOffset, numBits))
+                    sets.append(setBitsFn(msg, field, bits, bitOffset, numBits))
                     bitOffset += numBits
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return gets+sets
 
@@ -277,7 +275,6 @@ def initBitfield(field, bits, messageName):
 def initCode(msg):
     ret = []
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
             fieldInit = initField(field, msgName(msg))

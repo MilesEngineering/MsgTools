@@ -33,9 +33,10 @@ def matlabFieldName(msg, field):
         fieldName = fieldName + "_"
     return fieldName
 
-def getFn(msg, field, offset):
-    loc = str(offset)
-    end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
+def getFn(msg, field):
+    loc = str(1+MsgParser.fieldLocation(field))
+    #TODO Need to handle arrays of structs, where elements of array are not contiguous!
+    end_loc = str(1+MsgParser.fieldLocation(field) + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     param = "obj"
     access = "typecast(obj.m_data(%s:%s), '%s')" % (loc, end_loc, fieldType(field))
     if MsgParser.big_endian:
@@ -65,10 +66,11 @@ function ret = get.%s(%s)
         ret += "end\n"
     return ret
 
-def setFn(msg, field, offset):
+def setFn(msg, field):
     valueString = setMath("value", field, fieldType(field))
-    loc = str(offset)
-    end_loc = str(offset + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
+    loc = str(1+MsgParser.fieldLocation(field))
+    #TODO Need to handle arrays of structs, where elements of array are not contiguous!
+    end_loc = str(1+MsgParser.fieldLocation(field) + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     asInt = ""
     if "Enum" in field:
         asInt = "AsInt"
@@ -96,7 +98,7 @@ function obj = set.%s(obj, value)
         ret += "end\n"
     return ret
 
-def getBitsFn(msg, field, bits, offset, bitOffset, numBits):
+def getBitsFn(msg, field, bits, bitOffset, numBits):
     access = "bitand(bitshift(obj.%s, -%s), %s)" % (matlabFieldName(msg,field), str(bitOffset), Mask(numBits))
     access = getMath(access, bits, typeForScaledInt(bits))
     retType = fieldType(field)
@@ -123,7 +125,7 @@ function ret = get.%s(obj)
         ret += "end\n"
     return ret
 
-def setBitsFn(msg, field, bits, offset, bitOffset, numBits):
+def setBitsFn(msg, field, bits, bitOffset, numBits):
     paramType = fieldType(field)
     valueString = setMath("value", bits, fieldType(field))
     if "Offset" in bits or "Scale" in bits:
@@ -154,19 +156,17 @@ def accessors(msg):
     gets = []
     sets = []
     
-    offset = 1
     if "Fields" in msg:
         for field in msg["Fields"]:
-            gets.append(getFn(msg,field, offset))
-            sets.append(setFn(msg,field, offset))
+            gets.append(getFn(msg,field))
+            sets.append(setFn(msg,field))
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    gets.append(getBitsFn(msg, field, bits, offset, bitOffset, numBits))
-                    sets.append(setBitsFn(msg, field, bits, offset, bitOffset, numBits))
+                    gets.append(getBitsFn(msg, field, bits, bitOffset, numBits))
+                    sets.append(setBitsFn(msg, field, bits, bitOffset, numBits))
                     bitOffset += numBits
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return gets+sets
 
@@ -238,7 +238,6 @@ def initBitfield(field, bits):
 def initCode(msg):
     ret = []
     
-    offset = 1
     if "Fields" in msg:
         for field in msg["Fields"]:
             fieldInit = initField(msg, field)
