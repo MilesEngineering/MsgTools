@@ -4,6 +4,7 @@ import yaml
 import sys
 sys.path.append("../../..")
 import msgtools.parser.parser as MsgParser
+from msgtools.parser.MsgUtils import PatchStructs
 sys.path.append("../kotlin")
 import language
 
@@ -13,6 +14,7 @@ class TestKotlin(unittest.TestCase):
         with open("messages/TestCase1.yaml", 'r') as inputFile:
             self.msgIDL = inputFile.read()
         self.msgDict = yaml.load(self.msgIDL)
+        PatchStructs(self.msgDict)
 
     def test_accessors(self):
         expected = []
@@ -64,11 +66,31 @@ fun getFieldE(): Float {
     return data.getFloat(12)
 }""")
         expected.append("""\
+//  , (-2147483648 to 2147483647)
+fun getFieldS1_Member1(): Int {
+    return data.getInt(16)
+}""")
+        expected.append("""\
+//  , (DBL_MIN to DBL_MAX)
+fun getFieldS1_Member2(): Double {
+    return data.getDouble(20)
+}""")
+        expected.append("""\
 //  , (1.828 to 176946.328)
 fun getFieldF(): Float {
-    val valI : UShort = data.getUShort(16)
+    val valI : UShort = data.getUShort(28)
     val valD = ((valI.toInt().toDouble() * 2.7f) + 1.828f).toFloat()
     return valD
+}""")
+        expected.append("""\
+//  , (-2147483648 to 2147483647)
+fun getFieldS2_Member1(index: Int): Int {
+    return data.getInt(30 + index*12)
+}""")
+        expected.append("""\
+//  , (DBL_MIN to DBL_MAX)
+fun getFieldS2_Member2(index: Int): Double {
+    return data.getDouble(34 + index*12)
 }""")
         expected.append("""\
 //  m/s, (0 to 4294967295)
@@ -128,9 +150,29 @@ fun setFieldE(value: Float) {
     data.putFloat(12, value)
 }""")
         expected.append("""\
+//  , (-2147483648 to 2147483647)
+fun setFieldS1_Member1(value: Int) {
+    data.putInt(16, value)
+}""")
+        expected.append("""\
+//  , (DBL_MIN to DBL_MAX)
+fun setFieldS1_Member2(value: Double) {
+    data.putDouble(20, value)
+}""")
+        expected.append("""\
 //  , (1.828 to 176946.328)
 fun setFieldF(value: Float) {
-    data.putUShort(16, ((value - 1.828f) / 2.7f).toUShort())
+    data.putUShort(28, ((value - 1.828f) / 2.7f).toUShort())
+}""")
+        expected.append("""\
+//  , (-2147483648 to 2147483647)
+fun setFieldS2_Member1(value: Int, index: Int) {
+    data.putInt(30 + index*12, value)
+}""")
+        expected.append("""\
+//  , (DBL_MIN to DBL_MAX)
+fun setFieldS2_Member2(value: Double, index: Int) {
+    data.putDouble(34 + index*12, value)
 }""")
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])

@@ -22,17 +22,17 @@ def fieldDefault(field):
         ret = str(ret)+'u'
     return ret
 
-def fieldInfo(field, offset):
+def fieldInfo(field):
     ret = ""
     if "Default" in field:
         ret += '#define <MSGNAME>_'+field["Name"]+'_DEFAULT ' + str(fieldDefault(field)) + "\n"
     if MsgParser.fieldCount(field) > 1:
         ret += '#define <MSGNAME>_'+field["Name"]+'_COUNT ' + str(MsgParser.fieldCount(field)) + "\n"
-    ret += '#define <MSGNAME>_'+field["Name"]+'_OFFSET ' + str(offset) + "\n"
+    ret += '#define <MSGNAME>_'+field["Name"]+'_OFFSET ' + str(MsgParser.fieldLocation(field)) + "\n"
     ret += '#define <MSGNAME>_'+field["Name"]+'_SIZE ' + str(MsgParser.fieldSize(field)) + "\n"
     return ret
 
-def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
+def fieldBitsInfo(field, bits, bitOffset, numBits):
     ret = ""
     if "Default" in bits:
         ret += '#define <MSGNAME>_'+bits["Name"]+'_Default ' + str(bits["Default"]) + "\n"
@@ -41,17 +41,15 @@ def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
 def fieldInfos(msg):
     ret = ""
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
-            ret += fieldInfo(field, offset)
+            ret += fieldInfo(field)
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    ret += fieldBitsInfo(field, bits, offset, bitOffset, numBits)
+                    ret += fieldBitsInfo(field, bits, bitOffset, numBits)
                     bitOffset += numBits
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return ret
 

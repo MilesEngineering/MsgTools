@@ -104,11 +104,11 @@ def setMath(x, field, cast=None, floatTag=""):
         ret = "%s.to%s()" % (ret, cast)
     return ret
 
-def getFn(field, offset):
-    loc = str(offset)
+def getFn(field):
+    loc = str(MsgParser.fieldLocation(field))
     param = ""
     if MsgParser.fieldCount(field) > 1:
-        loc += " + index*" + str(MsgParser.fieldSize(field))
+        loc += " + index*" + str(MsgParser.fieldArrayElementOffset(field))
         param += "index: Int"
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
@@ -139,18 +139,18 @@ fun get%sString(): String {
         value += nextChar.toByte().toChar()
     }
     return value
-}''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), offset, field["Name"])
+}''' % (fnHdr(field), field["Name"], str(MsgParser.fieldCount(field)), str(MsgParser.fieldLocation(field)), field["Name"])
     return ret
 
-def setFn(field, offset):
+def setFn(field):
     paramType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         paramType = typeForScaledInt(field)
     valueString = setMath("value", field, fieldType(field))
     param = "value: " + paramType
-    loc = str(offset)
+    loc = str(MsgParser.fieldLocation(field))
     if MsgParser.fieldCount(field) > 1:
-        loc += " + index*" + str(MsgParser.fieldSize(field))
+        loc += " + index*" + str(MsgParser.fieldArrayElementOffset(field))
         param += ", index: Int"
     ret = '''\
 %s
@@ -159,7 +159,7 @@ fun set%s(%s) {
 }''' % (fnHdr(field), field["Name"], param, fieldType(field), loc, valueString, endian_string())
     return ret
 
-def getBitsFn(field, bits, offset, bitOffset, numBits):
+def getBitsFn(field, bits, bitOffset, numBits):
     # Kotlin currently only supports bitwise operators for Int, so we are gonna convert the inputs to Int first, 
     # apply the bit operators, and then convert the final result to the actual type
     access = "((get%s().toInt() ushr %s) and %s).to%s()" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits), bitParamType(field, bits))
@@ -179,7 +179,7 @@ fun get%s(%s): %s {
     ret += '}'
     return ret
 
-def setBitsFn(field, bits, offset, bitOffset, numBits):
+def setBitsFn(field, bits, bitOffset, numBits):
     param = "value: " + bitParamType(field, bits)
     ret = '''\
 %s
@@ -201,19 +201,17 @@ def accessors(msg):
     gets = []
     sets = []
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
-            gets.append(getFn(field, offset))
-            sets.append(setFn(field, offset))
+            gets.append(getFn(field))
+            sets.append(setFn(field))
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    gets.append(getBitsFn(field, bits, offset, bitOffset, numBits))
-                    sets.append(setBitsFn(field, bits, offset, bitOffset, numBits))
+                    gets.append(getBitsFn(field, bits, bitOffset, numBits))
+                    sets.append(setBitsFn(field, bits, bitOffset, numBits))
                     bitOffset += numBits
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return gets+sets
 
@@ -236,7 +234,6 @@ def initBitfield(field, bits):
 def initCode(msg):
     ret = []
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
             fieldInit = initField(field)
@@ -292,8 +289,7 @@ def fieldMax(field):
         ret = 'Float.MAX_VALUE'
     return ret
 
-def genericInfo(field, type, offset):
-    loc = str(offset)
+def genericInfo(field, loc, type):
     params  = '    const val loc = ' + loc + '\n'
     params += '    val max = ' + str(fieldMax(field)) + '\n'
     params += '    val min = ' + str(fieldMin(field)) + '\n'
@@ -307,23 +303,23 @@ def genericInfo(field, type, offset):
         params += '    const val offset = ' + str(field["Offset"]) + '\n'
     return params
     
-def fieldInfo(field, offset):
+def fieldInfo(field):
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
 
     params  = 'object ' + field["Name"] + 'FieldInfo {\n'
-    params += genericInfo(field, retType, offset)
+    params += genericInfo(field, str(MsgParser.fieldLocation(field)), retType)
     params += '}\n'
     return params
 
-def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
+def fieldBitsInfo(field, bits, bitOffset, numBits):
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
 
     params  = 'object ' + bits["Name"] + 'FieldInfo {\n'
-    params += genericInfo(bits, retType, offset)
+    params += genericInfo(bits, str(MsgParser.fieldLocation(field)), retType)
     params += '    const val bitOffset = ' + str(bitOffset) + '\n'
     params += '    const val numBits   = ' + str(numBits) + '\n'
     params += '}\n'
@@ -332,17 +328,15 @@ def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
 def fieldInfos(msg):
     ret = []
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
-            ret.append(fieldInfo(field, offset))
+            ret.append(fieldInfo(field))
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    ret.append(fieldBitsInfo(field, bits, offset, bitOffset, numBits))
+                    ret.append(fieldBitsInfo(field, bits, bitOffset, numBits))
                     bitOffset += numBits
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return "\n".join(ret)
     

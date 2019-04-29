@@ -1,3 +1,10 @@
+Structs:
+  SomeStructDefinition:
+    Fields:
+      - Name: Member1
+        Type: int32
+      - Name: Member2
+        Type: float64
 Enums:
   - Name: EnumA
     Description: Enumeration Type
@@ -51,8 +58,13 @@ Messages:
         Default: 3.14159
         Min: 0.0
         Max: 10.0
+      - Name: FieldS1
+        Type: SomeStructDefinition
       - Name: FieldF
         Type: uint16
         Default: 3.14
         Scale: 2.7
         Offset: 1.828
+      - Name: FieldS2
+        Type: SomeStructDefinition
+        Count: 3
