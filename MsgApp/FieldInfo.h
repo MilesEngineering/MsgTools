@@ -33,9 +33,73 @@ class FieldInfo
 class IntFieldInfo : public  FieldInfo
 {
     public:
-        IntFieldInfo(const char* name, const char* desc, const char* units, int location, int size, int count);
-        virtual void SetValue(QString value, uint8_t* data, int index = 0) const;
-        virtual const QString Value(uint8_t* data, int index = 0) const;
+        IntFieldInfo(const char* name, const char* desc, const char* units, int location, int size, int count)
+        : FieldInfo(name, desc, units, location, size, count)
+        {
+        }
+        virtual void SetValue(QString value, uint8_t* data, int index = 0) const
+        {
+            FromInt64_t(value.toInt(), data, index);
+        }
+        virtual const QString Value(uint8_t* data, int index = 0) const
+        {
+            if(_units.toUpper() == "ASCII" && _count > 1)
+            {
+                QString ret = "";
+                for(int i=0; i<_count; i++)
+                {
+                    char value = ToInt64_t(data, i);
+                    if(value == 0)
+                        break;
+                    ret += value;
+                }
+                return ret;
+            }
+            else
+            {
+                return QString("%1").arg(ToInt64_t(data, index));
+            }
+        }
+        virtual void FromInt64_t(uint64_t value, uint8_t* data, int index) const
+        {
+            uint8_t* ptr = &data[_location + index * _fieldSize];
+            switch(_fieldSize)
+            {
+                case 1:
+                    Set_int8_t(ptr, value);
+                    break;
+                case 2:
+                    Set_int16_t(ptr, value);
+                    break;
+                case 4:
+                    Set_int32_t(ptr, value);
+                    break;
+                case 8:
+                    Set_int64_t(ptr, value);
+                    break;
+            }
+        }
+        virtual uint64_t ToInt64_t(uint8_t* data, int index) const
+        {
+            uint64_t value = 0;
+            uint8_t* ptr = &data[_location + index * _fieldSize];
+            switch(_fieldSize)
+            {
+                case 1:
+                    value = Get_int8_t(ptr);
+                    break;
+                case 2:
+                    value = Get_int16_t(ptr);
+                    break;
+                case 4:
+                    value = Get_int32_t(ptr);
+                    break;
+                case 8:
+                    value = Get_int64_t(ptr);
+                    break;
+            }
+            return value;
+        }
 };
 
 class UIntFieldInfo : public  FieldInfo
