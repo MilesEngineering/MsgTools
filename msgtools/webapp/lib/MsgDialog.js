@@ -48,13 +48,11 @@ function appendStyle(style, computed_style, prop, val) {
     }
     var computed_property = computed_style.getPropertyValue(prop);
     if (computed_property) {
-        // do override if it's:
-        //   position=static
-        //   top=auto
-        //   left=auto
-        // because those are default values when CSS is empty
+        // do override if it's a default value when CSS is empty
         if (prop == 'position' && computed_property == 'static') {
         } else if ((prop == 'top' || prop == 'left') && computed_property == 'auto') {
+        } else if (prop == 'border' && computed_property == "0px none rgb(0, 0, 0)") {
+        } else if (prop == 'background-color' && computed_property == "rgba(0, 0, 0, 0)") {
         } else {
             console.log(`${prop} has CSS value ${computed_property}, not overriding`);
             return style;

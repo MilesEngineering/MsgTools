@@ -101,7 +101,7 @@ class MsgLabels extends MsgElement {
             else if (value < fieldInfo.minVal || value > fieldInfo.maxVal) {
                 color = 'yellow';
             }
-            this.fields[i].setAttribute('style', 'color: '+color);
+            this.fields[i].setAttribute('style', this.fields[i].baseStyle+'color: '+color);
         }
         if(this.maxAge>0) {
             timer.start(this.maxAge, this.rxTimeout.bind(this));
@@ -110,7 +110,7 @@ class MsgLabels extends MsgElement {
     rxTimeout() {
         if(now > this.rxTime + this.maxAge()) {
             for(var i=0; i<this.fieldInfos.length; i++) {
-                this.fields[i].setAttribute('style', 'color: purple');
+                this.fields[i].setAttribute('style', this.fields[i].baseStyle+'color: purple');
             }
         }
     }
@@ -137,7 +137,9 @@ class MsgLabelsRow extends MsgLabels {
         var tr = createChildElement(this.table, 'tr');
         for(var i=0; i<this.fieldInfos.length; i++) {
             var td = createChildElement(tr, 'td');
-            td.textContent = '?';
+            td.textContent = '';
+            td.baseStyle = 'height: 1em; border: 1px gray solid;';
+            td.setAttribute('style', td.baseStyle);
             this.fields.push(td);
         }
     }
@@ -161,7 +163,9 @@ class MsgLabelsColumn extends MsgLabels {
                 td.textContent = this.fieldNames[i];
             }
             var td = createChildElement(tr, 'td');
-            td.textContent = '?';
+            td.textContent = '';
+            td.baseStyle = 'border: 1px gray solid; width: 100%;';
+            td.setAttribute('style', td.baseStyle);
             this.fields.push(td);
         }
     }

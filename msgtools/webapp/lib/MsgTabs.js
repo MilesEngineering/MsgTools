@@ -9,10 +9,24 @@ class MsgTabs extends HTMLElement {
         super();
 
         this.tabNames = this.getAttribute('tabNames').split(',');
+        //TODO This is a mess!  we want to specify border here, unless it was specified inline or
+        //TODO in css.  It's hard to tell if it was specified in css, though, because it can just
+        //TODO be a default
         var computed_style = getComputedStyle(this);
         var baseStyle = 'border: 1px solid #ccc;';
         if(this.hasAttribute("style")) {
-            baseStyle = this.getAttribute("style")+";";
+            var inline_style = this.getAttribute("style");
+            if(inline_style.replace(' ','').includes('border:')) {
+                baseStyle = inline_style+";";
+            } else {
+                baseStyle = inline_style+";"+baseStyle;
+            }
+            var computed_style = getComputedStyle(this);
+            var computed_property = computed_style.getPropertyValue('border');
+            if(computed_property) {
+                if(computed_property == "0px none rgb(0, 0, 0)"){
+                }
+            }
             // This is weird but if the MsgTabs has a style, the browsers adds stubby vertical lines
             // above and below it, and they look weird.  Clearing the style here but putting it on
             // the children makes it look ok.
