@@ -4,6 +4,7 @@ import yaml
 import sys
 sys.path.append("../../..")
 import msgtools.parser.parser as MsgParser
+from msgtools.parser.MsgUtils import PatchStructs
 sys.path.append("../cpp")
 import language
 
@@ -13,6 +14,7 @@ class TestCpp(unittest.TestCase):
         with open("messages/TestCase1.yaml", 'r') as inputFile:
             self.msgIDL = inputFile.read()
         self.msgDict = yaml.load(self.msgIDL)
+        PatchStructs(self.msgDict)
 
     def test_accessors(self):
         expected = []
@@ -77,11 +79,41 @@ float GetFieldE() const
 #endif
 """)
         expected.append("""\
+/*  , (-2147483648 to 2147483647)*/
+int32_t GetFieldS1_Member1() const
+{
+    return Get_int32_t(&m_data[16]);
+}""")
+        expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
+/*  , (DBL_MIN to DBL_MAX)*/
+double GetFieldS1_Member2() const
+{
+    return Get_double(&m_data[20]);
+}
+#endif
+""")
+        expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (1.828 to 176946.328)*/
 float GetFieldF() const
 {
-    return ((float(Get_uint16_t(&m_data[16])) * 2.7f) + 1.828f);
+    return ((float(Get_uint16_t(&m_data[28])) * 2.7f) + 1.828f);
+}
+#endif
+""")
+        expected.append("""\
+/*  , (-2147483648 to 2147483647)*/
+int32_t GetFieldS2_Member1(int idx) const
+{
+    return Get_int32_t(&m_data[30+idx*12]);
+}""")
+        expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
+/*  , (DBL_MIN to DBL_MAX)*/
+double GetFieldS2_Member2(int idx) const
+{
+    return Get_double(&m_data[34+idx*12]);
 }
 #endif
 """)
@@ -146,11 +178,41 @@ void SetFieldE(float value)
 #endif
 """)
         expected.append("""\
+/*  , (-2147483648 to 2147483647)*/
+void SetFieldS1_Member1(int32_t value)
+{
+    Set_int32_t(&m_data[16], value);
+}""")
+        expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
+/*  , (DBL_MIN to DBL_MAX)*/
+void SetFieldS1_Member2(double value)
+{
+    Set_double(&m_data[20], value);
+}
+#endif
+""")
+        expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (1.828 to 176946.328)*/
 void SetFieldF(float value)
 {
-    Set_uint16_t(&m_data[16], (uint16_t)((value - 1.828f) / 2.7f));
+    Set_uint16_t(&m_data[28], (uint16_t)((value - 1.828f) / 2.7f));
+}
+#endif
+""")
+        expected.append("""\
+/*  , (-2147483648 to 2147483647)*/
+void SetFieldS2_Member1(int32_t value, int idx)
+{
+    Set_int32_t(&m_data[30+idx*12], value);
+}""")
+        expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
+/*  , (DBL_MIN to DBL_MAX)*/
+void SetFieldS2_Member2(double value, int idx)
+{
+    Set_double(&m_data[34+idx*12], value);
 }
 #endif
 """)

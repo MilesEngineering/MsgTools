@@ -68,7 +68,6 @@ def ProcessMsg(filename, msg, subdirComponent, enums, isHeader):
             if fullMsgName in msgNames:
                 raise MessageException('\nERROR! '+fullMsgName+' being processed, but name already used by '+msg['Name']+'.\n\n')
             msgNames[idInt] = fullMsgName
-    offset = 0
     if "Fields" in msg:
         fieldNames = {}
         for field in msg["Fields"]:
@@ -101,10 +100,6 @@ def ProcessMsg(filename, msg, subdirComponent, enums, isHeader):
                     if not bits["Enum"] in enumNames:
                         raise MessageException('bad enum in message '+msgName(msg))
                     pass
-            # disable enforcement of native alignment
-            #if offset % fieldSize(field) != 0:
-            #    raise MessageException('field ' + field["Name"] + ' is at offset ' + str(offset) + ' but has size ' + str(fieldSize(field)))
-            offset += fieldSize(field) * fieldCount(field)
     if isHeader:
         return ''
     return (subdirComponent+'/'+msgName(msg)).ljust(35) +" "+(subdirComponent+'/'+filename).ljust(40) +" "+ str(id).rjust(10)+'\n'

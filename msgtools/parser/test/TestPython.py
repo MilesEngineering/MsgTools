@@ -4,6 +4,7 @@ import yaml
 import sys
 sys.path.append("../../..")
 import msgtools.parser.parser as MsgParser
+from msgtools.parser.MsgUtils import PatchStructs
 sys.path.append("../python")
 import language
 
@@ -13,6 +14,7 @@ class TestCpp(unittest.TestCase):
         with open("messages/TestCase1.yaml", 'r') as inputFile:
             self.msgIDL = inputFile.read()
         self.msgDict = yaml.load(self.msgIDL)
+        PatchStructs(self.msgDict)
 
     def test_accessors(self):
         expected = []
@@ -137,16 +139,68 @@ def GetFieldE(self):
 """)
         expected.append("""\
 @msg.units('')
+@msg.default('')
+@msg.minVal('-2147483648')
+@msg.maxVal('2147483647')
+@msg.offset('16')
+@msg.size('4')
+@msg.count(1)
+def GetFieldS1_Member1(self):
+    \"\"\"\"\"\"
+    value = struct.unpack_from('>l', self.rawBuffer(), TestCase1.MSG_OFFSET + 16)[0]
+    return value
+""")
+        expected.append("""\
+@msg.units('')
+@msg.default('')
+@msg.minVal('DBL_MIN')
+@msg.maxVal('DBL_MAX')
+@msg.offset('20')
+@msg.size('8')
+@msg.count(1)
+def GetFieldS1_Member2(self):
+    \"\"\"\"\"\"
+    value = struct.unpack_from('>d', self.rawBuffer(), TestCase1.MSG_OFFSET + 20)[0]
+    return value
+""")
+        expected.append("""\
+@msg.units('')
 @msg.default('3.14')
 @msg.minVal('1.828')
 @msg.maxVal('176946.328')
-@msg.offset('16')
+@msg.offset('28')
 @msg.size('2')
 @msg.count(1)
 def GetFieldF(self):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>H', self.rawBuffer(), TestCase1.MSG_OFFSET + 16)[0]
+    value = struct.unpack_from('>H', self.rawBuffer(), TestCase1.MSG_OFFSET + 28)[0]
     value = ((value * 2.7) + 1.828)
+    return value
+""")
+        expected.append("""\
+@msg.units('')
+@msg.default('')
+@msg.minVal('-2147483648')
+@msg.maxVal('2147483647')
+@msg.offset('30')
+@msg.size('4')
+@msg.count(3)
+def GetFieldS2_Member1(self, idx):
+    \"\"\"\"\"\"
+    value = struct.unpack_from('>l', self.rawBuffer(), TestCase1.MSG_OFFSET + 30+idx*12)[0]
+    return value
+""")
+        expected.append("""\
+@msg.units('')
+@msg.default('')
+@msg.minVal('DBL_MIN')
+@msg.maxVal('DBL_MAX')
+@msg.offset('34')
+@msg.size('8')
+@msg.count(3)
+def GetFieldS2_Member2(self, idx):
+    \"\"\"\"\"\"
+    value = struct.unpack_from('>d', self.rawBuffer(), TestCase1.MSG_OFFSET + 34+idx*12)[0]
     return value
 """)
         expected.append("""\
@@ -276,16 +330,68 @@ def SetFieldE(self, value):
 """)
         expected.append("""\
 @msg.units('')
+@msg.default('')
+@msg.minVal('-2147483648')
+@msg.maxVal('2147483647')
+@msg.offset('16')
+@msg.size('4')
+@msg.count(1)
+def SetFieldS1_Member1(self, value):
+    \"\"\"\"\"\"
+    tmp = min(max(value, -2147483648), 2147483647)
+    struct.pack_into('>l', self.rawBuffer(), TestCase1.MSG_OFFSET + 16, tmp)
+""")
+        expected.append("""\
+@msg.units('')
+@msg.default('')
+@msg.minVal('DBL_MIN')
+@msg.maxVal('DBL_MAX')
+@msg.offset('20')
+@msg.size('8')
+@msg.count(1)
+def SetFieldS1_Member2(self, value):
+    \"\"\"\"\"\"
+    tmp = value
+    struct.pack_into('>d', self.rawBuffer(), TestCase1.MSG_OFFSET + 20, tmp)
+""")
+        expected.append("""\
+@msg.units('')
 @msg.default('3.14')
 @msg.minVal('1.828')
 @msg.maxVal('176946.328')
-@msg.offset('16')
+@msg.offset('28')
 @msg.size('2')
 @msg.count(1)
 def SetFieldF(self, value):
     \"\"\"\"\"\"
     tmp = min(max(int((value - 1.828) / 2.7), 0), 65535)
-    struct.pack_into('>H', self.rawBuffer(), TestCase1.MSG_OFFSET + 16, tmp)
+    struct.pack_into('>H', self.rawBuffer(), TestCase1.MSG_OFFSET + 28, tmp)
+""")
+        expected.append("""\
+@msg.units('')
+@msg.default('')
+@msg.minVal('-2147483648')
+@msg.maxVal('2147483647')
+@msg.offset('30')
+@msg.size('4')
+@msg.count(3)
+def SetFieldS2_Member1(self, value, idx):
+    \"\"\"\"\"\"
+    tmp = min(max(value, -2147483648), 2147483647)
+    struct.pack_into('>l', self.rawBuffer(), TestCase1.MSG_OFFSET + 30+idx*12, tmp)
+""")
+        expected.append("""\
+@msg.units('')
+@msg.default('')
+@msg.minVal('DBL_MIN')
+@msg.maxVal('DBL_MAX')
+@msg.offset('34')
+@msg.size('8')
+@msg.count(3)
+def SetFieldS2_Member2(self, value, idx):
+    \"\"\"\"\"\"
+    tmp = value
+    struct.pack_into('>d', self.rawBuffer(), TestCase1.MSG_OFFSET + 34+idx*12, tmp)
 """)
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])

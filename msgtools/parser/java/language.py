@@ -43,11 +43,11 @@ def typeForScaledInt(field):
         return "double"
     return "float"
 
-def getFn(field, offset):
-    loc = str(offset)
+def getFn(field):
+    loc = str(MsgParser.fieldLocation(field))
     param = ""
     if MsgParser.fieldCount(field) > 1:
-        loc += "+idx*" + str(MsgParser.fieldSize(field))
+        loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
         param += "int idx"
     access = "m_data.get%s(%s)" % (fieldAccessorType(field), loc)
     if field["Type"].startswith("u"):
@@ -68,7 +68,7 @@ public %s Get%s(%s)
 }''' % (fnHdr(field), retType, field["Name"], param, access)
     return ret
 
-def setFn(field, offset):
+def setFn(field):
     paramType = fieldType(field)
     valueString = setMath("value", field, '('+fieldType(field)+')', 'f')
     if "Offset" in field or "Scale" in field:
@@ -77,9 +77,9 @@ def setFn(field, offset):
     #    valueString = valueString + ".intValue()"
     #    paramType = field["Enum"]
     param = paramType + " value"
-    loc = str(offset)
+    loc = str(MsgParser.fieldLocation(field))
     if MsgParser.fieldCount(field) > 1:
-        loc += "+idx*" + str(MsgParser.fieldSize(field))
+        loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
         param += ", int idx"
     ret = '''\
 %s
@@ -89,7 +89,7 @@ public void Set%s(%s)
 }''' % (fnHdr(field), field["Name"], param, fieldAccessorType(field), loc, fieldCastType(field).lower(), valueString)
     return ret
 
-def getBitsFn(field, bits, offset, bitOffset, numBits):
+def getBitsFn(field, bits, bitOffset, numBits):
     access = "(Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
     access = getMath(access, bits, "("+typeForScaledInt(bits)+")", 'f')
     retType = fieldType(field)
@@ -108,7 +108,7 @@ public %s Get%s()
 }''' % (fnHdr(bits), retType, MsgParser.BitfieldName(field, bits), access)
     return ret
 
-def setBitsFn(field, bits, offset, bitOffset, numBits):
+def setBitsFn(field, bits, bitOffset, numBits):
     paramType = fieldType(field)
     intType = paramType
     valueString = setMath("value", bits, '('+fieldType(field)+')', 'f')
@@ -129,19 +129,17 @@ def accessors(msg):
     gets = []
     sets = []
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
-            gets.append(getFn(field, offset))
-            sets.append(setFn(field, offset))
+            gets.append(getFn(field))
+            sets.append(setFn(field))
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    gets.append(getBitsFn(field, bits, offset, bitOffset, numBits))
-                    sets.append(setBitsFn(field, bits, offset, bitOffset, numBits))
+                    gets.append(getBitsFn(field, bits, bitOffset, numBits))
+                    sets.append(setBitsFn(field, bits, bitOffset, numBits))
                     bitOffset += numBits
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return gets+sets
 
@@ -178,7 +176,6 @@ def initBitfield(field, bits):
 def initCode(msg):
     ret = []
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
             fieldInit = initField(field)
@@ -221,8 +218,8 @@ def enums(e):
 }}\n'''.format(enum["Name"])
     return ret
 
-def fieldReflection(field, offset):
-    loc = str(offset)
+def fieldReflection(field):
+    loc = str(MsgParser.fieldLocation(field))
     params = "FieldInfo";
     params += "("
     params += '"'+field["Name"] + '"'
@@ -232,8 +229,8 @@ def fieldReflection(field, offset):
     params += ")"
     return params
 
-def fieldBitsReflection(field, bits, offset, bitOffset, numBits):
-    loc = str(offset)
+def fieldBitsReflection(field, bits, bitOffset, numBits):
+    loc = str(MsgParser.fieldLocation(field))
     params = "FieldInfo";
     params += "("
     params += '"'+bits["Name"] + '"'
@@ -246,17 +243,15 @@ def fieldBitsReflection(field, bits, offset, bitOffset, numBits):
 def reflection(msg):
     ret = []
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
-            ret.append(fieldReflection(field, offset))
+            ret.append(fieldReflection(field))
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    ret.append(fieldBitsReflection(field, bits, offset, bitOffset, numBits))
+                    ret.append(fieldBitsReflection(field, bits, bitOffset, numBits))
                     bitOffset += numBits
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return "\n".join(ret)
 
@@ -290,8 +285,7 @@ def fieldMax(field):
             pass
     return ret
 
-def genericInfo(field, type, offset):
-    loc = str(offset)
+def genericInfo(field, loc, type):
     params  = '    public static final int loc = ' + loc + ';\n'
     params += '    public static final %s max = (%s)%s;\n' % (type, type, fieldMax(field))
     params += '    public static final %s min = (%s)%s;\n' % (type, type, fieldMin(field))
@@ -305,23 +299,23 @@ def genericInfo(field, type, offset):
         params += '    public static final float offset = (float)' + str(field["Offset"]) + ';\n'
     return params
     
-def fieldInfo(field, offset):
+def fieldInfo(field):
     retType = fieldType(field)
     if "Offset" in field or "Scale" in field:
         retType = typeForScaledInt(field)
 
     params  = 'public class ' + field["Name"] + 'FieldInfo {\n'
-    params += genericInfo(field, retType, offset)
+    params += genericInfo(field, str(MsgParser.fieldLocation(field)), retType)
     params += '};\n'
     return params
 
-def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
+def fieldBitsInfo(field, bits, bitOffset, numBits):
     retType = fieldType(field)
     if "Offset" in bits or "Scale" in bits:
         retType = typeForScaledInt(bits)
 
     params  = 'public class ' + bits["Name"] + 'FieldInfo {\n'
-    params += genericInfo(bits, retType, offset)
+    params += genericInfo(bits, str(MsgParser.fieldLocation(field)), retType)
     params += '    public static final int bitOffset = ' + str(bitOffset) + ';\n'
     params += '    public static final int numBits   = ' + str(numBits) + ';\n'
     params += '};\n'
@@ -330,17 +324,15 @@ def fieldBitsInfo(field, bits, offset, bitOffset, numBits):
 def fieldInfos(msg):
     ret = []
     
-    offset = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
-            ret.append(fieldInfo(field, offset))
+            ret.append(fieldInfo(field))
             bitOffset = 0
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    ret.append(fieldBitsInfo(field, bits, offset, bitOffset, numBits))
+                    ret.append(fieldBitsInfo(field, bits, bitOffset, numBits))
                     bitOffset += numBits
-            offset += MsgParser.fieldSize(field) * MsgParser.fieldCount(field)
 
     return "\n".join(ret)
 

@@ -4,6 +4,7 @@ import yaml
 import sys
 sys.path.append("../../..")
 import msgtools.parser.parser as MsgParser
+from msgtools.parser.MsgUtils import PatchStructs
 sys.path.append("../java")
 import language
 
@@ -13,6 +14,7 @@ class TestJava(unittest.TestCase):
         with open("messages/TestCase1.yaml", 'r') as inputFile:
             self.msgIDL = inputFile.read()
         self.msgDict = yaml.load(self.msgIDL)
+        PatchStructs(self.msgDict)
 
     def test_accessors(self):
         expected = []
@@ -71,10 +73,34 @@ public float GetFieldE()
     return (float)m_data.getFloat(12);
 }""")
         expected.append("""\
+//  , (-2147483648 to 2147483647)
+public int GetFieldS1_Member1()
+{
+    return (int)m_data.getInt(16);
+}""")
+        expected.append("""\
+//  , (DBL_MIN to DBL_MAX)
+public double GetFieldS1_Member2()
+{
+    return (double)m_data.getDouble(20);
+}""")
+        expected.append("""\
 //  , (1.828 to 176946.328)
 public float GetFieldF()
 {
-    return (((float)((int)FieldAccess.toUnsignedInt(m_data.getShort(16))) * 2.7f) + 1.828f);
+    return (((float)((int)FieldAccess.toUnsignedInt(m_data.getShort(28))) * 2.7f) + 1.828f);
+}""")
+        expected.append("""\
+//  , (-2147483648 to 2147483647)
+public int GetFieldS2_Member1(int idx)
+{
+    return (int)m_data.getInt(30+idx*12);
+}""")
+        expected.append("""\
+//  , (DBL_MIN to DBL_MAX)
+public double GetFieldS2_Member2(int idx)
+{
+    return (double)m_data.getDouble(34+idx*12);
 }""")
         expected.append("""\
 //  m/s, (0 to 4294967295)
@@ -131,10 +157,34 @@ public void SetFieldE(float value)
     m_data.putFloat(12, (float)value);
 }""")
         expected.append("""\
+//  , (-2147483648 to 2147483647)
+public void SetFieldS1_Member1(int value)
+{
+    m_data.putInt(16, (int)value);
+}""")
+        expected.append("""\
+//  , (DBL_MIN to DBL_MAX)
+public void SetFieldS1_Member2(double value)
+{
+    m_data.putDouble(20, (double)value);
+}""")
+        expected.append("""\
 //  , (1.828 to 176946.328)
 public void SetFieldF(float value)
 {
-    m_data.putShort(16, (short)(int)((value - 1.828f) / 2.7f));
+    m_data.putShort(28, (short)(int)((value - 1.828f) / 2.7f));
+}""")
+        expected.append("""\
+//  , (-2147483648 to 2147483647)
+public void SetFieldS2_Member1(int value, int idx)
+{
+    m_data.putInt(30+idx*12, (int)value);
+}""")
+        expected.append("""\
+//  , (DBL_MIN to DBL_MAX)
+public void SetFieldS2_Member2(double value, int idx)
+{
+    m_data.putDouble(34+idx*12, (double)value);
 }""")
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
