@@ -35,7 +35,6 @@ def matlabFieldName(msg, field):
 
 def getFn(msg, field):
     loc = str(1+MsgParser.fieldLocation(field))
-    #TODO Need to handle arrays of structs, where elements of array are not contiguous!
     end_loc = str(1+MsgParser.fieldLocation(field) + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     param = "obj"
     access = "typecast(obj.m_data(%s:%s), '%s')" % (loc, end_loc, fieldType(field))
@@ -64,12 +63,14 @@ function ret = get.%s(%s)
         ret += "        ret = obj."+field["Enum"]+"Enum(ret);\n"
         ret += "    end\n"
         ret += "end\n"
+    # Need to handle arrays of structs, where elements of array are not contiguous!
+    if MsgParser.fieldSize(field) != MsgParser.fieldArrayElementOffset(field):
+        ret = "ERROR! Need to handle arrays of structs, where elements of array are not contiguous!\n" + ret 
     return ret
 
 def setFn(msg, field):
     valueString = setMath("value", field, fieldType(field))
     loc = str(1+MsgParser.fieldLocation(field))
-    #TODO Need to handle arrays of structs, where elements of array are not contiguous!
     end_loc = str(1+MsgParser.fieldLocation(field) + MsgParser.fieldSize(field)*MsgParser.fieldCount(field)-1)
     asInt = ""
     if "Enum" in field:
@@ -96,6 +97,9 @@ function obj = set.%s(obj, value)
         ret += "    end\n"
         ret += "    obj."+matlabFieldName(msg,field)+"AsInt = value;\n"
         ret += "end\n"
+    # Need to handle arrays of structs, where elements of array are not contiguous!
+    if MsgParser.fieldSize(field) != MsgParser.fieldArrayElementOffset(field):
+        ret = "ERROR! Need to handle arrays of structs, where elements of array are not contiguous!\n" + ret 
     return ret
 
 def getBitsFn(msg, field, bits, bitOffset, numBits):
