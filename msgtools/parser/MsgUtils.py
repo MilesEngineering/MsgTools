@@ -401,6 +401,7 @@ def PatchStructs(inputData):
         # need to make a new list, because we'll be inserting elements as we iterate
         if 'Messages' in inputData:
             for msg in inputData["Messages"]:
+                resolve_sizes_and_locations = True
                 if 'Fields' in msg:
                     location = 0
                     outfields = []
@@ -413,30 +414,44 @@ def PatchStructs(inputData):
                             # hierarchical structs.
                             structSize = 0
                             for subfield in s['Fields']:
-                                structSize += fieldSize(subfield)
+                                if resolve_sizes_and_locations:
+                                    try:
+                                        structSize += fieldSize(subfield)
+                                    except KeyError:
+                                        # if we have a KeyError when trying to get fieldSize,
+                                        # it's because we have a nested Struct that hasn't been
+                                        # replaced by it's members yet.  Don't worry about that now,
+                                        # because we'll iterate and replace it in the next loop.
+                                        resolve_sizes_and_locations = False
+                                        structSize = None
+                                        location = None
                             # track field offsets within struct
                             subfieldLocation = 0
                             for subfield in s['Fields']:
                                 subfieldcopy = copy.deepcopy(subfield)
                                 subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']
-                                subfieldcopy['StructSize'] = structSize
+                                if resolve_sizes_and_locations:
+                                    subfieldcopy['StructSize'] = structSize
+                                    subfieldcopy['Location'] = location + subfieldLocation
                                 # inherit count from parent field, so that if it's an array,
                                 # we'll be an array too.
                                 subfieldcopy['Count'] = fieldCount(field)
-                                subfieldcopy['Location'] = location + subfieldLocation
                                 #TODO How to handle array of bitfields?!?
                                 if "Bitfields" in subfieldcopy:
                                     for bits in subfieldcopy["Bitfields"]:
                                         bits['Name'] = field['Name'] + "_" + bits['Name']
                                 outfields.append(subfieldcopy)
-                                subfieldLocation += fieldSize(subfield)
-                            # add size of struct times struct count to running total of field location
-                            location += subfieldLocation * fieldCount(field)
+                                if resolve_sizes_and_locations:
+                                    subfieldLocation += fieldSize(subfield)
+                            if resolve_sizes_and_locations:
+                                # add size of struct times struct count to running total of field location
+                                location += subfieldLocation * fieldCount(field)
                         else:
                             outfields.append(field)
-                            if not 'Location' in field:
-                                field['Location'] = location
-                            location += fieldSize(field) * fieldCount(field)
+                            if resolve_sizes_and_locations:
+                                if not 'Location' in field:
+                                    field['Location'] = location
+                                location += fieldSize(field) * fieldCount(field)
                     msg['Fields'] = outfields
 
 # sanitize the option name, to have valid identifier characters
