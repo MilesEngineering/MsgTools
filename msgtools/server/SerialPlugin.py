@@ -255,6 +255,25 @@ def PluginConnection(param=None):
     from SerialHeader import SerialHeader
     return SerialConnection(SerialHeader, param)
 
+def PluginEnabled():
+    try:
+        from SerialHeader import SerialHeader
+        return True
+    except:
+        return False
+
 def BtPluginConnection(param=None):
     from BluetoothHeader import BluetoothHeader
     return SerialConnection(BluetoothHeader, param)
+
+def BtPluginEnabled():
+    try:
+        from BluetoothHeader import BluetoothHeader
+        return True
+    except:
+        return False
+
+import collections
+PluginInfo = collections.namedtuple('PluginInfo', ['name', 'enabled', 'connect_function'])
+plugin_info = PluginInfo('Serial', PluginEnabled, PluginConnection)
+bt_plugin_info = PluginInfo('Bluetooth Serial', BtPluginEnabled, BtPluginConnection)

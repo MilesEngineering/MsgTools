@@ -22,7 +22,8 @@ class BluetoothRFCOMMConnection(QObject):
         super(BluetoothRFCOMMConnection, self).__init__(None)
 
         self.removeClient = QtWidgets.QPushButton("Remove")
-        self.removeClient.pressed.connect(lambda: self.socket.close())
+        self.removeClient.pressed.connect(self.onDisconnected)
+
         self.statusLabel = QtWidgets.QLabel()
         self.subscriptions = {}
         self.subMask = 0
@@ -72,7 +73,7 @@ class BluetoothRFCOMMConnection(QObject):
                                 0.1)
             if len(ret[2]) > 0:
                 #self.statusUpdate.emit("some message?")
-                self.onDisconnected()
+                self.socket.close()
                 return
 
             if len(ret[0]) > 0:
@@ -99,7 +100,10 @@ class BluetoothRFCOMMConnection(QObject):
                     break
 
     def onDisconnected(self):
+        print("self.disconnected.emit(self)")
+        self.socket.close()
         self.disconnected.emit(self)
+        print("self.disconnected.emit(self)")
 
     def sendMsg(self, networkMsg):
         btMsg = self.hdrTranslator.translate(networkMsg)
@@ -116,3 +120,10 @@ def PluginConnection(param=""):
     if len(btArgs)>1:
         btArgs[1] = int(btArgs[1])
     return BluetoothRFCOMMConnection(*btArgs)
+
+def PluginEnabled():
+    return True
+
+import collections
+PluginInfo = collections.namedtuple('PluginInfo', ['name', 'enabled', 'connect_function'])
+plugin_info = PluginInfo('Bluetooth RF Comm', PluginEnabled, PluginConnection)

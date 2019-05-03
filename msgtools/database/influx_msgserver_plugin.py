@@ -53,3 +53,10 @@ class InfluxServerPlugin(QtCore.QObject):
 def PluginConnection(param=""):
     isp = InfluxServerPlugin(param)
     return isp
+
+def PluginEnabled():
+    return True
+
+import collections
+PluginInfo = collections.namedtuple('PluginInfo', ['name', 'enabled', 'connect_function'])
+plugin_info = PluginInfo('InfluxDB', PluginEnabled, PluginConnection)

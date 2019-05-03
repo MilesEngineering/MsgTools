@@ -122,31 +122,49 @@ class SelectPluginDialog(QtWidgets.QDialog):
 
         self.pluginList = QtWidgets.QTreeWidget()
         openButton = QtWidgets.QPushButton("Load")
-        openButton.clicked.connect(self.openPort)
+        openButton.clicked.connect(self.loadPlugin)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.pluginList)
         layout.addWidget(openButton)
         self.setLayout(layout)
 
-        if 1:
-            tableHeader = ["Name", "Module", "Function"]
-        else:
-            tableHeader = ["Name"]
+        tableHeader = ["Name", "Module"]
         self.pluginList.setHeaderLabels(tableHeader)
         for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
-            if 1:
-                list = [entry_point.name, entry_point.module_name, entry_point.attrs[0]]
-            else:
-                list = [entry_point.name]
-            self.pluginList.addTopLevelItem(QtWidgets.QTreeWidgetItem(None, list))
+            try:
+                plugin_entry_point = entry_point.load()
+                try:
+                    pluginInfo = plugin_entry_point
+                    if pluginInfo.enabled():
+                        list = [pluginInfo.name, entry_point.module_name]
+                        item = QtWidgets.QTreeWidgetItem(None, list)
+                        item.plug_entrypoint_name = entry_point.name
+                        self.pluginList.addTopLevelItem(item)
+                    else:
+                        if Messaging.debug:
+                            print("Ignoring plugin %s %s:%s is disabled" % (entry_point.name, entry_point.module_name, entry_point.attrs[0]))
+                except AttributeError as e:
+                    if Messaging.debug:
+                        print("    " + str(e))
+                        print("No info in %s %s:%s!  must be function" % (entry_point.name, entry_point.module_name, entry_point.attrs[0]))
+                    list = [entry_point.name, entry_point.module_name]
+                    item = QtWidgets.QTreeWidgetItem(None, list)
+                    item.plug_entrypoint_name = entry_point.name
+                    self.pluginList.addTopLevelItem(item)
+            except Exception as e:
+                if Messaging.debug:
+                    print(e)
+                    import traceback
+                    print(traceback.format_exc())                    
+                    print("Ignoring plugin %s %s:%s, exception while loading" % (entry_point.name, entry_point.module_name, entry_point.attrs[0]))
         for i in range(0, len(tableHeader)):
             self.pluginList.resizeColumnToContents(i)
         
-    def openPort(self):
+    def loadPlugin(self):
         cur_item = self.pluginList.currentItem()
         if cur_item is not None:
-            self.pluginSelected.emit(cur_item.text(0))
+            self.pluginSelected.emit(cur_item.plug_entrypoint_name)
             self.close()
 
 class MessageServer(QtWidgets.QMainWindow):
@@ -178,6 +196,7 @@ class MessageServer(QtWidgets.QMainWindow):
                     message definitions''')
         parser.add_argument('--port', type=int, 
             help='The TCP port to use.  Websockets are always TCP port + 1.')
+        parser.add_argument('--debug', action='store_true', help='Set if you want extra error info printed to stdout.')
 
         # if we had plugins before, but no cmdline args now, add simulated
         # cmdline args for our old plugins
@@ -188,6 +207,8 @@ class MessageServer(QtWidgets.QMainWindow):
                     sys.argv.append("--"+plugin)
 
         args = parser.parse_args()
+        
+        Messaging.debug = False if hasattr(args, 'debug') == False else args.debug
         
         try:
             Messaging.LoadAllMessages(searchdir=args.msgdir)
@@ -360,13 +381,19 @@ class MessageServer(QtWidgets.QMainWindow):
     def load_plugin(self, plugin_name, entry_point, param):
         try:
             # load the module, create the plugin
-            pluginCreatorFn = entry_point.load()
+            plugin_entry_point = entry_point.load()
+            try:
+                # check for the entry point giving a struct with a 'connection' attribute
+                pluginCreatorFn = plugin_entry_point.connect_function
+            except AttributeError:
+                pluginCreatorFn = plugin_entry_point
             pluginPort = pluginCreatorFn()
             pluginPort.plugin_name = plugin_name
         except:
             a,b,c = sys.exc_info()
             exc = ''.join(traceback.format_exception(a,b,c))
             self.onStatusUpdate("Exception loading plugin:\n%s" % (exc))
+            print(exc)
             return
         
         # connect plugin to our status update function
