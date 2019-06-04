@@ -25,7 +25,7 @@ class SelectSerialportDialog(QtWidgets.QDialog):
                 if os.path.islink(full):
                     if info.portName() == os.readlink(full):
                         return full.replace("/dev/","")
-        return ""
+        return info.portName()
 
     def __init__(self, parent=None):
         super(SelectSerialportDialog, self).__init__(parent)
@@ -43,14 +43,13 @@ class SelectSerialportDialog(QtWidgets.QDialog):
         layout.addWidget(openButton)
         self.setLayout(layout)
 
-        tableHeader = ["Name", "Alias", "Description", "Mfg", "Serial#", "Location", "VendorID", "ProductID"]
+        tableHeader = ["Name", "Description", "Mfg", "Serial#", "Location", "VendorID", "ProductID"]
         self.portsList.setHeaderLabels(tableHeader)
         for info in QSerialPortInfo.availablePorts():
             list = []
             description = info.description()
             manufacturer = info.manufacturer()
             serialNumber = info.serialNumber()
-            list.append(info.portName())
             list.append(self.serialPortAlias(info))
             list.append(self.naIfEmpty(description))
             list.append(self.naIfEmpty(manufacturer))
@@ -66,6 +65,8 @@ class SelectSerialportDialog(QtWidgets.QDialog):
     def openPort(self):
         cur_item = self.portsList.currentItem()
         if cur_item is not None:
-            self.portChanged.emit(cur_item.text(0))
+            name = cur_item.text(0)
+            print('opening %s' % name)
+            self.portChanged.emit(name)
             self.close()
 
