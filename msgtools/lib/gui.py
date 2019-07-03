@@ -393,6 +393,7 @@ class MsgCommandWidget(QtWidgets.QWidget):
         super(MsgCommandWidget, self).__init__()
         self.textBox = QtWidgets.QPlainTextEdit()
         self.textBox.setReadOnly(True)
+        self.lastHtml = False
         self.lineEdit = LineEditWithHistory()
         self.lineEdit.returnPressed.connect(self.returnPressed)
         self.lineEdit.tabPressed.connect(self.tabPressed)
@@ -422,10 +423,30 @@ class MsgCommandWidget(QtWidgets.QWidget):
             self.commandEntered.emit(lineOfText)
         self.lineEdit.setText("")
 
-    def addText(self, text):
-        self.textBox.moveCursor (QtGui.QTextCursor.End)
-        self.textBox.insertPlainText(text)
-        self.textBox.moveCursor (QtGui.QTextCursor.End)
+    def addText(self, text, errorKnown=0):
+        lines = text.splitlines()
+        for i in range(len(lines)):
+            line = lines[i]
+            if i < len(lines)-1:
+                line = line + '\n'
+            elif i == len(lines)-1 and text.endswith('\n'):
+                line = line + '\n'
+            self.addLine(line, errorKnown)
+    
+    def addLine(self, line, errorKnown):
+        if errorKnown == 2 or 'error' in line.lower() or 'fail' in line.lower():
+            self.textBox.appendHtml('<font color="red">'+line+'</font>')
+            self.lastHtml = True
+        elif errorKnown == 1 or 'warning' in line.lower():
+            self.textBox.appendHtml('<font color="orange">'+line+'</font>')
+            self.lastHtml = True
+        else:
+            if self.lastHtml:
+                self.textBox.appendHtml('<font color="black"> </font>')
+            self.textBox.moveCursor (QtGui.QTextCursor.End)
+            self.textBox.insertPlainText(line)
+            self.textBox.moveCursor (QtGui.QTextCursor.End)
+            self.lastHtml = False
 
     def clear(self):
         self.textBox.clear()
