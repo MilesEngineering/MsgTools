@@ -32,15 +32,6 @@ var <MSGSHORTNAME> = function(buffer) {
     }
 };
 
-// This is for 0.28.42/Messaging.js compatibility
-if (typeof(MessageDictionary)!=='undefined' && MessageDictionary != null)
-    // add our class to the dictionary
-    MessageDictionary[<MSGID>] = <MSGSHORTNAME>
-
-// This is for 0.29.42/msgtools.js compatibility
-if (typeof msgtools === 'object')
-    msgtools.registerMessage(<MSGID>,<MSGSHORTNAME>)
-
 // how to make constants?
 <MSGSHORTNAME>.prototype.MSG_ID = <MSGID>;
 <MSGSHORTNAME>.prototype.MSG_SIZE = <MSGSIZE>;
@@ -49,6 +40,8 @@ if (typeof msgtools === 'object')
 <MSGSHORTNAME>.prototype.MsgName = function(){
     return "<MSGDESCRIPTOR>";
 }
+
+msgtools.registerMessage(<MSGID>,<MSGSHORTNAME>)
 
 <MSGSHORTNAME>.prototype.Init = function(){
     <INIT_CODE>
