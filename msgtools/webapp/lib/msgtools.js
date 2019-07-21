@@ -6,13 +6,17 @@
  * This module is Promises friendly where needed
  */
 
+if (typeof msgtools !== "undefined") {
+    console.log('msgtools already loaded')
+} else {
 
  var msgtools = (function() {
     // Used to store a dictionary of all messages - key is the msg ID,
     // and the value is a reference to the message class itself
-    var MessageDictionary = new Map()
+    var MessageDictionary = new Map();
     // same, but mapping from name to message class.
-    var MessageNameDictionary = new Map()
+    var MessageNameDictionary = new Map();
+    var MessageClassTree = Object.create(null);
 
     // Base messasge directory we load generated messages from
     // You must call load to initialize this method and load all
@@ -127,7 +131,22 @@
      */
     function registerMessage(id, msgClass) {
         MessageDictionary.set(id, msgClass);
-        MessageNameDictionary.set(msgClass.name, msgClass);
+        var name = msgClass.prototype.MsgName();
+        MessageNameDictionary.set(name, msgClass);
+        
+        var nested = MessageClassTree;
+        var parts = name.split(".");
+        for(var i=0; i<parts.length; i++) {
+            part = parts[i];
+            if(!(part in nested)) {
+                if(i < parts.length-1) {
+                    nested[part] = Object.create(null);
+                } else {
+                    nested[part] = msgClass;
+                }
+            }
+            nested = nested[part];
+        }
     }
 
     /**
@@ -171,15 +190,28 @@
     
     class DelayedInit {
         static add(w) {
-            DelayedInit.widgets.push(w);
+            if(DelayedInit.alreadyInitialized) {
+                //console.log("    DelayedInit: added without delay");
+                w.init();
+            } else {
+                //console.log("    DelayedInit.add() NOT adding to list");
+                DelayedInit.widgets.push(w);
+            }
         }
         static init() {
             while(DelayedInit.widgets.length > 0) {
                 DelayedInit.widgets.pop().init();
             }
+            DelayedInit.alreadyInitialized = true;
         }
     }
+    //when running in a grafana panel, msgtools gets loaded once and this array is initialized to empty,
+    //but widgets are put into it again and again when the Text panel HTML content is edited!
+    //maybe this needs to be a hash table with a static key, so each thing is only put in once?
+    //or maybe widgets need to remove themselves when they are destroyed?
+    //how, though?  javascript has no concept of destructor!?!?!
     DelayedInit.widgets = [];
+    DelayedInit.alreadyInitialized = false;
     class MessageDispatch {
         constructor() {
             this.m_listeners = {};
@@ -570,6 +602,11 @@
         DelayedInit : DelayedInit,
         UnknownMsg : UnknownMsg,
         toJSON : toJSON,
-        getWebsocketURLParams : getWebsocketURLParams
+        getWebsocketURLParams : getWebsocketURLParams,
+        messageNameDictionary : MessageNameDictionary,
+        msgs  : MessageClassTree
     }
 })()
+
+window.msgtools = msgtools;
+}
