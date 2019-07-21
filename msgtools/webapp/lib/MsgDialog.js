@@ -1,6 +1,10 @@
 /*
  * A dialog box with a close button.
  */
+if (typeof MsgDialog !== "undefined") {
+    console.log('MsgDialog already loaded')
+} else {
+
 class MsgDialog extends HTMLElement {
     constructor() {
         super();
@@ -38,6 +42,7 @@ class MsgDialog extends HTMLElement {
         this.show(false);
     }
 }
+window.MsgDialog = MsgDialog;
 
 customElements.define('msgtools-dialog', MsgDialog);
 
@@ -59,4 +64,5 @@ function appendStyle(style, computed_style, prop, val) {
         }
     }
     return style + prop + ": " + val + ";";
+}
 }

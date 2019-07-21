@@ -2,8 +2,11 @@
  * Plots a time series of data, with configurable number of lines and names.
  */
 
+if (typeof MsgBasePlot !== "undefined") {
+    console.log('MsgBasePlot already loaded');
+} else {
 var svgns = "http://www.w3.org/2000/svg";
-class BasePlot extends HTMLElement {
+class MsgBasePlot extends HTMLElement {
     constructor() {
         super();
 
@@ -56,7 +59,7 @@ svg {
         // #7f64b9
         // #c36785
         let labels = this.getAttribute('labels').split(",");
-        let colors = ['rgb(219,109,0)', '#000000', 'rgb(0,109,219)', 'rgb(109,219,0)','rgb(109,0,219)'];
+        let colors = ['rgb(219,109,0)', 'rgb(0,109,219)', 'rgb(109,219,0)','rgb(109,0,219)'];
         var color=0;
         this.dataSets = {};
         for (var i in labels) {
@@ -282,4 +285,6 @@ svg {
 // tag have been defined, so that our calls to getAttribute will succeed.
 // (Also after any remaining dependencies are loaded.)
 // Best plan is just to import this whole file at the end of your HTML.
-customElements.define('msgtools-plot', BasePlot);
+customElements.define('msgtools-plot', MsgBasePlot);
+window.MsgBasePlot = MsgBasePlot;
+}
