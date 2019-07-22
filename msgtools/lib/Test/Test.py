@@ -88,24 +88,24 @@ class TestClass(unittest.TestCase):
 
     def test_csv_and_json(self):
         testData = [
-         ('TestCase4 ;',                             {"TestCase4": {}, "hdr" : {"DataLength": ";"}}),
-         ('TestCase4 ',                              {"TestCase4": {"A":0, "B": [0,0,0], "C": [0,0,0], "D": ""}}),
-         ('TestCase4 1, 2,3,4, 5,6,7,ei;ght',        {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "ei;ght"}}),
-         ("TestCase4 1, 2;",                         {"TestCase4": {"A":1, "B": [2]}, "hdr" : {"DataLength": ";"}}),
-         ("TestCase4 1, 0x0203 ;",                   {"TestCase4": {"A":1, "B": [2,3]}, "hdr" : {"DataLength": ";"}}),
-         ("TestCase4 1, 0x020304, 0x00050006 ;",     {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6]}, "hdr" : {"DataLength": ";"}}),
-         ("TestCase4 1, 2",                          {"TestCase4": {"A":1, "B": [2, 0,0],"C": [0,0,0], "D": ""}}), # note without semicolon, unspecified fields have default values
-         ("TestCase4 1, 0x020304, 5,6,0x07",         {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": ""}}),
-         ("TestCase4 1, 2,3,4, 5,6,7, 0x8",          {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "0x8"}}),
-         ("TestCase4 1, 2,3,4, 5,6,7, eight",        {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "eight"}}),
-         ('TestCase4 1, 2,3,4, 5,6,7, "eight"',      {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "eight"}}),
-         ('TestCase4 1, 2,3,4, 5,6,7, "eig,ht"',     {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "eig,ht"}}),
-         ("TestCase4 1, 2,3,4, 5,6,7, ei ght",       {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "ei ght"}}),
-         ("TestCase4 1, 2,3,4, 5,6,7, 0x8;",         {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "0x8"}, "hdr" : {"DataLength": ";"}}),
-         ("TestCase4 1, 2,3,4, 5,6,7, eight;",       {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "eight"}, "hdr" : {"DataLength": ";"}}),
-         ('TestCase4 1, 2,3,4, 5,6,7, "eight;"',     {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "eight;"}}),
-         ('TestCase4 1, 2,3,4, 5,6,7, "eig,ht";',    {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "eig,ht"}, "hdr" : {"DataLength": ";"}}),
-         ("TestCase4 1, 2,3,4, 5,6,7, ei ght;",      {"TestCase4": {"A":1, "B": [2,3,4], "C": [5,6,7], "D": "ei ght"}, "hdr" : {"DataLength": ";"}})]
+         ('TestCase4 ;',                                                {"TestCase4": {}, "hdr" : {"DataLength": ";"}}),
+         ('TestCase4 ',                                                 {"TestCase4": {"A":0, "B": [0,0,0], "C": [0,0,0], "D": ""}}),
+         ('TestCase4 2, 2,3,4,5,6,7,8,9,10,11, 12,13,14,ei;ght',        {"TestCase4": {"A":2, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "ei;ght"}}),
+         ("TestCase4 3, 2;",                                            {"TestCase4": {"A":3, "B": [2]}, "hdr" : {"DataLength": ";"}}),
+         ("TestCase4 4, 0x0203 ;",                                      {"TestCase4": {"A":4, "B": [2,3]}, "hdr" : {"DataLength": ";"}}),
+         ("TestCase4 5, 0x020304, 0x00050006 ;",                        {"TestCase4": {"A":5, "B": [2,3,4], "C": [5,6]}, "hdr" : {"DataLength": ";"}}),
+         ("TestCase4 6, 2",                                             {"TestCase4": {"A":6, "B": [2, 0,0],"C": [0,0,0], "D": ""}}), # note without semicolon, unspecified fields have default values
+         ("TestCase4 7, 0x020304, 5,6,0x07",                            {"TestCase4": {"A":7, "B": [2,3,4], "C": [5,6,7], "D": ""}}),
+         ("TestCase4 8, 2,3,4,5,6,7,8,9,10,11, 12,13,14, 0x8",          {"TestCase4": {"A":8, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "0x8"}}),
+         ("TestCase4 9, 2,3,4,5,6,7,8,9,10,11, 12,13,14, eight",        {"TestCase4": {"A":9, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "eight"}}),
+         ('TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, "eight"',      {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "eight"}}),
+         ('TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, "eig,ht"',     {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "eig,ht"}}),
+         ("TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, ei ght",       {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "ei ght"}}),
+         ("TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, 0x8;",         {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "0x8"}, "hdr" : {"DataLength": ";"}}),
+         ("TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, eight;",       {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "eight"}, "hdr" : {"DataLength": ";"}}),
+         ('TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, "eight;"',     {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "eight;"}}),
+         ('TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, "eig,ht";',    {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "eig,ht"}, "hdr" : {"DataLength": ";"}}),
+         ("TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, ei ght;",      {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "ei ght"}, "hdr" : {"DataLength": ";"}})]
         commaTestData = []
         for tc in testData:
             newTestCase = (tc[0].replace("TestCase4 ", "TestCase4,"), tc[1])

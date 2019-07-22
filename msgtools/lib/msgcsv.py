@@ -119,7 +119,7 @@ def csvToMsg(lineOfText):
                                 paramNumber+=1
                                 val = params[paramNumber]
                     else:
-                        if val.startswith("0x") and len(val) > 2+fieldInfo.count*int(fieldInfo.get.size):
+                        if val.startswith("0x") and len(val) > 2+2*int(fieldInfo.get.size):
                             if val.endswith(";"):
                                 terminateMsg = 1
                                 val = val[:-1]

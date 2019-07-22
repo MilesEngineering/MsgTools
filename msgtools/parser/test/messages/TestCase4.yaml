@@ -7,7 +7,7 @@ Messages:
         Type: uint32
       - Name: B
         Type: uint8
-        Count: 3
+        Count: 10
       - Name: C
         Type: uint16
         Count: 3
