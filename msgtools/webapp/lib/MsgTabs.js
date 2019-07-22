@@ -1,9 +1,12 @@
 /*
- * A container with a set of buttons, and when a button is clicked, only the
- * child at the same index as the button is shown, all others are hidden.
- * This resembles a tab widget in action, but without the borders and visualization
- * of the appropriate button being shaded to designate which tab is selected.
+ * A crude approximation of a tab widget:
+ * A container with a row of buttons at the top. When a button is clicked, only the
+ * child at the same index as the button is shown, all other children are hidden.
  */
+if (typeof MsgTabs !== "undefined") {
+    console.log('MsgTabs already loaded')
+} else {
+
 class MsgTabs extends HTMLElement {
     constructor() {
         super();
@@ -78,3 +81,4 @@ class MsgTabs extends HTMLElement {
 }
 
 customElements.define('msgtools-tabs', MsgTabs);
+}

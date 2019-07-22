@@ -29,15 +29,15 @@ def typeForScaledInt(field):
     return "float"
 
 def enumLookup(field):
-    lookup  = "if(value in <MSGSHORTNAME>."+ str(field["Enum"])+")\n"
-    lookup += "        value = <MSGSHORTNAME>."+ str(field["Enum"])+"[value];\n"
+    lookup  = "if(value in <MSGNAME>."+ str(field["Enum"])+")\n"
+    lookup += "        value = <MSGNAME>."+ str(field["Enum"])+"[value];\n"
     lookup += "    "
     return lookup
 
 def reverseEnumLookup(field):
     lookup = "if(!enumAsInt)\n"
-    lookup += "    if(value in <MSGSHORTNAME>.Reverse"+ str(field["Enum"])+")\n"
-    lookup += "        value = <MSGSHORTNAME>.Reverse" + str(field["Enum"]) + "[value];\n    "
+    lookup += "    if(value in <MSGNAME>.Reverse"+ str(field["Enum"])+")\n"
+    lookup += "        value = <MSGNAME>.Reverse" + str(field["Enum"]) + "[value];\n    "
     return lookup
 
 def getFn(field):
@@ -57,7 +57,7 @@ def getFn(field):
         cleanup = reverseEnumLookup(field)
     ret = '''\
 %s
-<MSGSHORTNAME>.prototype.Get%s = function(%s)
+<MSGNAME>.prototype.Get%s = function(%s)
 {
     var value = %s;
     %sreturn value;
@@ -65,7 +65,7 @@ def getFn(field):
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
 %s
-<MSGSHORTNAME>.prototype.Get%sString = function()
+<MSGNAME>.prototype.Get%sString = function()
 {
     var value = '';
     for(i=0; i<%s && i<this.hdr.GetDataLength()-%s; i++)
@@ -92,14 +92,14 @@ def setFn(field):
         param += ", idx"
     ret = '''\
 %s
-<MSGSHORTNAME>.prototype.Set%s = function(%s)
+<MSGNAME>.prototype.Set%s = function(%s)
 {
     %sthis.m_data.set%s(%s, %s%s);
 };''' % (fnHdr(field), field["Name"], param, lookup, fieldType(field), loc, valueString, endian_string())
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         ret += '''
 %s
-<MSGSHORTNAME>.prototype.Set%sString = function(value)
+<MSGNAME>.prototype.Set%sString = function(value)
 {
     for(i=0; i<%s && i<value.length; i++)
     {
@@ -119,7 +119,7 @@ def getBitsFn(field, bits, bitOffset, numBits):
         cleanup = reverseEnumLookup(bits)
     ret = '''\
 %s
-<MSGSHORTNAME>.prototype.Get%s = function(%s)
+<MSGNAME>.prototype.Get%s = function(%s)
 {
     var value = %s;
     %sreturn value;
@@ -134,7 +134,7 @@ def setBitsFn(field, bits, bitOffset, numBits):
         lookup = enumLookup(bits)
     ret = '''\
 %s
-<MSGSHORTNAME>.prototype.Set%s = function(value)
+<MSGNAME>.prototype.Set%s = function(value)
 {
     %sthis.Set%s((this.Get%s() & ~(%s * 2**%s)) | ((%s & %s) * 2**%s));
 };''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), lookup, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
@@ -193,14 +193,14 @@ def enums(e):
     ret = ""
     for enum in e:
         # forward enum
-        fwd = "<MSGSHORTNAME>." + enum["Name"]+" = {};\n"
+        fwd = "<MSGNAME>." + enum["Name"]+" = {};\n"
         for option in enum["Options"]:
-            fwd += "<MSGSHORTNAME>."+enum["Name"] + "[\"" + str(option["Name"]) + "\"] = "+str(option["Value"])+";\n"
+            fwd += "<MSGNAME>."+enum["Name"] + "[\"" + str(option["Name"]) + "\"] = "+str(option["Value"])+";\n"
 
         # Reverse enum
-        back = "<MSGSHORTNAME>.Reverse" + enum["Name"]+" = {};\n"
-        back += "for(key in <MSGSHORTNAME>."+enum["Name"]+") {\n"
-        back += "    <MSGSHORTNAME>.Reverse" + enum["Name"] + "[<MSGSHORTNAME>."+enum["Name"]+"[key]" +"] = key;\n"
+        back = "<MSGNAME>.Reverse" + enum["Name"]+" = {};\n"
+        back += "for(key in <MSGNAME>."+enum["Name"]+") {\n"
+        back += "    <MSGNAME>.Reverse" + enum["Name"] + "[<MSGNAME>."+enum["Name"]+"[key]" +"] = key;\n"
         back += "}\n"
 
         ret += fwd + back
@@ -242,7 +242,7 @@ def bitfieldReflection(msg, field, bits):
               'get:"Get' + name + '",'+\
               'set:"Set' + name  + '", '
     if "Enum" in bits:
-        ret += "enumLookup : [<MSGSHORTNAME>."+  bits["Enum"]+", " + "<MSGSHORTNAME>.Reverse" + bits["Enum"]+"]}"
+        ret += "enumLookup : [<MSGNAME>."+  bits["Enum"]+", " + "<MSGNAME>.Reverse" + bits["Enum"]+"]}"
     else:
         ret += "enumLookup : []}"
     return ret
@@ -271,7 +271,7 @@ def fieldReflection(msg, field):
     else:
         fieldInfo += "bitfieldInfo : [], "
     if "Enum" in field:
-        fieldInfo += "enumLookup : [<MSGSHORTNAME>." + field["Enum"]+", " + "<MSGSHORTNAME>.Reverse" + field["Enum"]+"]}"
+        fieldInfo += "enumLookup : [<MSGNAME>." + field["Enum"]+", " + "<MSGNAME>.Reverse" + field["Enum"]+"]}"
     else:
         fieldInfo += "enumLookup : []}"
     return fieldInfo

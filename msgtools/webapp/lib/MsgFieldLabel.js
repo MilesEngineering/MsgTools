@@ -1,3 +1,8 @@
+
+
+if (typeof MsgElement !== "undefined") {
+    //console.log('MsgField already loaded')
+} else {
 function createChildElement(parent, childName) {
     child = document.createElement(childName)
     parent.appendChild(child)
@@ -84,7 +89,7 @@ class MsgLabels extends MsgElement {
             var fieldInfo = this.fieldInfos[i];
             var value = msg[fieldInfo.get]();
             this.fields[i].textContent = value;
-            var color = 'black'
+            var color = 'black'; //TODO Doesn't work on black background!
             if(fieldInfo.type === "enumeration") {
                 let int_value = msg[fieldInfo.get](true);
                 // if value was the same as int_value, then it didn't get decoded,
@@ -288,7 +293,8 @@ class MsgEditColumn extends MsgEdit {
 // tag have been defined, so that our calls to getAttribute will succeed.
 // (Also after any remaining dependencies are loaded.)
 // Best plan is just to import this whole file at the end of your HTML.
-customElements.define('msgtools-msglabelsrow', MsgLabelsRow);
-customElements.define('msgtools-msglabelscolumn', MsgLabelsColumn);
-customElements.define('msgtools-msgeditrow', MsgEditRow);
-customElements.define('msgtools-msgeditcolumn', MsgEditColumn);
+customElements.define('msgtools-msgrxrow', MsgLabelsRow);
+customElements.define('msgtools-msgrx', MsgLabelsColumn);
+customElements.define('msgtools-msgtxrow', MsgEditRow);
+customElements.define('msgtools-msgtx', MsgEditColumn);
+}

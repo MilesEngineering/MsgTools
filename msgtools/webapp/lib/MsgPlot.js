@@ -1,7 +1,11 @@
 /*
  * Plots fields of a message.
  */
- class MsgPlot extends BasePlot {
+if (typeof MsgPlot !== "undefined") {
+    console.log('MsgPlot already loaded')
+} else {
+
+ class MsgPlot extends MsgBasePlot {
     constructor() {
         super();
         msgtools.DelayedInit.add(this);
@@ -38,3 +42,5 @@
 }
 
 customElements.define('msgtools-msgplot', MsgPlot);
+
+}
