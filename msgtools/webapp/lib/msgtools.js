@@ -214,7 +214,12 @@ if (typeof msgtools !== "undefined") {
     DelayedInit.alreadyInitialized = false;
     class MessageDispatch {
         constructor() {
+            // a lookup table of a list of listeners for each message ID
             this.m_listeners = {};
+            // a cache of the last received message of each ID.
+            // used to give new listeners the last received message
+            // when they are created
+            this.m_rxCache = {};
         }
         
         register(id, handler) {
@@ -222,17 +227,22 @@ if (typeof msgtools !== "undefined") {
                 this.m_listeners[id] = [];
             }
             this.m_listeners[id].push(handler);
+            if(id in this.m_rxCache) {
+                handler(this.m_rxCache[id]);
+            }
         }
 
         remove(id, handler) {
-            var listeners = this.m_listeners[id];
+            let listeners = this.m_listeners[id];
             if (listeners !== undefined) {
                 listeners.delete(handler);
             }
         }
         
         deliver(msg) {
-            var listeners = this.m_listeners[msg.hdr.GetMessageID()];
+            const id = msg.hdr.GetMessageID();
+            let listeners = this.m_listeners[id];
+            this.m_rxCache[id] = msg;
             if (listeners !== undefined) {
                 for( let l of listeners ) {
                     l(msg);
