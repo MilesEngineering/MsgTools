@@ -46,7 +46,7 @@ class MsgPlot(QWidget):
     Paused = QtCore.pyqtSignal(bool)
     AddLineError = QtCore.pyqtSignal(str)
     MAX_LENGTH = 500
-    def __init__(self, msgClass, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True):
+    def __init__(self, msgClass, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None):
         super(QWidget,self).__init__()
         
         newFieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
@@ -67,7 +67,7 @@ class MsgPlot(QWidget):
         self.plotWidget = pg.PlotWidget(labels={'left':yAxisLabel,'bottom':xAxisLabel})
         layout.addWidget(self.plotWidget)
         self.plotWidget.addLegend()
-        self.addLine(msgClass, fieldName)
+        self.addLine(msgClass, fieldName, fieldLabel)
 
         # set up click handler to pause graph
         self.plotWidget.scene().sigMouseClicked.connect(self.mouseClicked)
@@ -144,7 +144,7 @@ class MsgPlot(QWidget):
             line.timeArray.clear()
             self.refreshLine(line)
 
-    def addLine(self, msgClass, fieldName):
+    def addLine(self, msgClass, fieldName, fieldLabel = None):
         fieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
         fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
         if fieldInfo == None:
@@ -166,9 +166,9 @@ class MsgPlot(QWidget):
             raise MsgPlot.NewPlotError("Units %s != %s, not adding to plot" % (fieldInfo.units, self.units))
         
         if fieldIndex != None:
-            self._addLine(msgClass, fieldInfo, fieldIndex)
+            self._addLine(msgClass, fieldInfo, fieldIndex, fieldLabel)
         elif fieldInfo.count == 1:
-            self._addLine(msgClass, fieldInfo, 0)
+            self._addLine(msgClass, fieldInfo, 0, fieldLabel)
         else:
             dups = []
             for fieldIndex in range(0, fieldInfo.count):
@@ -179,7 +179,7 @@ class MsgPlot(QWidget):
                         duplicate = True
                         break
                 if not duplicate:
-                    self._addLine(msgClass, fieldInfo, fieldIndex)
+                    self._addLine(msgClass, fieldInfo, fieldIndex, fieldLabel)
             if len(dups) > 0:
                 if len(dups) == 1:
                     s = ' '+str(dups[0])
@@ -191,8 +191,10 @@ class MsgPlot(QWidget):
                         s += '%s,' % d
                 raise MsgPlot.PlotError("Line%s already on plot" % s)
 
-    def _addLine(self, msgClass, fieldInfo, fieldIndex):
+    def _addLine(self, msgClass, fieldInfo, fieldIndex, fieldLabel = None):
         lineName = fieldInfo.name
+        if fieldLabel != None:
+            lineName = fieldLabel
         try:
             if fieldInfo.count != 1:
                 lineName += "["+str(fieldIndex)+"]"
@@ -269,15 +271,19 @@ class MsgPlot(QWidget):
             self.refreshLine(line)
 
     @staticmethod
-    def plotFactory(new_plot, msgClass, fieldNames, runButton = None, clearButton = None, timeSlider = None, displayControls=True):
+    def plotFactory(new_plot, msgClass, fieldNames, fieldLabels = None, runButton = None, clearButton = None, timeSlider = None, displayControls=True):
         msgPlot = None
         if len(fieldNames) == 0:
             fieldNames = [fieldInfo.name for fieldInfo in msgClass.fields]
+        idx = 0
         for fieldName in fieldNames:
+            fieldLabel = None
+            if fieldLabels != None:
+                fieldLabel = fieldLabels[idx]
             # if there's a plot widget, try adding a line to it
             if msgPlot != None:
                 try:
-                    msgPlot.addLine(msgClass, fieldName)
+                    msgPlot.addLine(msgClass, fieldName, fieldLabel)
                 except MsgPlot.NewPlotError as e:
                     # if error on adding to existing plot, then make a new plot
                     msgPlot = None
@@ -287,10 +293,11 @@ class MsgPlot(QWidget):
             # make new plot
             if msgPlot == None:
                 try:
-                    msgPlot = MsgPlot(msgClass, fieldName, runButton, clearButton, timeSlider, displayControls)
+                    msgPlot = MsgPlot(msgClass, fieldName, runButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel)
                     new_plot(msgPlot)
                 except MsgPlot.PlotError as e:
                     print(str(e))
+            idx += 1
         return msgPlot
 
 

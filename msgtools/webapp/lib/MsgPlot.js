@@ -13,15 +13,27 @@ if (typeof MsgPlot !== "undefined") {
     init() {
         var msgName = this.getAttribute('msgName');
         this.msgClass = msgtools.findMessageByName(msgName);
+        this.fieldInfos = [];
 
-        var fieldNames = this.getAttribute('labels').split(",");
+        if(this.hasAttribute('labels')) {
+            var fieldNames = this.getAttribute('labels').split(",");
+        }
         if(this.hasAttribute('fields')) {
             var fieldNames = this.getAttribute('fields').split(",");
         }
-        
-        this.fieldInfos = [];
-        for(var i=0; i<fieldNames.length; i++) {
-            this.fieldInfos.push(msgtools.findFieldInfo(this.msgClass, fieldNames[i]));
+        if(fieldNames == undefined) {
+            let labels = [];
+            for(var i=0; i<this.msgClass.prototype.fields.length; i++) {
+                var fi = this.msgClass.prototype.fields[i];
+                this.fieldInfos.push(fi);
+                labels.push(fi.name);
+            }
+            this.configureDataSets(labels);
+            this.resize();
+        } else {
+            for(var i=0; i<fieldNames.length; i++) {
+                this.fieldInfos.push(msgtools.findFieldInfo(this.msgClass, fieldNames[i]));
+            }
         }
 
         // Register to receive our messages so we can plot fields from them.

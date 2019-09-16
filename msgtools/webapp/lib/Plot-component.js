@@ -58,20 +58,10 @@ svg {
         // #a09344
         // #7f64b9
         // #c36785
-        let labels = this.getAttribute('labels').split(",");
-        let colors = ['rgb(219,109,0)', 'rgb(0,109,219)', 'rgb(109,219,0)','rgb(109,0,219)'];
-        var color=0;
         this.dataSets = {};
-        for (var i in labels) {
-            var label = labels[i];
-            this.dataSets[label] = {
-                value: 0,
-                color: colors[color],
-                data: [],
-                pathData: [],
-                name: label
-            }
-            color++;
+        if(this.hasAttribute('labels')) {
+            let labels = this.getAttribute('labels').split(",");
+            this.configureDataSets(labels);
         }
         this.timestamps = [];
 
@@ -87,6 +77,23 @@ svg {
         window.addEventListener('resize', this.resize.bind(this));
         window.addEventListener('visibilitychange', this.resize.bind(this));
         this.resize();
+    }
+    
+    configureDataSets(labels)
+    {
+        let colors = ['red','blue','green','orange','purple','hotpink','cyan','limegreen','magenta','darkred','darkblue','darkgreen','darkorange','darkpurple'];
+        var color=0;
+        for (var i in labels) {
+            var label = labels[i];
+            this.dataSets[label] = {
+                value: 0,
+                color: colors[color],
+                data: [],
+                pathData: [],
+                name: label
+            }
+            color++;
+        }
     }
 
     resize()
