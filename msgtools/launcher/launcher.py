@@ -3,6 +3,7 @@ import sys, os
 import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pkg_resources
+from . import codegen_gui
 
 DESCRIPTION='''MsgLauncher launches msgtools applications.  It gives them relevant settings (like server
 IP address and port) when it starts them.'''
@@ -45,6 +46,9 @@ class MsgLauncher(QtWidgets.QMainWindow):
         connectMenu = menubar.addMenu('&Connection')
         connectMenu.addAction(settingsAction)
         settingsAction.triggered.connect(self.chooseHost)
+        
+        if os.path.exists('/opt/msgtools/messages'):
+            self.codegen_gui = codegen_gui.CodegenGui(menubar, self.settings)
         
         self.setWindowTitle("MsgLauncher")
         
@@ -192,6 +196,7 @@ class MsgLauncher(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("connection", self.connectionName)
+        self.codegen_gui.save_settings()
         
         if len(self.procs) > 0:
             ret = QtWidgets.QMessageBox.warning(
