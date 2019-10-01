@@ -13,6 +13,14 @@ if (typeof MsgPlot !== "undefined") {
     init() {
         var msgName = this.getAttribute('msgName');
         this.msgClass = msgtools.findMessageByName(msgName);
+        if(typeof this.msgClass == "undefined") {
+            let error_string = "Error! Message name " + msgName + " is not defined";
+            let error_elem = document.createElement('div');
+            this.shadow.appendChild(error_elem);
+            error_elem.textContent = error_string;
+            console.log(error_string);
+            return;
+        }
         this.fieldInfos = [];
 
         if(this.hasAttribute('labels')) {

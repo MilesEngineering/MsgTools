@@ -23,6 +23,13 @@ class MsgElement extends HTMLElement {
     }
     init() {
         this.msgClass = msgtools.findMessageByName(this.msgName);
+        if(typeof this.msgClass == "undefined") {
+            let error_string = "Error! Message name " + this.msgName + " is not defined";
+            let error_elem = createChildElement(this.shadow, 'div');
+            error_elem.textContent = error_string;
+            console.log(error_string);
+            return;
+        }
         
         var fieldNames;
         if(this.hasAttribute('fields')) {
