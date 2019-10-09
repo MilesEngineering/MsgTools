@@ -16,13 +16,29 @@ import datetime
 
 # this allows sending Messages as data to an InfluxDB database
 class InfluxDBConnection:
-    MAX_POINTS = 100
+    MAX_POINTS = 128
     def __init__(self, msgClient, dbname='messages', hostname='localhost', port=8086, username='root', password='root'):
         self.hostname = hostname
         self.port = port
-        self.db = InfluxDBClient(hostname, port, username, password, dbname)
+        self.db = InfluxDBClient(host=hostname, port=port, username=username, password=password, database=dbname)
         self.msgClient = msgClient
         self.cookie = 0
+        
+        # History Data message has to have either just Data with interleaved value and time,
+        # or be an array of structs which also interleaves value and time in memory, but
+        # gives two functions to access them that each look like an array.
+        self.dataInfo = Messaging.findFieldInfo(Messaging.Messages.Network.History.Data.fields, "Data")
+        self.dataValueInfo = Messaging.findFieldInfo(Messaging.Messages.Network.History.Data.fields, "Data_Value")
+        self.dataTimestampInfo = Messaging.findFieldInfo(Messaging.Messages.Network.History.Data.fields, "Data_Timestamp")
+        if self.dataInfo != None:
+            # multiply by 2 because the result includes a value and a timestamp
+            self.dataResultSize = self.dataInfo.get.size *2
+            self.dataResultOffset = self.dataInfo.get.offset
+        else:
+            # Size of a result includes size of the value and the timestamp.
+            self.dataResultSize = self.dataValueInfo.get.size + self.dataTimestampInfo.get.size
+            # This needs to be whichever element is first!
+            self.dataResultOffset = min(self.dataValueInfo.get.offset+self.dataTimestampInfo.get.offset)
     
     @staticmethod
     def FormattedTime(floatTime):
@@ -36,12 +52,10 @@ class InfluxDBConnection:
             val = int(val)
         elif fieldInfo.type == 'float':
             val = float(val)
-        #elif fieldInfo.type == 'Enum'
-        #    what?  int value, string?
         return val
 
     def handle_message(self, msg):
-        if msg.MsgName().startsWith("Network"):
+        if msg.MsgName().startswith("Network"):
             if msg.MsgName() == "Network.History.GetData":
                 self.handle_query(msg)
         else:
@@ -51,8 +65,9 @@ class InfluxDBConnection:
         try:
             timeVal = msg.hdr.GetTime()
             timeInfo = Messaging.findFieldInfo(msg.hdr.fields, "Time")
+            maxTime = timeInfo.maxVal
             # if it's not big enough to be an absolute timestamp, give up on using it and just use current time
-            if float(timeInfo.maxVal) <= 2**32:
+            if maxTime != "DBL_MAX" and (maxTime == 'FLT_MAX' or float(maxTime) <= 2**32):
                 raise AttributeError
             if timeInfo.units == "ms":
                 timeVal = timeVal / 1000.0
@@ -84,12 +99,10 @@ class InfluxDBConnection:
                 else:
                     for bitInfo in fieldInfo.bitfieldInfo:
                         dbJson['fields'][bitInfo.name] = InfluxDBConnection.GetDBValue(msg, bitInfo)
-            # leave out arrays until we figure out how to handle them
-            #else:
-            #    arrayList = []
-            #    for i in range(0,fieldInfo.count):
-            #        arrayList.append(InfluxDBConnection.GetDBValue(msg, fieldInfo, i))
-            #    dbJson['fields'][fieldInfo.name] = arrayList
+            else:
+                # flatten arrays
+                for i in range(0,fieldInfo.count):
+                    dbJson['fields'][fieldInfo.name+"_"+str(i)] = InfluxDBConnection.GetDBValue(msg, fieldInfo, i)
 
         #print("Create a retention policy")
         #retention_policy = 'awesome_policy'
@@ -126,35 +139,46 @@ class InfluxDBConnection:
 
         dbquery += " LIMIT " + str(MAX_POINTS)
 
-        # send query to database, get result
-        result = self.db.query(dbquery)
+        # send query to database, get results
+        db_results = self.db.query(dbquery)
 
         # output results
         resultMsg = Messaging.Messages.Network.History.Result()
         resultMsg.SetCookie(self.cookie)
-        resultCount = f(result)
+        resultCount = f(db_results)
         resultMsg.SetResultCount(resultCount)
         resultMsg.SetQuery(msgquery)
         self.msgClient.send_message(resultMsg)
-
-        dataInfo = Messaging.findFieldInfo(Messaging.Messages.Network.History.Data, "Data")
-        maxDataPerMsg = dataInfo.count
-        resultNumber = 0
-        for something in result:
+        if self.dataInfo != None:
+            maxDataPerMsg = self.dataInfo.count
+        else:
+            arrayOffset = self.dataTimestampInfo.offset
+            arrayElemSize = self.dataValueInfo.size + dataTimestampInfo.size
+            maxDataPerMsg = dataValueInfo.count
+        resultMsgNumber = 0
+        resultsLeftToSend = len(db_results)
+        for result in db_results:
             dataMsg = Messaging.Messages.Network.History.Data()
             dataMsg.SetCookie(self.cookie)
-            dataMsg.SetResultNumber(resultNumber)
-            dataRange = min(maxDataPerMsg, tilEndOfResults)
-            for index in range(0, dataRange,2):
-                dataMsg.SetData(time(something), index)
-                dataMsg.SetData(value(something), index+1)
+            dataMsg.SetResultNumber(resultMsgNumber)
+            dataRange = min(maxDataPerMsg, resultsLeftToSend)
+            if self.dataInfo != None:
+                for index in range(0, dataRange,2):
+                    dataMsg.SetData(time(result), index)
+                    dataMsg.SetData(value(result), index+1)
+            else:
+                for index in range(0, dataRange):
+                    dataMsg.SetData_Timestamp(time(result), index)
+                    dataMsg.SetData_Value(value(result), index)
+            resultsLeftToSend -= dataRange
+            resultMsgNumber += 1
             # truncate message buffer to actual amount of data
-            dataMsg.hdr.SetDataLength(dataInfo.offset + dataInfo.size * dataRange)
+            msg_buffer_len = self.dataResultOffset + self.dataResultSize * dataRange
             self.msgClient.send_message(dataMsg)
-            resultNumber += 1
 
-        # increment cookie so the next query's results are easy to tell apart from out query results
-        # especially useful if two clients query at almost the same time!
+        # Increment cookie so the next query's results are easy to tell apart from out query results
+        # This is especially useful if two clients query at almost the same time (but only if they
+        # have unique cookies!).
         self.cookie += 1
 
 # this is client that reads from network, and writes to InfluxDB

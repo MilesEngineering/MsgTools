@@ -12,6 +12,10 @@ class InfluxServerPlugin(QtCore.QObject):
         
         # split up params, and use them to construct the DB connection.
         params = param.split("|")
+        # an emptry string results in a len 1 array with an empty string,
+        # which we'd like to treat as no parameters
+        if len(params) == 1 and params[0] == '':
+            params = []
         self.db = InfluxDBConnection(self, *params)
 
         # these are for interfacing to msgserver
