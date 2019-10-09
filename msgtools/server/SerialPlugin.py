@@ -1,14 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/en"v python3
 from PyQt5 import QtCore, QtGui, QtWidgets, QtSerialPort
 from PyQt5.QtCore import QObject
-from PyQt5.QtCore import QDateTime
 from PyQt5.QtSerialPort import QSerialPort
 
 from msgtools.lib.messaging import Messaging
 from msgtools.lib.header_translator import HeaderTranslator
 from msgtools.server import SerialportDialog
 
-import ctypes
 import struct
 import sys
 
@@ -24,6 +22,13 @@ def Crc16(data):
         crc ^= (crc & 0xff) << 5
         crc = 0xFFFF & crc
     return crc
+
+def hexbytes(hdr):
+    try:
+        b = hdr.rawBuffer()[:]
+    except:
+        b = hdr
+    return "0x"+":".join("{:02x}".format(c) for c in b)
 
 class BaseSerialConnection(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
@@ -135,7 +140,7 @@ class BaseSerialConnection(QObject):
         self.openCloseSwitch()
 
     def gotRxError(self, errType):
-        print("Got rx error " + errType)
+        print("RX " + errType)
         sys.stdout.flush()
 
     def stop(self):
@@ -148,90 +153,69 @@ class SerialConnection(BaseSerialConnection):
 
         self.hdr = hdr
         
-        self.rxBuffer = bytearray()
-        self.gotHeader = 0
-
         self.hdrTranslator = HeaderTranslator(hdr, Messaging.hdr)
 
-        self.serialStartSeqField = Messaging.findFieldInfo(hdr.fields, "StartSequence")
-        if self.serialStartSeqField != None:
+        serialStartSeqField = Messaging.findFieldInfo(hdr.fields, "StartSequence")
+        if serialStartSeqField != None:
             self.startSequence = int(hdr.GetStartSequence.default)
-            self.startSeqSize = int(hdr.GetStartSequence.size)
+        else:
+            self.startSequence = None
         try:
             self.hdrCrcRegion = int(hdr.GetHeaderChecksum.offset)
         except AttributeError:
             self.hdrCrcRegion = None
-        self.tmpRxHdr = ctypes.create_string_buffer(0)
+        self.tmpRxHdr = None
+
+    def headerValid(self, hdr):
+        if self.startSequence != None and hdr.GetStartSequence() != self.startSequence:
+            #self.gotRxError("  HDR SS %s != %s" % (hex(hdr.GetStartSequence()) , hex(self.startSequence)))
+            return False
+        if self.hdrCrcRegion != None:
+            # Stop computing before we reach header checksum location.
+            headerCrc = Crc16(hdr.rawBuffer()[:self.hdrCrcRegion])
+            receivedHeaderCrc = hdr.GetHeaderChecksum()
+            if headerCrc != receivedHeaderCrc:
+                self.gotRxError("HEADER CRC %s != %s for %s" % (hex(headerCrc) , hex(receivedHeaderCrc), hexbytes(hdr)))
+                return False
+        return True
+    
+    def bodyValid(self, hdr, body):
+        if hdr.GetDataLength() != len(body):
+            self.gotRxError("BODY LENGTH %d != %d" % (hdr.GetDataLength() != len(body)))
+            return False
+        if self.hdrCrcRegion != None:
+            bodyCrc = Crc16(body)
+            receivedBodyCrc = hdr.GetBodyChecksum()
+            if receivedBodyCrc != bodyCrc:
+                self.gotRxError("BODY CRC %s != %s for %s" % (hex(receivedBodyCrc), hex(bodyCrc), hexbytes(body)))
+                return False
+        return True
 
     def onReadyRead(self):
         while self.serialPort.bytesAvailable() > 0:
-            if not self.gotHeader:
-                if self.serialStartSeqField != None:
-                    foundStart = 0
-                    # Synchronize on start sequence, if it exists
-                    while self.serialPort.bytesAvailable() > 0 and self.serialPort.bytesAvailable() >= self.startSeqSize:
-                        # peek at start of message.
-                        #if it's start sequence, break.
-                        #else, throw it away and try again.
-                        self.tmpRxHdr = self.serialPort.peek(self.startSeqSize)
-                        serialHdr = self.hdr(self.tmpRxHdr)
-                        startSequence = serialHdr.GetStartSequence()
-                        if startSequence == self.startSequence:
-                            foundStart = 1
-                            break
-                        else:
-                            print("  " + hex(startSequence) + " != " + hex(self.startSequence))
-                            throwAway = self.serialPort.read(1)
-                            #self.gotRxError("START")
-                else:
-                    foundStart = 1
-
-                if foundStart:
-                    if self.serialPort.bytesAvailable() >= self.hdr.SIZE:
-                        self.tmpRxHdr = self.serialPort.read(self.hdr.SIZE)
-                        serialHdr = self.hdr(self.tmpRxHdr)
-                        if self.serialStartSeqField == None or serialHdr.GetStartSequence() == self.startSequence:
-                            if self.hdrCrcRegion != None:
-                                # Stop counting before we reach header checksum location.
-                                headerCrc = Crc16(self.tmpRxHdr[:self.hdrCrcRegion])
-                                receivedHeaderCrc = serialHdr.GetHeaderChecksum()
-                                if headerCrc == receivedHeaderCrc:
-                                    self.gotHeader = 1
-                                else:
-                                    #self.gotRxError("HEADER")
-                                    print("  " + hex(headerCrc) + " != " + hex(receivedHeaderCrc))
-                            else:
-                                self.gotHeader = 1
-                        else:
-                            self.gotRxError("START")
-                            print("Error in serial parser.  Thought I had start sequence, now it's gone!")
-                    else:
+            if not self.tmpRxHdr:
+                if self.serialPort.bytesAvailable() < self.hdr.SIZE:
+                    return
+                while self.serialPort.bytesAvailable() >= self.hdr.SIZE:
+                    rx_bytes = bytes(self.serialPort.peek(self.hdr.SIZE))
+                    serialHdr = self.hdr(rx_bytes)
+                    if self.headerValid(serialHdr):
+                        # read now, because we only peeked before.
+                        self.tmpRxHdr = self.hdr(self.serialPort.read(self.hdr.SIZE))
                         break
-                else:
-                    break
-
-            if self.gotHeader:
-                serialHdr = self.hdr(self.tmpRxHdr)
-                if self.serialPort.bytesAvailable() >= serialHdr.GetDataLength():
-                    # allocate the serial message body, read from the serial port
-                    bodylen = serialHdr.GetDataLength()
-                    msgBody = self.serialPort.read(bodylen);
-
-                    if self.hdrCrcRegion != None:
-                        bodyCrc = Crc16(msgBody)
-                        receivedBodyCrc = serialHdr.GetBodyChecksum()
-
-                        if receivedBodyCrc != bodyCrc:
-                            self.gotHeader = 0
-                            self.gotRxError("BODY")
-                        else:
-                            self.gotHeader = 0
-                            self.rxMsgCount+=1
-                            self.SerialMsgSlot(serialHdr, msgBody)
                     else:
-                        self.gotHeader = 0
+                        throwAway = self.serialPort.read(1)
+
+            if self.tmpRxHdr != None:
+                bodylen = self.tmpRxHdr.GetDataLength()
+                if self.serialPort.bytesAvailable() >= bodylen:
+                    # allocate the serial message body, read from the serial port
+                    msgBody = self.serialPort.read(bodylen)
+                    
+                    if self.bodyValid(self.tmpRxHdr, msgBody):
                         self.rxMsgCount+=1
-                        self.SerialMsgSlot(serialHdr, msgBody)
+                        self.SerialMsgSlot(self.tmpRxHdr, msgBody)
+                    self.tmpRxHdr = None
                 else:
                     break
 
