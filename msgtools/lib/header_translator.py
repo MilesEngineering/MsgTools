@@ -124,7 +124,8 @@ class HeaderTranslator:
 
     def translate(self, fromHdr):
         toHdr = self.translateHdrAndBody(fromHdr, fromHdr.rawBuffer()[type(fromHdr).SIZE:])
-        self.promoteIdFields(toHdr)
+        if toHdr != None:
+            self.promoteIdFields(toHdr)
         return toHdr
 
     # Handle message body ID fields by populating them in message header.
