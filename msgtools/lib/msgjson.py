@@ -25,6 +25,7 @@ def toJson(msg, includeHeader=False):
     msgClass = Messaging.MsgClass(msg.hdr)
     for fieldInfo in msgClass.fields:
         if(fieldInfo.count == 1):
+            #TODO Broken for arrays-of-structs acting like parallel arrays!
             if msg.hdr.GetDataLength() < int(fieldInfo.get.offset) + int(fieldInfo.get.size):
                 break
             if len(fieldInfo.bitfieldInfo) == 0:
@@ -36,6 +37,7 @@ def toJson(msg, includeHeader=False):
             arrayList = []
             terminate = 0
             for i in range(0,fieldInfo.count):
+                #TODO Broken for arrays-of-structs acting like parallel arrays!
                 if msg.hdr.GetDataLength() < int(fieldInfo.get.offset) + i*int(fieldInfo.get.size):
                     terminate = 1
                     break
@@ -72,6 +74,7 @@ def jsonToMsg(jsonString):
                     for i in range(0,len(fieldValue)):
                         Messaging.set(msg, fieldInfo, fieldValue[i], i)
                         if terminationLen != None:
+                            #TODO Broken for arrays-of-structs acting like parallel arrays!
                             terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1))
                 elif isinstance(fieldValue, dict):
                     #print(fieldName + " dict type is " + str(type(fieldValue)))
@@ -84,8 +87,10 @@ def jsonToMsg(jsonString):
                     Messaging.set(msg, fieldInfo, fieldValue)
                     if terminationLen != None:
                         if fieldInfo.type == "string":
+                            #TODO Broken for arrays-of-structs acting like parallel arrays!
                             terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(fieldValue))
                         else:
+                            #TODO Broken for arrays-of-structs acting like parallel arrays!
                             terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size))
     if terminationLen != None:
         msg.hdr.SetDataLength(terminationLen)

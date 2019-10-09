@@ -104,12 +104,14 @@ def csvToMsg(lineOfText):
                                 terminationLen = int(fieldInfo.get.offset)
                                 break
                             # terminate after this field
+                            #TODO Broken for arrays-of-structs acting like parallel arrays!
                             terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)
                         if len(fieldInfo.bitfieldInfo) == 0:
                             if fieldInfo.type == "string":
                                 if val.startswith('"') and val.endswith('"'):
                                     val = val.strip('"')
                                 if terminateMsg:
+                                    #TODO Broken for arrays-of-structs acting like parallel arrays!
                                     terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(val)
                             Messaging.set(msg, fieldInfo, val)
                             paramNumber+=1
@@ -124,6 +126,7 @@ def csvToMsg(lineOfText):
                                 terminateMsg = 1
                                 val = val[:-1]
                                 hexStr = val[2:].strip()
+                                #TODO Broken for arrays-of-structs acting like parallel arrays!
                                 terminationLen = int(int(fieldInfo.get.offset) + len(hexStr)/2)
                             hexStr = val[2:].strip()
                             charsForOneElem = int(fieldInfo.get.size)*2
@@ -135,6 +138,7 @@ def csvToMsg(lineOfText):
                             for i in range(0,fieldInfo.count):
                                 if val.endswith(";"):
                                     terminateMsg = 1
+                                    #TODO Broken for arrays-of-structs acting like parallel arrays!
                                     terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1)
                                     val = val[:-1]
                                 Messaging.set(msg, fieldInfo, val, i)
