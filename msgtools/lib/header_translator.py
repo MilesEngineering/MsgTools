@@ -1,6 +1,7 @@
 from collections import namedtuple
 import ctypes
-from datetime import datetime
+import datetime
+import struct
 
 from .messaging import Messaging
 
@@ -24,6 +25,7 @@ class HeaderTranslator:
         self._hdr2Info = HdrInfo(hdr2, 1, Messaging.findFieldInfo(hdr2.fields, "Time"))
         self._timestampOffset = 0
         self._lastTimestamp = 0
+        self.lastWrapTime = None
 
     def translateHdrAndBody(self, fromHdr, body):
         # figure out which direction to translate
@@ -61,34 +63,62 @@ class HeaderTranslator:
         
         # do special timestamp stuff to convert from relative to absolute time
         if toHdrInfo.timeField != None:
+            def set_time(hdr, t):
+                # This is a bit ugly, but it's hard to tell with the Time field is a float or
+                # an int.  If it's an int and we give it a float, struct.error gets raised.
+                try:
+                    hdr.SetTime(t)
+                except struct.error:
+                    hdr.SetTime(int(t))
             if fromHdrInfo.timeField != None:
+                def timeReallyBig(tmax):
+                    if tmax == 'DBL_MAX':
+                        return True
+                    if tmax == 'FLT_MAX':
+                        return True
+                    if int(tmax) >= 2**32:
+                        return True
+                def timeScaling(fromUnits, toUnits):
+                    if fromUnits == 'ms' and toUnits == 's':
+                        return 0.001
+                    if fromUnits == 's' and toUnits == 'ms':
+                        return 1000.0
+                    return 1.0
+                time_scale = timeScaling(fromHdrInfo.timeField.units, toHdrInfo.timeField.units)
                 # if we're converting from a header with a smaller timestamp to a header
                 # with a bigger timestamp, look for wrapping of the input timestamp
-                if int(fromHdrInfo.timeField.maxVal) < int(toHdrInfo.timeField.maxVal):
+                time_could_wrap = False
+                if not timeReallyBig(fromHdrInfo.timeField.maxVal):
+                    if timeReallyBig(toHdrInfo.timeField.maxVal):
+                        time_could_wrap = True
+                    else:
+                        time_could_wrap = int(fromHdrInfo.timeField.maxVal) < int(toHdrInfo.timeField.maxVal)
+                if time_could_wrap:
                     # Detect time rolling
-                    thisTimestamp = fromHdr.GetTime()
-                    thisTime = datetime.now()
+                    thisTimestamp = fromHdr.GetTime() * time_scale
+                    thisTime = datetime.datetime.now()
                     if thisTimestamp < self._lastTimestamp:
                         # If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
                         # and do not wrap again.
-                        if thisTime > self.lastWrapTime.addSecs(30):
+                        if (self.lastWrapTime == None or
+                            thisTime > self.lastWrapTime + datetime.timedelta(0,30)):
                             self.lastWrapTime = thisTime
                             self._timestampOffset += 1
                     self._lastTimestamp = thisTimestamp
                     # need to handle different size timestamps!
-                    toHdr.SetTime(self._timestampOffset * (1+int(fromHdrInfo.timeField.maxVal)) + thisTimestamp)
+                    set_time(toHdr, self._timestampOffset * (1+int(fromHdrInfo.timeField.maxVal)) + thisTimestamp)
                 else:
-                    toHdr.SetTime(fromHdr.GetTime())
+                    set_time(toHdr, fromHdr.GetTime()*time_scale)
             else:
-                t = datetime.now().timestamp()
+                t = datetime.datetime.now().timestamp()
                 # use time since start of day, if 32-bit or smaller timestamps
                 if float(toHdrInfo.timeField.maxVal) <= 2**32:
-                    t = (datetime.fromtimestamp(t) - datetime.fromtimestamp(t).replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+                    t = (datetime.datetime.fromtimestamp(t) - datetime.datetime.fromtimestamp(t).replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
                 if toHdrInfo.timeField.units == "ms":
                     t = t * 1000.0
                 if toHdrInfo.timeField.type == "int":
                     t = int(t)
-                toHdr.SetTime(t)
+                set_time(toHdr, t)
 
         return toHdr
 
