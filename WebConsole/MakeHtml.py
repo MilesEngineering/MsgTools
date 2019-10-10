@@ -9,7 +9,7 @@ description = '''This script inspects the given message directory and builds a l
     to the console.'''
 
 
-def buildApp(msgdir, outputdir):
+def buildApp(msgdir, templatefile, outputdir):
     '''We're  just going to iterate each file in the directlry and build a message entry for it.
     Then we'll run Jinja to build a custom web app based on the messages we've processed'''
     if msgdir[len(msgdir) - 1] != os.sep:
@@ -33,7 +33,7 @@ def buildApp(msgdir, outputdir):
                 print('Skipping {0}; not a Javascript file'.format(
                     currentPath))
 
-    with open('template.html', 'r') as fp:
+    with open(templatefile, 'r') as fp:
         html = fp.read()
 
     # Run the Jinja engine to swap out tags
@@ -52,6 +52,8 @@ if __name__ == '__main__':
     parser.add_argument(
         'outputdir', help='The destination directory for the resulting HTML app')
     parser.add_argument(
+        'templatefile', help='The jinja template file to use')
+    parser.add_argument(
         'msgdir', help='The basepath for where generated messages are placed.  For example, obj/CodeGenerator/Javascript')
 
     args = parser.parse_args()
@@ -60,4 +62,4 @@ if __name__ == '__main__':
         print('{0} does not exist, or is not a directory'.format(args.msgdir))
         sys.exit(1)
 
-    buildApp(args.msgdir, args.outputdir)
+    buildApp(args.msgdir, args.templatefile, args.outputdir)
