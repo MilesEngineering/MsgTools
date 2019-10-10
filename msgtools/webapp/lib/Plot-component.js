@@ -43,7 +43,11 @@ svg {
 }`;
         this.shadow.appendChild(style);
         
-        this.timeLimit = parseFloat(this.getAttribute('timeLimit')); // seconds
+        if(this.hasAttribute('timeLimit')) {
+            this.timeLimit = parseFloat(this.getAttribute('timeLimit')); // seconds
+        } else {
+            this.timeLimit = 20.0;
+        }
         this.duration = 750;
         if(this.hasAttribute('yMin') || this.hasAttribute('yMax')) {
             this.yMin = parseFloat(this.getAttribute('yMin'));
