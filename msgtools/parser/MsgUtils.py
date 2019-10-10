@@ -429,7 +429,12 @@ def PatchStructs(inputData):
                             subfieldLocation = 0
                             for subfield in s['Fields']:
                                 subfieldcopy = copy.deepcopy(subfield)
-                                subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']
+                                #  if a field name was specified, prepend it to the names of the sub-fields
+                                # of the struct.  Also allow an unnamed field so that nothing is prepended.
+                                if 'Name' in field:
+                                    subfieldcopy['Name'] = field['Name'] + "_" + subfield['Name']
+                                else:
+                                    subfieldcopy['Name'] = subfield['Name']
                                 if resolve_sizes_and_locations:
                                     subfieldcopy['StructSize'] = structSize
                                     subfieldcopy['Location'] = location + subfieldLocation
