@@ -43,6 +43,7 @@ $RECYCLE.BIN/
 # Other custom ignores:
 *.pyc
 WebConsole/WebConsole.html
+WebConsole/GuiDemo.html
 
 # dart/flutter ignores
 .packages
