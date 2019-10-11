@@ -196,7 +196,6 @@ class MsgLauncher(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("connection", self.connectionName)
-        self.codegen_gui.save_settings()
         
         if len(self.procs) > 0:
             ret = QtWidgets.QMessageBox.warning(
@@ -211,6 +210,12 @@ class MsgLauncher(QtWidgets.QMainWindow):
             elif ret == QtWidgets.QMessageBox.No:
                 for p in self.procs:
                     p.detach()
+
+        try:
+            self.codegen_gui.save_settings()
+        except AttributeError:
+            pass
+
         super(QtWidgets.QMainWindow, self).closeEvent(event)
     
     def printStdOut(self):
