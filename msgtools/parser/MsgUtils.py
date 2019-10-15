@@ -408,15 +408,17 @@ def PatchStructs(inputData):
                     for field in msg['Fields']:
                         if field["Type"] in structs:
                             s = structs[field["Type"]]
-                            # Compute the size of the structure and store it in each field in the structure.
-                            # This is useful for finding subsequent elements of fields of arrays of structs,
-                            # because we'll treat them as parallel arrays in the generated code, not as
-                            # hierarchical structs.
+                            # For arrays of structs, compute the size of the structure and store it in each
+                            # field in the structure.  This is useful for finding subsequent elements of
+                            # fields of arrays of structs, because we'll treat them as parallel arrays in
+                            # the generated code, not as hierarchical structs.
                             structSize = 0
                             for subfield in s['Fields']:
                                 if resolve_sizes_and_locations:
                                     try:
-                                        structSize += fieldSize(subfield) * fieldCount(subfield)
+                                        fs = fieldSize(subfield) * fieldCount(subfield)
+                                        if fieldCount(field) > 1 or fieldCount(s) > 1:
+                                            structSize += fs
                                     except KeyError:
                                         # if we have a KeyError when trying to get fieldSize,
                                         # it's because we have a nested Struct that hasn't been
@@ -436,7 +438,8 @@ def PatchStructs(inputData):
                                 else:
                                     subfieldcopy['Name'] = subfield['Name']
                                 if resolve_sizes_and_locations:
-                                    subfieldcopy['StructSize'] = structSize
+                                    if structSize != 0:
+                                        subfieldcopy['StructSize'] = structSize
                                     subfieldcopy['Location'] = location + subfieldLocation
                                 # subfield count should be greater of parent field count and subfield type count
                                 # error if both are > 1
@@ -445,7 +448,10 @@ def PatchStructs(inputData):
                                         subfieldcopy['Count'] = fieldCount(field)
                                 else:
                                     if fieldCount(field) > 1:
-                                        raise MessageException("ERROR! Field Count %d > 1 and Subfield Count %d > 1" % (fieldCount(field), fieldCount(subfieldcopy)))
+                                        print("ERROR! %s Field %s Count %d > 1 and Subfield %s Count %d > 1" % (msg["Name"], field['Name'], fieldCount(field), subfieldcopy['Name'], fieldCount(subfieldcopy)))
+                                        #TODO Not sure if we can handle arrays of structs with arrays in them!
+                                        #TODO Maybe need to flatten outer arrays (multiple fields with _0, _1, _2 etc.)?
+                                        subfieldcopy['Count'] = fieldCount(field) * fieldCount(subfieldcopy)
                                 #TODO How to handle array of bitfields?!?
                                 if "Bitfields" in subfieldcopy:
                                     for bits in subfieldcopy["Bitfields"]:
