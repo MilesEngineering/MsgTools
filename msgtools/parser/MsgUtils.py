@@ -416,7 +416,7 @@ def PatchStructs(inputData):
                             for subfield in s['Fields']:
                                 if resolve_sizes_and_locations:
                                     try:
-                                        structSize += fieldSize(subfield)
+                                        structSize += fieldSize(subfield) * fieldCount(subfield)
                                     except KeyError:
                                         # if we have a KeyError when trying to get fieldSize,
                                         # it's because we have a nested Struct that hasn't been
@@ -438,16 +438,21 @@ def PatchStructs(inputData):
                                 if resolve_sizes_and_locations:
                                     subfieldcopy['StructSize'] = structSize
                                     subfieldcopy['Location'] = location + subfieldLocation
-                                # inherit count from parent field, so that if it's an array,
-                                # we'll be an array too.
-                                subfieldcopy['Count'] = fieldCount(field)
+                                # subfield count should be greater of parent field count and subfield type count
+                                # error if both are > 1
+                                if fieldCount(subfieldcopy) == 1:
+                                    if fieldCount(field) > 1:
+                                        subfieldcopy['Count'] = fieldCount(field)
+                                else:
+                                    if fieldCount(field) > 1:
+                                        raise MessageException("ERROR! Field Count %d > 1 and Subfield Count %d > 1" % (fieldCount(field), fieldCount(subfieldcopy)))
                                 #TODO How to handle array of bitfields?!?
                                 if "Bitfields" in subfieldcopy:
                                     for bits in subfieldcopy["Bitfields"]:
                                         bits['Name'] = field['Name'] + "_" + bits['Name']
                                 outfields.append(subfieldcopy)
                                 if resolve_sizes_and_locations:
-                                    subfieldLocation += fieldSize(subfield)
+                                    subfieldLocation += fieldSize(subfield) * fieldCount(subfield)
                             if resolve_sizes_and_locations:
                                 # add size of struct times struct count to running total of field location
                                 location += subfieldLocation * fieldCount(field)
