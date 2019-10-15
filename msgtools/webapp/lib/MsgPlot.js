@@ -46,7 +46,6 @@ if (typeof MsgPlot !== "undefined") {
                     for(var elem_number=0; elem_number<fi.count; elem_number++) {
                         labels.push(fi.name+"["+elem_number+"]");
                         this.fieldArrayElems[fi.name].push(elem_number);
-                        console.log(elem_number);
                     }
                 }
                 else {
@@ -136,7 +135,6 @@ if (typeof MsgPlot !== "undefined") {
                 newData.push(value);
             }
         }
-        console.log(newData);
         super.plot(time, newData);
     }
 
