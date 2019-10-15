@@ -316,7 +316,7 @@ class MsgPlot(QWidget):
             # make new plot
             if msgPlot == None:
                 try:
-                    msgPlot = MsgPlot(msgClass, fieldName, runButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel)
+                    msgPlot = MsgPlot(msgClass, msgKey, fieldName, runButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel)
                     msgPlot.msgClass = msgClass
                     new_plot_callback(msgPlot)
                 except MsgPlot.PlotError as e:
