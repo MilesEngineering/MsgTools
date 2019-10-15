@@ -120,7 +120,9 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         rxClearMsgsBtn.clicked.connect(self.clear_rx_msgs)
         
     def configure_msg_plots(self, parent):
-        self.msgPlots = {}
+        # dict of plot by msg_key
+        self.msgPlotsByKey = {}
+        self.msgPlotList = []
 
     def configure_tx_dictionary(self, parent):
         txDictionary = QTreeWidget(parent)
@@ -205,15 +207,20 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             message_class = Messaging.MsgClassFromName[messageName]
             messageObj = message_class() # invoke constructor
 
-            messageTreeWidgetItem = txtreewidget.EditableMessageItem(self.txMsgs, messageObj)
+            messageTreeWidgetItem = txtreewidget.EditableMessageItem(self.txMsgs, messageObj, None)
             messageTreeWidgetItem.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
     def on_open(self):
-        plots = self.settings.value("plotList", "")
-        if plots:
-            plotList = plots.split("|")
-            for plot in plotList:
-                msg_key = plot.split(":")[0]
+        # need to handle fields of multiple messages on same plot
+        plot_count = self.settings.beginReadArray("plots")
+        for i in range(plot_count):
+            self.settings.setArrayIndex(i)
+            plot = None
+            line_count = self.settings.beginReadArray("lines")
+            for j in range(line_count):
+                self.settings.setArrayIndex(j)
+                msg_key = self.settings.value("key")
+                fieldName = self.settings.value("fieldname")
                 msg_id = msg_key.split(',')[-1]
                 try:
                     msgName = Messaging.MsgNameFromID[msg_id]
@@ -221,35 +228,38 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                     print('Error!  msg_id ' + msg_id + ' is undefined!')
                     continue
                 msgClass = Messaging.MsgClassFromName[msgName]
-                
-                fieldNames = plot.split(":")[1].split(",")
-                msgPlot = None
-                for fieldName in fieldNames:
-                    try:
-                        if msgPlot == None:
-                            msgPlot = self.addPlot(msg_key, msgClass, fieldName)
-                        else:
-                            msgPlot.addLine(msgClass, fieldName)
-                    except MsgPlot.PlotError as e:
-                        print(e)
+                try:
+                    if plot == None:
+                        plot = self.addPlot(msgClass, msg_key, fieldName)
+                    else:
+                        plot.addLine(msgClass, msg_key, fieldName)
+                        self.registerPlotForKey(msg_key, plot)
+                except MsgPlot.PlotError as e:
+                    print(e)
+            self.settings.endArray()
+        self.settings.endArray()
+
         self.txSplitter.restoreState(self.settings.value("txSplitterSizes", self.txSplitter.saveState()));
         self.rxSplitter.restoreState(self.settings.value("rxSplitterSizes", self.rxSplitter.saveState()));
         self.hSplitter.restoreState(self.settings.value("hSplitterSizes", self.hSplitter.saveState()));
         self.debugWidget.textEntryWidget.restoreState(self.settings.value("cmdHistory", self.debugWidget.textEntryWidget.saveState()));
 
     def on_close(self):
+        self.settings.beginWriteArray("plots")
         plotList = ""
-        for msg_key in self.msgPlots:
-            plotListForID = self.msgPlots[msg_key]
-            for plot in plotListForID:
-                plotConfig = msg_key + ":"
-                for line in plot.lines:
-                    plotConfig += "%s[%d]," % (line.fieldInfo.name, line.fieldSubindex)
-                plotConfig = plotConfig[:-1]
-                plotList += plotConfig + "|"
-        if plotList:
-            plotList = plotList[:-1]
-        self.settings.setValue("plotList", plotList)
+        i = 0
+        for plot in self.msgPlotList:
+            self.settings.setArrayIndex(i)
+            self.settings.beginWriteArray("lines")
+            j = 0
+            for line in plot.lines:
+                self.settings.setArrayIndex(j)
+                self.settings.setValue('key', line.msgKey)
+                self.settings.setValue('fieldname', "%s[%d]" % (line.fieldInfo.name, line.fieldSubindex))
+                j += 1
+            self.settings.endArray()
+            i += 1
+        self.settings.endArray()
         
         # save splitter sizes and command history
         self.settings.setValue("txSplitterSizes", self.txSplitter.saveState());
@@ -265,22 +275,41 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.debugWidget.textEntryWidget.addToHistory(text)
         self.SendMsg(msg)
     
-    def addPlot(self, msg_key, msgClass, fieldName):
-        plotListForID = []
-        if msg_key in self.msgPlots:
-            plotListForID = self.msgPlots[msg_key]
+    def registerPlotForKey(self, msg_key, plot):
+        if not msg_key in self.msgPlotsByKey:
+            print('adding new key %s to self.msgPlotsByKey' % msg_key)
+            self.msgPlotsByKey[msg_key] = []
         else:
-            self.msgPlots[msg_key] = plotListForID
+            print('using existing key %s in self.msgPlotsByKey' % msg_key)
+        if not plot in self.msgPlotsByKey[msg_key]:
+            print('adding new plot to self.msgPlotsByKey[%s]' % msg_key)
+            self.msgPlotsByKey[msg_key].append(plot)
+        else:
+            print('plot already in self.msgPlotsByKey[%s]' % msg_key)
+
+    def addPlot(self, msgClass, msg_key, fieldName):
+        plotListForKey = []
+        if msg_key in self.msgPlotsByKey:
+            plotListForKey = self.msgPlotsByKey[msg_key]
+        else:
+            self.msgPlotsByKey[msg_key] = plotListForKey
         plotName = msgClass.MsgName()
         if plottingLoaded:
-            msgPlot = MsgPlot(msgClass, fieldName)
+            msgPlot = MsgPlot(msgClass, msg_key, fieldName)
+            self.msgPlotList.append(msgPlot)
             # add a dock widget for new plot
-            dockWidget = ClosableDockWidget(plotName, self, msgPlot, plotListForID)
+            dockWidget = ClosableDockWidget(plotName, self, msgPlot, plotListForKey)
             self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
             # Change title when plot is paused/resumed
             msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
             msgPlot.AddLineError.connect(lambda s: QMessageBox.warning(self, "Message Scope", s))
-            plotListForID.append(msgPlot)
+            # callback to register a plot to listen to a message ID.
+            # this is triggered by plotting new message fields on a plot (including by drag-and-drop)
+            def register_plot_for_message_key(key):
+                plot = self.sender()
+                self.registerPlotForKey(key, plot)
+            msgPlot.RegisterForMessage.connect(lambda key: register_plot_for_message_key(key))
+            plotListForKey.append(msgPlot)
             return msgPlot
         
     def onRxMessageFieldSelected(self, rxWidgetItem):
@@ -289,7 +318,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             msg_id = hex(rxWidgetItem.msg.hdr.GetMessageID())
             msg_key = ",".join(Messaging.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
             try:
-                msgPlot = self.addPlot(msg_key, type(rxWidgetItem.msg), rxWidgetItem.fieldName)
+                msgPlot = self.addPlot(type(rxWidgetItem.msg), msg_key, rxWidgetItem.fieldName)
                 if msgPlot:
                     msgPlot.addData(rxWidgetItem.msg)
             except MsgPlot.PlotError as e:
@@ -350,7 +379,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 
     def add_message_to_rx_tree(self, msg_key, msg):
         if not msg_key in self.rx_msg_widgets:
-            msg_widget = txtreewidget.MessageItem(self.rx_messages_widget, msg)
+            msg_widget = txtreewidget.MessageItem(self.rx_messages_widget, msg, msg_key)
             self.rx_msg_widgets[msg_key] = msg_widget
             self.rx_messages_widget.addTopLevelItem(msg_widget)
             self.rx_messages_widget.resizeColumnToContents(0)
@@ -360,9 +389,9 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             self.rx_msg_widgets[msg_key].set_msg_buffer(msg.rawBuffer())
     
     def display_message_in_plots(self, msg_key, msg):
-        if msg_key in self.msgPlots:
-            plotListForID = self.msgPlots[msg_key]
-            for plot in plotListForID:
+        if msg_key in self.msgPlotsByKey:
+            plotListForKey = self.msgPlotsByKey[msg_key]
+            for plot in plotListForKey:
                 plot.addData(msg)
     
     def clear_rx_list(self):
