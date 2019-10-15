@@ -9,4 +9,4 @@ The entirety of this project is dual licensed under LGPLv2 and a commercial lice
 
 All contributors to this project must assign copyright of their additions/modifications to Miles Gazic before contributing.
 
-See further documentation in the Docs directory.
+See further documentation in the [GitHub Wiki](https://github.com/MilesEngineering/MsgTools/wiki) or the Docs directory.
