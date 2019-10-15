@@ -48,6 +48,14 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         w = QtWidgets.QWidget(self)
         w.setLayout(vbox)
         self.setCentralWidget(w)
+        
+        warning = QtWidgets.QLabel(
+        "THIS APP SPEWS RANDOM NOISE!\n"
+        "Do not use this connected to real\n"
+        "hardware or with a production system!")
+        warning.setStyleSheet("QLabel { background-color : red; color : blue; }")
+        warning.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(warning)
 
         self.timeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.timeSlider.setMinimum(1)
@@ -59,8 +67,8 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         self.timeSlider.valueChanged.emit(t)
 
         self.startStop = QtWidgets.QPushButton(self)
-        self.startStop.setText('Stop')
-        self.startStop.clicked.connect(self.startStopFn)
+        self.startStop.setText('Start')
+        self.startStop.clicked.connect(self.confirmNoise)
         vbox.addWidget(self.startStop)
         
         # check if user specified which messages we should output
@@ -81,9 +89,21 @@ class NoiseMaker(msgtools.lib.gui.Gui):
                 if period > 0.5:
                     period = 0.1
                 self.msgTxTime[msgName] = 0
-       
-        self.msgTimer.start()
-        
+    
+    def confirmNoise(self):
+        buttonReply = QtWidgets.QMessageBox.question(self,
+            'NoiseMaker',
+            "Are you sure you want to spew random data?\n"
+            "This will have unpredictable/dangerous results!",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No)
+        if buttonReply == QtWidgets.QMessageBox.Yes:
+            self.startStop.clicked.disconnect(self.confirmNoise)
+            self.startStop.clicked.connect(self.startStopFn)
+            self.startStopFn()
+        else:
+            print('No clicked.')
+
     def startStopFn(self):
         if self.msgTimer.isActive():
             self.msgTimer.stop()
