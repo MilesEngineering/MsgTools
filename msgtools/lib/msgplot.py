@@ -28,7 +28,7 @@ from datetime import timedelta
 from collections import namedtuple
 
 # make tuple for line, and have multiple of them in a MsgPlot, as long as their units match and they are from the same message
-LineInfo = namedtuple('LineInfo', 'fieldInfo fieldSubindex dataArray timeArray curve ptr1')
+LineInfo = namedtuple('LineInfo', 'msgClass msgKey baseName fieldInfo fieldSubindex dataArray timeArray curve ptr1')
 
 start_time = datetime.now().timestamp()
 def elapsedSeconds(timestamp):
@@ -45,8 +45,9 @@ class MsgPlot(QWidget):
 
     Paused = QtCore.pyqtSignal(bool)
     AddLineError = QtCore.pyqtSignal(str)
+    RegisterForMessage = QtCore.pyqtSignal(str)
     MAX_LENGTH = 500
-    def __init__(self, msgClass, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None):
+    def __init__(self, msgClass, msgKey, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None):
         super(QWidget,self).__init__()
         
         newFieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
@@ -56,9 +57,10 @@ class MsgPlot(QWidget):
 
         layout = QVBoxLayout()
         self.setLayout(layout)
-        self.msgClass = msgClass
+        #self.msgClass = msgClass
         self.pause = 0
         self.lineCount = 0
+        self.showUnitsOnLegend = True
         self.units = fieldInfo.units
         self.lines = []
 
@@ -67,7 +69,7 @@ class MsgPlot(QWidget):
         self.plotWidget = pg.PlotWidget(labels={'left':yAxisLabel,'bottom':xAxisLabel})
         layout.addWidget(self.plotWidget)
         self.plotWidget.addLegend()
-        self.addLine(msgClass, fieldName, fieldLabel)
+        self.addLine(msgClass, msgKey, fieldName, fieldLabel)
 
         # set up click handler to pause graph
         self.plotWidget.scene().sigMouseClicked.connect(self.mouseClicked)
@@ -134,7 +136,11 @@ class MsgPlot(QWidget):
         ev.accept()
         item = ev.source().currentItem()
         try:
-            self.addLine(type(item.msg), item.fieldName)
+            # add a line for whatever got dropped on us
+            msgClass = type(item.msg)
+            self.addLine(msgClass, item.msg_key, item.fieldName)
+            # register to receive message updates for the new line
+            self.RegisterForMessage.emit(item.msg_key)
         except MsgPlot.PlotError as e:
             self.AddLineError.emit(str(e))
     
@@ -144,7 +150,7 @@ class MsgPlot(QWidget):
             line.timeArray.clear()
             self.refreshLine(line)
 
-    def addLine(self, msgClass, fieldName, fieldLabel = None):
+    def addLine(self, msgClass, msgKey, fieldName, fieldLabel = None):
         fieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
         fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
         if fieldInfo == None:
@@ -160,15 +166,26 @@ class MsgPlot(QWidget):
                 if fieldInfo.count > 1:
                     name = "%s[%d]" % (name, fieldIndex)
                 raise MsgPlot.PlotError("Line %s already on plot" % name)
-        if msgClass != self.msgClass:
-            raise MsgPlot.NewPlotError("Message %s != %s, cannot add to same plot" % (msgClass.__name__, self.msgClass.__name__))
-        if fieldInfo.units != self.units:
-            raise MsgPlot.NewPlotError("Units %s != %s, not adding to plot" % (fieldInfo.units, self.units))
-        
+        #TODO why not plot things from different messages?!?
+        #if msgClass != self.msgClass:
+        #    raise MsgPlot.NewPlotError("Message %s != %s, cannot add to same plot" % (msgClass.__name__, self.msgClass.__name__))
+        if self.showUnitsOnLegend:
+            if fieldInfo.units != self.units:
+                self.showUnitsOnLegend = True
+                self.units = None
+                #TODO how to edit existing left axis label?!?
+                #print(str(self.plotWidget)) # how to print all attributes of an object?
+                # pyqtgraph.widgets.PlotWidget.PlotWidget just shows up as <pyqtgraph.widgets.PlotWidget.PlotWidget object at 0x7f64c4644168>
+                #self.plotWidget.labels['left'] = 'none?!?'
+                for line in self.lines:
+                    pass
+                    #TODO how to edit existing legend
+                    #line.curve.setName(line.baseName)
+
         if fieldIndex != None:
-            self._addLine(msgClass, fieldInfo, fieldIndex, fieldLabel)
+            self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend)
         elif fieldInfo.count == 1:
-            self._addLine(msgClass, fieldInfo, 0, fieldLabel)
+            self._addLine(msgClass, msgKey, fieldInfo, 0, fieldLabel, self.showUnitsOnLegend)
         else:
             dups = []
             for fieldIndex in range(0, fieldInfo.count):
@@ -179,7 +196,7 @@ class MsgPlot(QWidget):
                         duplicate = True
                         break
                 if not duplicate:
-                    self._addLine(msgClass, fieldInfo, fieldIndex, fieldLabel)
+                    self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend)
             if len(dups) > 0:
                 if len(dups) == 1:
                     s = ' '+str(dups[0])
@@ -191,10 +208,14 @@ class MsgPlot(QWidget):
                         s += '%s,' % d
                 raise MsgPlot.PlotError("Line%s already on plot" % s)
 
-    def _addLine(self, msgClass, fieldInfo, fieldIndex, fieldLabel = None):
+    def _addLine(self, msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel = None, showUnits=False):
         lineName = fieldInfo.name
+        baseName = lineName
+        if showUnits and fieldInfo.units != '' and fieldInfo.units != 'UNKNOWN':
+            lineName = lineName + " (%s)" % fieldInfo.units
         if fieldLabel != None:
             lineName = fieldLabel
+            baseName = lineName
         try:
             if fieldInfo.count != 1:
                 lineName += "["+str(fieldIndex)+"]"
@@ -205,7 +226,7 @@ class MsgPlot(QWidget):
         ptr1 = 0
         self.useHeaderTime = 0
         curve = self.plotWidget.plot(timeArray, dataArray, name=lineName, pen=(len(self.lines)))
-        lineInfo = LineInfo(fieldInfo, fieldIndex, dataArray, timeArray, curve, ptr1)
+        lineInfo = LineInfo(msgClass, msgKey, baseName, fieldInfo, fieldIndex, dataArray, timeArray, curve, ptr1)
         self.lines.append(lineInfo)
         
     def pauseOrRun(self):
@@ -222,6 +243,8 @@ class MsgPlot(QWidget):
         # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
         for line in self.lines:
             try:
+                if type(msg) != line.msgClass:
+                    continue
                 newDataPoint = Messaging.getFloat(msg, line.fieldInfo, line.fieldSubindex)
             except ValueError:
                 print("ERROR! Plot of %s.%s cannot accept value %s" % (
@@ -271,7 +294,7 @@ class MsgPlot(QWidget):
             self.refreshLine(line)
 
     @staticmethod
-    def plotFactory(new_plot, msgClass, fieldNames, fieldLabels = None, runButton = None, clearButton = None, timeSlider = None, displayControls=True):
+    def plotFactory(new_plot_callback, msgClass, fieldNames, msgKey = None, fieldLabels = None, runButton = None, clearButton = None, timeSlider = None, displayControls=True):
         msgPlot = None
         if len(fieldNames) == 0:
             fieldNames = [fieldInfo.name for fieldInfo in msgClass.fields]
@@ -283,7 +306,7 @@ class MsgPlot(QWidget):
             # if there's a plot widget, try adding a line to it
             if msgPlot != None:
                 try:
-                    msgPlot.addLine(msgClass, fieldName, fieldLabel)
+                    msgPlot.addLine(msgClass, msgKey, fieldName, fieldLabel)
                 except MsgPlot.NewPlotError as e:
                     # if error on adding to existing plot, then make a new plot
                     msgPlot = None
@@ -294,7 +317,8 @@ class MsgPlot(QWidget):
             if msgPlot == None:
                 try:
                     msgPlot = MsgPlot(msgClass, fieldName, runButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel)
-                    new_plot(msgPlot)
+                    msgPlot.msgClass = msgClass
+                    new_plot_callback(msgPlot)
                 except MsgPlot.PlotError as e:
                     print(str(e))
             idx += 1
