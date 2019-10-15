@@ -161,17 +161,16 @@ def getFn(msg, field):
     if "Enum" in field:
         # find index that corresponds to string input param
         cleanup = reverseEnumLookup(msg, field)
-    if  count > 1:
-        if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
-            preface += "\n    count = " + str(count)+"\n"
-            preface += "    if count > len(self.rawBuffer())-("+loc+"):\n"
-            preface += "        count = len(self.rawBuffer())-("+loc+")\n"
-            type = "str(count)+'s'"
-            count = 1
-            cleanup = '''ascii_len = str(value).find("\\\\x00")
+    if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+        preface += "\n    count = " + str(count)+"\n"
+        preface += "    if count > len(self.rawBuffer())-("+loc+"):\n"
+        preface += "        count = len(self.rawBuffer())-("+loc+")\n"
+        type = "str(count)+'s'"
+        count = 1
+        cleanup = '''ascii_len = str(value).find("\\\\x00")
     value = str(value)[2:ascii_len]
     ''' 
-        else:
+    elif count > 1:
             loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     if "Offset" in field or "Scale" in field:
         cleanup = "value = " + MsgParser.getMath("value", field, "")+"\n    "
@@ -195,13 +194,12 @@ def setFn(msg, field):
     if "int" in storageType:
         math = "min(max(%s, %s), %s)" % (math, MsgParser.fieldStorageMin(storageType), MsgParser.fieldStorageMax(storageType))
     math = lookup + "tmp = " + math
-    if count > 1:
-        if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
-            type = str(count) + "s"
-            count = 1
-            math = "tmp = value.encode('utf-8')"
-        else:
-            loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
+    if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
+        type = str(count) + "s"
+        count = 1
+        math = "tmp = value.encode('utf-8')"
+    elif count > 1:
+        loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     ret  = '''\
 %s
     %s
