@@ -389,6 +389,19 @@ def Structs(inputData):
             structList.update(Structs(data))
     return structList
 
+def NestedArraysExist(field, structs, outer_array_exists):
+    if fieldCount(field) > 1:
+        if outer_array_exists:
+            return True
+        outer_array_exists = True
+    if field["Type"] in structs:
+        s = structs[field["Type"]]
+        for subfield in s['Fields']:
+            found_sub_array = NestedArraysExist(subfield, structs, outer_array_exists)
+            if found_sub_array:
+                return True
+    return False
+    
 # this replaces fields that are references to structs with the fields from the referenced struct,
 # and also sets a few items of field meta-data (Location, StructSize, Count)
 def PatchStructs(inputData):
@@ -406,6 +419,18 @@ def PatchStructs(inputData):
                     location = 0
                     outfields = []
                     for field in msg['Fields']:
+                        nested_structs = NestedArraysExist(field, structs, False)
+                        if nested_structs:
+                            #print("found nested struct in %s.%s" % (msg["Name"], field["Name"]))
+                            if fieldCount(field) > 1:
+                                # flatten array!
+                                #print("Flattening array %s[%d]" % (field["Name"], fieldCount(field)))
+                                for j in range(fieldCount(field)):
+                                    fieldcopy = copy.deepcopy(field)
+                                    fieldcopy['Name'] = fieldcopy['Name'] + "_" + str(j)
+                                    fieldcopy['Count'] = 1
+                                    outfields.append(fieldcopy)
+                                continue
                         if field["Type"] in structs:
                             s = structs[field["Type"]]
                             # For arrays of structs, compute the size of the structure and store it in each
@@ -448,9 +473,7 @@ def PatchStructs(inputData):
                                         subfieldcopy['Count'] = fieldCount(field)
                                 else:
                                     if fieldCount(field) > 1:
-                                        print("ERROR! %s Field %s Count %d > 1 and Subfield %s Count %d > 1" % (msg["Name"], field['Name'], fieldCount(field), subfieldcopy['Name'], fieldCount(subfieldcopy)))
-                                        #TODO Not sure if we can handle arrays of structs with arrays in them!
-                                        #TODO Maybe need to flatten outer arrays (multiple fields with _0, _1, _2 etc.)?
+                                        raise MessageException("ERROR! %s Field %s Count %d > 1 and Subfield %s Count %d > 1" % (msg["Name"], field['Name'], fieldCount(field), subfieldcopy['Name'], fieldCount(subfieldcopy)))
                                         subfieldcopy['Count'] = fieldCount(field) * fieldCount(subfieldcopy)
                                 #TODO How to handle array of bitfields?!?
                                 if "Bitfields" in subfieldcopy:
