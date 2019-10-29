@@ -15,21 +15,21 @@
                     .then(()=>{
                         // TODO: Display messages supported
                         connectToServer()
-                        document.getElementById('body').innerHTML = 
+                        document.getElementById('body').innerHTML =
                             '<p>Open debug console to see output of javascript console.log statements!</p>'
                     })
                     .catch(error=>{
                         console.log('Unable to load messages...')
                         console.log(error)
-                        document.getElementById('body').innerHTML = 
-                            '<p>Unable to load generated messages.  Open debug console to see debug output!</p>'
+                        document.getElementById('body').innerHTML =
+                            '<p>Unable to load generated messages. Open debug console to see debug output!</p>'
                     })
             })
             .catch(error=>{
                 console.log('Failed to load dependencies')
                 console.log(error)
-                document.getElementById('body').innerHTML = 
-                    '<p>Unable to load msgtools dependent messages.  Open debug console to see debug output!</p>'
+                document.getElementById('body').innerHTML =
+                    '<p>Unable to load msgtools dependent messages. Open debug console to see debug output!</p>'
             })
     </script>
 </head>

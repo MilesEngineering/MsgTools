@@ -10,7 +10,7 @@ function initMsgTools() {
             // Load app specific messages
             msgtools.loadMessages({{ messages }})
                 .then(() => {
-                    // Once all scripts have loaded then we can 
+                    // Once all scripts have loaded then we can
                     // instantiate a connection to the server...
                     connectToServer()
                 })
@@ -31,7 +31,7 @@ function initMsgTools() {
 //
 function connectToServer() {
     msgclient = new msgtools.MessagingClient('{{appname}}', window);
-    //Assign client to use msgsocket-connector and msgsocket-logging widgets 
+    //Assign client to use msgsocket-connector and msgsocket-logging widgets
     {% if widgets %} WebSocketUtils.setClient('{{appname}}', msgclient); {% endif %}
 
     msgclient.addEventListener('connected', () => {
@@ -63,10 +63,10 @@ function connectToServer() {
         // TODO: Any custom handling needed
     })
 
-    {% if not widgets %} 
+    {% if not widgets %}
         // Uncomment and modify to exercise option values below
         // indicate msgtools defaults for use with local insecure 
-        // connections.  We assume the taget server is MsgServer
+        // connections.  We assume the target server is MsgServer
         // and we emit Connect and other messages expected by that
         // server as part of our connection sequence.
         var options = new Map()

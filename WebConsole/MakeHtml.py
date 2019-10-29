@@ -4,9 +4,9 @@ import sys
 import argparse
 import jinja2
 
-description = '''This script inspects the given message directory and builds a list of all the message modules
-    in the message directory.  It then emits a web app (WebConsole.html) that will load and parse these messages
-    to the console.'''
+description = '''This script inspects the given message directory and builds a
+    list of all the message modules in the message directory.  It then emits a
+    web app (WebConsole.html) that will load and parse these messages to the console.'''
 
 
 def buildApp(msgdir, templatefile, outputdir):
