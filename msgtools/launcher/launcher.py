@@ -72,12 +72,15 @@ class MsgLauncher(QtWidgets.QMainWindow):
 
             # set up icon
             icon_filename = app_info.icon_filename
-            pixmap = QtGui.QPixmap(icon_filename)
-            icon = QtGui.QIcon(pixmap)
-            app_launcher.setIcon(icon)
-            app_launcher.setIconSize(pixmap.rect().size()/2)
-            app_launcher.setFixedSize(pixmap.rect().size())
-            app_launcher.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+            if os.path.exists(icon_filename):
+                pixmap = QtGui.QPixmap(icon_filename)
+                icon = QtGui.QIcon(pixmap)
+                app_launcher.setIcon(icon)
+                app_launcher.setIconSize(pixmap.rect().size()/2)
+                app_launcher.setFixedSize(pixmap.rect().size())
+                app_launcher.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+            else:
+                print("ERROR!  %s does not exist!" % icon_filename)
 
             # set up launching when clicked
             app_launcher.program_name = app_info.program_name
