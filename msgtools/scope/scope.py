@@ -58,15 +58,17 @@ def vsplitter(parent, *argv):
     return splitter
 
 class ClosableDockWidget(QDockWidget):
-    def __init__(self, name, parent, widget, itemList):
+    def __init__(self, name, parent, widget, itemList, itemList2):
         super(QDockWidget,self).__init__(name, parent)
         self.setObjectName(name)
         self.setWidget(widget)
         # list it needs to be removed from
         self.itemList = itemList
+        self.itemList2 = itemList2
 
     def closeEvent(self, ev):
         self.itemList.remove(self.widget())
+        self.itemList2.remove(self.widget())
         self.parent().removeDockWidget(self)
 
 class MessageScopeGui(msgtools.lib.gui.Gui):
@@ -245,6 +247,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.debugWidget.textEntryWidget.restoreState(self.settings.value("cmdHistory", self.debugWidget.textEntryWidget.saveState()));
 
     def on_close(self):
+        self.settings.remove("plots")
         self.settings.beginWriteArray("plots")
         plotList = ""
         i = 0
@@ -277,15 +280,9 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
     
     def registerPlotForKey(self, msg_key, plot):
         if not msg_key in self.msgPlotsByKey:
-            print('adding new key %s to self.msgPlotsByKey' % msg_key)
             self.msgPlotsByKey[msg_key] = []
-        else:
-            print('using existing key %s in self.msgPlotsByKey' % msg_key)
         if not plot in self.msgPlotsByKey[msg_key]:
-            print('adding new plot to self.msgPlotsByKey[%s]' % msg_key)
             self.msgPlotsByKey[msg_key].append(plot)
-        else:
-            print('plot already in self.msgPlotsByKey[%s]' % msg_key)
 
     def addPlot(self, msgClass, msg_key, fieldName):
         plotListForKey = []
@@ -298,7 +295,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             msgPlot = MsgPlot(msgClass, msg_key, fieldName)
             self.msgPlotList.append(msgPlot)
             # add a dock widget for new plot
-            dockWidget = ClosableDockWidget(plotName, self, msgPlot, plotListForKey)
+            dockWidget = ClosableDockWidget(plotName, self, msgPlot, plotListForKey, self.msgPlotList)
             self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
             # Change title when plot is paused/resumed
             msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
