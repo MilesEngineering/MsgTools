@@ -73,6 +73,10 @@ class BaseSerialConnection(QObject):
         self.serialPort.readyRead.connect(self.onReadyRead)
         self.name = self.base_name + " " + self.serialPort.portName()
         self.statusLabel.setText(self.name)
+        
+        self.reopenTimer = QtCore.QTimer(self)
+        self.reopenTimer.setInterval(1000)
+        self.reopenTimer.timeout.connect(self._openSerialPort)
 
     def onDisconnected(self):
         self.disconnected.emit(self)
@@ -83,7 +87,11 @@ class BaseSerialConnection(QObject):
         elif error == QSerialPort.ReadError:
             self.statusUpdate.emit("Error, Closing SerialPort on port "+str(self.serialPort.portName()))
             self._closeSerialPort()
-            QtCore.QTimer.singleShot(1000, self._openSerialPort)
+            # Don't restart the timer if it's active.
+            # If we did, then a steady stream of errors would keep resetting
+            # the timer, and it would never go off.
+            if not self.reopenTimer.isActive():
+                self.reopenTimer.start()
         elif error == QSerialPort.ResourceError:
             pass
 
@@ -99,15 +107,19 @@ class BaseSerialConnection(QObject):
         return None
     
     def _openSerialPort(self):
-        if self.serialPort.open(QSerialPort.ReadWrite):
-            self.statusUpdate.emit("Opened SerialPort on port "+str(self.serialPort.portName()))
-            self.openCloseButton.setText("Close")
-            self.settings.setValue("portName", self.serialPort.portName())
-            return True
+        if self.serialPort.isOpen():
+            # if we're already open, make sure we stop retrying to open
+            self.reopenTimer.stop()
         else:
-            self.openCloseButton.setText("Open")
-            QtCore.QTimer.singleShot(1000, self._openSerialPort)
-            return False
+            if self.serialPort.open(QSerialPort.ReadWrite):
+                self.statusUpdate.emit("Opened SerialPort on port "+str(self.serialPort.portName()))
+                self.openCloseButton.setText("Close")
+                self.settings.setValue("portName", self.serialPort.portName())
+                self.reopenTimer.stop()
+                return True
+            else:
+                self.openCloseButton.setText("Open")
+                return False
 
     def _closeSerialPort(self):
         self.serialPort.close()
