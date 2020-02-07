@@ -17,8 +17,6 @@ class RowInfo:
                 self.col_number_offsets[self.col_names[i]] = int(parts[1])
                 
         self.first_line = True
-        print(self.row_name)
-        print(self.col_names)
 
     def ProcessData(self, line):
         if self.row_name in line:
