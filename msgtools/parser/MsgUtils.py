@@ -94,16 +94,23 @@ def transformInt(field, value):
     if "Scale" in field or "Offset" in field:
         scale = fieldItem(field, "Scale", 1.0)
         offset = fieldItem(field, "Offset", 0.0)
-        value = value * scale + offset
+        value = float(value) * float(scale) + float(offset)
     return value
 
 def fieldMin(field):
     if fieldIsInt(field):
         numBits = fieldNumBits(field)
-        if fieldIsSigned(field):
-            minVal = -2**(numBits-1)
+        # if scale is negative, reverse min/max based on range of storage value
+        if "Scale" in field and float(field['Scale']) < 0.0:
+            if fieldIsSigned(field):
+                minVal = 2**(numBits-1)-1
+            else:
+                minVal = 2**numBits-1
         else:
-            minVal = 0
+            if fieldIsSigned(field):
+                minVal = -2**(numBits-1)
+            else:
+                minVal = 0
         minVal = transformInt(field, minVal)
     elif "Type" in field and field["Type"] == 'float64':
         minVal = "DBL_MIN"
@@ -115,10 +122,17 @@ def fieldMin(field):
 def fieldMax(field):
     if fieldIsInt(field):
         numBits = fieldNumBits(field)
-        if fieldIsSigned(field):
-            maxVal = 2**(numBits-1)-1
+        # if scale is negative, reverse min/max based on range of storage value
+        if "Scale" in field and float(field['Scale']) < 0.0:
+            if fieldIsSigned(field):
+                maxVal = -2**(numBits-1)
+            else:
+                maxVal = 0
         else:
-            maxVal = 2**numBits-1
+            if fieldIsSigned(field):
+                maxVal = 2**(numBits-1)-1
+            else:
+                maxVal = 2**numBits-1
         maxVal = transformInt(field, maxVal)
     elif "Type" in field and field["Type"] == 'float64':
         maxVal = "DBL_MAX"
