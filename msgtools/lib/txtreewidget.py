@@ -161,6 +161,8 @@ class FieldArrayItem(QTreeWidgetItem):
             return super(FieldArrayItem, self).data(column, role)
 
         if self.index == None:
+            if role == Qt.FontRole:
+                return QFont()
             return ""
 
         alert = Messaging.getAlert(self.msg, self.fieldInfo, self.index)
