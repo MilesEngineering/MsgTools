@@ -350,11 +350,12 @@ or specify that directory with --msgdir=PATH''')
 
     @staticmethod
     def set(msg, fieldInfo, value, index=0):
-        if("int" in fieldInfo.type):
+        if("int" in fieldInfo.type or "enumeration" == fieldInfo.type):
             if isinstance(value, str):
                 value = value.strip()
                 if value.startswith("0x"):
                     value = int(value, 0)
+        if("int" in fieldInfo.type):
             value = int(float(value))
         elif("float" in fieldInfo.type):
             value = float(value)

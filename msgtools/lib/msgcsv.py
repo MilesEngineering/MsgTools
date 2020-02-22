@@ -20,9 +20,12 @@ def toCsv(msg, nameColumn=True, timeColumn=False):
         ret += msg.MsgName() + ", "
     for fieldInfo in Messaging.MsgClass(msg.hdr).fields:
         if(fieldInfo.count == 1):
-            columnText = add_param(str(Messaging.get(msg, fieldInfo)))
-            for bitInfo in fieldInfo.bitfieldInfo:
-                columnText += add_param(str(Messaging.get(msg, bitInfo)))
+            if len(fieldInfo.bitfieldInfo) == 0:
+                columnText = add_param(str(Messaging.get(msg, fieldInfo)))
+            else:
+                columnText = ""
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    columnText += add_param(str(Messaging.get(msg, bitInfo)))
         else:
             columnText = ""
             for i in range(0,fieldInfo.count):
@@ -43,9 +46,11 @@ def csvHeader(msg, nameColumn=True, timeColumn=False):
     if nameColumn:
         tableHeader += msg.MsgName() + ", "
     for fieldInfo in type(msg).fields:
-        tableHeader += fieldInfo.name + ", "
-        for bitInfo in fieldInfo.bitfieldInfo:
-            tableHeader += bitInfo.name + ", "
+        if len(fieldInfo.bitfieldInfo) == 0:
+            tableHeader += fieldInfo.name + ", "
+        else:
+            for bitInfo in fieldInfo.bitfieldInfo:
+                tableHeader += bitInfo.name + ", "
     # drop last two chars (', ') off end
     return tableHeader[:-2]
 
@@ -96,17 +101,17 @@ def csvToMsg(lineOfText):
                     val = params[paramNumber].strip()
                     #print("val is [" + val + "]") 
                     if(fieldInfo.count == 1):
-                        if val.endswith(";"):
-                            terminateMsg = 1
-                            val = val[:-1]
-                            if val == "":
-                                # terminate without this field
-                                terminationLen = int(fieldInfo.get.offset)
-                                break
-                            # terminate after this field
-                            #TODO Broken for arrays-of-structs acting like parallel arrays!
-                            terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)
                         if len(fieldInfo.bitfieldInfo) == 0:
+                            if val.endswith(";"):
+                                terminateMsg = 1
+                                val = val[:-1]
+                                if val == "":
+                                    # terminate without this field
+                                    terminationLen = int(fieldInfo.get.offset)
+                                    break
+                                # terminate after this field
+                                #TODO Broken for arrays-of-structs acting like parallel arrays!
+                                terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)
                             if fieldInfo.type == "string":
                                 if val.startswith('"') and val.endswith('"'):
                                     val = val.strip('"')
@@ -117,9 +122,18 @@ def csvToMsg(lineOfText):
                             paramNumber+=1
                         else:
                             for bitInfo in fieldInfo.bitfieldInfo:
+                                if val.endswith(";"):
+                                    terminateMsg = 1
+                                    val = val[:-1]
+                                    # terminate without anything after our parent field
+                                    terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)
+                                    if val == "":
+                                        break
                                 Messaging.set(msg, bitInfo, val)
                                 paramNumber+=1
                                 val = params[paramNumber]
+                                if terminateMsg:
+                                    break
                     else:
                         if val.startswith("0x") and len(val) > 2+2*int(fieldInfo.get.size):
                             if val.endswith(";"):

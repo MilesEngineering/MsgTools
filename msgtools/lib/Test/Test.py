@@ -105,7 +105,9 @@ class TestClass(unittest.TestCase):
          ("TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, eight;",       {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "eight"}, "hdr" : {"DataLength": ";"}}),
          ('TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, "eight;"',     {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "eight;"}}),
          ('TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, "eig,ht";',    {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "eig,ht"}, "hdr" : {"DataLength": ";"}}),
-         ("TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, ei ght;",      {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "ei ght"}, "hdr" : {"DataLength": ";"}})]
+         ("TestCase4 1, 2,3,4,5,6,7,8,9,10,11, 12,13,14, ei ght;",      {"TestCase4": {"A":1, "B": [2,3,4,5,6,7,8,9,10,11], "C": [12,13,14], "D": "ei ght"}, "hdr" : {"DataLength": ";"}}),
+         ("TestCase1, 1,2,13,14, 15,16,  17,0.0,OptionA,1;",      {"TestCase1": {"FieldA":1, "FieldB": 2, "FieldC": [13,14,15,16,17], "FieldD": 0, "BitsA": "0.0", "BitsB": "OptionA", "BitsC":1}, "hdr" : {"DataLength": ";"}}),
+         ("TestCase1, 2, 3, 13, 14, 15, 16, 17, 0.0, 0x1, 1;",      {"TestCase1": {"FieldA":2, "FieldB": 3, "FieldC": [13,14,15,16,17], "FieldD": 0, "BitsA": "0.0", "BitsB": "0x1", "BitsC":1}, "hdr" : {"DataLength": ";"}})]
         commaTestData = []
         for tc in testData:
             newTestCase = (tc[0].replace("TestCase4 ", "TestCase4,"), tc[1])

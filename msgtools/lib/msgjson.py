@@ -75,6 +75,7 @@ def jsonToMsg(jsonString):
                         Messaging.set(msg, fieldInfo, fieldValue[i], i)
                         if terminationLen != None:
                             #TODO Broken for arrays-of-structs acting like parallel arrays!
+                            #TODO Broken for bitfields, because they have fieldInfo.get.size == 0!
                             terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1))
                 elif isinstance(fieldValue, dict):
                     #print(fieldName + " dict type is " + str(type(fieldValue)))
@@ -91,6 +92,7 @@ def jsonToMsg(jsonString):
                             terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(fieldValue))
                         else:
                             #TODO Broken for arrays-of-structs acting like parallel arrays!
+                            #TODO Broken for bitfields, because they have fieldInfo.get.size == 0!
                             terminationLen = max(terminationLen, int(fieldInfo.get.offset) + int(fieldInfo.get.size))
     if terminationLen != None:
         msg.hdr.SetDataLength(terminationLen)
