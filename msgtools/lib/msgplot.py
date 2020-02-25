@@ -36,6 +36,18 @@ def elapsedSeconds(timestamp):
         return timestamp - start_time
     return timestamp
 
+# I just added an optimization that replaces sequences of flat data
+# with just two points, so we're starting to be a little smarter
+# about storing data.  maybe we want to decimate very old data?
+# that'll look wrong if user zooms in, though
+# it also breaks time slider, because there's no longer the
+# same number of points in each line for the same time period :(
+# timeslider should likely change to using actual X axis ranges,
+# and then we need to find points that falls in that time in the data?
+# if time resets (which happens often when msgserver restarts or
+# embedded processor resets depending on how time is managed,
+# then time is non-linear and not necessarily always increasing in
+# the arrays and any kind of smart search won't work well :(
 class MsgPlot(QWidget):
     class PlotError(Exception):
         pass
@@ -46,7 +58,7 @@ class MsgPlot(QWidget):
     Paused = QtCore.pyqtSignal(bool)
     AddLineError = QtCore.pyqtSignal(str)
     RegisterForMessage = QtCore.pyqtSignal(str)
-    MAX_LENGTH = 500
+    MAX_LENGTH = 1000
     def __init__(self, msgClass, msgKey, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None):
         super(QWidget,self).__init__()
         
@@ -225,7 +237,13 @@ class MsgPlot(QWidget):
         timeArray = []
         ptr1 = 0
         self.useHeaderTime = 0
-        curve = self.plotWidget.plot(timeArray, dataArray, name=lineName, pen=(len(self.lines)))
+        # This is ugly, but try to make plotWidget.plot(pen) parameters that result in colors easy to distinguish.
+        line_number = len(self.lines)
+        line_count_estimate = 6
+        while line_count_estimate < len(self.lines)+1:
+            line_count_estimate = line_count_estimate + 6
+            line_number = (line_number - 6)*2+1
+        curve = self.plotWidget.plot(timeArray, dataArray, name=lineName, pen=(line_number,line_count_estimate))
         lineInfo = LineInfo(msgClass, msgKey, baseName, fieldInfo, fieldIndex, dataArray, timeArray, curve, ptr1)
         self.lines.append(lineInfo)
         
@@ -265,16 +283,23 @@ class MsgPlot(QWidget):
                 # if header has no time, fallback to PC time.
                 newTime = elapsedSeconds(datetime.now().timestamp())
             
-            # add data in the array until MAX_LENGTH is reached, then drop data off start of array
-            # such that plot appears to scroll.  The array size is limited to MAX_LENGTH.
-            if len(line.dataArray) >= MsgPlot.MAX_LENGTH:
-                line.dataArray[:-1] = line.dataArray[1:]  # shift data in the array one sample left
-                line.dataArray[-1] = newDataPoint
-                line.timeArray[:-1] = line.timeArray[1:]  # shift data in the array one sample left
+            # if the last two data points have the same value as us, then instead of adding a point,
+            # we can just change the time of the previous point to our time
+            if (len(line.dataArray) > 2 and
+                line.dataArray[-2] == line.dataArray[-1] and
+                line.dataArray[-1] == newDataPoint):
                 line.timeArray[-1] = newTime
             else:
-                line.dataArray.append(newDataPoint)
-                line.timeArray.append(newTime)
+                # add data in the array until MAX_LENGTH is reached, then drop data off start of array
+                # such that plot appears to scroll.  The array size is limited to MAX_LENGTH.
+                if len(line.dataArray) >= MsgPlot.MAX_LENGTH:
+                    line.dataArray[:-1] = line.dataArray[1:]  # shift data in the array one sample left
+                    line.dataArray[-1] = newDataPoint
+                    line.timeArray[:-1] = line.timeArray[1:]  # shift data in the array one sample left
+                    line.timeArray[-1] = newTime
+                else:
+                    line.dataArray.append(newDataPoint)
+                    line.timeArray.append(newTime)
 
             if not self.pause:
                 self.refreshLine(line)

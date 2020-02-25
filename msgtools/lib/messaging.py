@@ -476,8 +476,11 @@ class BitFieldInfo(object):
         self.enum=enum
         self.idbits=idbits
         # add a couple fields from decorators of the 'get' function
-        self.offset = get.offset
-        self.size = get.size
+        self.offset = int(get.offset)
+        self.size = int(get.size)
+
+    def exists(self, msg, index=0):
+        return self.parent.exists(msg, index)
 
 class FieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, count, bitfieldInfo, enum, idbits=0):
@@ -494,5 +497,14 @@ class FieldInfo(object):
         self.enum=enum
         self.idbits=idbits
         # add a couple fields from decorators of the 'get' function
-        self.offset = get.offset
-        self.size = get.size
+        self.offset = int(get.offset)
+        self.size = int(get.size)
+        # give our bitfields a reference to us
+        for bfi in self.bitfieldInfo:
+            bfi.parent = self
+
+    def exists(self, msg, index=0):
+        end_of_field = self.offset + self.size * (index+1)
+        if msg.hdr.GetDataLength() >= end_of_field:
+            return True
+        return False

@@ -26,7 +26,7 @@ def toJson(msg, includeHeader=False):
     for fieldInfo in msgClass.fields:
         if(fieldInfo.count == 1):
             #TODO Broken for arrays-of-structs acting like parallel arrays!
-            if msg.hdr.GetDataLength() < int(fieldInfo.offset) + int(fieldInfo.size):
+            if not fieldInfo.exists(msg):
                 break
             if len(fieldInfo.bitfieldInfo) == 0:
                 pythonObj[fieldInfo.name] = str(Messaging.get(msg, fieldInfo))
@@ -38,7 +38,7 @@ def toJson(msg, includeHeader=False):
             terminate = 0
             for i in range(0,fieldInfo.count):
                 #TODO Broken for arrays-of-structs acting like parallel arrays!
-                if msg.hdr.GetDataLength() < int(fieldInfo.offset) + i*int(fieldInfo.size):
+                if not fieldInfo.exists(msg, i):
                     terminate = 1
                     break
                 arrayList.append(str(Messaging.get(msg, fieldInfo, i)))
@@ -76,7 +76,7 @@ def jsonToMsg(jsonString):
                         if terminationLen != None:
                             #TODO Broken for arrays-of-structs acting like parallel arrays!
                             #TODO Broken for bitfields, because they have fieldInfo.size == 0!
-                            terminationLen = max(terminationLen, int(fieldInfo.offset) + int(fieldInfo.size)*(i+1))
+                            terminationLen = max(terminationLen, fieldInfo.offset + fieldInfo.size*(i+1))
                 elif isinstance(fieldValue, dict):
                     #print(fieldName + " dict type is " + str(type(fieldValue)))
                     if fieldInfo.bitfieldInfo:
@@ -89,11 +89,11 @@ def jsonToMsg(jsonString):
                     if terminationLen != None:
                         if fieldInfo.type == "string":
                             #TODO Broken for arrays-of-structs acting like parallel arrays!
-                            terminationLen = max(terminationLen, int(fieldInfo.offset) + int(fieldInfo.size) * len(fieldValue))
+                            terminationLen = max(terminationLen, fieldInfo.offset + fieldInfo.size * len(fieldValue))
                         else:
                             #TODO Broken for arrays-of-structs acting like parallel arrays!
                             #TODO Broken for bitfields, because they have fieldInfo.size == 0!
-                            terminationLen = max(terminationLen, int(fieldInfo.offset) + int(fieldInfo.size))
+                            terminationLen = max(terminationLen, fieldInfo.offset + fieldInfo.size)
     if terminationLen != None:
         msg.hdr.SetDataLength(terminationLen)
     return msg
