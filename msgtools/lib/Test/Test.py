@@ -123,8 +123,13 @@ class TestClass(unittest.TestCase):
                 #print("csv is " + tc[0])
                 self.assertEqual(msg.hdr.GetDataLength(), msg2.hdr.GetDataLength(), self.info(tc, tcNum, "hdr.DataLength"))
                 #print("json of csv is " + json)
+                pos = 0
                 for fieldInfo in type(msg).fields:
                     if(fieldInfo.count == 1):
+                        pos += int(fieldInfo.get.offset) + int(fieldInfo.get.size)
+                        if pos > msg.hdr.GetDataLength():
+                            break
+                        
                         if len(fieldInfo.bitfieldInfo) == 0:
                             self.assertEqual(Messaging.get(msg, fieldInfo), Messaging.get(msg2, fieldInfo), self.info(tc, tcNum, fieldInfo.name))
                         else:
@@ -132,6 +137,9 @@ class TestClass(unittest.TestCase):
                                 self.assertEqual(Messaging.get(msg, bitInfo), Messaging.get(msg2, bitInfo), self.info(tc, tcNum, fieldInfo.name+"."+bitInfo.name))
                     else:
                         for i in range(0,fieldInfo.count):
+                            pos += int(fieldInfo.get.offset) + int(fieldInfo.get.size)
+                            if pos > msg.hdr.GetDataLength():
+                                break
                             self.assertEqual(Messaging.get(msg, fieldInfo, i), Messaging.get(msg2, fieldInfo, i), self.info(tc, tcNum, fieldInfo.name+"["+str(i)+"]"))
             except AssertionError:
                 print("test_csv_and_json test case %d" % (tcNum))
