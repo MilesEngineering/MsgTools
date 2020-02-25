@@ -144,6 +144,10 @@ class TestClass(unittest.TestCase):
                             break
             except AssertionError:
                 print("test_csv_and_json test case %d" % (tcNum))
+                msg1 = msgcsv.csvToMsg(tc[0])
+                print(msg1)
+                msg2 = msgjson.jsonToMsg(tc[1])
+                print(msg2)
                 raise
             except:
                 print("Exception on test case %d, [%s] != [%s]" % (tcNum, tc[0], tc[1]))
