@@ -32,13 +32,13 @@ class InfluxDBConnection:
         self.dataTimestampInfo = Messaging.findFieldInfo(Messaging.Messages.Network.History.Data.fields, "Data_Timestamp")
         if self.dataInfo != None:
             # multiply by 2 because the result includes a value and a timestamp
-            self.dataResultSize = self.dataInfo.get.size *2
-            self.dataResultOffset = self.dataInfo.get.offset
+            self.dataResultSize = self.dataInfo.size *2
+            self.dataResultOffset = self.dataInfo.offset
         else:
             # Size of a result includes size of the value and the timestamp.
-            self.dataResultSize = self.dataValueInfo.get.size + self.dataTimestampInfo.get.size
+            self.dataResultSize = self.dataValueInfo.size + self.dataTimestampInfo.size
             # This needs to be whichever element is first!
-            self.dataResultOffset = min(self.dataValueInfo.get.offset+self.dataTimestampInfo.get.offset)
+            self.dataResultOffset = min(self.dataValueInfo.offset+self.dataTimestampInfo.offset)
     
     @staticmethod
     def FormattedTime(floatTime):

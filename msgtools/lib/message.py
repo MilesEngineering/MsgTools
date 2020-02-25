@@ -138,7 +138,7 @@ class Message:
         ret = ''
         for fieldInfo in self.fields:
             if(fieldInfo.count == 1):
-                if self.hdr.GetDataLength() < int(fieldInfo.get.offset) + int(fieldInfo.get.size):
+                if self.hdr.GetDataLength() < int(fieldInfo.offset) + int(fieldInfo.size):
                     break
                 if len(fieldInfo.bitfieldInfo) == 0:
                     ret += add_param(fieldInfo.name, str(Messaging.get(self, fieldInfo)))
@@ -149,7 +149,7 @@ class Message:
                 arrayList = []
                 terminate = 0
                 for i in range(0,fieldInfo.count):
-                    if self.hdr.GetDataLength() < int(fieldInfo.get.offset) + i*int(fieldInfo.get.size):
+                    if self.hdr.GetDataLength() < int(fieldInfo.offset) + i*int(fieldInfo.size):
                         terminate = 1
                         break
                     arrayList.append(str(Messaging.get(self, fieldInfo, i)))

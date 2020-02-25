@@ -475,6 +475,9 @@ class BitFieldInfo(object):
         self.count=1
         self.enum=enum
         self.idbits=idbits
+        # add a couple fields from decorators of the 'get' function
+        self.offset = get.offset
+        self.size = get.size
 
 class FieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, count, bitfieldInfo, enum, idbits=0):
@@ -490,3 +493,6 @@ class FieldInfo(object):
         self.bitfieldInfo=bitfieldInfo
         self.enum=enum
         self.idbits=idbits
+        # add a couple fields from decorators of the 'get' function
+        self.offset = get.offset
+        self.size = get.size

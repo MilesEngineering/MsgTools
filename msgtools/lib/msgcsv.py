@@ -107,17 +107,17 @@ def csvToMsg(lineOfText):
                                 val = val[:-1]
                                 if val == "":
                                     # terminate without this field
-                                    terminationLen = int(fieldInfo.get.offset)
+                                    terminationLen = int(fieldInfo.offset)
                                     break
                                 # terminate after this field
                                 #TODO Broken for arrays-of-structs acting like parallel arrays!
-                                terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)
+                                terminationLen = int(fieldInfo.offset) + int(fieldInfo.size)
                             if fieldInfo.type == "string":
                                 if val.startswith('"') and val.endswith('"'):
                                     val = val.strip('"')
                                 if terminateMsg:
                                     #TODO Broken for arrays-of-structs acting like parallel arrays!
-                                    terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size) * len(val)
+                                    terminationLen = int(fieldInfo.offset) + int(fieldInfo.size) * len(val)
                             Messaging.set(msg, fieldInfo, val)
                             paramNumber+=1
                         else:
@@ -126,7 +126,7 @@ def csvToMsg(lineOfText):
                                     terminateMsg = 1
                                     val = val[:-1]
                                     # terminate without anything after our parent field
-                                    terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)
+                                    terminationLen = int(fieldInfo.offset) + int(fieldInfo.size)
                                     if val == "":
                                         break
                                 Messaging.set(msg, bitInfo, val)
@@ -135,15 +135,15 @@ def csvToMsg(lineOfText):
                                 if terminateMsg:
                                     break
                     else:
-                        if val.startswith("0x") and len(val) > 2+2*int(fieldInfo.get.size):
+                        if val.startswith("0x") and len(val) > 2+2*int(fieldInfo.size):
                             if val.endswith(";"):
                                 terminateMsg = 1
                                 val = val[:-1]
                                 hexStr = val[2:].strip()
                                 #TODO Broken for arrays-of-structs acting like parallel arrays!
-                                terminationLen = int(int(fieldInfo.get.offset) + len(hexStr)/2)
+                                terminationLen = int(int(fieldInfo.offset) + len(hexStr)/2)
                             hexStr = val[2:].strip()
-                            charsForOneElem = int(fieldInfo.get.size)*2
+                            charsForOneElem = int(fieldInfo.size)*2
                             valArray = [hexStr[i:i+charsForOneElem] for i in range(0, len(hexStr), charsForOneElem)]
                             for i in range(0,len(valArray)):
                                 Messaging.set(msg, fieldInfo, int(valArray[i], 16), i)
@@ -153,7 +153,7 @@ def csvToMsg(lineOfText):
                                 if val.endswith(";"):
                                     terminateMsg = 1
                                     #TODO Broken for arrays-of-structs acting like parallel arrays!
-                                    terminationLen = int(fieldInfo.get.offset) + int(fieldInfo.get.size)*(i+1)
+                                    terminationLen = int(fieldInfo.offset) + int(fieldInfo.size)*(i+1)
                                     val = val[:-1]
                                 Messaging.set(msg, fieldInfo, val, i)
                                 if terminateMsg:

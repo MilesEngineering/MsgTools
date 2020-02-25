@@ -126,7 +126,7 @@ class TestClass(unittest.TestCase):
                 pos = 0
                 for fieldInfo in type(msg).fields:
                     if(fieldInfo.count == 1):
-                        pos += int(fieldInfo.get.offset) + int(fieldInfo.get.size)
+                        pos += int(fieldInfo.offset) + int(fieldInfo.size)
                         if pos > msg.hdr.GetDataLength():
                             break
                         
@@ -137,7 +137,7 @@ class TestClass(unittest.TestCase):
                                 self.assertEqual(Messaging.get(msg, bitInfo), Messaging.get(msg2, bitInfo), self.info(tc, tcNum, fieldInfo.name+"."+bitInfo.name))
                     else:
                         for i in range(0,fieldInfo.count):
-                            pos += int(fieldInfo.get.offset) + int(fieldInfo.get.size)
+                            pos += int(fieldInfo.offset) + int(fieldInfo.size)
                             if pos > msg.hdr.GetDataLength():
                                 break
                             self.assertEqual(Messaging.get(msg, fieldInfo, i), Messaging.get(msg2, fieldInfo, i), self.info(tc, tcNum, fieldInfo.name+"["+str(i)+"]"))
