@@ -115,13 +115,13 @@ def csvToMsg(lineOfText):
                                     break
                                 # terminate after this field
                                 #TODO Broken for arrays-of-structs acting like parallel arrays!
-                                terminationLen = fieldInfo.offset + fieldInfo.size
+                                terminationLen = fieldInfo.end_location()
                             if fieldInfo.type == "string":
                                 if val.startswith('"') and val.endswith('"'):
                                     val = val.strip('"')
                                 if terminateMsg:
                                     #TODO Broken for arrays-of-structs acting like parallel arrays!
-                                    terminationLen = fieldInfo.offset + fieldInfo.size * len(val)
+                                    terminationLen = fieldInfo.end_location(len(val)-1)
                             Messaging.set(msg, fieldInfo, val)
                             paramNumber+=1
                         else:
@@ -130,7 +130,7 @@ def csvToMsg(lineOfText):
                                     terminateMsg = 1
                                     val = val[:-1]
                                     # terminate without anything after our parent field
-                                    terminationLen = fieldInfo.offset + fieldInfo.size
+                                    terminationLen = fieldInfo.end_location()
                                     if val == "":
                                         break
                                 Messaging.set(msg, bitInfo, val)
@@ -157,7 +157,7 @@ def csvToMsg(lineOfText):
                                 if val.endswith(";"):
                                     terminateMsg = 1
                                     #TODO Broken for arrays-of-structs acting like parallel arrays!
-                                    terminationLen = fieldInfo.offset + fieldInfo.size*(i+1)
+                                    terminationLen = fieldInfo.end_location(i)
                                     val = val[:-1]
                                 Messaging.set(msg, fieldInfo, val, i)
                                 if terminateMsg:

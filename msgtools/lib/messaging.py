@@ -482,6 +482,9 @@ class BitFieldInfo(object):
     def exists(self, msg, index=0):
         return self.parent.exists(msg, index)
 
+    def end_location(self, index=0):
+        return self.parent.end_location(index)
+
 class FieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, count, bitfieldInfo, enum, idbits=0):
         self.name=name
@@ -508,3 +511,6 @@ class FieldInfo(object):
         if msg.hdr.GetDataLength() >= end_of_field:
             return True
         return False
+    
+    def end_location(self, index=0):
+        return self.offset + self.size * (index+1)
