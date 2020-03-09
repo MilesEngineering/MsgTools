@@ -165,7 +165,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         rxMessageList.setContextMenuPolicy(Qt.CustomContextMenu)
 
         rxMessageList.itemDoubleClicked.connect(self.onRxListDoubleClicked)
-        rxMessageList.customContextMenuRequested.connect(self.onRxMessageContextMenuRequested)
+        rxMessageList.customContextMenuRequested.connect(lambda position : self.onRxMessageContextMenuRequested(position, rxMessageList))
         return rxMessageList
     
 
@@ -178,7 +178,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         rxMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
         rxMessagesTreeWidget.setHeaderItem(rxMsgsHeader)
         rxMessagesTreeWidget.itemDoubleClicked.connect(self.onRxMessageFieldSelected)
-        rxMessagesTreeWidget.customContextMenuRequested.connect(self.onRxMessageContextMenuRequested)
+        rxMessagesTreeWidget.customContextMenuRequested.connect(lambda position : self.onRxMessageContextMenuRequested(position, rxMessagesTreeWidget))
         return rxMessagesTreeWidget
 
     def ReadTxDictionary(self):
@@ -336,10 +336,8 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             except MsgPlot.PlotError as e:
                 QMessageBox.warning(self, "Message Scope", str(e))
 
-    def onRxMessageContextMenuRequested(self, pos):
-        rxWidgetItem = self.rx_messages_widget.itemAt(pos)
-        if not rxWidgetItem:
-            rxWidgetItem = self.rx_message_list.itemAt(pos)
+    def onRxMessageContextMenuRequested(self, pos, parent):
+        rxWidgetItem = parent.itemAt(pos)
         if not rxWidgetItem:
             return
         msg_name = rxWidgetItem.msg.MsgName()
