@@ -93,6 +93,7 @@ class App(QtWidgets.QMainWindow):
             ip = args.ip
         if args.msgdir:
             msgLoadDir = args.msgdir
+            self.msgdir = args.msgdir
         
         # if either --ip or --port were used, override connectionName
         if args.ip is not None or args.port is not None:

@@ -39,12 +39,20 @@ DESCRIPTION='''MsgScope provides a graphical interface that allow syou to view, 
     messages.  It requires defined messages in Python.  A list of discovered messages will be
     displayed in the upper left of the UI.'''
 
-def slim_vbox(a, b):
+def slim_vbox(a, b, c=None):
     vLayout = QVBoxLayout()
     vLayout.setSpacing(0)
     vLayout.setContentsMargins(0,0,0,0)
     vLayout.addWidget(a)
-    vLayout.addWidget(b)
+    if c == None:
+        vLayout.addWidget(b)
+    else:
+        hLayout = QHBoxLayout()
+        hLayout.setSpacing(0)
+        hLayout.setContentsMargins(0,0,0,0)
+        hLayout.addWidget(b)
+        hLayout.addWidget(c)
+        vLayout.addLayout(hLayout)
 
     vBox = QWidget()
     vBox.setLayout(vLayout)
@@ -102,10 +110,11 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.rx_messages_widget = self.configure_rx_messages_widget(parent)
         self.configure_msg_plots(parent)
         rxClearListBtn = QPushButton("Clear")
+        rxSortListBtn = QPushButton("Sort")
         rxClearMsgsBtn = QPushButton("Clear")
         
         # add them to the rx layout
-        rxMsgListBox = slim_vbox(self.rx_message_list, rxClearListBtn)
+        rxMsgListBox = slim_vbox(self.rx_message_list, rxClearListBtn, rxSortListBtn)
         rxMsgsBox = slim_vbox(self.rx_messages_widget, rxClearMsgsBtn)
         self.rxSplitter = vsplitter(parent, rxMsgListBox, rxMsgsBox)
 
@@ -119,6 +128,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         # connect signals for 'clear' buttons
         txClearBtn.clicked.connect(self.clear_tx)
         rxClearListBtn.clicked.connect(self.clear_rx_list)
+        rxSortListBtn.clicked.connect(self.sort_rx_list)
         rxClearMsgsBtn.clicked.connect(self.clear_rx_msgs)
         
     def configure_msg_plots(self, parent):
@@ -152,18 +162,23 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         rxMessageList.setColumnCount(3)
         rxMsgHeader = QTreeWidgetItem(None, [ "Name", "Last Received", "Rx Rate" ])
         rxMessageList.setHeaderItem(rxMsgHeader)
+        rxMessageList.setContextMenuPolicy(Qt.CustomContextMenu)
 
         rxMessageList.itemDoubleClicked.connect(self.onRxListDoubleClicked)
+        rxMessageList.customContextMenuRequested.connect(self.onRxMessageContextMenuRequested)
         return rxMessageList
+    
 
     def configure_rx_messages_widget(self, parent):
         self.rx_msg_widgets = {}
         rxMessagesTreeWidget = QTreeWidget(parent)
         rxMessagesTreeWidget.setColumnCount(4)
         rxMessagesTreeWidget.setDragEnabled(1)
+        rxMessagesTreeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
         rxMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
         rxMessagesTreeWidget.setHeaderItem(rxMsgsHeader)
         rxMessagesTreeWidget.itemDoubleClicked.connect(self.onRxMessageFieldSelected)
+        rxMessagesTreeWidget.customContextMenuRequested.connect(self.onRxMessageContextMenuRequested)
         return rxMessagesTreeWidget
 
     def ReadTxDictionary(self):
@@ -320,6 +335,49 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                     msgPlot.addData(rxWidgetItem.msg)
             except MsgPlot.PlotError as e:
                 QMessageBox.warning(self, "Message Scope", str(e))
+
+    def onRxMessageContextMenuRequested(self, pos):
+        rxWidgetItem = self.rx_messages_widget.itemAt(pos)
+        if not rxWidgetItem:
+            rxWidgetItem = self.rx_message_list.itemAt(pos)
+        if not rxWidgetItem:
+            return
+        msg_name = rxWidgetItem.msg.MsgName()
+        msg_id = hex(rxWidgetItem.msg.hdr.GetMessageID())
+        msg_key = ",".join(Messaging.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
+        
+        menu = QMenu("Context menu", self)
+        inspectAction = QAction('&Inspect', self)
+        inspectAction.msg_name = msg_name
+        inspectAction.msg_key = msg_key
+        menu.addAction(inspectAction)
+        inspectAction.triggered.connect(self.openMsgInspector)
+        # add needed actions
+        menu.exec(rxWidgetItem.treeWidget().viewport().mapToGlobal(pos))
+    
+    def openMsgInspector(self):
+        sender = self.sender()
+
+        args = []
+        if self.connectionName:
+            args = args + ['--connectionName='+self.connectionName]
+        # If we were started with a specific msgdir, pass that on to msginspector
+        try:
+            self.msgdir
+            args.append("--msgdir")
+            args.append(self.msgdir)
+        except AttributeError:
+            pass
+        # add the name of the message to the argument list
+        args.append('--msg')
+        args.append(sender.msg_name)
+        #TODO do something with key!  it filters by sender/route.
+        #sender.msg_key
+        
+        # launch msginspector with all the right args
+        proc = QProcess(self)
+        proc.start('msginspector', args)
+
                 
     def ProcessMessage(self, msg):
         self.debugWidget.ProcessMessage(msg)
@@ -394,6 +452,9 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
     def clear_rx_list(self):
         self.rx_msg_list = {}
         self.rx_message_list.clear()
+
+    def sort_rx_list(self):
+        self.rx_message_list.setSortingEnabled(not self.rx_message_list.isSortingEnabled())
 
     def clear_rx_msgs(self):
         self.rx_msg_widgets = {}
