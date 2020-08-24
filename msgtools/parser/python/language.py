@@ -24,7 +24,7 @@ def pythonFieldCount(field):
 
 def reflectionInterfaceType(field):
     type = field["Type"]
-    if "float" in type or "Offset" in field or "Scale" in field:
+    if "float" in type or fieldHasConversion(field):
         type = "float"
     elif MsgParser.fieldUnits(field) == "ASCII":
         type = "string"
@@ -36,7 +36,7 @@ def reflectionInterfaceType(field):
 
 def bitsReflectionInterfaceType(field):
     type = "int"
-    if "Offset" in field or "Scale" in field:
+    if fieldHasConversion(field):
         type = "float"
     elif MsgParser.fieldUnits(field) == "ASCII":
         type = "string"
@@ -111,7 +111,9 @@ def fnHdr(field, offset, count, name):
         param += ", idx"
     if str.find(name, "Set") != 0:
         if "Enum" in field:
-            param += ", enumAsInt=0"
+            param += ", enumAsInt=False"
+    if fieldHasConversion(field):
+        param += ", convertFloat=True"
         
     min = MsgParser.fieldMin(field)
     max = MsgParser.fieldMax(field)
@@ -172,8 +174,9 @@ def getFn(msg, field):
     ''' 
     elif count > 1:
             loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
-    if "Offset" in field or "Scale" in field:
-        cleanup = "value = " + MsgParser.getMath("value", field, "")+"\n    "
+    if fieldHasConversion(field):
+        cleanup = "if convertFloat:\n    "
+        cleanup += "    value = " + MsgParser.getMath("value", field, "", conversionAccessor="msg.Conversions.", conversionParamNames=True)+"\n    "
     ret = '''\
 %s%s
     value = struct.unpack_from(%s, self.rawBuffer(), %s)[0]
@@ -189,28 +192,30 @@ def setFn(msg, field):
     if "Enum" in field:
         # find index that corresponds to string input param
         lookup = enumLookup(msg, field)
-    math = MsgParser.setMath("value", field, "int")
+    if fieldHasConversion(field):
+        lookup += "if convertFloat:\n    "
+        lookup += "    value = %s\n    " % (MsgParser.setMath("value", field, "int", conversionAccessor="msg.Conversions.", conversionParamNames=True))
     storageType = field["Type"]
     if "int" in storageType:
-        math = "min(max(%s, %s), %s)" % (math, MsgParser.fieldStorageMin(storageType), MsgParser.fieldStorageMax(storageType))
-    math = lookup + "tmp = " + math
+        lookup += "value = min(max(value, %s), %s)\n    " % (MsgParser.fieldStorageMin(storageType), MsgParser.fieldStorageMax(storageType))
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         type = str(count) + "s"
         count = 1
-        math = "tmp = value.encode('utf-8')"
+        lookup = "value = value.encode('utf-8')\n    "
     elif count > 1:
         loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     ret  = '''\
 %s
-    %s
-    struct.pack_into('%s', self.rawBuffer(), %s, tmp)
-''' % (fnHdr(field,MsgParser.fieldLocation(field),count, "Set"+field["Name"]), math, type, loc)
+    %sstruct.pack_into('%s', self.rawBuffer(), %s, value)
+''' % (fnHdr(field,MsgParser.fieldLocation(field),count, "Set"+field["Name"]), lookup, type, loc)
     return ret
 
 def getBitsFn(msg, field, bits, bitOffset, numBits):
-    access = "(self.Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
-    access = MsgParser.getMath(access, bits, "float")
     cleanup = ""
+    access = "(self.Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+    if fieldHasConversion(bits):
+        cleanup = "if convertFloat:\n    "
+        cleanup += "    value = " + MsgParser.getMath("value", bits, "float", conversionAccessor="msg.Conversions.", conversionParamNames=True)+"\n    "
     if "Enum" in bits:
         # find index that corresponds to string input param
         cleanup = reverseEnumLookup(msg, bits)
@@ -226,13 +231,14 @@ def setBitsFn(msg, field, bits, bitOffset, numBits):
     if "Enum" in bits:
         # find index that corresponds to string input param
         lookup = enumLookup(msg, bits)
-    math = "min(max(%s, %s), %s)" % (MsgParser.setMath("value", bits, "int"), 0, str(2**numBits-1))
-    math = lookup + "tmp = " + math
+    if fieldHasConversion(bits):
+        lookup += "if convertFloat:\n    "
+        lookup += "    value = %s\n    " % (MsgParser.setMath("value", bits, "int", conversionAccessor="msg.Conversions.", conversionParamNames=True))
+    lookup += "value = min(max(value, %s), %s)\n    " % (0, str(2**numBits-1))
     ret = '''\
 %s
-    %s
-    self.Set%s((self.Get%s() & ~(%s << %s)) | ((%s & %s) << %s))
-''' % (fnHdr(bits,MsgParser.fieldLocation(field),1,"Set"+MsgParser.BitfieldName(field, bits)), math, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "tmp", MsgParser.Mask(numBits), str(bitOffset))
+    %sself.Set%s((self.Get%s() & ~(%s << %s)) | ((%s & %s) << %s))
+''' % (fnHdr(bits,MsgParser.fieldLocation(field),1,"Set"+MsgParser.BitfieldName(field, bits)), lookup, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "value", MsgParser.Mask(numBits), str(bitOffset))
     return ret
 
 def accessors(msg):

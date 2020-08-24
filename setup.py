@@ -62,6 +62,7 @@ setup(name='msgtools',
                                    'server=msgtools.server.launcher:info',
                                    'inspector=msgtools.inspector.launcher:info',
                                    'debug=msgtools.debug.launcher:info'],
+        'msgtools.conversions.plugin': ['Line=msgtools.parser.python.conversions:LineConversion'],
     },
     install_requires=[
         'pyyaml',

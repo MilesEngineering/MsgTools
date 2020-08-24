@@ -4,6 +4,8 @@ import os, glob, sys, struct, time, json
 # for runtime module importing
 import importlib
 
+import pkg_resources
+
 # A decorator to specify units for fields
 def units(arg):
     def _units(fcn):
@@ -514,3 +516,13 @@ class FieldInfo(object):
     
     def end_location(self, index=0):
         return self.offset + self.size * (index+1)
+
+# class to track registered float-point conversions
+class Conversions:
+    pass
+
+# loop through conversions plugins entry points, and register each one.
+for entry_point in pkg_resources.iter_entry_points("msgtools.conversions.plugin"):
+    # print("entry_point: %s, {%s}" % (entry_point.name, str(entry_point)))
+    conversion_class = entry_point.load()
+    setattr(Conversions, entry_point.name, conversion_class)
