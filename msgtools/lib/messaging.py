@@ -4,8 +4,6 @@ import os, glob, sys, struct, time, json
 # for runtime module importing
 import importlib
 
-import pkg_resources
-
 # A decorator to specify units for fields
 def units(arg):
     def _units(fcn):
