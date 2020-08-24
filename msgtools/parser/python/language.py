@@ -176,7 +176,7 @@ def getFn(msg, field):
             loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     if fieldHasConversion(field):
         cleanup = "if convertFloat:\n    "
-        cleanup += "    value = " + MsgParser.getMath("value", field, "", conversionAccessor="msg.Conversions.", conversionParamNames=True)+"\n    "
+        cleanup += "    value = " + MsgParser.getMath("value", field, "", conversionParamNames=True)+"\n    "
     ret = '''\
 %s%s
     value = struct.unpack_from(%s, self.rawBuffer(), %s)[0]
@@ -194,7 +194,7 @@ def setFn(msg, field):
         lookup = enumLookup(msg, field)
     if fieldHasConversion(field):
         lookup += "if convertFloat:\n    "
-        lookup += "    value = %s\n    " % (MsgParser.setMath("value", field, "int", conversionAccessor="msg.Conversions.", conversionParamNames=True))
+        lookup += "    value = %s\n    " % (MsgParser.setMath("value", field, "int", conversionParamNames=True))
     storageType = field["Type"]
     if "int" in storageType:
         lookup += "value = min(max(value, %s), %s)\n    " % (MsgParser.fieldStorageMin(storageType), MsgParser.fieldStorageMax(storageType))
@@ -215,7 +215,7 @@ def getBitsFn(msg, field, bits, bitOffset, numBits):
     access = "(self.Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
     if fieldHasConversion(bits):
         cleanup = "if convertFloat:\n    "
-        cleanup += "    value = " + MsgParser.getMath("value", bits, "float", conversionAccessor="msg.Conversions.", conversionParamNames=True)+"\n    "
+        cleanup += "    value = " + MsgParser.getMath("value", bits, "float", conversionParamNames=True)+"\n    "
     if "Enum" in bits:
         # find index that corresponds to string input param
         cleanup = reverseEnumLookup(msg, bits)
@@ -233,7 +233,7 @@ def setBitsFn(msg, field, bits, bitOffset, numBits):
         lookup = enumLookup(msg, bits)
     if fieldHasConversion(bits):
         lookup += "if convertFloat:\n    "
-        lookup += "    value = %s\n    " % (MsgParser.setMath("value", bits, "int", conversionAccessor="msg.Conversions.", conversionParamNames=True))
+        lookup += "    value = %s\n    " % (MsgParser.setMath("value", bits, "int", conversionParamNames=True))
     lookup += "value = min(max(value, %s), %s)\n    " % (0, str(2**numBits-1))
     ret = '''\
 %s

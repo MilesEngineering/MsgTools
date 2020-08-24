@@ -608,7 +608,7 @@ def conversionParams(conversion, conversionParamNames):
     return c[:-2]
 
 # add tag (such as 'f') to scale and offset for floats
-def getMath(x, field, cast, floatTag="", conversionAccessor="", conversionParamNames=False):
+def getMath(x, field, cast, floatTag="", conversionParamNames=False):
     ret = x
     if cast and ("Offset" in field or "Scale" in field):
         ret = "%s(%s)" % (cast, ret)
@@ -618,10 +618,10 @@ def getMath(x, field, cast, floatTag="", conversionAccessor="", conversionParamN
         ret = "(%s + %s)" % (ret, fieldOffset(field, floatTag))
     if "Conversion" in field:
         conversion = field["Conversion"]
-        ret = "%s%s.Convert(%s, %s)" % (conversionAccessor, conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
+        ret = "%s.Convert(%s, %s)" % (conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
     return ret
 
-def setMath(x, field, cast, floatTag="", conversionAccessor="", conversionParamNames=False):
+def setMath(x, field, cast, floatTag="", conversionParamNames=False):
     ret = x
     if "Offset" in field:
         ret = "(%s - %s)" % (ret, fieldOffset(field, floatTag))
@@ -631,7 +631,7 @@ def setMath(x, field, cast, floatTag="", conversionAccessor="", conversionParamN
         ret = "%s(%s)" % (cast, ret)
     if "Conversion" in field:
         conversion = field["Conversion"]
-        ret = "%s%s.Invert(%s, %s)" % (conversionAccessor, conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
+        ret = "%s.Invert(%s, %s)" % (conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
     return ret
 
 def fieldHasConversion(field):
