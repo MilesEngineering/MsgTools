@@ -41,7 +41,7 @@ class ResistanceConversion:
 class SteinhartHartConversion:
     @staticmethod
     def Convert(raw, a, b, c, d, r0, v_ref, v_full, r1, r2, bit_depth):
-        r = ResistanceConversion.Convert(raw, v_ref, v_full, f1, f2, bit_depth)
+        r = ResistanceConversion.Convert(raw, v_ref, v_full, r1, r2, bit_depth)
         x = math.log(r / r0)
         temp_k = 1.0 / (a + b * x + c * (x ** 2) + d * (x ** 3))
         temp_c = temp_k = 273.15
