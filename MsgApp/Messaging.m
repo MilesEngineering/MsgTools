@@ -61,8 +61,8 @@ classdef Messaging
                 subdir = strrep(dirname, basedir, '');
                 classname = strcat(strrep(strrep(subdir, '/', '.'), '+', ''), '.', classname);
                 % if classname starts with ., remove it
-                if ~isempty(classname) && classname(1) == '.'
-                    classname = classname(2:end);
+                if ~isempty(classname) && extract(classname,1) == '.'
+                    classname = extractAfter(classname, 1);
                 end
                 %fprintf('class %s\n', classname);
                 mc = meta.class.fromName(classname);
