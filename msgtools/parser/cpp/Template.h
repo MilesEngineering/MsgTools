@@ -31,6 +31,17 @@ class <MSGNAME>Message : public Message
                 Init();
             }
         }
+        <MSGNAME>Message(MessageBuffer* buffer, int size=MSG_SIZE)
+        : Message(buffer)
+        {
+            if(Exists())
+            {
+                SetDataLength(size);
+                SetMessageID(MSG_ID);
+                InitializeTime();
+                Init();
+            }
+        }
         void Init()
         {
             <INIT_CODE>
