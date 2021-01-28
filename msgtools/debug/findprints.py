@@ -16,8 +16,8 @@ def ProcessDir(inputDir):
         if os.path.isdir(inputFilename):
             ProcessDir(inputFilename)
         else:
-            if filename.endswith(".h") or filename.endswith(".c"):
-                if filename != "debug_printf.h":
+            if filename.endswith(".h") or filename.endswith(".c") or filename.endswith(".cpp"):
+                if filename != "debug_printf.h" and filename != "debug_printf.cpp":
                     #print("reading " + inputFilename)
                     ProcessFile(inputFilename.replace("//", "/"))
 
@@ -48,7 +48,7 @@ def printDictionary(dictFilename, headerFilename):
 ''' % thisInvocation
         hdrFile.write(header)
         for formatInfo in dictionary:
-            formatStrIdName = formatInfo.filename.replace("/","_").replace(".c","").replace(".","_")+"_line_"+str(formatInfo.linenumber)
+            formatStrIdName = formatInfo.filename.replace("/","_").replace(".cpp","").replace(".c","").replace(".","_")+"_line_"+str(formatInfo.linenumber)
             hdrFile.write("#define " + formatStrIdName + " " + str(formatInfo.id)+"\n")
         md5array = "0x" + ", 0x".join([md5[i:i+2] for i in range(0, len(md5), 2)])
         hdrFile.write("#define FORMAT_STR_DICTIONARY_ID " + md5array+"\n")
@@ -57,8 +57,7 @@ PrintfInfo = collections.namedtuple('PrintfInfo', ['id', 'formatStr', 'filename'
 
 def ProcessFile(inputFilename):
     try:
-        escapedFilePath = inputFilename.replace("/","_").replace(".c","").replace(".","_")
-        needToRewriteFile = 0
+        escapedFilePath = inputFilename.replace("/","_").replace(".cpp","").replace(".c","").replace(".","_")
         with open(inputFilename, 'r') as inputFile:
             inputData = inputFile.read().splitlines() 
         global maxSubscriptions
