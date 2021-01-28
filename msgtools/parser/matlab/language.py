@@ -65,7 +65,7 @@ function ret = get.%s(%s)
         ret += "end\n"
     # Need to handle arrays of structs, where elements of array are not contiguous!
     if MsgParser.fieldSize(field) != MsgParser.fieldArrayElementOffset(field):
-        ret = "ERROR! Need to handle arrays of structs, where elements of array are not contiguous!\n" + ret 
+        ret = "%%ERROR! Need to handle arrays of structs, where elements of array are not contiguous!\n" + ret 
     return ret
 
 def setFn(msg, field):
@@ -99,7 +99,7 @@ function obj = set.%s(obj, value)
         ret += "end\n"
     # Need to handle arrays of structs, where elements of array are not contiguous!
     if MsgParser.fieldSize(field) != MsgParser.fieldArrayElementOffset(field):
-        ret = "ERROR! Need to handle arrays of structs, where elements of array are not contiguous!\n" + ret 
+        ret = "%%ERROR! Need to handle arrays of structs, where elements of array are not contiguous!\n" + ret 
     return ret
 
 def getBitsFn(msg, field, bits, bitOffset, numBits):
