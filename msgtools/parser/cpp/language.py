@@ -30,6 +30,9 @@ def fnHdr(field):
     ret = "/* %s %s, (%s to %s)*/" % (MsgParser.fieldDescription(field), MsgParser.fieldUnits(field), MsgParser.fieldMin(field), MsgParser.fieldMax(field))
     return ret
 
+def inline_min(x, y):
+    return "((%s < %s) ? %s : %s)" % (x, y, x, y)
+
 def arrayAccessor(field):
     # if we've got floating point conversion, don't do an array accessor
     if "Offset" in field or "Scale" in field:
@@ -37,26 +40,52 @@ def arrayAccessor(field):
     # if we're not an array, don't do an array accessor
     if MsgParser.fieldCount(field) == 1:
         return ""
-    # if we're not contiguous, don't do an array accessor
-    if MsgParser.fieldSize(field) != MsgParser.fieldArrayElementOffset(field):
-        return ""
-    # if we don't have natural alignment, don't do an array accessor
-    if MsgParser.fieldLocation(field) % MsgParser.fieldSize(field) != 0:
-        return ""
-    loc = str(MsgParser.fieldLocation(field))
-    access = "(%s*)&m_data[%s]" % (fieldType(field), loc)
+    
+    # Functions to copy in and out.  These call the field Set/Get functions so
+    # that they work regardless of endian, and for non-contiguous arrays.
     ret = '''\
+%s
+%svoid CopyIn%s(%s* in, int len)
+{
+    int count = %s;
+    for(int i=0; i<count; i++)
+    {
+        %sSet%s(%s);
+    }
+}
+''' % (fnHdr(field), functionPrefix, namespace+field["Name"], params(firstParamDecl, "const "+fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), namespace, field["Name"], params(firstParam, "in[i], i"))
+    ret += '''\
+%s
+%svoid CopyOut%s(%s* out, int len)
+{
+    int count = %s;
+    for(int i=0; i<count; i++)
+    {
+        out[i] = %sGet%s(%s);
+    }
+}
+''' % (fnHdr(field), functionPrefix, namespace+field["Name"], params(firstParamDecl, fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), namespace, field["Name"], params(firstParam, "i"))
+
+    # Only return a pointer to the array if we have natural alignment,
+    # and are contiguous
+    if(MsgParser.fieldLocation(field) % MsgParser.fieldSize(field) == 0 and
+       MsgParser.fieldSize(field) == MsgParser.fieldArrayElementOffset(field)):
+        loc = str(MsgParser.fieldLocation(field))
+        access = "(%s*)&m_data[%s]" % (fieldType(field), loc)
+        arrayAccessor = '''\
 %s
 %s* %s(%s)
 {
     return %s;
 }''' % (fnHdr(field), functionPrefix+fieldType(field), namespace+field["Name"], firstParamDecl, access)
 
-    if MsgParser.fieldSize(field) != 1:
-        if MsgParser.big_endian:
-            ret = "#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ \n" + ret + "\n#endif\n"
-        else:
-            ret = "#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ \n" + ret + "\n#endif\n"
+        if MsgParser.fieldSize(field) != 1:
+            if MsgParser.big_endian:
+                arrayAccessor = "#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ \n" + arrayAccessor + "\n#endif\n"
+            else:
+                arrayAccessor = "#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ \n" + arrayAccessor + "\n#endif\n"
+        ret += arrayAccessor
+
     return ret
 
 def castForScaledInt(field):
