@@ -243,7 +243,7 @@ class SerialConnection(BaseSerialConnection):
         if self.hdrCrcRegion != None:
             # set header and body CRC
             serialMsg.SetHeaderChecksum(Crc16(serialMsg.rawBuffer()[:self.hdrCrcRegion]))
-            serialMsg.SetBodyChecksum(Crc16(serialMsg.rawBuffer()[Messaging.hdrSize:]))
+            serialMsg.SetBodyChecksum(Crc16(serialMsg.rawBuffer()[self.hdr.SIZE:]))
         if self.serialPort.isOpen():
             self.serialPort.write(serialMsg.rawBuffer().raw)
     
