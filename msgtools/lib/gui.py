@@ -209,7 +209,6 @@ class MsgTreeWidget(TreeWidget):
         self.header().setSortIndicatorShown(1)
         # show sort indicator ascending on Time, if not sorting, because we append incoming messages
         self.header().setSortIndicator(0, QtCore.Qt.AscendingOrder)
-        self.header().myTreeWidget = self
         self.header().sectionClicked.connect(self.tableHeaderClicked)
         
         self.maxRows = maxRows
