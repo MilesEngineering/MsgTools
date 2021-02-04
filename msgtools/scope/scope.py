@@ -86,19 +86,25 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
 
-        self.configure_gui(parent)
+        self.configure_gui(parent, args.debugdicts)
         
         self.ReadTxDictionary()
 
-    def configure_gui(self, parent):
+    def configure_gui(self, parent, debugdicts):
         # create widgets for tx
         self.txDictionary = self.configure_tx_dictionary(parent)
         self.txMsgs = self.configure_tx_messages(parent)
         txClearBtn = QPushButton("Clear")
-        self.debugWidget = msgtools.debug.debug.MsgDebugWidget([], parent)
+
+        if debugdicts:
+            debugdictList = debugdicts.split(",")
+        else:
+            debugdictList = []
+        self.debugWidget = msgtools.debug.debug.MsgDebugWidget(debugdictList, parent)
         self.debugWidget.messageOutput.connect(self.SendMsg)
         self.debugWidget.autocompleted.connect(self.textAutocomplete)
-        # tracking what reply to expect
+
+        # tracking what reply to expect from a typed command
         self.expectedReply = None
         
         # add them to the tx layout
@@ -487,6 +493,7 @@ def main():
     # Setup a command line processor...
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
+    parser.add_argument('--debugdicts', help=''''Dictionaries to use for debug message format strings.''')
     args = parser.parse_args()
 
     app = QApplication(sys.argv)

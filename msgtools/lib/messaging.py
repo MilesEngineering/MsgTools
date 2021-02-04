@@ -455,13 +455,41 @@ or specify that directory with --msgdir=PATH''')
         for fieldInfo in msg.hdr.fields:
             if fieldInfo.bitfieldInfo:
                 for bitfieldInfo in fieldInfo.bitfieldInfo:
-                    if bitfieldInfo.idbits == 0 and bitfieldInfo.name != "DataLength" and bitfieldInfo.name != "Time":
+                    if Messaging.IsRouteField(bitfieldInfo):
                         msg_route.append(str(bitfieldInfo.get(msg.hdr)))
             else:
-                if fieldInfo.idbits == 0 and fieldInfo.name != "DataLength" and fieldInfo.name != "Time":
+                if Messaging.IsRouteField(fieldInfo):
                     msg_route.append(str(fieldInfo.get(msg.hdr)))
         return msg_route
+    
+    # this sets up a message's header based on the given route
+    #TODO Need special logic for headers with source and destination, because they need to be
+    #TODO swapped if the message is coming or going.
+    @staticmethod
+    def SetMsgRoute(msg, msg_route):
+        hdr = msg.hdr
+        i = 0
+        for fieldInfo in msg.hdr.fields:
+            if fieldInfo.bitfieldInfo:
+                for bitfieldInfo in fieldInfo.bitfieldInfo:
+                    if Messaging.IsRouteField(bitfieldInfo):
+                        Messaging.set(msg.hdr, bitfieldInfo, msg_route[i])
+            else:
+                if Messaging.IsRouteField(fieldInfo):
+                    Messaging.set(msg.hdr, fieldInfo, msg_route[i])
 
+    @staticmethod
+    def IsRouteField(fieldInfo):
+        if fieldInfo.idbits != 0:
+            return False
+        if fieldInfo.name == "DataLength":
+            return False
+        if fieldInfo.name == "Time":
+            return False
+        if fieldInfo.name == "Priority":
+            return False
+        return True
+        
 class BitFieldInfo(object):
     def __init__(self, name, type, units, minVal, maxVal, description, get, set, enum, idbits=0):
         self.name=name

@@ -22,6 +22,7 @@ def ProcessDir(inputDir):
                     ProcessFile(inputFilename.replace("//", "/"))
 
 def printDictionary(dictFilename, headerFilename):
+    md5 = hashlib.md5()
     with open(dictFilename,'w') as dictFile:
         header = \
 '''# AUTO-GENERATED FILE, DO NOT HAND EDIT!
@@ -29,9 +30,10 @@ def printDictionary(dictFilename, headerFilename):
 ''' % thisInvocation
         dictFile.write(header)
         for formatInfo in dictionary:
-            dictFile.write(str(formatInfo.id) + ": " + formatInfo.formatStr+", "+formatInfo.filename+", " + str(formatInfo.linenumber) + "\n")
-    md5 = hashlib.md5(open(dictFilename, 'rb').read()).hexdigest()
-    with open(dictFilename,'a') as dictFile:
+            s = str(formatInfo.id) + ": " + formatInfo.formatStr+", "+formatInfo.filename+", " + str(formatInfo.linenumber) + "\n"
+            md5.update(s.encode('utf-8'))
+            dictFile.write(s)
+        md5 = md5.hexdigest()
         dictFile.write("Dictionary md5 is " + md5)
 
     lineEndings = os.linesep
