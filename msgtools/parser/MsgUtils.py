@@ -202,21 +202,22 @@ def fieldReplacements(line,msg):
     line = re.sub('\)>$', '', line)
     ret = ""
     count = 0
-    for field in msg["Fields"]:
-        thisLine = line
-        thisLine = thisLine.replace("<FIELDNAME>", field["Name"])
-        thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
-        thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(field)))
-        ret +=  thisLine
-        count+=1
-        if "Bitfields" in field:
-            for bitfield in field["Bitfields"]:
-                thisLine = line
-                thisLine = thisLine.replace("<FIELDNAME>", bitfield["Name"])
-                thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
-                thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
-                ret +=  thisLine
-                count+=1
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            thisLine = line
+            thisLine = thisLine.replace("<FIELDNAME>", field["Name"])
+            thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
+            thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(field)))
+            ret +=  thisLine
+            count+=1
+            if "Bitfields" in field:
+                for bitfield in field["Bitfields"]:
+                    thisLine = line
+                    thisLine = thisLine.replace("<FIELDNAME>", bitfield["Name"])
+                    thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
+                    thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
+                    ret +=  thisLine
+                    count+=1
     return ret 
 
 def subfieldReplacements(line,msg):
@@ -224,22 +225,23 @@ def subfieldReplacements(line,msg):
     line = re.sub('\)>$', '', line)
     ret = ""
     count = 0
-    for field in msg["Fields"]:
-        if "Bitfields" in field:
-            for bitfield in field["Bitfields"]:
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            if "Bitfields" in field:
+                for bitfield in field["Bitfields"]:
+                    thisLine = line
+                    thisLine = thisLine.replace("<FIELDNAME>", bitfield["Name"])
+                    thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
+                    thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
+                    ret +=  thisLine
+                    count+=1
+            else:
                 thisLine = line
-                thisLine = thisLine.replace("<FIELDNAME>", bitfield["Name"])
+                thisLine = thisLine.replace("<FIELDNAME>", field["Name"])
                 thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
-                thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
+                thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(field)))
                 ret +=  thisLine
                 count+=1
-        else:
-            thisLine = line
-            thisLine = thisLine.replace("<FIELDNAME>", field["Name"])
-            thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
-            thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(field)))
-            ret +=  thisLine
-            count+=1
     return ret 
 
 def msgName(msg):
