@@ -116,7 +116,9 @@ def main():
     global formatStrId
     formatStrId = 0
     
-    ProcessDir(inputDir)
+    inputDirList = inputDir.split(',')
+    for d in inputDirList:
+        ProcessDir(d)
 
     try:
         os.makedirs(os.path.dirname(dictionaryFile))
