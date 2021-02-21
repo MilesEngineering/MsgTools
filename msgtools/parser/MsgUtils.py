@@ -197,51 +197,45 @@ def numberOfSubfields(msg):
                 count+=1
     return count
 
-def fieldReplacements(line,msg):
-    line = re.sub('<FOREACHFIELD\(', '', line)
-    line = re.sub('\)>$', '', line)
-    ret = ""
-    count = 0
-    if "Fields" in msg:
-        for field in msg["Fields"]:
-            thisLine = line
-            thisLine = thisLine.replace("<FIELDNAME>", field["Name"])
-            thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
-            thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(field)))
-            ret +=  thisLine
-            count+=1
-            if "Bitfields" in field:
-                for bitfield in field["Bitfields"]:
-                    thisLine = line
-                    thisLine = thisLine.replace("<FIELDNAME>", bitfield["Name"])
-                    thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
-                    thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
-                    ret +=  thisLine
-                    count+=1
-    return ret 
+def fieldType(language, field, bitfield):
+    if bitfield:
+        if 'Type' in bitfield:
+            type = language.fieldType(bitfield)
+        else:
+            type = language.fieldType(field)
+        if "Offset" in field or "Scale" in bitfield:
+            type = language.typeForScaledInt(field)
+    else:
+        type = language.fieldType(field)
+        if "Offset" in field or "Scale" in field:
+            type = language.typeForScaledInt(field)
+    return type
 
-def subfieldReplacements(line,msg):
+def fieldReplacements(language, line, msg, subfieldsOnly):
+    line = re.sub('<FOREACHFIELD\(', '', line)
     line = re.sub('<FOREACHSUBFIELD\(', '', line)
     line = re.sub('\)>$', '', line)
     ret = ""
     count = 0
     if "Fields" in msg:
         for field in msg["Fields"]:
+            if not subfieldsOnly or not "Bitfields" in field:
+                thisLine = line
+                thisLine = thisLine.replace("<FIELDNAME>", field["Name"])
+                thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
+                thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(field)))
+                thisLine = thisLine.replace("<FIELDTYPE>", fieldType(language, field, None))
+                ret +=  thisLine
+                count+=1
             if "Bitfields" in field:
                 for bitfield in field["Bitfields"]:
                     thisLine = line
                     thisLine = thisLine.replace("<FIELDNAME>", bitfield["Name"])
                     thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
                     thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
+                    thisLine = thisLine.replace("<FIELDTYPE>", fieldType(language, field, None)) # bitfields inherit type of parent field
                     ret +=  thisLine
                     count+=1
-            else:
-                thisLine = line
-                thisLine = thisLine.replace("<FIELDNAME>", field["Name"])
-                thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
-                thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(field)))
-                ret +=  thisLine
-                count+=1
     return ret 
 
 def msgName(msg):
@@ -312,9 +306,12 @@ def msgID(msg, enums, undefinedMsgId):
     return str(ret)
 
 def msgDescriptor(msg, inputFilename):
-    subdir = msg["commonSubdir"]
+    # remove + symbols added to the path for Matlab namespaces
+    inputFilename = inputFilename.replace("+","")
+    subdir = msg["commonSubdir"].replace("+", "").replace("/",".")
     name = msgName(msg)
     basename = os.path.basename(inputFilename).split('.')[0]
+    #print("[%s] [%s] [%s] [%s]" % (inputFilename, subdir, name, basename))
     # add the filename as a namespace, unless it's already there
     if not basename == name and not basename+'_' in name:
         name = basename + '.' + name

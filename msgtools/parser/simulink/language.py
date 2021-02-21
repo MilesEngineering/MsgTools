@@ -4,13 +4,63 @@ from msgtools.parser.MsgUtils import *
 def outputSubdir(outDir, filename):
     return outDir + "/+" + filename
 
-def outputFilename(outDir, inputName, templateFilename):
-    base = "Input"
-    if "output" in templateFilename.lower():
-        base = "Output"
-    justFilename = base + inputName + '.' + os.path.basename(templateFilename).split('.')[1]
-    outputFilename = outDir + "/" + justFilename
-    return outputFilename
+def fieldType(field):
+    typeStr = field["Type"]
+    if "int" in typeStr:
+        return typeStr
+    if typeStr == "float32":
+        return "single";
+    if typeStr == "float64":
+        return "double";
+    return "?"
+
+def set_field(msg, field):
+    if fieldCount(field) == 1:
+        ret = "msg.Set%s(%s);" % (field["Name"], field["Name"])
+    else:
+        ret = '''\
+for (int i=0; i < %d; i++)
+{
+    msg.Set%s(%s[i], i);
+}
+''' % (fieldCount(field), field["Name"], field["Name"])
+    return ret
+
+def set_fields(msg):
+    ret = []
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            if "Bitfields" in field:
+                for bitfield in field["Bitfields"]:
+                    ret.append(set_field(msg, bitfield))
+            else:
+                ret.append(set_field(msg, field))
+
+    return ret
+
+def get_field(msg, field):
+    if fieldCount(field) == 1:
+        ret = "%s = input%s.Get%s();" % (field["Name"], msgName(msg), field["Name"])
+    else:
+        ret = '''\
+for (int i=0; i < %d; i++)
+{
+    %s[i] = input%s.Get%s(i);
+}
+''' % (fieldCount(field), field["Name"], msgName(msg), field["Name"])
+    return ret
+
+def get_fields(msg):
+    ret = []
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            if "Bitfields" in field:
+                for bitfield in field["Bitfields"]:
+                    ret.append(get_field(msg, bitfield))
+            else:
+                ret.append(get_field(msg, field))
+
+    return ret
 
 def accessors(msg):
     return []
