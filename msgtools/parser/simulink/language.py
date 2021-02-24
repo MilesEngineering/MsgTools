@@ -14,14 +14,20 @@ def fieldType(field):
         return "double";
     return "?"
 
+def typeForScaledInt(field):
+    numBits = MsgParser.fieldNumBits(field)
+    if numBits > 24:
+        return "double"
+    return "single"
+
 def set_field(msg, field):
     if fieldCount(field) == 1:
-        ret = "msg.Set%s(%s);" % (field["Name"], field["Name"])
+        ret = "<MSGNAME>_Set%s(m_data, %s);" % (field["Name"], field["Name"])
     else:
         ret = '''\
 for (int i=0; i < %d; i++)
 {
-    msg.Set%s(%s[i], i);
+    <MSGNAME>_Set%s(m_data, %s[i], i);
 }
 ''' % (fieldCount(field), field["Name"], field["Name"])
     return ret
@@ -40,14 +46,14 @@ def set_fields(msg):
 
 def get_field(msg, field):
     if fieldCount(field) == 1:
-        ret = "%s = input%s.Get%s();" % (field["Name"], msgName(msg), field["Name"])
+        ret = "%s = <MSGNAME>_Get%s(m_data);" % (field["Name"], field["Name"])
     else:
         ret = '''\
 for (int i=0; i < %d; i++)
 {
-    %s[i] = input%s.Get%s(i);
+    %s[i] = <MSGNAME>_Get%s(m_data, i);
 }
-''' % (fieldCount(field), field["Name"], msgName(msg), field["Name"])
+''' % (fieldCount(field), field["Name"], field["Name"])
     return ret
 
 def get_fields(msg):

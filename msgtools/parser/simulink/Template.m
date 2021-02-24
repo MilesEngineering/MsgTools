@@ -3,6 +3,7 @@ function [inputblk, outputblk] = <MSGNAME>(libname, header_params)
     inputblk = add_block("simulink/User-Defined Functions/C Function", libname+"/<MSGDESCRIPTOR>.Input");
 
     recv_code =[
+        "uint8_t* m_data = message_rx_data(<MSGNAME>_MSG_ID, 0, 0, <MSGNAME>_MSG_SIZE);"
         "// set block outputs based on last received message."
         "<GETFIELDS>"
     ];
@@ -34,13 +35,20 @@ function [inputblk, outputblk] = <MSGNAME>(libname, header_params)
     outputblk = add_block("simulink/User-Defined Functions/C Function", libname+"/<MSGDESCRIPTOR>.Output");
 
     % for sending messages
-    send_code = ["<MSGNAME>Message msg;"];
+    send_code = [
+        "void* msgbuf;"
+        "uint8_t* m_data;"
+    ];
+
+    allocate_code = "allocate_msg(<MSGNAME>_MSG_ID, <MSGNAME>_MSG_SIZE"
     for header_param = 1:length(header_params)
-        send_code(end+1) = "msg.Set"+header_params{header_param}+"("+header_params{header_param}+");";
+        allocate_code = allocate_code + ", " + header_params{header_param};
     end
+    allocate_code = allocate_code + ", &msgbuf, &m_data);";
+    send_code(end+1) = allocate_code;
     more_send_code = [...
         "<SETFIELDS>",...
-        "SendMessage(msg);"...
+        "send_msg(&msgbuf);"...
     ];
     send_code = [send_code more_send_code];
 
