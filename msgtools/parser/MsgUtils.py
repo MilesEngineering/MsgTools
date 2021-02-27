@@ -29,6 +29,10 @@ class YamlLoader(yaml.Loader):
 YamlLoader.add_constructor('!include', YamlLoader.include)
 YamlLoader.add_constructor('!File', YamlLoader.loadFile)
 
+# needs to be accessible to languages, so they can change it to true if they want
+# to use non-linear conversions
+use_nonlinear_conversions = False
+
 def readFile(filename):
     #print("Processing ", filename)
     if filename.endswith(".yaml"):
@@ -615,7 +619,7 @@ def getMath(x, field, cast, floatTag="", conversionParamNames=False):
         ret = "(%s * %s)" % (ret, fieldScale(field, floatTag))
     if "Offset" in field:
         ret = "(%s + %s)" % (ret, fieldOffset(field, floatTag))
-    if "Conversion" in field:
+    if use_nonlinear_conversions and "Conversion" in field:
         conversion = field["Conversion"]
         ret = "%s.Convert(%s, %s)" % (conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
     return ret
@@ -628,13 +632,13 @@ def setMath(x, field, cast, floatTag="", conversionParamNames=False):
         ret = "%s / %s" % (ret, fieldScale(field, floatTag))
     if cast and ("Offset" in field or "Scale" in field):
         ret = "%s(%s)" % (cast, ret)
-    if "Conversion" in field:
+    if use_nonlinear_conversions and "Conversion" in field:
         conversion = field["Conversion"]
         ret = "%s.Invert(%s, %s)" % (conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
     return ret
 
 def fieldHasConversion(field):
-    return "Offset" in field or "Scale" in field or "Conversion" in field
+    return "Offset" in field or "Scale" in field or ("Conversion" in field and use_nonlinear_conversions)
 
 def Mask(numBits):
     return str(hex(2 ** numBits - 1))
