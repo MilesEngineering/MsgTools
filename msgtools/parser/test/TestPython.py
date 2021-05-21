@@ -13,7 +13,7 @@ class TestCpp(unittest.TestCase):
         self.maxDiff = None
         with open("messages/TestCase1.yaml", 'r') as inputFile:
             self.msgIDL = inputFile.read()
-        self.msgDict = yaml.load(self.msgIDL)
+        self.msgDict = yaml.load(self.msgIDL, Loader=yaml.SafeLoader)
         PatchStructs(self.msgDict)
 
     def test_accessors(self):
