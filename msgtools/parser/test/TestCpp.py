@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 import unittest
 import yaml
@@ -13,7 +14,7 @@ class TestCpp(unittest.TestCase):
         self.maxDiff = None
         with open("messages/TestCase1.yaml", 'r') as inputFile:
             self.msgIDL = inputFile.read()
-        self.msgDict = yaml.load(self.msgIDL)
+        self.msgDict = yaml.load(self.msgIDL, Loader=yaml.SafeLoader)
         PatchStructs(self.msgDict)
 
     def test_accessors(self):
@@ -218,10 +219,70 @@ void SetFieldS2_Member2(double value, int idx)
 """)
         expected.append("""\
 /*  , (0 to 255)*/
+void CopyInFieldC(const uint8_t* in, int len)
+{
+    int count = ((len < 5) ? len : 5);
+    for(int i=0; i<count; i++)
+    {
+        SetFieldC(in[i], i);
+    }
+}
+/*  , (0 to 255)*/
+void CopyOutFieldC(uint8_t* out, int len)
+{
+    int count = ((len < 5) ? len : 5);
+    for(int i=0; i<count; i++)
+    {
+        out[i] = GetFieldC(i);
+    }
+}
+/*  , (0 to 255)*/
 uint8_t* FieldC()
 {
     return (uint8_t*)&m_data[6];
 }""")
+        expected.append("""\
+/*  , (-2147483648 to 2147483647)*/
+void CopyInFieldS2_Member1(const int32_t* in, int len)
+{
+    int count = ((len < 3) ? len : 3);
+    for(int i=0; i<count; i++)
+    {
+        SetFieldS2_Member1(in[i], i);
+    }
+}
+/*  , (-2147483648 to 2147483647)*/
+void CopyOutFieldS2_Member1(int32_t* out, int len)
+{
+    int count = ((len < 3) ? len : 3);
+    for(int i=0; i<count; i++)
+    {
+        out[i] = GetFieldS2_Member1(i);
+    }
+}
+""")
+        expected.append("""\
+/*  , (DBL_MIN to DBL_MAX)*/
+void CopyInFieldS2_Member2(const double* in, int len)
+{
+    int count = ((len < 3) ? len : 3);
+    for(int i=0; i<count; i++)
+    {
+        SetFieldS2_Member2(in[i], i);
+    }
+}
+/*  , (DBL_MIN to DBL_MAX)*/
+void CopyOutFieldS2_Member2(double* out, int len)
+{
+    int count = ((len < 3) ? len : 3);
+    for(int i=0; i<count; i++)
+    {
+        out[i] = GetFieldS2_Member2(i);
+    }
+}
+""")
+
+
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
         obsCount = len(observed)
