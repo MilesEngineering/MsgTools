@@ -22,12 +22,12 @@ def typeForScaledInt(field):
 
 def set_field(msg, field):
     if fieldCount(field) == 1:
-        ret = "<MSGNAME>_Set%s(m_data, %s);" % (field["Name"], field["Name"])
+        ret = "<MSGFULLNAME>_Set%s(m_data, %s);" % (field["Name"], field["Name"])
     else:
         ret = '''\
 for (int i=0; i < %d; i++)
 {
-    <MSGNAME>_Set%s(m_data, %s[i], i);
+    <MSGFULLNAME>_Set%s(m_data, %s[i], i);
 }
 ''' % (fieldCount(field), field["Name"], field["Name"])
     return ret
@@ -46,12 +46,12 @@ def set_fields(msg):
 
 def get_field(msg, field):
     if fieldCount(field) == 1:
-        ret = "%s = <MSGNAME>_Get%s(m_data);" % (field["Name"], field["Name"])
+        ret = "%s = <MSGFULLNAME>_Get%s(m_data);" % (field["Name"], field["Name"])
     else:
         ret = '''\
 for (int i=0; i < %d; i++)
 {
-    %s[i] = <MSGNAME>_Get%s(m_data, i);
+    %s[i] = <MSGFULLNAME>_Get%s(m_data, i);
 }
 ''' % (fieldCount(field), field["Name"], field["Name"])
     return ret

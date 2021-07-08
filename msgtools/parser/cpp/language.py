@@ -207,7 +207,7 @@ def fieldDefault(field, as_enum=False):
     if("Type" in field and "int" in field["Type"]) and ret > 2**31:
         ret = str(ret)+'u'
     if as_enum and "Enum" in field:
-        retType = "<MSGNAME>Message::"+field["Enum"]
+        retType = "<MSGFULLNAME>Message::"+field["Enum"]
         ret = "%s(%s)" % (retType, ret)
     return ret
 
@@ -253,7 +253,7 @@ def enums(e):
         for option in enum["Options"]:
             optionName = OptionName(option)
             if enumNamespace != 0:
-                optionName = "<MSGNAME>"+"_"+enum["Name"] + "_" + optionName
+                optionName = "<MSGFULLNAME>"+"_"+enum["Name"] + "_" + optionName
             ret += optionName+" = "+str(option["Value"]) + ', '
         ret = ret[:-2]
         ret += "};\n"
@@ -477,14 +477,14 @@ def declarations(msg):
                     if fieldHasConversion(bits):
                         retType = typeForScaledInt(bits)
                     elif "Enum" in bits:
-                        retType = "<MSGNAME>Message::"+bits["Enum"]
+                        retType = "<MSGFULLNAME>Message::"+bits["Enum"]
                     ret.append(retType + " " + bits["Name"] + ";")
             else:
                 retType = fieldType(field)
                 if fieldHasConversion(field):
                     retType = typeForScaledInt(field)
                 elif "Enum" in field:
-                    retType = "<MSGNAME>Message::"+field["Enum"]
+                    retType = "<MSGFULLNAME>Message::"+field["Enum"]
                 if MsgParser.fieldCount(field) == 1:
                     ret.append(retType + " " + field["Name"] + ";")
                 else:

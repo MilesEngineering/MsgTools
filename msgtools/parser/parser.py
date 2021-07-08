@@ -88,6 +88,7 @@ def DoReplacements(line, msg, replacements, firstTime):
     # ugly, but do this twice, before and after other replacements, because the code generator
     # might insert it while doing other replacements.
     ret = replace(ret, "<MSGNAME>", replacements["<MSGNAME>"])
+    ret = replace(ret, "<MSGFULLNAME>", replacements["<MSGFULLNAME>"])
     ret = replace(ret, "<MSGSHORTNAME>", replacements["<MSGSHORTNAME>"])
     if "<ONCE>" in ret:
         if firstTime:
@@ -208,12 +209,24 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 msg["commonSubdir"] = CommonSubdir(inputFilename, outDir+"/fake")
 
                 if oneOutputFilePerMsg:
-                    outputFilename, outFile = OutputFile(inputFilename, msgShortName(msg), outDir)
+                    # if outputting one file per message, add the input filename to the path,
+                    # unless the message name matches the input filename
+                    inputFileBasename = os.path.basename(inputFilename).split('.')[0]
+                    if inputFileBasename == msgShortName(msg):
+                        outDirForFile = outDir
+                    else:
+                        try:
+                            outDirForFile = language.outputSubdir(outDir, inputFileBasename)
+                        except AttributeError:
+                            outDirForFile = outDir + "/" + inputFileBasename
+
+                    outputFilename, outFile = OutputFile(inputFilename, msgShortName(msg), outDirForFile)
                     if not outFile:
                         continue
 
                 replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(msg, enums))
                 replacements["<MSGNAME>"] = msgName(msg)
+                replacements["<MSGFULLNAME>"] = msgDescriptor(msg, inputFilename).replace(".","_")
                 replacements["<MSGSHORTNAME>"] = msgShortName(msg)
                 replacements["<NUMBER_OF_FIELDS>"] = str(numberOfFields(msg))
                 replacements["<NUMBER_OF_SUBFIELDS>"] = str(numberOfSubfields(msg))

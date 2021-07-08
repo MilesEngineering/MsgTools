@@ -3,7 +3,7 @@ function [inputblk, outputblk] = <MSGNAME>(libname, header_params)
     inputblk = add_block("simulink/User-Defined Functions/C Function", libname+"/<MSGDESCRIPTOR>.Input");
 
     recv_code =[
-        "uint8_t* m_data = message_rx_data(<MSGNAME>_MSG_ID, 0, 0);"
+        "uint8_t* m_data = message_rx_data(<MSGFULLNAME>_MSG_ID, 0, 0);"
         "if(m_data == 0)"
         "{"
         "    return;"
@@ -44,7 +44,7 @@ function [inputblk, outputblk] = <MSGNAME>(libname, header_params)
         "uint8_t* m_data;"
     ];
 
-    allocate_code = "allocate_msg(<MSGNAME>_MSG_ID, <MSGNAME>_MSG_SIZE";
+    allocate_code = "allocate_msg(<MSGFULLNAME>_MSG_ID, <MSGFULLNAME>_MSG_SIZE";
     for header_param = 1:length(header_params)
         allocate_code = allocate_code + ", " + header_params{header_param};
     end
