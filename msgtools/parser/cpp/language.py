@@ -35,7 +35,7 @@ def inline_min(x, y):
 
 def arrayAccessor(field):
     # if we've got floating point conversion, don't do an array accessor
-    if "Offset" in field or "Scale" in field:
+    if fieldHasConversion(field):
         return ""
     # if we're not an array, don't do an array accessor
     if MsgParser.fieldCount(field) == 1:
@@ -103,7 +103,7 @@ def getFn(field):
     access = "Get_%s(&m_data[%s])" % (fieldType(field), loc)
     access = getMath(access, field, castForScaledInt(field), 'f')
     retType = fieldType(field)
-    if "Offset" in field or "Scale" in field:
+    if fieldHasConversion(field):
         retType = typeForScaledInt(field)
     elif "Enum" in field and namespace == "":
         retType = namespace+field["Enum"]
@@ -121,7 +121,7 @@ def getFn(field):
 def setFn(field):
     paramType = fieldType(field)
     valueString = setMath("value", field, "("+fieldType(field)+")", 'f')
-    if "Offset" in field or "Scale" in field:
+    if fieldHasConversion(field):
         paramType = typeForScaledInt(field)
     elif "Enum" in field and namespace == "":
         valueString = "("+paramType+")" + "(" + valueString + ")"
@@ -145,7 +145,7 @@ def getBitsFn(field, bits, bitOffset, numBits):
     access = "(%sGet%s(%s) >> %s) & %s" % (namespace, field["Name"], firstParam, str(bitOffset), MsgParser.Mask(numBits))
     access = getMath(access, bits, castForScaledInt(bits), 'f')
     retType = fieldType(field)
-    if "Offset" in bits or "Scale" in bits:
+    if fieldHasConversion(bits):
         retType = typeForScaledInt(bits)
     elif "Enum" in bits and namespace == "":
         retType = namespace+bits["Enum"]
@@ -163,7 +163,7 @@ def getBitsFn(field, bits, bitOffset, numBits):
 def setBitsFn(field, bits, bitOffset, numBits):
     paramType = fieldType(field)
     valueString = setMath("value", bits, "("+fieldType(field)+")", 'f')
-    if "Offset" in bits or "Scale" in bits:
+    if fieldHasConversion(bits):
         paramType = typeForScaledInt(bits)
     elif "Enum" in bits and namespace == "":
         valueString = "("+paramType+")" + "(" + valueString + ")"
@@ -207,7 +207,7 @@ def fieldDefault(field, as_enum=False):
     if("Type" in field and "int" in field["Type"]) and ret > 2**31:
         ret = str(ret)+'u'
     if as_enum and "Enum" in field:
-        retType = "<MSGNAME>Message::"+field["Enum"]
+        retType = "<MSGFULLNAME>Message::"+field["Enum"]
         ret = "%s(%s)" % (retType, ret)
     return ret
 
@@ -253,7 +253,7 @@ def enums(e):
         for option in enum["Options"]:
             optionName = OptionName(option)
             if enumNamespace != 0:
-                optionName = "<MSGNAME>"+"_"+enum["Name"] + "_" + optionName
+                optionName = "<MSGFULLNAME>"+"_"+enum["Name"] + "_" + optionName
             ret += optionName+" = "+str(option["Value"]) + ', '
         ret = ret[:-2]
         ret += "};\n"
@@ -271,10 +271,10 @@ def fieldReflectionType(field):
 
     if "NumBits" in field:
         ret = "BitfieldInfo"
-        if "Offset" in field or "Scale" in field:
+        if fieldHasConversion(field):
             ret = "ScaledBitfieldInfo"
     else:
-        if "Offset" in field or "Scale" in field:
+        if fieldHasConversion(field):
             ret = "ScaledFieldInfo"
     if "Enum" in field:
         ret = "EnumFieldInfo"
@@ -292,10 +292,10 @@ def fieldReflectionBitsType(field, bits):
 
     if "NumBits" in bits:
         ret = "BitfieldInfo"
-        if "Offset" in bits or "Scale" in bits:
+        if fieldHasConversion(bits):
             ret = "ScaledBitfieldInfo"
     else:
-        if "Offset" in field or "Scale" in field:
+        if fieldHasConversion(field):
             ret = "ScaledFieldInfo"
     if "Enum" in field:
         ret = "EnumFieldInfo"
@@ -312,7 +312,7 @@ def fieldReflection(field):
     params += ", " + loc
     params += ", " + str(MsgParser.fieldSize(field))
     params += ", " + str(MsgParser.fieldCount(field))
-    if "Offset" in field or "Scale" in field:
+    if fieldHasConversion(field):
         if "Scale" in field:
             params += ", " + str(field["Scale"])
         else:
@@ -335,7 +335,7 @@ def fieldBitsReflection(field, bits, bitOffset, numBits):
     params += ", " + loc
     params += ", " + str(MsgParser.fieldSize(field))
     params += ", " + str(MsgParser.fieldCount(bits))
-    if "Offset" in bits or "Scale" in bits:
+    if fieldHasConversion(bits):
         if "Scale" in bits:
             params += ", " + str(bits["Scale"])
         else:
@@ -366,7 +366,7 @@ def reflection(msg):
 
 def fieldMin(field):
     ret = str(MsgParser.fieldMin(field))
-    if "Scale" in field or "Offset" in field:
+    if fieldHasConversion(field):
         ret += 'f'
     else:
         if fieldIsInt(field) and not fieldIsSigned(field):
@@ -375,7 +375,7 @@ def fieldMin(field):
 
 def fieldMax(field):
     ret = str(MsgParser.fieldMax(field))
-    if "Scale" in field or "Offset" in field:
+    if fieldHasConversion(field):
         ret += 'f'
     else:
         if fieldIsInt(field) and not fieldIsSigned(field):
@@ -398,7 +398,7 @@ def genericInfo(field, loc, type):
     
 def fieldInfo(field):
     retType = fieldType(field)
-    if "Offset" in field or "Scale" in field:
+    if fieldHasConversion(field):
         retType = typeForScaledInt(field)
 
     params  = 'struct ' + field["Name"] + 'FieldInfo {\n'
@@ -408,7 +408,7 @@ def fieldInfo(field):
 
 def fieldBitsInfo(field, bits, bitOffset, numBits):
     retType = fieldType(field)
-    if "Offset" in bits or "Scale" in bits:
+    if fieldHasConversion(bits):
         retType = typeForScaledInt(bits)
 
     params  = 'struct ' + bits["Name"] + 'FieldInfo {\n'
@@ -474,17 +474,17 @@ def declarations(msg):
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
                     retType = fieldType(field)
-                    if "Offset" in bits or "Scale" in bits:
+                    if fieldHasConversion(bits):
                         retType = typeForScaledInt(bits)
                     elif "Enum" in bits:
-                        retType = "<MSGNAME>Message::"+bits["Enum"]
+                        retType = "<MSGFULLNAME>Message::"+bits["Enum"]
                     ret.append(retType + " " + bits["Name"] + ";")
             else:
                 retType = fieldType(field)
-                if "Offset" in field or "Scale" in field:
+                if fieldHasConversion(field):
                     retType = typeForScaledInt(field)
                 elif "Enum" in field:
-                    retType = "<MSGNAME>Message::"+field["Enum"]
+                    retType = "<MSGFULLNAME>Message::"+field["Enum"]
                 if MsgParser.fieldCount(field) == 1:
                     ret.append(retType + " " + field["Name"] + ";")
                 else:

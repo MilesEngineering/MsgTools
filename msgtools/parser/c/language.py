@@ -3,7 +3,7 @@ from msgtools.parser.MsgUtils import *
 
 import msgtools.parser.cpp.language as language
 
-language.namespace = "<MSGNAME>_"
+language.namespace = "<MSGFULLNAME>_"
 language.firstParam = "m_data"
 language.firstParamDecl = "uint8_t* m_data"
 language.const = ""
@@ -25,17 +25,17 @@ def fieldDefault(field):
 def fieldInfo(field):
     ret = ""
     if "Default" in field:
-        ret += '#define <MSGNAME>_'+field["Name"]+'_DEFAULT ' + str(fieldDefault(field)) + "\n"
+        ret += '#define <MSGFULLNAME>_'+field["Name"]+'_DEFAULT ' + str(fieldDefault(field)) + "\n"
     if MsgParser.fieldCount(field) > 1:
-        ret += '#define <MSGNAME>_'+field["Name"]+'_COUNT ' + str(MsgParser.fieldCount(field)) + "\n"
-    ret += '#define <MSGNAME>_'+field["Name"]+'_OFFSET ' + str(MsgParser.fieldLocation(field)) + "\n"
-    ret += '#define <MSGNAME>_'+field["Name"]+'_SIZE ' + str(MsgParser.fieldSize(field)) + "\n"
+        ret += '#define <MSGFULLNAME>_'+field["Name"]+'_COUNT ' + str(MsgParser.fieldCount(field)) + "\n"
+    ret += '#define <MSGFULLNAME>_'+field["Name"]+'_OFFSET ' + str(MsgParser.fieldLocation(field)) + "\n"
+    ret += '#define <MSGFULLNAME>_'+field["Name"]+'_SIZE ' + str(MsgParser.fieldSize(field)) + "\n"
     return ret
 
 def fieldBitsInfo(field, bits, bitOffset, numBits):
     ret = ""
     if "Default" in bits:
-        ret += '#define <MSGNAME>_'+bits["Name"]+'_Default ' + str(bits["Default"]) + "\n"
+        ret += '#define <MSGFULLNAME>_'+bits["Name"]+'_Default ' + str(bits["Default"]) + "\n"
     return ret
 
 def fieldInfos(msg):
@@ -54,7 +54,7 @@ def fieldInfos(msg):
     return ret
 
 def getMsgID(msg):
-    return baseGetMsgID("<MSGNAME>_", "m_data", "CAST_ALL", 0, msg)
+    return baseGetMsgID("<MSGFULLNAME>_", "m_data", "CAST_ALL", 0, msg)
     
 def setMsgID(msg):
-    return baseSetMsgID("<MSGNAME>_", "m_data, ", 0, 0, msg)
+    return baseSetMsgID("<MSGFULLNAME>_", "m_data, ", 0, 0, msg)

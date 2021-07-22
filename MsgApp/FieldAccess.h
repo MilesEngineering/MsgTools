@@ -2,7 +2,9 @@
 #define __FIELD_ACCESS_H__
 
 #define INLINE inline
+#ifndef UNUSED
 #define UNUSED (void)
+#endif
 
 #define Get_int8_t(location) FieldAccess::GetField<int8_t>(location)
 #define Get_int16_t(location) FieldAccess::GetField<int16_t>(location)
@@ -13,7 +15,7 @@
 #define Get_uint32_t(location) FieldAccess::GetField<uint32_t>(location)
 #define Get_uint64_t(location) FieldAccess::GetField<uint64_t>(location)
 #define Get_float(location) FieldAccess::GetField<float>(location)
-#define Get_double(location) FieldAccess::GetField<float>(location)
+#define Get_double(location) FieldAccess::GetField<double>(location)
 
 #define Set_int8_t(location, value) FieldAccess::SetField<int8_t>(location, value)
 #define Set_int16_t(location, value) FieldAccess::SetField<int16_t>(location, value)
@@ -24,7 +26,7 @@
 #define Set_uint32_t(location, value) FieldAccess::SetField<uint32_t>(location, value)
 #define Set_uint64_t(location, value) FieldAccess::SetField<uint64_t>(location, value)
 #define Set_float(location, value) FieldAccess::SetField<float>(location, value)
-#define Set_double(location, value) FieldAccess::SetField<float>(location, value)
+#define Set_double(location, value) FieldAccess::SetField<double>(location, value)
 
 /** \todo If we change the S/Get_xxx() functions to take (msgLocation, offset), and we
     assume the msgLocation is aligned and that offset is a compile-time constant, if we're

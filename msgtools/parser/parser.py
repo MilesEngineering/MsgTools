@@ -80,14 +80,15 @@ def DoReplacements(line, msg, replacements, firstTime):
     ret = optionalReplace(ret, "<STRUCTPACKING>", 'structPacking', msg)
     ret = optionalReplace(ret, "<GETMSGID>", 'getMsgID', msg)
     ret = optionalReplace(ret, "<SETMSGID>", 'setMsgID', msg)
-    if "<FOREACHFIELD" in ret:
-        ret = fieldReplacements(ret, msg)
-    if "<FOREACHSUBFIELD" in ret:
-        ret = subfieldReplacements(ret, msg)
+    if "<FOREACHFIELD" in ret and ")>" in ret:
+        ret = fieldReplacements(language, ret, msg, False)
+    if "<FOREACHSUBFIELD" in ret and ")>" in ret:
+        ret = fieldReplacements(language, ret, msg, True)
 
     # ugly, but do this twice, before and after other replacements, because the code generator
     # might insert it while doing other replacements.
     ret = replace(ret, "<MSGNAME>", replacements["<MSGNAME>"])
+    ret = replace(ret, "<MSGFULLNAME>", replacements["<MSGFULLNAME>"])
     ret = replace(ret, "<MSGSHORTNAME>", replacements["<MSGSHORTNAME>"])
     if "<ONCE>" in ret:
         if firstTime:
@@ -98,18 +99,20 @@ def DoReplacements(line, msg, replacements, firstTime):
 
 def CommonSubdir(f1, f2):
     # find largest string shared at end of 2 filenames
-    d1 = os.path.dirname(os.path.abspath(f1))
-    d2 = os.path.dirname(os.path.abspath(f2))
+    # remove + symbols added to the path for Matlab namespaces
+    d1 = os.path.dirname(os.path.abspath(f1)).replace("+","")
+    d2 = os.path.dirname(os.path.abspath(f2)).replace("+Messages","").replace("+","")
     minLen = min(len(d1), len(d2))
     subdirComponent = ''
     for i in range(1, minLen):
-        if d1[-i] == d2[-i]:
+        if d1[-i].lower() == d2[-i].lower():
             subdirComponent = d1[-i] + subdirComponent
         else:
             break
 
     # strip slashes at ends
-    return subdirComponent.strip("/").strip("\\")
+    r = subdirComponent.strip("/").strip("\\")
+    return r
 
 def OutputFile(inputFilename, inputName, outDir):
     try:
@@ -206,12 +209,24 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 msg["commonSubdir"] = CommonSubdir(inputFilename, outDir+"/fake")
 
                 if oneOutputFilePerMsg:
-                    outputFilename, outFile = OutputFile(inputFilename, msgShortName(msg), outDir)
+                    # if outputting one file per message, add the input filename to the path,
+                    # unless the message name matches the input filename
+                    inputFileBasename = os.path.basename(inputFilename).split('.')[0]
+                    if inputFileBasename == msgShortName(msg):
+                        outDirForFile = outDir
+                    else:
+                        try:
+                            outDirForFile = language.outputSubdir(outDir, inputFileBasename)
+                        except AttributeError:
+                            outDirForFile = outDir + "/" + inputFileBasename
+
+                    outputFilename, outFile = OutputFile(inputFilename, msgShortName(msg), outDirForFile)
                     if not outFile:
                         continue
 
                 replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(msg, enums))
                 replacements["<MSGNAME>"] = msgName(msg)
+                replacements["<MSGFULLNAME>"] = msgDescriptor(msg, inputFilename).replace(".","_")
                 replacements["<MSGSHORTNAME>"] = msgShortName(msg)
                 replacements["<NUMBER_OF_FIELDS>"] = str(numberOfFields(msg))
                 replacements["<NUMBER_OF_SUBFIELDS>"] = str(numberOfSubfields(msg))
@@ -227,6 +242,12 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<MSGSIZE>"] = str(msgSize(msg))
                 replacements["<MSGDESCRIPTION>"] = str(fieldItem(msg, "Description", "")).replace('\n', ' ')
                 replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))
+                try:
+                    # most languages won't have SETFIELDS/GETFIELDS
+                    replacements["<SETFIELDS>"] = "\n".join(language.set_fields(msg))
+                    replacements["<GETFIELDS>"] = "\n".join(language.get_fields(msg))
+                except:
+                    pass
                 replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg))
                 replacements["<INIT_CODE>"] = "\n".join(language.initCode(msg))
                 replacements["<OUTPUTFILENAME>"] = outputFilename
@@ -237,9 +258,29 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg, inputFilename)
                 replacements["<DATE>"] = currentDateTime
                 replacements["<MSGALIAS>"] = msgAlias(msg)
+                doingMultilineSection = False
+                subfieldsOnly = False
                 for line in template:
-                    line = DoReplacements(line, msg, replacements, firstTime)
-                    outFile.write(line)
+                    if doingMultilineSection:
+                        if ")>" in line:
+                            output = fieldReplacements(language, section, msg, subfieldsOnly)
+                            outFile.write(output)
+                            doingMultilineSection = False
+                            section = ""
+                        else:
+                            section += DoReplacements(line, msg, replacements, firstTime)
+                    else:
+                        if "<FOREACHSUBFIELD(" in line:
+                            subfieldsOnly = True
+                            section = DoReplacements(line, msg, replacements, firstTime)
+                            doingMultilineSection = True
+                        elif "<FOREACHFIELD(" in line:
+                            subfieldsOnly = False
+                            section = DoReplacements(line, msg, replacements, firstTime)
+                            doingMultilineSection = True
+                        else:
+                            line = DoReplacements(line, msg, replacements, firstTime)
+                            outFile.write(line)
                 if oneOutputFilePerMsg:
                     outfileLen = outFile.tell()
                     outFile.close()
