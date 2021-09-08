@@ -21,6 +21,6 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y qt5-default qttools5-dev-tools \
-        pip3 install pyyaml
+        pip install pyyaml
     -name: Run tests
       run: make tests
