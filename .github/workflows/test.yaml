@@ -1,0 +1,26 @@
+name: Run tests
+on:
+  push:
+    branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - develop
+      - master
+jobs:
+  build:
+    name: Run tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+  steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y qt5-default qttools5-dev-tools
+        pip3 install pyyaml
+    -name: Run tests
+      run: make tests
