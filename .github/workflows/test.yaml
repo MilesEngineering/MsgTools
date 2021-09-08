@@ -13,16 +13,12 @@ jobs:
     name: Run tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-  steps:
-  - name: This somehow lets the action access the files from the commit
-    uses: actions/checkout@v2
-  - name: This is how python gets set up
-    uses: actions/setup-python@v1
-    with:
-      python-version: 3.8
-  - name: Install dependencies
-    run: |
-      sudo apt-get install -y qt5-default qttools5-dev-tools
-      pip install pyyaml
-  - name: Run tests
-    run: make tests
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - run: |
+        sudo apt-get install -y qt5-default qttools5-dev-tools
+        pip install pyyaml
+    - run: make tests
