@@ -14,8 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
   steps:
-  - uses: actions/checkout@v2
-  - uses: actions/setup-python@v1
+  - name: This somehow lets the action access the files from the commit
+    uses: actions/checkout@v2
+  - name: This is how python gets set up
+    uses: actions/setup-python@v1
     with:
       python-version: 3.8
   - name: Install dependencies
