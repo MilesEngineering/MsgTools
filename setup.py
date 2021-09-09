@@ -69,7 +69,7 @@ setup(name='msgtools',
         'websockets',
         'janus',
         'jinja2',
-        'numpy==1.18'
+        'numpy'
     ],
     extras_require={
         'gui':  ["pyqtgraph", "pyqt5", 'qscintilla'],
