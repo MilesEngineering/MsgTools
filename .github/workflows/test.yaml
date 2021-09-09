@@ -21,4 +21,4 @@ jobs:
     - run: |
         sudo apt-get install -y qt5-default qttools5-dev-tools
         pip install pyyaml
-    - run: make tests
+    - run: make test
