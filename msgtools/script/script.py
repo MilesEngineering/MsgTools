@@ -1,14 +1,9 @@
 import sys, os, multiprocessing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# Need two styles of import, depending on if we were launched from an installed package,
-# or just from running our script via 'python script.py'
-try:
-    from .edit_window import EditWindow
-    from ..script import debugger as debugger
-except:
-    from edit_window import EditWindow
-    import debugger
+from msgtools.script.edit_window import EditWindow
+from msgtools.script import debugger as debugger
+import msgtools.script.launcher as launcher
 
 NEW_FILE = '''\
 from msgtools.lib.messaging import Messaging as M
@@ -22,6 +17,7 @@ cxn = Client('example')
 class MsgScript(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(MsgScript, self).__init__(parent)
+        self.setWindowIcon(QtGui.QIcon(launcher.info().icon_filename))
         
         self.settings = QtCore.QSettings("MsgTools", 'MsgScript')
         self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))

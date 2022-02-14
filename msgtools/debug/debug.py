@@ -18,6 +18,7 @@ from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 import msgtools.lib.createmsgdialog
 import msgtools.lib.msgjson as msgjson
+import msgtools.debug.launcher as launcher
 
 DESCRIPTION='''DebugPrint provides a graphical interface that allows you to view debug messages, and send
     binary messages and text commands.  It tries to be pretty flexible about what messages are used, by
@@ -507,6 +508,7 @@ class MsgDebugWidget(QtWidgets.QWidget):
 class DebugPrint(msgtools.lib.gui.Gui):
     def __init__(self, args, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Debug Print 0.1", args, parent)
+        self.setWindowIcon(QtGui.QIcon(launcher.info().icon_filename))
 
         if args.debugdicts:
             debugdictList = args.debugdicts.split(",")

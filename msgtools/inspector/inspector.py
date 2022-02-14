@@ -12,6 +12,7 @@ if __name__ == '__main__':
     sys.path.insert(1, srcroot)
 from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
+import msgtools.inspector.launcher as launcher
 
 DESCRIPTION='''MsgInspector allows you to connect to a MsgServer and inspect messages as they arrive.
     It is similar to MsgScope but presents data in a time linear format with compact details.  Each message
@@ -27,6 +28,7 @@ class MsgInspector(msgtools.lib.gui.Gui):
         args=parser.parse_args()
 
         msgtools.lib.gui.Gui.__init__(self, "Message Inspector 0.1", args, parent)
+        self.setWindowIcon(QtGui.QIcon(launcher.info().icon_filename))
 
         self.keyFields = {}
 

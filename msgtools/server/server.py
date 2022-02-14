@@ -17,6 +17,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
 from msgtools.server.TcpServer import *
 from msgtools.server.WebSocketServer import *
+import msgtools.server.launcher as launcher
 
 DESCRIPTION='''
     MsgServer acts as a central routing hub for one or more message clients.
@@ -170,6 +171,7 @@ class SelectPluginDialog(QtWidgets.QDialog):
 class MessageServer(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
+        self.setWindowIcon(QtGui.QIcon(launcher.info().icon_filename))
         
         self.settings = QtCore.QSettings("MsgTools", "MessageServer")
         self.logFile = None

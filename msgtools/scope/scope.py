@@ -23,6 +23,8 @@ import msgtools.lib.gui
 import msgtools.lib.msgcsv as msgcsv
 import msgtools.debug.debug
 
+import msgtools.scope.launcher as launcher
+
 import msgtools.lib.txtreewidget as txtreewidget
 plottingLoaded=0
 try:
@@ -82,6 +84,7 @@ class ClosableDockWidget(QDockWidget):
 class MessageScopeGui(msgtools.lib.gui.Gui):
     def __init__(self, args, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Message Scope 0.1", args, parent)
+        self.setWindowIcon(QIcon(launcher.info().icon_filename))
 
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)

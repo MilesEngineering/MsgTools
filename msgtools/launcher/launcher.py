@@ -19,6 +19,7 @@ class DetachableProcess(QtCore.QProcess):
 class MsgLauncher(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         QtWidgets.QMainWindow.__init__(self,parent)
+        self.setWindowIcon(QtGui.QIcon(pkg_resources.resource_filename('msgtools', 'launcher/launcher.png')))
         
         parser = argparse.ArgumentParser(description=DESCRIPTION)
         parser.add_argument('--connectionName', default=None,
