@@ -38,7 +38,7 @@ class InfluxDBConnection:
             # Size of a result includes size of the value and the timestamp.
             self.dataResultSize = self.dataValueInfo.size + self.dataTimestampInfo.size
             # This needs to be whichever element is first!
-            self.dataResultOffset = min(self.dataValueInfo.offset+self.dataTimestampInfo.offset)
+            self.dataResultOffset = min(self.dataValueInfo.offset,self.dataTimestampInfo.offset)
     
     @staticmethod
     def FormattedTime(floatTime):
@@ -81,7 +81,6 @@ class InfluxDBConnection:
                 'fields':  {},
                 'tags': {}
             }
-
         for fieldInfo in msg.hdr.fields:
             if len(fieldInfo.bitfieldInfo) == 0:
                 if fieldInfo.idbits == 0 and fieldInfo.name != "Time" and fieldInfo.name != "DataLength":
@@ -186,25 +185,16 @@ class InfluxDBMsgClient:
     def __init__(self):
         Messaging.LoadAllMessages()
 
-        self.connection = msgtools.console.client(Messaging.hdr)
-        # say my name
-        connectMsg = Messaging.Messages.Network.Connect()
-        connectMsg.SetName("InfluxDB")
-        self.connection.send_message(connectMsg)
+        self.connection = msgtools.console.client.Client("InfluxDB")
         
-        # do default subscription to get *everything*
-        subscribeMsg = Messaging.Messages.Network.MaskedSubscription()
-        self.connection.send_message(subscribeMsg)
-
         self.db = InfluxDBConnection(self)
     
     def run(self):
         while True:
             # this blocks until message received, or timeout occurs
             timeout = 10.0 # value in seconds
-            hdr = self.connection.get_message(timeout)
-            if hdr:
-                msg = Messaging.MsgFactory(hdr)
+            msg = self.connection.recv(timeout=timeout)
+            if msg:
                 self.db.handle_message(msg)
 
 # this is a CLI app that reads from network and writes to InfluxDB
