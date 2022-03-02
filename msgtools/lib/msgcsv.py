@@ -203,7 +203,7 @@ def paramHelp(field):
         ret = ret + "# " + field.description
     return ret
 
-def csvHelp(lineOfText):
+def csvHelp(lineOfText, verbose=False):
     autoComplete = None
     help = ""
     msgName, params = msgNameAndParams(lineOfText)
@@ -237,11 +237,15 @@ def csvHelp(lineOfText):
             return (autoComplete, help)
             
     if msgName in Messaging.MsgClassFromName:
-        helpOnJustParam = len(params)>1 or (len(params) == 1 and params[0] != '')
-        if not helpOnJustParam:
-            help = msgName + ", "
         msgClass = Messaging.MsgClassFromName[msgName]
         msg = msgClass()
+        helpOnJustParam = len(params)>1 or (len(params) == 1 and params[0] != '')
+        if not helpOnJustParam:
+            help = msgName
+            if verbose:
+                help += ": \n"# + msg.msgDescription
+            else:
+                help += ", "
         if msg.fields:
             try:
                 paramNumber = 0
@@ -253,7 +257,11 @@ def csvHelp(lineOfText):
                                     return (None, paramHelp(fieldInfo))
                                 paramNumber+=1
                             else:
-                                help += fieldInfo.name + ", "
+                                help += fieldInfo.name
+                                if verbose:
+                                    help += "(%s): %s\n" % (fieldInfo.units, fieldInfo.description)
+                                else:
+                                    help += ", "
                         else:
                             for bitInfo in fieldInfo.bitfieldInfo:
                                 if helpOnJustParam:
@@ -261,7 +269,11 @@ def csvHelp(lineOfText):
                                         return (None, paramHelp(bitInfo))
                                     paramNumber+=1
                                 else:
-                                    help += bitInfo.name + ", "
+                                    help += bitInfo.name
+                                    if verbose:
+                                        help += "(%s): %s\n" % (bitInfo.units, bitInfo.description)
+                                    else:
+                                        help += ", "
                     else:
                         if helpOnJustParam:
                             arrayList = []
@@ -270,7 +282,11 @@ def csvHelp(lineOfText):
                                     return (None, paramHelp(fieldInfo))
                                 paramNumber+=1
                         else:
-                            help += fieldInfo.name + "["+str(fieldInfo.count)+"], "
+                            help += fieldInfo.name + "["+str(fieldInfo.count)+"]"
+                            if verbose:
+                                help += "(%s): %s\n" % (fieldInfo.units, fieldInfo.description)
+                            else:
+                                help += ", "
             except IndexError:
                 # if index error occurs on accessing params, then stop processing params
                 # because we've processed them all

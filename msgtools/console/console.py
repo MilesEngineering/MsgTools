@@ -96,19 +96,28 @@ class MsgCmd(cmd.Cmd):
     
     def do_timeout(self, line):
         self._timeout = float(line)
-        
-    def autocomplete(self, commandName, text, line, completeparams):
+    
+    def do_info(self, line):
         try:
-            if completeparams:
-                # get the text with whitespace collapsed, after first word
-                simplified = " ".join(line.split()[1:])
-                if line.endswith(' ') and len(line.strip()) > len(commandName + " "):
-                    simplified = simplified + ' '
-            else:
-                # use last word
-                simplified = text
+            autocomplete, help = msgcsv.csvHelp(line, verbose=True)
+            if autocomplete == line or autocomplete == line+",":
+                autocomplete, help = msgcsv.csvHelp(line+",", verbose=True)
+            if autocomplete and autocomplete.strip() != line.strip():
+                print("Invalid message name: " + line)
+            elif help:
+                print("")
+                print(help)
+        except:
+            print(traceback.format_exc())
+        
+    def autocomplete(self, commandName, text, line):
+        try:
+            # get the text with whitespace collapsed, after first word
+            simplified = " ".join(line.split()[1:])
+            if line.endswith(' ') and len(line.strip()) > len(commandName + " "):
+                simplified = simplified + ' '
 
-            autocomplete, help = msgcsv.csvHelp(simplified)
+            autocomplete, help = msgcsv.csvHelp(simplified, verbose= commandName=="info")
             if autocomplete and autocomplete.strip() != simplified.strip():
                 return [autocomplete]
             elif help:
@@ -120,10 +129,13 @@ class MsgCmd(cmd.Cmd):
         return []
         
     def complete_send(self, text, line, start_index, end_index):
-        return self.autocomplete("send", text, line, True)
+        return self.autocomplete("send", text, line)
 
     def complete_recv(self, text, line, start_index, end_index):
-        return self.autocomplete("recv", text, line, False)
+        return self.autocomplete("recv", text, line)
+
+    def complete_info(self, text, line, start_index, end_index):
+        return self.autocomplete("info", text, line)
 
 def main(args=None):
     Messaging.LoadAllMessages()
