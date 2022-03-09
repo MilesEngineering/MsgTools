@@ -57,7 +57,8 @@ setup(name='msgtools',
                                    'bluetoothSPP=msgtools.server.SerialPlugin:bt_plugin_info',
                                    'bluetoothRFCOMM=msgtools.server.BluetoothRFCOMM:plugin_info',
                                    'bluetoothRFCOMMQt=msgtools.server.BluetoothRFCOMMQt:plugin_info',
-                                   'influxdb=msgtools.database.influx_msgserver_plugin:plugin_info'],
+                                   'influxdb=msgtools.database.influx_msgserver_plugin:plugin_info',
+                                   'can=msgtools.server.CanPlugin:plugin_info'],
         'msgtools.launcher.plugin': ['scope=msgtools.scope.launcher:info',
                                    'script=msgtools.script.launcher:info',
                                    'server=msgtools.server.launcher:info',
@@ -73,7 +74,7 @@ setup(name='msgtools',
     ],
     extras_require={
         'gui':  ["pyqtgraph", "pyqt5", 'qscintilla'],
-        'serverserial': ["pyqtserial"],
+        'servercan': ["python-can"],
     },
     package_data={
         # Include all Template files for the code generator and web app tool

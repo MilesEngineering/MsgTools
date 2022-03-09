@@ -28,6 +28,15 @@ class HeaderTranslator:
         self.lastWrapTime = None
 
     def translateHdrAndBody(self, fromHdr, body):
+        toHdr = self.translateHdr(fromHdr)
+        if toHdr:
+            # copy the body
+            for i in range(0,fromHdr.GetDataLength()):
+                toHdr.rawBuffer()[toHdr.SIZE+i] = body[i]
+        return toHdr
+
+
+    def translateHdr(self, fromHdr):
         # figure out which direction to translate
         if isinstance(fromHdr, self._hdr1Info.type):
             fromHdrInfo = self._hdr1Info
@@ -57,9 +66,6 @@ class HeaderTranslator:
             if Messaging.debug:
                 print("message ID 0x" + hex(fromHdr.GetMessageID()) + " translated to 0x" + hex(toHdr.GetMessageID()) + ", throwing away")
             return None
-        # copy the body
-        for i in range(0,fromHdr.GetDataLength()):
-            toHdr.rawBuffer()[toHdr.SIZE+i] = body[i]
         
         # do special timestamp stuff to convert from relative to absolute time
         if toHdrInfo.timeField != None:
