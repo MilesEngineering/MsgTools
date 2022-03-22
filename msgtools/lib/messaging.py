@@ -449,18 +449,21 @@ or specify that directory with --msgdir=PATH''')
     # in one time sequence.  This is necessary for showing lists of data (like msginspector),
     # showing plots of data as a time series, or showing the latest value of all data (msgscope).
     @staticmethod
-    def MsgRoute(msg):
-        hdr = msg.hdr
+    def HeaderRoute(hdr):
         msg_route = []
-        for fieldInfo in msg.hdr.fields:
+        for fieldInfo in hdr.fields:
             if fieldInfo.bitfieldInfo:
                 for bitfieldInfo in fieldInfo.bitfieldInfo:
                     if Messaging.IsRouteField(bitfieldInfo):
-                        msg_route.append(str(bitfieldInfo.get(msg.hdr)))
+                        msg_route.append(str(bitfieldInfo.get(hdr)))
             else:
                 if Messaging.IsRouteField(fieldInfo):
-                    msg_route.append(str(fieldInfo.get(msg.hdr)))
+                    msg_route.append(str(fieldInfo.get(hdr)))
         return msg_route
+
+    @staticmethod
+    def MsgRoute(msg):
+        return Messaging.HeaderRoute(msg.hdr)
     
     # this sets up a message's header based on the given route
     #TODO Need special logic for headers with source and destination, because they need to be
@@ -478,11 +481,13 @@ or specify that directory with --msgdir=PATH''')
                 if Messaging.IsRouteField(fieldInfo):
                     Messaging.set(msg.hdr, fieldInfo, msg_route[i])
 
+    # fields count as Route fields unless they are part of the ID,
+    # have "length" in their name, or match Time or Priority.
     @staticmethod
     def IsRouteField(fieldInfo):
         if fieldInfo.idbits != 0:
             return False
-        if fieldInfo.name == "DataLength":
+        if "length" in fieldInfo.name.lower():
             return False
         if fieldInfo.name == "Time":
             return False

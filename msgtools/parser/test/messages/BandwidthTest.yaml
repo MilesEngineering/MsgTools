@@ -8,5 +8,5 @@ Messages:
         Description: SequenceNumber
       - Name: TestData
         Type: uint32
-        Count: 30
+        Count: 100
         Description: Any relevant test data, such as timestamps.

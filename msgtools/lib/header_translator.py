@@ -117,8 +117,9 @@ class HeaderTranslator:
                     set_time(toHdr, fromHdr.GetTime()*time_scale)
             else:
                 t = datetime.datetime.now().timestamp()
+                maxTime = toHdrInfo.timeField.maxVal
                 # use time since start of day, if 32-bit or smaller timestamps
-                if float(toHdrInfo.timeField.maxVal) <= 2**32:
+                if maxTime != "DBL_MAX" and (maxTime == "FLT_MAX" or float(maxTime) <= 2**32):
                     t = (datetime.datetime.fromtimestamp(t) - datetime.datetime.fromtimestamp(t).replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
                 if toHdrInfo.timeField.units == "ms":
                     t = t * 1000.0

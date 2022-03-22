@@ -2,19 +2,55 @@ Messages:
   - Name: CANHeader
     Description: Header for messages sent over the CANbus
     Fields:
-      - Name: Source
+      - Name: CanID
+        Type: uint32
+        Units: ""
+        Description: 29-bit Extended CAN Packet ID
+        Bitfields:
+            - Name: Priority
+              NumBits: 2
+              Default: 0
+            - Name: ID
+              NumBits: 12
+              Default: 0
+              IDBits: 10
+            - Name: Fragmented
+              NumBits: 1
+              Default: 0
+            - Name: Source
+              NumBits: 5
+              Default: 0
+            - Name: Destination
+              NumBits: 5
+              Default: 0
+            - Name: LengthDecrement
+              NumBits: 4
+              Default: 0
+  - Name: FragmentationHeader
+    Description: Exists in all fragmented packets.  Follows CAN header, stored in CAN packet body.
+    Fields:
+      - Name: Container
         Type: uint8
-        Default: 0
-      - Name: Destination
-        Type: uint8
-        Default: 0
-      - Name: ID
+        Description: 
+        Bitfields:
+            - Name: NewStream
+              NumBits: 1
+              Description: Says whether this is the first sequence packet of a new stream.
+              Default: 0
+            - Name: StreamID
+              NumBits: 3
+              IDBits: 3
+              Description: Identifier for the stream of fragments.  Increments on each message fragmented, so unique until it wraps.
+            - Name: SequenceNumber
+              NumBits: 4
+              Description: If NewStream then max sequence number N.  Otherwise, packet Sequence number, 1-N.
+  - Name: FragmentationHeaderStart
+    Description: Only exists for the first fragmented packet.  Follows FragmentationHeader, stored in CAN packet body, preceding other data bytes.
+    Fields:
+      - Name: MessageLength
         Type: uint16
-        Default: 0
+        Description: Total length of the assembled message.
+      - Name: CRC16
+        Type: uint16
         IDBits: 16
-      - Name: Length
-        Type: uint16
-        Default: 0
-      - Name: Priority
-        Type: uint8
-        Default: 0
+        Description: CRC16 of the entire body of the message, spread across all packets.
