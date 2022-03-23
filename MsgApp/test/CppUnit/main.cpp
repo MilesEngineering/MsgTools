@@ -35,7 +35,7 @@ TEST(MessageClientTest, Reflection)
     buffer.open(QIODevice::ReadWrite);
     MessageClient mc(&buffer);
 
-    ConnectMessage* cmTx = new ConnectMessage();
+    Network_ConnectMessage* cmTx = new Network_ConnectMessage();
     cmTx->hdr.SetSource(0x1234);
     cmTx->hdr.SetDestination(0x5678);
     cmTx->hdr.SetPriority(1234);
@@ -55,10 +55,10 @@ TEST(MessageClientTest, Reflection)
     {
         QList<QVariant> arguments = ss->takeFirst();
         Message* cmRx = (Message*)(arguments.at(0).value<Message*>());
-        ConnectMessage* cm = (ConnectMessage*)cmRx;
+        Network_ConnectMessage* cm = (Network_ConnectMessage*)cmRx;
         EXPECT_TRUE(cmRx != 0);
         /* Verify header */
-        EXPECT_EQ(cm->hdr.GetDataLength(), (unsigned)ConnectMessage::MSG_SIZE);
+        EXPECT_EQ(cm->hdr.GetDataLength(), (unsigned)Network_ConnectMessage::MSG_SIZE);
         EXPECT_EQ(cm->hdr.GetSource(), cmTx->hdr.GetSource());
         EXPECT_EQ(cm->hdr.GetDestination(), cmTx->hdr.GetDestination());
         EXPECT_EQ(cm->hdr.GetID(), cmTx->hdr.GetID());
@@ -67,13 +67,13 @@ TEST(MessageClientTest, Reflection)
         EXPECT_STREQ((char*)cm->Name(), (char*)cmTx->Name());
     }
 
-    ConnectMessage* cm = new ConnectMessage();
-    MsgInfo* connectMsgInfo = Reflection::FindMsgByID(ConnectMessage::MSG_ID);
+    Network_ConnectMessage* cm = new Network_ConnectMessage();
+    MsgInfo* connectMsgInfo = Reflection::FindMsgByID(Network_ConnectMessage::MSG_ID);
     EXPECT_TRUE(connectMsgInfo != NULL);
     if(connectMsgInfo)
     {
         EXPECT_STREQ(connectMsgInfo->Name().toUtf8().constData(), "Connect");
-        auto const msgId = ConnectMessage::MSG_ID;
+        auto const msgId = Network_ConnectMessage::MSG_ID;
         EXPECT_EQ(connectMsgInfo->ID(), msgId);
     }
     strcpy((char*)cm->Name(), "test1");

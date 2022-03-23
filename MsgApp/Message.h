@@ -48,6 +48,17 @@ class HeaderWrapper : public HeaderClass
 
 typedef HeaderWrapper<NetworkHeader> NetworkHeaderWrapper;
 
+// This is a C++ implementation of a message.
+// It doesn't use Qt or pool allocated messages, but does use the C++ stdlib's vector type to store data.
+
+// Because we don't use a pool allocator, we don't want to define MessageBuffer,
+// and Exists() always returns true.
+// We still need to define the Message constructor that accepts a MessageBuffer* as
+// a parameter, because generated code calls it, if anyone gives a MessageBuffer*
+// as a constructor parameter of the generated classes.  This could be eliminated
+// if we made a new C++ generated code template file that didn't mention MessageBuffer.
+typedef void MessageBuffer;
+
 class Message
 {
     public:
@@ -57,6 +68,7 @@ class Message
             m_data.reserve(len);
             m_data.insert(m_data.begin(), len, '\0');
         }
+        Message(MessageBuffer* buf);
         static Message* New(uint16_t datalen)
         {
             return new Message(datalen);

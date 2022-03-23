@@ -37,7 +37,7 @@ class MessageClient : public QObject
                         if(length == sizeof(_inProgressHeader))
                         {
                             _inProgressMessage = new Message(_inProgressHeader.GetDataLength());
-                            memcpy(&_inProgressMessage->hdr, &_inProgressHeader, sizeof(_inProgressHeader));
+                            _inProgressMessage->hdr = _inProgressHeader;
                             _gotHeader = true;
                         }
                     }
@@ -78,7 +78,7 @@ class MessageClient : public QObject
     private:
         QIODevice* _ioDevice;
         bool _gotHeader;
-        NetworkHeader _inProgressHeader;
+        NetworkHeaderWrapper _inProgressHeader;
         Message* _inProgressMessage;
 };
 #endif

@@ -25,10 +25,10 @@ MessageGuiApp::~MessageGuiApp()
 
 void MessageGuiApp::connectedToNetwork()
 {
-    MaskedSubscriptionMessage s;
+    Network_MaskedSubscriptionMessage s;
     _msgClient->sendMessage(&s);
-    ConnectMessage c;
-    strncpy((char*)c.Name(), _name, qMin(int(ConnectMessage::MSG_SIZE), int(strlen(_name))));
+    Network_ConnectMessage c;
+    strncpy((char*)c.Name(), _name, qMin(int(Network_ConnectMessage::MSG_SIZE), int(strlen(_name))));
     _msgClient->sendMessage(&c);
 
     onConnect();
