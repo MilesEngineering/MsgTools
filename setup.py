@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(name='msgtools',
     python_requires='~=3.5',
-    version='0.35.8',
+    version='0.35.9',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -70,11 +70,11 @@ setup(name='msgtools',
         'websockets',
         'janus',
         'jinja2',
-        'numpy'
+        'numpy',
+        "python-can"
     ],
     extras_require={
         'gui':  ["pyqtgraph", "pyqt5", 'qscintilla'],
-        'servercan': ["python-can"],
     },
     package_data={
         # Include all Template files for the code generator and web app tool

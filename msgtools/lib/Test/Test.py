@@ -1,17 +1,7 @@
 #!/usr/bin/env python3
 import unittest
-import os
-import sys
-import ctypes
-import copy
 import traceback
 
-# if started via invoking this file directly (like would happen with source sitting on disk),
-# insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
-# any other already in the path.
-if __name__ == '__main__':
-    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../../..")
-    sys.path.insert(1, srcroot)
 from msgtools.lib.messaging import Messaging
 
 import msgtools.lib.msgcsv as msgcsv

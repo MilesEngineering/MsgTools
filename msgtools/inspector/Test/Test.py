@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 import unittest
-import sys
-sys.path.append("..")
-import ctypes
 
 class TestClass(unittest.TestCase):
 
