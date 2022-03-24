@@ -1,28 +1,28 @@
 #!/usr/bin/python3
+import datetime
 import os
+import time
+import traceback
+import requests
 
-# if started via invoking this file directly (like would happen with source sitting on disk),
-# insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
-# any other already in the path.
-if __name__ == '__main__':
-    srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
-    sys.path.insert(1, srcroot)
 from msgtools.lib.messaging import Messaging
 import msgtools.console.client
 
 from influxdb import InfluxDBClient
 from influxdb.client import InfluxDBClientError
-import datetime
 
 # this allows sending Messages as data to an InfluxDB database
 class InfluxDBConnection:
     MAX_POINTS = 128
+    PRINT_TIME_INTERVAL = 10.0
     def __init__(self, msgClient, dbname='messages', hostname='localhost', port=8086, username='root', password='root'):
         self.hostname = hostname
         self.port = port
         self.db = InfluxDBClient(host=hostname, port=port, username=username, password=password, database=dbname)
         self.msgClient = msgClient
         self.cookie = 0
+        
+        self.stats = DBStats()
         
         # History Data message has to have either just Data with interleaved value and time,
         # or be an array of structs which also interleaves value and time in memory, but
@@ -61,16 +61,28 @@ class InfluxDBConnection:
         else:
             self.store_message(msg)
     
+    def handle_timeout(self):
+        stats_str = self.stats.report_stats(time.time(), self.PRINT_TIME_INTERVAL)
+        if stats_str:
+            print(stats_str)
+    
     def store_message(self, msg):
         try:
             timeVal = msg.hdr.GetTime()
-            timeInfo = Messaging.findFieldInfo(msg.hdr.fields, "Time")
-            maxTime = timeInfo.maxVal
-            # if it's not big enough to be an absolute timestamp, give up on using it and just use current time
-            if maxTime != "DBL_MAX" and (maxTime == 'FLT_MAX' or float(maxTime) <= 2**32):
-                raise AttributeError
-            if timeInfo.units == "ms":
-                timeVal = timeVal / 1000.0
+            if timeVal == 0.0:
+                timeVal = time.time()
+            else:
+                timeInfo = Messaging.findFieldInfo(msg.hdr.fields, "Time")
+                maxTime = timeInfo.maxVal
+                # if it's not big enough to be an absolute timestamp, give up on using it and just use current time
+                if maxTime != "DBL_MAX" and (maxTime == 'FLT_MAX' or float(maxTime) <= 2**32):
+                    raise AttributeError
+                if timeInfo.units == "ms":
+                    timeVal = timeVal * 1.0e-3
+                elif timeInfo.units == "us":
+                    timeVal = timeVal * 1.0e-6
+                elif timeInfo.units == "ns":
+                    timeVal = timeVal * 1.0e-9
             timeVal = datetime.datetime.fromtimestamp(timeVal, datetime.timezone.utc)
         except AttributeError:
             timeVal = datetime.datetime.now()
@@ -103,11 +115,32 @@ class InfluxDBConnection:
                 for i in range(0,fieldInfo.count):
                     dbJson['fields'][fieldInfo.name+"_"+str(i)] = InfluxDBConnection.GetDBValue(msg, fieldInfo, i)
 
+        # Can't store with no fields!  Add a boolean to indicate emptiness
+        if len(dbJson['fields']) == 0:
+            dbJson['fields']['[EMPTY]'] = True
+
         #print("Create a retention policy")
         #retention_policy = 'awesome_policy'
         #client.create_retention_policy(retention_policy, '3d', 3, default=True)
-        self.db.write_points([dbJson]) #, retention_policy=retention_policy)
-
+        
+        # record how many messages and bytes came in
+        self.stats.messages_in += 1
+        self.stats.bytes_in += msg.hdr.SIZE + msg.hdr.GetDataLength()
+        try:
+            self.db.write_points([dbJson]) #, retention_policy=retention_policy)
+            self.stats.messages_out += 1
+            # we don't know exactly what gets written across the network to InfluxDB, but
+            # the length of the string of the JSON should be pretty close.
+            self.stats.bytes_out += len(str(dbJson))
+        except requests.exceptions.ConnectionError:
+            self.stats.connection_errors += 1
+        except Exception as e:
+            print(traceback.format_exc())
+            print(e)
+            #print(dbJson)
+            #print(msg)
+            sys.exit()
+    
     def handle_query(self, msg):
         msgquery = msg.GetQuery()
         msgAndFieldName = msgquery.split(",")[0]
@@ -180,6 +213,43 @@ class InfluxDBConnection:
         # have unique cookies!).
         self.cookie += 1
 
+class DBStats:
+    SUMMARY_FORMAT_STR = "{: >8}/{} msgs {: >8} bytes in {: >8} bytes out {: >8} cxn errors {: >8}/{} Msg/s {: >8} B/s in {: >8} B/s out {: >8} cxn errors/s"
+    def __init__(self):
+        self.messages_in = 0
+        self.messages_out = 0
+        self.bytes_in = 0
+        self.bytes_out = 0
+        self.connection_errors = 0
+        self.last_time = 0
+        self.last_messages_in = 0
+        self.last_messages_out = 0
+        self.last_bytes_in = 0
+        self.last_bytes_out = 0
+        self.last_connection_errors = 0
+    
+    def report_stats(self, now, time_interval):
+        if now == None or now > self.last_time + time_interval:
+            mips = (self.messages_in - self.last_messages_in)/time_interval
+            mops = (self.messages_out - self.last_messages_out)/time_interval
+            bips = (self.bytes_in - self.last_bytes_in)/time_interval
+            bops = (self.bytes_out - self.last_bytes_out)/time_interval
+            ceps = (self.connection_errors - self.last_connection_errors)/time_interval
+            self.last_messages_in = self.messages_in
+            self.last_messages_out = self.messages_out
+            self.last_bytes_in = self.bytes_in
+            self.last_bytes_out = self.bytes_out
+            self.last_connection_errors = self.connection_errors
+            self.last_time = now
+            return self.SUMMARY_FORMAT_STR.format(
+                self.messages_out, self.messages_in,
+                self.bytes_in, self.bytes_out,
+                self.connection_errors,
+                mops, mips,
+                bips, bops,
+                ceps)
+        return None
+
 # this is client that reads from network, and writes to InfluxDB
 class InfluxDBMsgClient:
     def __init__(self):
@@ -196,6 +266,7 @@ class InfluxDBMsgClient:
             msg = self.connection.recv(timeout=timeout)
             if msg:
                 self.db.handle_message(msg)
+            self.db.handle_timeout()
 
 # this is a CLI app that reads from network and writes to InfluxDB
 def main(args=None):
