@@ -158,7 +158,7 @@ def fieldStorageMax(storageType):
     return dict[storageType]
 
 def fieldItem(field, item, default):
-    if item in field:
+    if item in field and field[item] != None:
         return field[item]
     else:
         return default
