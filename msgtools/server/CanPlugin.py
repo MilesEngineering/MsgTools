@@ -416,6 +416,7 @@ class CanConnection(QtCore.QObject):
     def selectPort(self):
         d = CanPortDialog.SelectCanPortDialog()
         d.portChanged.connect(self.portChanged)
+        d.statusUpdate.connect(self.statusUpdate)
         d.exec_()
 
     def start(self):
