@@ -222,7 +222,7 @@ class CanFragmentation(QtCore.QObject):
         #print(canHdr)
         #print("in[%d]: %s" % (canHdr.GetDataLength(), str(canHdr)))
         #print("rx " + str(rx_frame))
-        if canHdr.GetFragmented():
+        if self.frag_hdr and canHdr.GetFragmented():
             frag_hdr = self.frag_hdr(rx_frame.data)
             key = "%s@%s" % (str(canHdr.GetID()), "/".join(Messaging.HeaderRoute(canHdr)))
             #print(frag_hdr)
