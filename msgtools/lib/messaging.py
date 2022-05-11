@@ -102,6 +102,7 @@ class Messaging:
     Messages = MessageAttributeLoader("")
         
     debug=0
+    objdir=None
 
     @staticmethod
     def DetermineLoadDir(loaddir, searchdir):
@@ -140,6 +141,8 @@ or specify that directory with --msgdir=PATH''')
         sys.path.append(loadDir)
         sys.path.append(os.path.join(loadDir, "headers"))
         
+        Messaging.objdir = os.path.abspath(os.path.join(loadDir,"../.."))
+
         return loadDir
 
 

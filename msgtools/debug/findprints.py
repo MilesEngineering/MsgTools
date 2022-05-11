@@ -5,6 +5,7 @@ import os
 import string
 import collections
 import hashlib
+import shutil
 
 def Usage():
     sys.stderr.write('Usage: ' + sys.argv[0] + ' inputdir dictionaryFile dictionaryHeaderFile\n')
@@ -21,7 +22,13 @@ def ProcessDir(inputDir):
                     #print("reading " + inputFilename)
                     ProcessFile(inputFilename.replace("//", "/"))
 
-def printDictionary(dictFilename, headerFilename):
+def theSameWithoutComments(file1, file2):
+    with open(file1) as text1, open(file2) as text2:
+        if [line for line in text1 if not line.startswith('#')] == [line for line in text2 if not line.startswith('#')]:
+            return True
+    return False
+    
+def printDictionary(dictFilename, headerFilename, dictionaryDeployDir):
     md5 = hashlib.md5()
     with open(dictFilename,'w') as dictFile:
         header = \
@@ -34,7 +41,14 @@ def printDictionary(dictFilename, headerFilename):
             md5.update(s.encode('utf-8'))
             dictFile.write(s)
         md5 = md5.hexdigest()
-        dictFile.write("Dictionary md5 is " + md5)
+        dictFile.write("# Dictionary md5 is %s\n" % (md5))
+    
+    if dictionaryDeployDir != None:
+        deployedFile = "%s/%s.json" % (dictionaryDeployDir,md5)
+        if os.path.isfile(deployedFile):
+            if not theSameWithoutComments(dictFilename, deployedFile):
+                raise ValueError("ERROR!  Files %s and %s exist but are not identical!!" % (dictFilename, deployedFile))
+        shutil.copy2(dictFilename, deployedFile)
 
     lineEndings = os.linesep
     # for windows, override lineseperator, to force windows native line endings,
@@ -109,6 +123,10 @@ def main():
     inputDir = sys.argv[1]
     dictionaryFile = sys.argv[2]
     dictionaryHeaderFile = sys.argv[3]
+    try:
+        dictionaryDeployDir = sys.argv[4]
+    except IndexError:
+        dictionaryDeployDir = None
 
     global dictionary
     dictionary = []
@@ -124,7 +142,7 @@ def main():
         os.makedirs(os.path.dirname(dictionaryFile))
     except:
         pass
-    printDictionary(dictionaryFile, dictionaryHeaderFile)
+    printDictionary(dictionaryFile, dictionaryHeaderFile, dictionaryDeployDir)
 
 # main starts here
 if __name__ == '__main__':

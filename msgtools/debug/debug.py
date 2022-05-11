@@ -5,6 +5,7 @@ import os
 import sys
 import struct
 import argparse
+import time
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -23,6 +24,8 @@ import msgtools.debug.launcher as launcher
 DESCRIPTION='''DebugPrint provides a graphical interface that allows you to view debug messages, and send
     binary messages and text commands.  It tries to be pretty flexible about what messages are used, by
     looking up messages by MessageAlias, and by accepting Thread/Stream as synonyms.'''
+
+QUERY_DEVICE_INFO_TIMEOUT = 3.0
 
 class DebugStream(QtWidgets.QWidget):
     messageOutput = QtCore.pyqtSignal(object)
@@ -88,7 +91,7 @@ class DebugStream(QtWidgets.QWidget):
         newName = deviceName + ", " + streamName
         tabIndex = self.debugWidget.tabWidget.indexOf(self.widget)
         if tabIndex < 0:
-            print("Warning!  Couldn't find debug tab for device " + route + " stream " + str(streamID))
+            self.statusUpdate.emit("Warning!  Couldn't find debug tab for device " + route + " stream " + str(streamID))
         else:
             self.debugWidget.tabWidget.setTabText(tabIndex, newName)
 
@@ -168,6 +171,9 @@ class DebugStream(QtWidgets.QWidget):
                 if text.endswith(","):
                     text = text[:-1]
                 text += ")"
+                # if there's a message to query device info, and we haven't done that lately, do it again
+                if self.debugWidget.getDeviceInfoMsg and time.time() > self.debugDevice._lastDeviceInfoQueryTime + QUERY_DEVICE_INFO_TIMEOUT:
+                    self.debugDevice.getDeviceInfo()
                     
         msgStringList.append(str(priority))
         msgStringList.append(filename)
@@ -223,10 +229,10 @@ class DebugDevice(QtWidgets.QWidget):
         self.dictionaryID = None
         self.dictionaryFilename = None
         if dictionaryFilename:
-            print("reading dictionary["+route+"] " + dictionaryFilename)
             self.ReadDictionary(dictionaryFilename)
 
         self.streams = {}
+        self._lastDeviceInfoQueryTime = 0
         
         # daisy-chain our signals to the debugWidget's signals
         self.messageOutput.connect(self.debugWidget.messageOutput)
@@ -240,6 +246,7 @@ class DebugDevice(QtWidgets.QWidget):
         msg = self.debugWidget.getDeviceInfoMsg()
         Messaging.SetMsgRoute(msg, self.route.split("/"))
         self.messageOutput.emit(msg)
+        self._lastDeviceInfoQueryTime = time.time()
 
     def ReadDictionary(self, filename):
         self.dictionaryFilename = filename
@@ -253,7 +260,7 @@ class DebugDevice(QtWidgets.QWidget):
                     DebugInfo = collections.namedtuple('DebugInfo', ['formatStr', 'filename', 'linenumber'])
                     id = matchObj.group(1).strip()
                     if int(id) != nextId:
-                        print("ERROR! Format string ID " + str(id) + " != " + str(nextId))
+                        self.statusUpdate.emit("ERROR! Format string ID " + str(id) + " != " + str(nextId))
                     formatStr = matchObj.group(2).strip()
                     filename = matchObj.group(3).strip()
                     linenumber = matchObj.group(4).strip()
@@ -264,7 +271,7 @@ class DebugDevice(QtWidgets.QWidget):
                     matchObj = re.search( r'Dictionary md5 is (.*)', line)
                     if matchObj != None:
                         self.dictionaryID = matchObj.group(1).strip()
-                        print("Read dictionary " + self.dictionaryID)
+                        self.statusUpdate.emit("Device %s read dictionary %s" % (self.route, self.dictionaryID))
 
     def ProcessMessage(self, msg):
         if type(msg) == self.debugWidget.deviceInfoMsg:
@@ -272,10 +279,8 @@ class DebugDevice(QtWidgets.QWidget):
             for i in range(msg.GetDebugStringDictionaryID.count):
                 dictionaryID += '{:02x}'.format(msg.GetDebugStringDictionaryID(i))
             if dictionaryID != self.dictionaryID:
-                #TODO If dictionary ID changed or wasn't previously set, load the dictionary.
-                s = "Device %s needs to load dictionary %s" % (self.name, dictionaryID)
-                print(s)
-                self.statusUpdate.emit(s)
+                # If dictionary ID changed or wasn't previously set, load the dictionary.
+                self.ReadDictionary("%s/PrintfDictionaries/%s.json" % (Messaging.objdir, dictionaryID))
 
             try:
                 deviceName = msg.GetDeviceName()
@@ -497,11 +502,10 @@ class MsgDebugWidget(QtWidgets.QWidget):
         for route, device in self.devices.items():
             if device.dictionaryFilename == path:
                 device.ReadDictionary(device.dictionaryFilename)
-                print("dictionary " + path + " found at device " + route)
-                self.statusUpdate.emit("updating device " + route)
+                self.statusUpdate.emit("updating device %s dictionary %s" % (route, device.dictionaryFilename))
                 QtCore.QTimer.singleShot(3000, self.clearStatus)
                 return
-        print("dictionary " + path + " not found")
+        self.statusUpdate.emit("Device %s dictionary %s not found" % (route, device.dictionaryFilename))
     def clearStatus(self):
         self.statusUpdate.emit("")
 
