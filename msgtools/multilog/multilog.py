@@ -42,7 +42,7 @@ DESCRIPTION='''
         YEAR_MONTH_DAY.TEXT1.TEXT2.TAG1.log'''
 
 EPILOG='''
-    Example usage: multilog --note LABEL1 LABEL2 --button hotkey:X logtag:TAG1 label:LABEL3  
+    Example usage: msgmultilog --note LABEL1 LABEL2 --button hotkey:X logtag:TAG1 label:LABEL3  
     --button hotkey:X logtag:TAG2 label:LABEL4 --show MSGNAME MSGNAME2 --plot MSGNAME=fieldname1,fieldname2
     MSGNAME2=fieldname3,fieldname4 --send MSGNAME MSGNAME2
     '''
@@ -95,8 +95,8 @@ class Multilog(msgtools.lib.gui.Gui):
         bargs = base_args(argv[1:])
         args=parser.parse_args(bargs)
 
-        msgtools.lib.gui.Gui.__init__(self, "Multilog 0.1", args, parent)
-        self.logFileType = 'csv' # default to CSV
+        msgtools.lib.gui.Gui.__init__(self, "msgmultilog 0.1", args, parent)
+        self.logFileType = 'json' # default to JSON
         
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
@@ -118,7 +118,7 @@ class Multilog(msgtools.lib.gui.Gui):
         mainLayout.type = 'main'
         self.pushLayout(mainLayout)
         
-        self.hotKeys = []
+        self.hotKeys = {}
         self.noteFields = []
         self.buttons = []
         self.activeLogButton = None
@@ -216,7 +216,7 @@ class Multilog(msgtools.lib.gui.Gui):
                     
                     msg = msgClass()
                     # set fields to defaults
-                    msgWidget = msgtools.lib.txtreewidget.EditableMessageItem(txMsgs, msg)
+                    msgWidget = msgtools.lib.txtreewidget.EditableMessageItem(txMsgs, msg, None)
                     msgWidget.qobjectProxy.send_message.connect(self.on_tx_message_send)
             elif argname == '--row':
                 l = QtWidgets.QHBoxLayout()

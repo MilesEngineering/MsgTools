@@ -209,7 +209,7 @@ class App(QtWidgets.QMainWindow):
             print("ERROR!  Invalid log type " + log_name)
         if "." in log_name:
             # if there's a ., assume they specified an exact filename to use
-            logFileName = log_type
+            logFileName = log_name
         else:
             # if not, generate a filename based on current date/time
             currentDateTime = QtCore.QDateTime.currentDateTime()
