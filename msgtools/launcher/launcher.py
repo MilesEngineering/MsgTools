@@ -4,6 +4,7 @@ import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pkg_resources
 from . import codegen_gui
+import traceback
 
 DESCRIPTION='''MsgLauncher launches msgtools applications.  It gives them relevant settings (like server
 IP address and port) when it starts them.'''
@@ -131,8 +132,14 @@ class MsgLauncher(QtWidgets.QMainWindow):
 
         # use pkg_resources to find programs to launch
         for entry_point in pkg_resources.iter_entry_points("msgtools.launcher.plugin"):
-            launcher_info_fn = entry_point.load()
-            launcher_info = launcher_info_fn()
+            try:
+                launcher_info_fn = entry_point.load()
+                launcher_info = launcher_info_fn()
+            except:
+                print("Ignoring launcher entry, exception on load!")
+                print(traceback.format_exc())
+                continue
+
             if exclude_msgtools and entry_point.module_name.startswith('msgtools.'):
                 continue
             progs.append(LauncherInfo(*launcher_info, module_name=entry_point.module_name))
