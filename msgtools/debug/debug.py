@@ -279,8 +279,11 @@ class DebugDevice(QtWidgets.QWidget):
             for i in range(msg.GetDebugStringDictionaryID.count):
                 dictionaryID += '{:02x}'.format(msg.GetDebugStringDictionaryID(i))
             if dictionaryID != self.dictionaryID:
-                # If dictionary ID changed or wasn't previously set, load the dictionary.
-                self.ReadDictionary("%s/PrintfDictionaries/%s.json" % (Messaging.objdir, dictionaryID))
+                if "00000000000000000000000000000000" in dictionaryID:
+                    self.statusUpdate.emit("ERROR!  Dictionary ID %s invalid, being ignored" % self.statusUpdate.emit)
+                else:
+                    # If dictionary ID changed or wasn't previously set, load the dictionary.
+                    self.ReadDictionary("%s/PrintfDictionaries/%s.json" % (Messaging.objdir, dictionaryID))
 
             try:
                 deviceName = msg.GetDeviceName()
