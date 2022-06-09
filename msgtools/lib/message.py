@@ -2,6 +2,32 @@ import ctypes
 from msgtools.lib.messaging import *
 import msgtools.lib.msgjson as msgjson
 import msgtools.lib.msgcsv as msgcsv
+import collections
+
+# This class is used so that individual elements of array fields can be
+# accessed using array index notation [] on the field of the message.
+# __getattr__ on the Message object needs to return a FieldListAccessor
+# which can get/set individual elements of the message.
+class FieldListAccessor(collections.UserList):
+    def __init__(self, msg, getfn, setfn):
+        self._msg = msg
+        self._setfn = setfn
+        self._getfn = getfn
+
+    def __repr__(self):
+        ret = []
+        for i in range(0, self._setfn.count):
+            try:
+                ret.append(self._getfn(i))
+            except struct.error:
+                pass
+        return str(ret)
+
+    def __getitem__(self, key):
+        return self._getfn(key)
+
+    def __setitem__(self, key, value):
+        self._setfn(value, key)
 
 class Message:
     def __init__(self, messageBuffer=None, id=None, size=None):
@@ -51,13 +77,8 @@ class Message:
             fn = getattr(self,fn_name)
             if callable(fn):
                 if fn.count > 1:
-                    ret = []
-                    for i in range(0,fn.count):
-                        try:
-                            ret.append(fn(i))
-                        except struct.error:
-                            pass
-                    return ret
+                    setfn = getattr(self,"Set"+attr)
+                    return FieldListAccessor(self, fn, setfn)
                 else:
                     return fn()
         elif attr in self.fake_fields:
