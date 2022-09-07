@@ -53,7 +53,8 @@ class Lumberjack(msgtools.lib.gui.Gui):
             self.outputName = args.outputdir
         elif args.connectionType == 'file':
             if args.connectionName is not None:
-                self.outputName = self.connectionName.replace('.log', '')
+                self.outputName = self.connectionName.replace('.bin', '')
+                self.outputName = self.outputName.replace('.log', '')
                 self.outputName = self.outputName.replace('.txt', '')
                 self.outputName = self.outputName.replace('.TXT', '')
             else:
@@ -109,8 +110,12 @@ class Lumberjack(msgtools.lib.gui.Gui):
 
             self._lastTimestamp = thisTimestamp
 
-            timeSizeInBits = int(round(math.log(int(Messaging.findFieldInfo(msg.hdr.fields, "Time").maxVal), 2)))
-            timestamp = (self._timestampOffset << timeSizeInBits) + thisTimestamp
+            maxTime = Messaging.findFieldInfo(msg.hdr.fields, "Time").maxVal
+            if maxTime != 'DBL_MAX' and maxTime != 'FLT_MAX':
+                timeSizeInBits = int(round(math.log(int(maxTime), 2)))
+                timestamp = (self._timestampOffset << timeSizeInBits) + thisTimestamp
+            else:
+                timestamp = thisTimestamp
             if Messaging.findFieldInfo(msg.hdr.fields, "Time").units == "ms":
                 timestamp = timestamp / 1000.0
             text = str(timestamp) + ", "
