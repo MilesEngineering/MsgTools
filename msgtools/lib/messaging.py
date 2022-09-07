@@ -377,7 +377,7 @@ or specify that directory with --msgdir=PATH''')
                 value = fieldInfo.get(msg, index)
         except struct.error:
             value = "UNALLOCATED"
-        return str(value)
+        return value
 
     @staticmethod
     def getFloat(msg, fieldInfo, index=0):

@@ -268,7 +268,7 @@ class MsgPlot(QWidget):
                 print("ERROR! Plot of %s.%s cannot accept value %s" % (
                     self.msgClass.MsgName(),
                     line.fieldInfo.name,
-                    Messaging.get(msg, line.fieldInfo, line.fieldSubindex)))
+                    str(Messaging.get(msg, line.fieldInfo, line.fieldSubindex))))
                 continue
             try:
                 timestamp = msg.hdr.GetTime()

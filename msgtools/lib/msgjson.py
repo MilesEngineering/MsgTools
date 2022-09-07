@@ -11,15 +11,15 @@ def toJson(msg, includeHeader=False):
         for fieldInfo in msg.hdr.fields:
             if(fieldInfo.count == 1):
                 if len(fieldInfo.bitfieldInfo) == 0:
-                    pythonObj['hdr'][fieldInfo.name] = str(Messaging.get(msg.hdr, fieldInfo))
+                    pythonObj['hdr'][fieldInfo.name] = Messaging.get(msg.hdr, fieldInfo)
                 else:
                     for bitInfo in fieldInfo.bitfieldInfo:
-                        pythonObj['hdr'][bitInfo.name] = str(Messaging.get(msg.hdr, bitInfo))
+                        pythonObj['hdr'][bitInfo.name] = Messaging.get(msg.hdr, bitInfo)
             else:
                 arrayList = []
                 terminate = 0
                 for i in range(0,fieldInfo.count):
-                    arrayList.append(str(Messaging.get(msg.hdr, fieldInfo, i)))
+                    arrayList.append(Messaging.get(msg.hdr, fieldInfo, i))
                 pythonObj['hdr'][fieldInfo.name] = arrayList
 
     msgClass = Messaging.MsgClass(msg.hdr)
@@ -29,10 +29,10 @@ def toJson(msg, includeHeader=False):
             if not fieldInfo.exists(msg):
                 break
             if len(fieldInfo.bitfieldInfo) == 0:
-                pythonObj[fieldInfo.name] = str(Messaging.get(msg, fieldInfo))
+                pythonObj[fieldInfo.name] = Messaging.get(msg, fieldInfo)
             else:
                 for bitInfo in fieldInfo.bitfieldInfo:
-                    pythonObj[bitInfo.name] = str(Messaging.get(msg, bitInfo))
+                    pythonObj[bitInfo.name] = Messaging.get(msg, bitInfo)
         else:
             arrayList = []
             terminate = 0
@@ -41,7 +41,7 @@ def toJson(msg, includeHeader=False):
                 if not fieldInfo.exists(msg, i):
                     terminate = 1
                     break
-                arrayList.append(str(Messaging.get(msg, fieldInfo, i)))
+                arrayList.append(Messaging.get(msg, fieldInfo, i))
             pythonObj[fieldInfo.name] = arrayList
             if terminate:
                 break
@@ -70,14 +70,14 @@ def jsonToMsg(jsonString):
                 fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
                 fieldValue = fieldJson[fieldName]
                 if isinstance(fieldValue, list):
-                    #print(fieldName + " list type is " + str(type(fieldValue)))
+                    #print(fieldName + " list type is " + type(fieldValue))
                     for i in range(0,len(fieldValue)):
                         Messaging.set(msg, fieldInfo, fieldValue[i], i)
                         if terminationLen != None:
                             #TODO Broken for arrays-of-structs acting like parallel arrays!
                             terminationLen = max(terminationLen, fieldInfo.end_location(i))
                 elif isinstance(fieldValue, dict):
-                    #print(fieldName + " dict type is " + str(type(fieldValue)))
+                    #print(fieldName + " dict type is " + type(fieldValue))
                     if fieldInfo.bitfieldInfo:
                         pass
                     else:

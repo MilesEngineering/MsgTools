@@ -35,11 +35,11 @@ class FieldItem(QTreeWidgetItem):
             return brush
 
         if role == Qt.DisplayRole:
-            value  = Messaging.get(self.msg, self.fieldInfo)
+            value  = str(Messaging.get(self.msg, self.fieldInfo))
             
             try:
                 self.overrideWidget
-                valueAsString = Messaging.get(self.msg, self.fieldInfo)
+                valueAsString = str(Messaging.get(self.msg, self.fieldInfo))
                 
                 if valueAsString in self.comboBoxIndexOfEnum:
                     #self.overrideWidget.setCurrentText(valueAsString)
@@ -100,7 +100,7 @@ class EditableFieldItem(FieldItem):
         Messaging.set(self.msg, self.fieldInfo, value)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(FieldItem, self).setData(column, role, Messaging.get(self.msg, self.fieldInfo))
+        super(FieldItem, self).setData(column, role, str(Messaging.get(self.msg, self.fieldInfo)))
 
 class FieldBits(FieldItem):
     def __init__(self, msg, msg_key, bitfieldInfo):
@@ -178,8 +178,7 @@ class FieldArrayItem(QTreeWidgetItem):
             return brush
 
         if role == Qt.DisplayRole:
-            value  = Messaging.get(self.msg, self.fieldInfo, self.index)
-            return str(value)
+            return str(Messaging.get(self.msg, self.fieldInfo, self.index))
 
         return super(FieldArrayItem, self).data(column, role)
 
@@ -206,7 +205,7 @@ class EditableFieldArrayItem(FieldArrayItem):
         Messaging.set(self.msg, self.fieldInfo, value, int(self.index))
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(EditableFieldArrayItem, self).setData(column, role, Messaging.get(self.msg, self.fieldInfo, int(self.index)))
+        super(EditableFieldArrayItem, self).setData(column, role, str(Messaging.get(self.msg, self.fieldInfo, int(self.index))))
 
 class QObjectProxy(QObject):
     send_message = pyqtSignal(object)

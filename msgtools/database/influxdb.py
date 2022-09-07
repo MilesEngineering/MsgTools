@@ -44,16 +44,6 @@ class InfluxDBConnection:
     def FormattedTime(floatTime):
         return str(int(floatTime * 1e9))
 
-    @staticmethod
-    def GetDBValue(msg, fieldInfo, index=0):
-        # what to do for arrays?
-        val = Messaging.get(msg, fieldInfo, index)
-        if fieldInfo.type == 'int':
-            val = int(val)
-        elif fieldInfo.type == 'float':
-            val = float(val)
-        return val
-
     def handle_message(self, msg):
         if msg.MsgName().startswith("Network"):
             if msg.MsgName() == "Network.History.GetData":
@@ -106,14 +96,14 @@ class InfluxDBConnection:
         for fieldInfo in msgClass.fields:
             if fieldInfo.count == 1:
                 if len(fieldInfo.bitfieldInfo) == 0:
-                    dbJson['fields'][fieldInfo.name] = InfluxDBConnection.GetDBValue(msg, fieldInfo)
+                    dbJson['fields'][fieldInfo.name] = Messaging.get(msg, fieldInfo)
                 else:
                     for bitInfo in fieldInfo.bitfieldInfo:
-                        dbJson['fields'][bitInfo.name] = InfluxDBConnection.GetDBValue(msg, bitInfo)
+                        dbJson['fields'][bitInfo.name] = Messaging.get(msg, bitInfo)
             else:
                 # flatten arrays
                 for i in range(0,fieldInfo.count):
-                    dbJson['fields'][fieldInfo.name+"_"+str(i)] = InfluxDBConnection.GetDBValue(msg, fieldInfo, i)
+                    dbJson['fields'][fieldInfo.name+"_"+str(i)] = Messaging.get(msg, fieldInfo, i)
 
         # Can't store with no fields!  Add a boolean to indicate emptiness
         if len(dbJson['fields']) == 0:
