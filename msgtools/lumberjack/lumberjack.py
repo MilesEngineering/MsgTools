@@ -16,9 +16,11 @@ if __name__ == '__main__':
 from msgtools.lib.messaging import Messaging
 import msgtools.lib.gui
 import msgtools.lib.msgcsv as msgcsv
+import msgtools.lib.msgjson as msgjson
 
 DESCRIPTION='''
-    Lumberjack creates a subdirectory, and one CSV file per message type received in that directory.
+    Lumberjack creates either a subdirectory with one CSV file per message type received in that directory,
+    or a single JSON file if --json is specified.
     You may source data from any connectionType.  If you specify a logfile name positional
     Lumberjack assumes you want to source from a logfile.
 '''
@@ -32,6 +34,7 @@ class Lumberjack(msgtools.lib.gui.Gui):
             .log extension assumes the log was created by MsgServer (binary).  A .txt extension assumes the 
             file was created by SD logger.  This option is a pseudonym for --connectionType='file' and 
             --connectionName=<filename>, and will override connectionType, and connectionName.''')
+        parser.add_argument('--json', action='store_true', help='''Causes output to go to a single JSON file instead of a directory of CSV files.''')
         parser=msgtools.lib.gui.Gui.addBaseArguments(parser)
         args = parser.parse_args()
 
@@ -44,11 +47,11 @@ class Lumberjack(msgtools.lib.gui.Gui):
             args.ip = None
             args.port = None
 
-
         msgtools.lib.gui.Gui.__init__(self, "Lumberjack 0.1", args, parent)
         
         # If the user specified the output dir use it.  If the user 
-        # specified a source file
+        # specified a source file, then figure out the output dir
+        # from the source filename
         if args.outputdir is not None:
             self.outputName = args.outputdir
         elif args.connectionType == 'file':
@@ -65,14 +68,21 @@ class Lumberjack(msgtools.lib.gui.Gui):
             print('You must specify the -o option if you aren\'t using a \'file\' connectionType')
             sys.exit(1)
 
-        if os.path.exists(self.outputName) is False:
-            os.makedirs(self.outputName)
+        self.json = args.json
+        if args.json:
+            self.outputName = self.outputName + ".json"
+        else:
+            if os.path.exists(self.outputName) is False:
+                os.makedirs(self.outputName)
         print("outputName is " + self.outputName + "\n")
 
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
         
-        self.outputFiles = {}
+        if args.json:
+            self.outputFile = open(self.outputName, 'w')
+        else:
+            self.outputFiles = {}
 
         # to handle timestamp wrapping
         self._timestampOffset = 0
@@ -85,20 +95,23 @@ class Lumberjack(msgtools.lib.gui.Gui):
         
         id = msg.hdr.GetMessageID()
 
-        # if we write CSV to multiple files, we'd probably look up a hash table for this message id,
-        # and open it and write a header
-        if(id in self.outputFiles):
-            outputFile = self.outputFiles[id]
+        if self.json:
+            outputFile = self.outputFile
         else:
-            # create a new file
-            outputFile = open(self.outputName + "/" + msg.MsgName().replace("/","_") + ".csv", 'w')
+            # if we write CSV to multiple files, we'd probably look up a hash table for this message id,
+            # and open it and write a header
+            if(id in self.outputFiles):
+                outputFile = self.outputFiles[id]
+            else:
+                # create a new file
+                outputFile = open(self.outputName + "/" + msg.MsgName().replace("/","_") + ".csv", 'w')
 
-            # store a pointer to it, so we can find it next time (instead of creating it again)
-            self.outputFiles[id] = outputFile
-            
-            # add table header, one column for each message field
-            tableHeader = msgcsv.csvHeader(msg, nameColumn=False, timeColumn=True) + '\n'
-            outputFile.write(tableHeader)
+                # store a pointer to it, so we can find it next time (instead of creating it again)
+                self.outputFiles[id] = outputFile
+                
+                # add table header, one column for each message field
+                tableHeader = msgcsv.csvHeader(msg, nameColumn=False, timeColumn=True) + '\n'
+                outputFile.write(tableHeader)
         
         try:
             # \todo Detect time rolling.  this only matters when we're processing a log file
@@ -122,9 +135,13 @@ class Lumberjack(msgtools.lib.gui.Gui):
         except AttributeError:
             text = "unknown, "
 
-        text += msgcsv.toCsv(msg, nameColumn=False, timeColumn=False)
-        text += '\n'
-        outputFile.write(text)
+        if self.json:
+            text = msgjson.toJson(msg, includeHeader=True) + '\n'
+            outputFile.write(text)
+        else:
+            text += msgcsv.toCsv(msg, nameColumn=False, timeColumn=False)
+            text += '\n'
+            outputFile.write(text)
 
         # This is not efficient, but if we don't flush during socket processing
         # and the user hits Ctrl-C, we'll drop a bunch of data and end up with empty files.
