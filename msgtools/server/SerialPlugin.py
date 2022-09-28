@@ -4,31 +4,10 @@ from PyQt5.QtCore import QObject
 from PyQt5.QtSerialPort import QSerialPort
 
 from msgtools.lib.messaging import Messaging
-from msgtools.lib.header_translator import HeaderTranslator
+from msgtools.lib.header_translator import HeaderTranslator, HeaderHelper
 from msgtools.server import SerialportDialog
 
-import struct
 import sys
-
-def Crc16(data):
-    crc = 0;
-    for i in range(0,len(data)):
-        d = struct.unpack_from('B', data, i)[0]
-        crc = (crc >> 8) | (crc << 8)
-        crc ^= d
-        crc ^= (crc & 0xff) >> 4
-        crc ^= crc << 12
-        crc = 0xFFFF & crc
-        crc ^= (crc & 0xff) << 5
-        crc = 0xFFFF & crc
-    return crc
-
-def hexbytes(hdr):
-    try:
-        b = hdr.rawBuffer()[:]
-    except:
-        b = hdr
-    return "0x"+":".join("{:02x}".format(c) for c in b)
 
 class BaseSerialConnection(QObject):
     statusUpdate = QtCore.pyqtSignal(str)
@@ -151,8 +130,8 @@ class BaseSerialConnection(QObject):
     def start(self):
         self.openCloseSwitch()
 
-    def gotRxError(self, errType):
-        print("RX " + errType)
+    def print_error(self, errType):
+        print(errType)
         sys.stdout.flush()
 
     def stop(self):
@@ -166,42 +145,9 @@ class SerialConnection(BaseSerialConnection):
         self.hdr = hdr
         
         self.hdrTranslator = HeaderTranslator(hdr, Messaging.hdr)
+        self.hdrHelper = HeaderHelper(hdr, self.print_error)
 
-        serialStartSeqField = Messaging.findFieldInfo(hdr.fields, "StartSequence")
-        if serialStartSeqField != None:
-            self.startSequence = int(hdr.GetStartSequence.default)
-        else:
-            self.startSequence = None
-        try:
-            self.hdrCrcRegion = int(hdr.GetHeaderChecksum.offset)
-        except AttributeError:
-            self.hdrCrcRegion = None
         self.tmpRxHdr = None
-
-    def headerValid(self, hdr):
-        if self.startSequence != None and hdr.GetStartSequence() != self.startSequence:
-            #self.gotRxError("  HDR SS %s != %s" % (hex(hdr.GetStartSequence()) , hex(self.startSequence)))
-            return False
-        if self.hdrCrcRegion != None:
-            # Stop computing before we reach header checksum location.
-            headerCrc = Crc16(hdr.rawBuffer()[:self.hdrCrcRegion])
-            receivedHeaderCrc = hdr.GetHeaderChecksum()
-            if headerCrc != receivedHeaderCrc:
-                self.gotRxError("HEADER CRC %s != %s for %s" % (hex(headerCrc) , hex(receivedHeaderCrc), hexbytes(hdr)))
-                return False
-        return True
-    
-    def bodyValid(self, hdr, body):
-        if hdr.GetDataLength() != len(body):
-            self.gotRxError("BODY LENGTH %d != %d" % (hdr.GetDataLength() != len(body)))
-            return False
-        if self.hdrCrcRegion != None:
-            bodyCrc = Crc16(body)
-            receivedBodyCrc = hdr.GetBodyChecksum()
-            if receivedBodyCrc != bodyCrc:
-                self.gotRxError("BODY CRC %s != %s for %s" % (hex(receivedBodyCrc), hex(bodyCrc), hexbytes(body)))
-                return False
-        return True
 
     def onReadyRead(self):
         while self.serialPort.bytesAvailable() > 0:
@@ -211,7 +157,7 @@ class SerialConnection(BaseSerialConnection):
                 while self.serialPort.bytesAvailable() >= self.hdr.SIZE:
                     rx_bytes = bytes(self.serialPort.peek(self.hdr.SIZE))
                     serialHdr = self.hdr(rx_bytes)
-                    if self.headerValid(serialHdr):
+                    if self.hdrHelper.header_valid(serialHdr):
                         # read now, because we only peeked before.
                         self.tmpRxHdr = self.hdr(self.serialPort.read(self.hdr.SIZE))
                         break
@@ -224,7 +170,7 @@ class SerialConnection(BaseSerialConnection):
                     # allocate the serial message body, read from the serial port
                     msgBody = self.serialPort.read(bodylen)
                     
-                    if self.bodyValid(self.tmpRxHdr, msgBody):
+                    if self.hdrHelper.body_valid(self.tmpRxHdr, msgBody):
                         self.rxMsgCount+=1
                         self.SerialMsgSlot(self.tmpRxHdr, msgBody)
                     self.tmpRxHdr = None
@@ -237,13 +183,13 @@ class SerialConnection(BaseSerialConnection):
 
     def sendMsg(self, networkMsg):
         serialMsg = self.hdrTranslator.translate(networkMsg)
+
         # if we can't translate the message, just return
         if serialMsg == None:
             return
-        if self.hdrCrcRegion != None:
-            # set header and body CRC
-            serialMsg.SetHeaderChecksum(Crc16(serialMsg.rawBuffer()[:self.hdrCrcRegion]))
-            serialMsg.SetBodyChecksum(Crc16(serialMsg.rawBuffer()[self.hdr.SIZE:]))
+
+        self.hdrHelper.finalize(serialMsg)
+
         if self.serialPort.isOpen():
             self.serialPort.write(serialMsg.rawBuffer().raw)
     

@@ -5,6 +5,76 @@ import struct
 
 from .messaging import Messaging
 
+def hexbytes(hdr):
+    try:
+        b = hdr.rawBuffer()[:]
+    except:
+        b = hdr
+    return "0x"+":".join("{:02x}".format(c) for c in b)
+
+def Crc16(data):
+    crc = 0;
+    for i in range(0,len(data)):
+        d = struct.unpack_from('B', data, i)[0]
+        crc = (crc >> 8) | (crc << 8)
+        crc ^= d
+        crc ^= (crc & 0xff) >> 4
+        crc ^= crc << 12
+        crc = 0xFFFF & crc
+        crc ^= (crc & 0xff) << 5
+        crc = 0xFFFF & crc
+    return crc
+
+# This helps finalize and validate headers that have any of:
+# 1) A start sequence, which is a constant string of bytes that delimits
+#    the start of a header, useful for sending data across noisy datalinks
+#    that can drop bytes.
+# 2) A header CRC-16, that validates the contents of a header
+# 3) A body CRC-16, that validates the body of a message.
+class HeaderHelper:
+    def __init__(self, hdr_class, error_fn):
+        self.error_fn = error_fn
+        start_sequence_field = Messaging.findFieldInfo(hdr_class.fields, "StartSequence")
+        if start_sequence_field != None:
+            self._start_sequence = int(hdr_class.GetStartSequence.default)
+        else:
+            self._start_sequence = None
+        try:
+            self._hdr_crc_region = int(hdr_class.GetHeaderChecksum.offset)
+        except AttributeError:
+            self._hdr_crc_region = None
+
+    def header_valid(self, hdr):
+        if self._start_sequence != None and hdr.GetStartSequence() != self._start_sequence:
+            #self.error_fn("  HDR SS %s != %s" % (hex(hdr.GetStartSequence()) , hex(self._start_sequence)))
+            return False
+        if self._hdr_crc_region != None:
+            # Stop computing before we reach header checksum location.
+            headerCrc = Crc16(hdr.rawBuffer()[:self._hdr_crc_region])
+            receivedHeaderCrc = hdr.GetHeaderChecksum()
+            if headerCrc != receivedHeaderCrc:
+                self.error_fn("RX ERROR: HEADER CRC %s != %s for %s" % (hex(headerCrc) , hex(receivedHeaderCrc), hexbytes(hdr)))
+                return False
+        return True
+
+    def body_valid(self, hdr, body):
+        if hdr.GetDataLength() != len(body):
+            self.error_fn("RX ERROR: BODY LENGTH %d != %d" % (hdr.GetDataLength() != len(body)))
+            return False
+        if self._hdr_crc_region != None:
+            bodyCrc = Crc16(body)
+            receivedBodyCrc = hdr.GetBodyChecksum()
+            if receivedBodyCrc != bodyCrc:
+                self.error_fn("RX ERROR: BODY CRC %s != %s for %s" % (hex(receivedBodyCrc), hex(bodyCrc), hexbytes(body)))
+                return False
+        return True
+
+    def finalize(msg):
+        if self._hdr_crc_region != None:
+            # set header and body CRC
+            msg.SetHeaderChecksum(Crc16(msg.rawBuffer()[:self._hdr_crc_region]))
+            msg.SetBodyChecksum(Crc16(msg.rawBuffer()[self.hdr.SIZE:]))
+
 class HeaderTranslator:
     def __init__(self, hdr1, hdr2):
         # Make a list of fields in the headers that have matching names.
