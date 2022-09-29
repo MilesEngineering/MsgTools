@@ -33,7 +33,8 @@ def Crc16(data):
 # 3) A body CRC-16, that validates the body of a message.
 class HeaderHelper:
     def __init__(self, hdr_class, error_fn):
-        self.error_fn = error_fn
+        self._error_fn = error_fn
+        self._hdr_class = hdr_class
         start_sequence_field = Messaging.findFieldInfo(hdr_class.fields, "StartSequence")
         if start_sequence_field != None:
             self._start_sequence = int(hdr_class.GetStartSequence.default)
@@ -46,34 +47,34 @@ class HeaderHelper:
 
     def header_valid(self, hdr):
         if self._start_sequence != None and hdr.GetStartSequence() != self._start_sequence:
-            #self.error_fn("  HDR SS %s != %s" % (hex(hdr.GetStartSequence()) , hex(self._start_sequence)))
+            #self._error_fn("  HDR SS %s != %s" % (hex(hdr.GetStartSequence()) , hex(self._start_sequence)))
             return False
         if self._hdr_crc_region != None:
             # Stop computing before we reach header checksum location.
             headerCrc = Crc16(hdr.rawBuffer()[:self._hdr_crc_region])
             receivedHeaderCrc = hdr.GetHeaderChecksum()
             if headerCrc != receivedHeaderCrc:
-                self.error_fn("RX ERROR: HEADER CRC %s != %s for %s" % (hex(headerCrc) , hex(receivedHeaderCrc), hexbytes(hdr)))
+                self._error_fn("RX ERROR: HEADER CRC %s != %s for %s" % (hex(headerCrc) , hex(receivedHeaderCrc), hexbytes(hdr)))
                 return False
         return True
 
     def body_valid(self, hdr, body):
         if hdr.GetDataLength() != len(body):
-            self.error_fn("RX ERROR: BODY LENGTH %d != %d" % (hdr.GetDataLength() != len(body)))
+            self._error_fn("RX ERROR: BODY LENGTH %d != %d" % (hdr.GetDataLength() != len(body)))
             return False
         if self._hdr_crc_region != None:
             bodyCrc = Crc16(body)
             receivedBodyCrc = hdr.GetBodyChecksum()
             if receivedBodyCrc != bodyCrc:
-                self.error_fn("RX ERROR: BODY CRC %s != %s for %s" % (hex(receivedBodyCrc), hex(bodyCrc), hexbytes(body)))
+                self._error_fn("RX ERROR: BODY CRC %s != %s for %s" % (hex(receivedBodyCrc), hex(bodyCrc), hexbytes(body)))
                 return False
         return True
 
-    def finalize(msg):
+    def finalize(self, msg):
         if self._hdr_crc_region != None:
             # set header and body CRC
             msg.SetHeaderChecksum(Crc16(msg.rawBuffer()[:self._hdr_crc_region]))
-            msg.SetBodyChecksum(Crc16(msg.rawBuffer()[self.hdr.SIZE:]))
+            msg.SetBodyChecksum(Crc16(msg.rawBuffer()[self._hdr_class.SIZE:]))
 
 class HeaderTranslator:
     def __init__(self, hdr1, hdr2):
