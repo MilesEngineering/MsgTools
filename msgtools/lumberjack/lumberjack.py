@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
+import json
 import sys
 import os
-import math
 import argparse
-import signal
-
-from PyQt5 import QtCore, QtGui, QtWidgets
 
 # if started via invoking this file directly (like would happen with source sitting on disk),
 # insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
@@ -13,163 +10,109 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 if __name__ == '__main__':
     srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
     sys.path.insert(1, srcroot)
+
+from msgtools.lib.file_reader import MessageFileReader
 from msgtools.lib.messaging import Messaging
-import msgtools.lib.gui
 import msgtools.lib.msgcsv as msgcsv
 import msgtools.lib.msgjson as msgjson
 
 DESCRIPTION='''
     Lumberjack creates either a subdirectory with one CSV file per message type received in that directory,
     or a single JSON file if --json is specified.
-    You may source data from any connectionType.  If you specify a logfile name positional
-    Lumberjack assumes you want to source from a logfile.
 '''
-class Lumberjack(msgtools.lib.gui.Gui):
-    def __init__(self, parent=None):
+class Lumberjack(MessageFileReader):
+    def __init__(self):
+        super(Lumberjack, self).__init__()
 
         parser = argparse.ArgumentParser(description=DESCRIPTION)
         parser.add_argument('-o', '--outputdir', help='''Specifies the name of the directory to output
             parsed data to.  Required for non-file connectionTypes.''')
-        parser.add_argument('logfile', nargs='?', default=None, help='''The log file you want to split into CSV.  
-            .log extension assumes the log was created by MsgServer (binary).  A .txt extension assumes the 
-            file was created by SD logger.  This option is a pseudonym for --connectionType='file' and 
-            --connectionName=<filename>, and will override connectionType, and connectionName.''')
+        parser.add_argument('logfile', help='''The log file you want to split into CSV.  
+            .log extension assumes the log is binary with NetworkHeaders.  A .txt extension assumes the 
+            file was created with SerialHeaders.''')
         parser.add_argument('--json', action='store_true', help='''Causes output to go to a single JSON file instead of a directory of CSV files.''')
-        parser=msgtools.lib.gui.Gui.addBaseArguments(parser)
-        args = parser.parse_args()
+        parser.add_argument('--serial', action='store_true', help='''Assumes input file contains binary messages with SerialHeaders instead of NetworkHeaders.''')
+        self.args = parser.parse_args()
 
-        # Special Handling here for files...
-        if args.logfile is not None:
-            args.connectionType = 'file'
-            args.connectionName = args.logfile
-            if args.logfile.lower().endswith('.txt'):
-                args.serial = True
-            args.ip = None
-            args.port = None
+        if self.args.logfile.lower().endswith('.txt'):
+            self.args.serial = True
 
-        msgtools.lib.gui.Gui.__init__(self, "Lumberjack 0.1", args, parent)
-        
         # If the user specified the output dir use it.  If the user 
         # specified a source file, then figure out the output dir
         # from the source filename
-        if args.outputdir is not None:
-            self.outputName = args.outputdir
-        elif args.connectionType == 'file':
-            if args.connectionName is not None:
-                self.outputName = self.connectionName.replace('.bin', '')
-                self.outputName = self.outputName.replace('.log', '')
-                self.outputName = self.outputName.replace('.txt', '')
-                self.outputName = self.outputName.replace('.TXT', '')
-            else:
-                print('''You must specify the name of the source file in --connectionName
-                    of logfile for a \'file\' connectionType.''')
-                sys.exit(1)
+        if self.args.outputdir is not None:
+            self.output_name = self.args.outputdir
         else:
-            print('You must specify the -o option if you aren\'t using a \'file\' connectionType')
-            sys.exit(1)
+            self.output_name = self.args.logfile.replace('.bin', '')
+            self.output_name = self.output_name.replace('.log', '')
+            self.output_name = self.output_name.replace('.txt', '')
+            self.output_name = self.output_name.replace('.TXT', '')
 
-        self.json = args.json
-        if args.json:
-            self.outputName = self.outputName + ".json"
+        if self.args.json:
+            self.output_name = self.output_name + ".json"
         else:
-            if os.path.exists(self.outputName) is False:
-                os.makedirs(self.outputName)
-        print("outputName is " + self.outputName + "\n")
+            if os.path.exists(self.output_name) is False:
+                os.makedirs(self.output_name)
+        print("Writing output to " + self.output_name + "\n")
 
-        # event-based way of getting messages
-        self.RxMsg.connect(self.ProcessMessage)
-        
-        if args.json:
-            self.outputFile = open(self.outputName, 'w')
+        if self.args.json:
+            self.output_file = open(self.output_name, 'w')
         else:
-            self.outputFiles = {}
+            self.output_files = {}
 
-        # to handle timestamp wrapping
-        self._timestampOffset = 0
-        self._lastTimestamp = 0
+        self.message_count = 0
 
-        self.messageCount = 0
+        header_name = "NetworkHeader"
+        if self.args.serial:
+            header_name = "SerialHeader"
+        self.read_file(self.args.logfile, header_name)
 
-    def ProcessMessage(self, msg):
-        self.messageCount += 1
+    def process_message(self, msg, timestamp):
+        self.message_count += 1
         
         id = msg.hdr.GetMessageID()
 
-        if self.json:
-            outputFile = self.outputFile
+        if self.args.json:
+            output_file = self.output_file
         else:
             # if we write CSV to multiple files, we'd probably look up a hash table for this message id,
             # and open it and write a header
-            if(id in self.outputFiles):
-                outputFile = self.outputFiles[id]
+            if(id in self.output_files):
+                output_file = self.output_files[id]
             else:
                 # create a new file
-                outputFile = open(self.outputName + "/" + msg.MsgName().replace("/","_") + ".csv", 'w')
+                output_file = open(self.output_name + "/" + msg.MsgName().replace("/","_") + ".csv", 'w')
 
                 # store a pointer to it, so we can find it next time (instead of creating it again)
-                self.outputFiles[id] = outputFile
+                self.output_files[id] = output_file
                 
                 # add table header, one column for each message field
                 tableHeader = msgcsv.csvHeader(msg, nameColumn=False, timeColumn=True) + '\n'
-                outputFile.write(tableHeader)
-        
-        try:
-            # \todo Detect time rolling.  this only matters when we're processing a log file
-            # with insufficient timestamp size, such that time rolls over from a large number
-            # to a small one, during the log.
-            thisTimestamp = msg.hdr.GetTime()
-            if thisTimestamp < self._lastTimestamp:
-                self._timestampOffset+=1
+                output_file.write(tableHeader)
 
-            self._lastTimestamp = thisTimestamp
+        if self.args.json:
+            # Get a dictionary of the message
+            dict = msg.toDict(includeHeader=True)
 
-            maxTime = Messaging.findFieldInfo(msg.hdr.fields, "Time").maxVal
-            if maxTime != 'DBL_MAX' and maxTime != 'FLT_MAX':
-                timeSizeInBits = int(round(math.log(int(maxTime), 2)))
-                timestamp = (self._timestampOffset << timeSizeInBits) + thisTimestamp
-            else:
-                timestamp = thisTimestamp
-            if Messaging.findFieldInfo(msg.hdr.fields, "Time").units == "ms":
-                timestamp = timestamp / 1000.0
-            text = str(timestamp) + ", "
-        except AttributeError:
-            text = "unknown, "
+            # the dict has one key, which is the name of the message
+            msgname = list(dict.keys())[0]
 
-        if self.json:
-            text = msgjson.toJson(msg, includeHeader=True) + '\n'
-            outputFile.write(text)
+            # Within the value for that key, there's a "hdr", which contains "Time",
+            # and we should override that with the corrected timestamp
+            dict[msgname]['hdr']['Time'] = timestamp
+
+            text = json.dumps(dict) + '\n'
+            output_file.write(text)
         else:
+            text = str(timestamp) + ", "
             text += msgcsv.toCsv(msg, nameColumn=False, timeColumn=False)
             text += '\n'
-            outputFile.write(text)
-
-        # This is not efficient, but if we don't flush during socket processing
-        # and the user hits Ctrl-C, we'll drop a bunch of data and end up with empty files.
-        # So flush each message as it comes in.
-        if self.connectionType !='file':
-            outputFile.flush()
+            output_file.write(text)
 
 def main():
-    app = QtWidgets.QApplication(sys.argv)
-    msgApp = Lumberjack()
+    lumberjack = Lumberjack()
 
-    # If we are processing a file then  use the Message Loop.  The reason for this dichotomy
-    # in processing is the sockets are QtTcpSockets.  We've tied into Qt signals, which require
-    # the app event loop to be running.  Files are handled with straight up Python files.
-
-    # I can think of several other approaches, but they all pretty much boil down to sticking 
-    # with QtApplication's event loop and going full on Qt, or kicking off a background worker 
-    # thread and using Qt waitFor* constructs or straight up Python.
-
-    # For now this little band-aid will get us by
-    if msgApp.connectionType != 'file':
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
-        print('Listening for messages.  Press Ctrl-C to exit.')
-        app.exec_()
-    else:
-        msgApp.MessageLoop()
-
-    print("Processed " + str(msgApp.messageCount) + " messages")
+    print("Processed %d messages" % (lumberjack.message_count))
 
 # main starts here
 if __name__ == '__main__':

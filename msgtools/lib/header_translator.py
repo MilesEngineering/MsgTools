@@ -70,6 +70,9 @@ class HeaderHelper:
                 return False
         return True
 
+    def msg_valid(self, msg):
+        return self.header_valid(msg.hdr) and self.body_valid(msg.hdr, msg.rawBuffer()[Messaging.hdr.SIZE:])
+
     def finalize(self, msg):
         if self._hdr_crc_region != None:
             # set header and body CRC

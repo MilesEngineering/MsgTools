@@ -1,6 +1,11 @@
+#!/usr/bin/env python3
 import json
 import pandas as pd
 import time
+from collections import OrderedDict
+
+from msgtools.lib.file_reader import MessageFileReader
+from msgtools.lib.messaging import Messaging
 
 # function to flatten a dictionary of a Message object, according to
 # some unique properties of Message objects.
@@ -8,9 +13,9 @@ def flatten_msg(msg):
     out = {}
 
     def flatten(x, name=''):
-        if type(x) is dict:
+        if type(x) is dict or type(x) is OrderedDict:
             for a in x:
-                # leave the header as a dict, otherwise it's a lot of clutter
+                # leave the header as a dictionary, otherwise it's a lot of clutter
                 if name == '' and a == "hdr":
                     #print(name+a)
                     # Put the whole header in the output
@@ -38,17 +43,17 @@ def flatten_msg(msg):
     flatten(msg)
     return out
 
-def load(filename):
+def load_json(filename):
     dict_of_dataframes = {}
 
     with open(filename) as f:
         for line in f:
             j = json.loads(line)
             for msgname in j.keys():
-                # "flat" is a dict, but not nested!
+                # "flat" is a dictionary, but not nested!
                 flat = flatten_msg(j[msgname])
 
-                # add to dict of dataframes
+                # add to dictionary of dataframes
                 if not msgname in dict_of_dataframes:
                     dict_of_dataframes[msgname] = []
                 dict_of_dataframes[msgname].append(flat)
@@ -57,3 +62,83 @@ def load(filename):
         dict_of_dataframes[msgname] = pd.DataFrame.from_records(dict_of_dataframes[msgname], index="Time")
 
     return dict_of_dataframes
+
+class PandasBinaryReader(MessageFileReader):
+    def __init__(self, filename, serial):
+        super(PandasBinaryReader, self).__init__()
+        self.dict_of_dataframes = {}
+        header_name = "NetworkHeader"
+        if serial:
+            header_name = "SerialHeader"
+        self.read_file(filename, header_name)
+
+        for msgname in self.dict_of_dataframes:
+            self.dict_of_dataframes[msgname] = pd.DataFrame.from_records(self.dict_of_dataframes[msgname], index="Time")
+        
+
+    def process_message(self, msg, timestamp):
+        # Get a dictionary of the message
+        d = msg.toDict(includeHeader=True)
+
+        # the dictionary has one key, which is the name of the message
+        msgname = list(d.keys())[0]
+
+        # Within the value for that key, there's a "hdr", which contains "Time",
+        # and we should override that with the corrected timestamp
+        d[msgname]['hdr']['Time'] = timestamp
+
+        flat = flatten_msg(d[msgname])
+
+        # add to dictionary of dataframes
+        if not msgname in self.dict_of_dataframes:
+            self.dict_of_dataframes[msgname] = []
+        self.dict_of_dataframes[msgname].append(flat)
+
+def load_binary(filename, serial=None):
+    # if user didn't specify value for serial, set it based on filename.
+    if serial == None:
+        if filename.endswith(".bin") or filename.endswith(".log"):
+            serial = False
+        elif filename.endswith(".txt"):
+            serial = True
+
+    # Need to read binary messages and process them.
+    # flatten_msg() above was written to operate on python dicts returned
+    # by reading JSON.  The Message class already overloads the __getattr__()
+    # function to make field access work like attribute access, and perhaps
+    # if we also override __dir__(), then Message objects could be operated
+    # on like python objects with named attributes.  If that doesn't work,
+    # we can either change flatten_msg() to work on Message objects, using their
+    # normal means of reflection, or generate JSON and then parse the JSON to
+    # form a dictionary, and then call flatten_msg() on that dictionary.
+    pandas_reader = PandasBinaryReader(filename, serial)
+
+    return pandas_reader.dict_of_dataframes
+    
+def load(filename, serial=None):
+    if filename.endswith(".json"):
+        return load_json(filename)
+    elif filename.endswith(".bin") or filename.endswith(".log") or filename.endswith(".txt"):
+        return load_binary(filename, serial)
+
+# Make this script executable from the shell, with command line arguments.
+# This is just for testing, since there's not much point in printing a DataFrame
+# to stdout.
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Read a log file into pandas DataFrames")
+    parser.add_argument('filename', help='''The log file you want to split into CSV.  
+        .log extension assumes the log is binary with NetworkHeaders.  A .txt extension assumes the 
+        file was created with SerialHeaders.''')
+    parser.add_argument('--serial', action='store_true', help='''Assumes input file contains binary messages with SerialHeaders instead of NetworkHeaders.''')
+    args = parser.parse_args()
+
+    if args.filename.lower().endswith('.txt'):
+        args.serial = True
+    
+    df = load(args.filename, args.serial)
+    print(df)
+
+# main starts here
+if __name__ == '__main__':
+    main()

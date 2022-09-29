@@ -108,15 +108,6 @@ class Message:
         else:
             raise AttributeError('Message %s has no field %s' % (self.MsgName(), attr))
 
-# these could be installed by monkey patching the Message class, when msgjson.py or msgcsv.py is imported!
-# doing that would prevent the dependency of this file importing msgjson and msgcsv, but would still
-# allow easy conversion of messages to/from CSV and JSON, if those files are imported elsewhere.
-# it would also extend to other conversions, like protobufs for example
-#   Message.fromJson = msgjson.jsonToMsg
-#   Message.fromCsv  = msgcsv.csvToMsg
-#   Message.toJson   = msgjson.toJson
-#   Message.toCsv    = msgcsv.toCsv
-
     @staticmethod
     def fromJson(s):
         return msgjson.jsonToMsg(s)
@@ -139,6 +130,9 @@ class Message:
     @staticmethod
     def fromStr(s):
         pass
+
+    def toDict(self, includeHeader=False):
+        return msgjson.toDict(self, includeHeader)
 
     def toJson(self, includeHeader=False):
         return msgjson.toJson(self, includeHeader)

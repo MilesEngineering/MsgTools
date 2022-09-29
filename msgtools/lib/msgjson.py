@@ -4,7 +4,7 @@ from .messaging import Messaging
 from collections import OrderedDict
 import json
 
-def toJson(msg, includeHeader=False):
+def toDict(msg, includeHeader=False):
     pythonObj = OrderedDict()
     if includeHeader:
         pythonObj['hdr'] = OrderedDict()
@@ -45,8 +45,10 @@ def toJson(msg, includeHeader=False):
             pythonObj[fieldInfo.name] = arrayList
             if terminate:
                 break
+    return {msg.MsgName() : pythonObj}
 
-    return json.dumps({msg.MsgName() : pythonObj})
+def toJson(msg, includeHeader=False):
+    return json.dumps(toDict(msg,includeHeader))
 
 def jsonToMsg(jsonString):
     terminationLen = None
