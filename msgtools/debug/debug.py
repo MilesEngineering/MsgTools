@@ -26,6 +26,7 @@ DESCRIPTION='''DebugPrint provides a graphical interface that allows you to view
     looking up messages by MessageAlias, and by accepting Thread/Stream as synonyms.'''
 
 QUERY_DEVICE_INFO_TIMEOUT = 3.0
+QUERY_STREAM_INFO_TIMEOUT = 5.0
 
 class DebugStream(QtWidgets.QWidget):
     messageOutput = QtCore.pyqtSignal(object)
@@ -86,9 +87,14 @@ class DebugStream(QtWidgets.QWidget):
     def clear(self):
         self.widget.clear()
 
-    def Rename(self, deviceName, streamName):
-        self.name = streamName
-        newName = deviceName + ", " + streamName
+    def Rename(self, deviceName, streamName=None):
+        if streamName == None:
+            # if we're renaming because we just learned the deviceName, we ought to query the stream name.
+            self.getStreamInfo()
+        else:
+            # if we got the stream name, then set it.
+            self.name = streamName
+        newName = deviceName + ", " + self.name
         tabIndex = self.debugWidget.tabWidget.indexOf(self.widget)
         if tabIndex < 0:
             self.statusUpdate.emit("Warning!  Couldn't find debug tab for device " + route + " stream " + str(streamID))
@@ -291,7 +297,7 @@ class DebugDevice(QtWidgets.QWidget):
                 deviceName = msg.GetName()
             self.name = deviceName
             for streamID,stream in self.streams.items():
-                stream.Rename(deviceName, stream.name)
+                stream.Rename(deviceName)
             return
 
         if type(msg) == self.debugWidget.streamInfoMsg:
