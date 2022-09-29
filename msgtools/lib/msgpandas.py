@@ -115,7 +115,25 @@ def load_binary(filename, serial=None):
 
     return pandas_reader.dict_of_dataframes
     
-def load(filename, serial=None):
+def load(filename=None, serial=None):
+    if filename == None:
+        from os import listdir
+        from os.path import splitext, isfile, join
+        def filename_is_log(filename):
+            if not filename.startswith("20"):
+                return False
+            filename_elements = splitext(filename)
+            if len(filename_elements) < 2:
+                return False
+            ext = filename_elements[1]
+            if not ext in [".json", ".bin"]:
+                return False
+            return True
+        filenames = [f for f in listdir(".") if isfile(f) and filename_is_log(f)]
+        filenames.sort(reverse=True)
+        filename = filenames[0]
+        print("Reading %s, newest file in current directory." % (filename))
+
     if filename.endswith(".json"):
         return load_json(filename)
     elif filename.endswith(".bin") or filename.endswith(".log") or filename.endswith(".txt"):
@@ -127,13 +145,13 @@ def load(filename, serial=None):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Read a log file into pandas DataFrames")
-    parser.add_argument('filename', help='''The log file you want to split into CSV.  
+    parser.add_argument('filename', nargs="?", default=None, help='''The log file you want to split into CSV.  
         .log extension assumes the log is binary with NetworkHeaders.  A .txt extension assumes the 
         file was created with SerialHeaders.''')
     parser.add_argument('--serial', action='store_true', help='''Assumes input file contains binary messages with SerialHeaders instead of NetworkHeaders.''')
     args = parser.parse_args()
 
-    if args.filename.lower().endswith('.txt'):
+    if args.filename and args.filename.lower().endswith('.txt'):
         args.serial = True
     
     df = load(args.filename, args.serial)
