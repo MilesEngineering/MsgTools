@@ -68,6 +68,8 @@ class MessageNameLoader(collections.UserDict):
 
         if key in Messaging.MsgModuleFromName:
             importlib.import_module(Messaging.MsgModuleFromName[key])
+        if not key in self.data:
+            raise KeyError("Invalid Message name %s" % (key))
         return self.data[key]
 
 # This simulates an object with attributes, but with lazy loading, where a module isn't
@@ -451,17 +453,26 @@ or specify that directory with --msgdir=PATH''')
     # is to, from, for, between different entities, so they aren't assumed to be two messages
     # in one time sequence.  This is necessary for showing lists of data (like msginspector),
     # showing plots of data as a time series, or showing the latest value of all data (msgscope).
+    # As a performance optimization, the first time this function is called for a specific type
+    # of header, we make a list of route fields, and then every time we need to generate a Route,
+    # we loop through those fields.
     @staticmethod
     def HeaderRoute(hdr):
-        msg_route = []
-        for fieldInfo in hdr.fields:
-            if fieldInfo.bitfieldInfo:
-                for bitfieldInfo in fieldInfo.bitfieldInfo:
-                    if Messaging.IsRouteField(bitfieldInfo):
-                        msg_route.append(str(bitfieldInfo.get(hdr)))
-            else:
-                if Messaging.IsRouteField(fieldInfo):
-                    msg_route.append(str(fieldInfo.get(hdr)))
+        try:
+            routeFields = type(hdr).s_routeFields
+        except AttributeError:
+            routeFields = []
+            for fieldInfo in hdr.fields:
+                if fieldInfo.bitfieldInfo:
+                    for bitfieldInfo in fieldInfo.bitfieldInfo:
+                        if Messaging.IsRouteField(bitfieldInfo):
+                            routeFields.append(bitfieldInfo)
+                else:
+                    if Messaging.IsRouteField(fieldInfo):
+                        routeFields.append(fieldInfo)
+            type(hdr).s_routeFields = routeFields
+        # list comprehension to build the message route based on each of the route fields.
+        msg_route = [str(route_field_info.get(hdr)) for route_field_info in routeFields]
         return msg_route
 
     @staticmethod
