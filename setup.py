@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(name='msgtools',
-    python_requires='~=3.5',
-    version='0.36.3',
+    python_requires='>=3.5',
+    version='0.36.4',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
