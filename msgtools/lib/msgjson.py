@@ -51,26 +51,37 @@ def toJson(msg, includeHeader=False):
     return json.dumps(toDict(msg,includeHeader))
 
 def jsonToMsg(jsonString):
+    d = json.loads(jsonString)
+    return dictToMsg(d)
+
+def dictToMsg(d):
     terminationLen = None
-    if "hdr" in jsonString:
-        fieldJson = jsonString["hdr"]
-        for fieldName in fieldJson:
+    def handle_header(hdrDict):
+        for fieldName in hdrDict:
             if fieldName == "DataLength":
-                if fieldJson[fieldName] == ";":
+                if hdrDict[fieldName] == ";":
                     terminationLen = 0
                 else:
-                    terminationLen = int(fieldJson[fieldName])
-    for msgName in jsonString:
+                    terminationLen = int(hdrDict[fieldName])
+    if "hdr" in d:
+        hdrDict = d["hdr"]
+        handle_header(hdrDict)
+    for msgName in d:
         if msgName == "hdr":
             # hdr handled above, *before* message body
             pass
         else:
-            fieldJson = jsonString[msgName]
+            fieldDict = d[msgName]
             msgClass = Messaging.MsgClassFromName[msgName]
             msg = msgClass()
-            for fieldName in fieldJson:
+            for fieldName in fieldDict:
+                if fieldName == "hdr":
+                    handle_header(fieldDict["hdr"])
+                    continue
                 fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
-                fieldValue = fieldJson[fieldName]
+                if fieldInfo == None:
+                    raise KeyError("Invalid field %s for message %s" % (fieldName, msgName))
+                fieldValue = fieldDict[fieldName]
                 if isinstance(fieldValue, list):
                     #print(fieldName + " list type is " + type(fieldValue))
                     for i in range(0,len(fieldValue)):
@@ -79,7 +90,7 @@ def jsonToMsg(jsonString):
                             #TODO Broken for arrays-of-structs acting like parallel arrays!
                             terminationLen = max(terminationLen, fieldInfo.end_location(i))
                 elif isinstance(fieldValue, dict):
-                    #print(fieldName + " dict type is " + type(fieldValue))
+                    #print(fieldName + " dict type is " + str(type(fieldValue)))
                     if fieldInfo.bitfieldInfo:
                         pass
                     else:

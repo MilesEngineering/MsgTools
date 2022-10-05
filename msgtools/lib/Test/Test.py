@@ -76,7 +76,7 @@ class TestClass(unittest.TestCase):
         ret += "at field " + fieldName
         return ret
 
-    def test_csv_and_json(self):
+    def test_csv_and_dict(self):
         testData = [
          ('TestCase4 ;',                                                {"TestCase4": {}, "hdr" : {"DataLength": ";"}}),
          ('TestCase4 ',                                                 {"TestCase4": {"A":0, "B": [0,0,0], "C": [0,0,0], "D": ""}}),
@@ -109,7 +109,7 @@ class TestClass(unittest.TestCase):
             try:
                 msg = msgcsv.csvToMsg(tc[0])
                 json = msgjson.toJson(msg)
-                msg2 = msgjson.jsonToMsg(tc[1])
+                msg2 = msgjson.dictToMsg(tc[1])
                 #print("csv is " + tc[0])
                 self.assertEqual(msg.hdr.GetDataLength(), msg2.hdr.GetDataLength(), self.info(tc, tcNum, "hdr.DataLength"))
                 #print("json of csv is " + json)
@@ -133,17 +133,17 @@ class TestClass(unittest.TestCase):
                         if exit_loop:
                             break
             except AssertionError:
-                print("test_csv_and_json test case %d" % (tcNum))
+                print("test_csv_and_dict test case %d" % (tcNum))
                 msg1 = msgcsv.csvToMsg(tc[0])
                 print(msg1)
-                msg2 = msgjson.jsonToMsg(tc[1])
+                msg2 = msgjson.dictToMsg(tc[1])
                 print(msg2)
                 raise
             except:
                 print("Exception on test case %d, [%s] != [%s]" % (tcNum, tc[0], tc[1]))
                 msg1 = msgcsv.csvToMsg(tc[0])
                 print(msg1)
-                msg2 = msgjson.jsonToMsg(tc[1])
+                msg2 = msgjson.dictToMsg(tc[1])
                 print(msg2)
                 print(traceback.format_exc())
                 self.assertEqual(True, False)
