@@ -59,11 +59,11 @@ class HeaderHelper:
         return True
 
     def body_valid(self, hdr, body):
-        if hdr.GetDataLength() != len(body):
-            self._error_fn("RX ERROR: BODY LENGTH %d != %d" % (hdr.GetDataLength() != len(body)))
+        if hdr.GetDataLength() > len(body):
+            self._error_fn("RX ERROR: BODY LENGTH %d > %d" % (hdr.GetDataLength(), len(body)))
             return False
         if self._hdr_crc_region != None:
-            bodyCrc = Crc16(body)
+            bodyCrc = Crc16(body[:hdr.GetDataLength()])
             receivedBodyCrc = hdr.GetBodyChecksum()
             if receivedBodyCrc != bodyCrc:
                 self._error_fn("RX ERROR: BODY CRC %s != %s for %s" % (hex(receivedBodyCrc), hex(bodyCrc), hexbytes(body)))
@@ -77,7 +77,7 @@ class HeaderHelper:
         if self._hdr_crc_region != None:
             # set header and body CRC
             msg.SetHeaderChecksum(Crc16(msg.rawBuffer()[:self._hdr_crc_region]))
-            msg.SetBodyChecksum(Crc16(msg.rawBuffer()[self._hdr_class.SIZE:]))
+            msg.SetBodyChecksum(Crc16(msg.rawBuffer()[self._hdr_class.SIZE:self._hdr_class.SIZE+msg.GetDataLength()]))
 
 class HeaderTranslator:
     def __init__(self, hdr1, hdr2):
