@@ -12,7 +12,6 @@ from PyQt5.QtCore import *
 
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
-import numpy as np
 
 # if started via invoking this file directly (like would happen with source sitting on disk),
 # insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
@@ -20,15 +19,27 @@ import numpy as np
 if __name__ == '__main__':
     srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
     sys.path.insert(1, srcroot)
-from msgtools.lib.messaging import Messaging
+from msgtools.lib.messaging import Messaging, FieldInfo
 
 from datetime import datetime
 from datetime import timedelta
 
-from collections import namedtuple
+from collections import deque
+from dataclasses import dataclass
+import itertools
 
-# make tuple for line, and have multiple of them in a MsgPlot, as long as their units match and they are from the same message
-LineInfo = namedtuple('LineInfo', 'msgClass msgKey baseName fieldInfo fieldSubindex dataArray timeArray curve ptr1')
+# This class contains data for a line.
+# We can have have multiple lines in a MsgPlot.
+@dataclass
+class LineInfo:
+    msgClass: ...
+    msgKey: str
+    baseName: str
+    fieldInfo: FieldInfo
+    fieldSubindex: int
+    dataArray: deque
+    timeArray: deque
+    curve: ...
 
 start_time = datetime.now().timestamp()
 def elapsedSeconds(timestamp):
@@ -36,7 +47,13 @@ def elapsedSeconds(timestamp):
         return timestamp - start_time
     return timestamp
 
-# I just added an optimization that replaces sequences of flat data
+# get a slice of the tail end of a deque
+def deque_tail(d, count):
+    start = max(0, len(d) - count)
+    slice = list(itertools.islice(d, start, len(d)))
+    return slice
+
+# I added an optimization that replaces sequences of flat data
 # with just two points, so we're starting to be a little smarter
 # about storing data.  maybe we want to decimate very old data?
 # that'll look wrong if user zooms in, though
@@ -58,7 +75,7 @@ class MsgPlot(QWidget):
     Paused = QtCore.pyqtSignal(bool)
     AddLineError = QtCore.pyqtSignal(str)
     RegisterForMessage = QtCore.pyqtSignal(str)
-    MAX_LENGTH = 1000
+    MAX_LENGTH = 1024
     def __init__(self, msgClass, msgKey, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None):
         super(QWidget,self).__init__()
         
@@ -66,10 +83,8 @@ class MsgPlot(QWidget):
         fieldInfo = Messaging.findFieldInfo(msgClass.fields, newFieldName)
         if fieldInfo == None:
             raise MsgPlot.PlotError("Invalid field %s for message %s" % (newFieldName, msgClass.MsgName()))
-
         layout = QVBoxLayout()
         self.setLayout(layout)
-        #self.msgClass = msgClass
         self.pause = 0
         self.lineCount = 0
         self.showUnitsOnLegend = True
@@ -107,7 +122,7 @@ class MsgPlot(QWidget):
         if displayControls:
             hLayout.addWidget(self.clearButton)
 
-        # add slider bar to control time scale
+        # create slider bar to control time scale
         if timeSlider == None:
             self.timeSlider = QSlider(Qt.Horizontal)
             self.timeSlider.setMinimum(50)
@@ -125,6 +140,13 @@ class MsgPlot(QWidget):
         self.plotWidget.dragMoveEvent = self.dragMoveEvent
         self.plotWidget.dropEvent = self.dropEvent
         self.plotWidget.setAcceptDrops(1)
+
+        # Create a timer to refresh after a small delay so that we can redraw
+        # at a fixed rate instead of redrawing for each data point.
+        self.refresh_timer = QTimer()
+        self.refresh_timer.setSingleShot(True)
+        self.refresh_timer.setInterval(200)
+        self.refresh_timer.timeout.connect(self.refresh)
 
     @staticmethod
     def split_fieldname(fieldName):
@@ -160,7 +182,7 @@ class MsgPlot(QWidget):
         for line in self.lines:
             line.dataArray.clear()
             line.timeArray.clear()
-            self.refreshLine(line)
+        self.refresh()
 
     def addLine(self, msgClass, msgKey, fieldName, fieldLabel = None):
         fieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
@@ -178,9 +200,7 @@ class MsgPlot(QWidget):
                 if fieldInfo.count > 1:
                     name = "%s[%d]" % (name, fieldIndex)
                 raise MsgPlot.PlotError("Line %s already on plot" % name)
-        #TODO why not plot things from different messages?!?
-        #if msgClass != self.msgClass:
-        #    raise MsgPlot.NewPlotError("Message %s != %s, cannot add to same plot" % (msgClass.__name__, self.msgClass.__name__))
+
         if self.showUnitsOnLegend:
             if fieldInfo.units != self.units:
                 self.showUnitsOnLegend = True
@@ -233,10 +253,9 @@ class MsgPlot(QWidget):
                 lineName += "["+str(fieldIndex)+"]"
         except:
             pass
-        dataArray = []
-        timeArray = []
-        ptr1 = 0
-        self.useHeaderTime = 0
+        dataArray = deque([], maxlen=MsgPlot.MAX_LENGTH)
+        timeArray = deque([], maxlen=MsgPlot.MAX_LENGTH)
+        self.useHeaderTime = False
         # This is ugly, but try to make plotWidget.plot(pen) parameters that result in colors easy to distinguish.
         line_number = len(self.lines)
         line_count_estimate = 6
@@ -244,7 +263,7 @@ class MsgPlot(QWidget):
             line_count_estimate = line_count_estimate + 6
             line_number = (line_number - 6)*2+1
         curve = self.plotWidget.plot(timeArray, dataArray, name=lineName, pen=(line_number,line_count_estimate))
-        lineInfo = LineInfo(msgClass, msgKey, baseName, fieldInfo, fieldIndex, dataArray, timeArray, curve, ptr1)
+        lineInfo = LineInfo(msgClass, msgKey, baseName, fieldInfo, fieldIndex, dataArray, timeArray, curve)
         self.lines.append(lineInfo)
         
     def pauseOrRun(self):
@@ -276,47 +295,42 @@ class MsgPlot(QWidget):
                     timestamp = timestamp / 1000.0
                 newTime = float(elapsedSeconds(timestamp))
                 if newTime != 0:
-                    self.useHeaderTime = 1
+                    self.useHeaderTime = True
                 if not self.useHeaderTime:
                     newTime = elapsedSeconds(datetime.now().timestamp())
             except AttributeError:
                 # if header has no time, fallback to PC time.
                 newTime = elapsedSeconds(datetime.now().timestamp())
             
-            # if the last two data points have the same value as us, then instead of adding a point,
-            # we can just change the time of the previous point to our time
-            if (len(line.dataArray) > 2 and
+            # Disable this optimization because different lines having a different number of points
+            # in the same period of time screws up X-axis autoscaling.
+            if 0 and (len(line.dataArray) > 2 and
+                # if the last two data points have the same value as us, then instead of adding a point,
+                # we can just change the time of the previous point to our time
                 line.dataArray[-2] == line.dataArray[-1] and
                 line.dataArray[-1] == newDataPoint):
                 line.timeArray[-1] = newTime
             else:
-                # add data in the array until MAX_LENGTH is reached, then drop data off start of array
-                # such that plot appears to scroll.  The array size is limited to MAX_LENGTH.
-                if len(line.dataArray) >= MsgPlot.MAX_LENGTH:
-                    line.dataArray[:-1] = line.dataArray[1:]  # shift data in the array one sample left
-                    line.dataArray[-1] = newDataPoint
-                    line.timeArray[:-1] = line.timeArray[1:]  # shift data in the array one sample left
-                    line.timeArray[-1] = newTime
-                else:
-                    line.dataArray.append(newDataPoint)
-                    line.timeArray.append(newTime)
+                # Add data in the fixed-size deque.
+                # This will drop data off start when the deque is full,
+                # such that plot appears to scroll horizontally so the last
+                # point is always at the right edge.
+                line.dataArray.append(newDataPoint)
+                line.timeArray.append(newTime)
 
-            if not self.pause:
-                self.refreshLine(line)
+            # If the plot isn't paused, and the timer isn't running already, start it.
+            if not self.pause and not self.refresh_timer.isActive():
+                self.refresh_timer.start()
 
-    def refreshLine(self, line):
-        timeArray = line.timeArray
-        dataArray = line.dataArray
-        count = self.timeSlider.value()
-        if len(line.dataArray) > count:
-            timeArray = timeArray[-count:]
-            dataArray = dataArray[-count:]
-        line.curve.setData(timeArray, dataArray)
-        line.curve.setPos(line.ptr1, 0)
-    
-    def timeScaleChanged(self):
+    def refresh(self):
         for line in self.lines:
-            self.refreshLine(line)
+            #line.curve.setData(line.timeArray, line.dataArray)
+            timeArray = deque_tail(line.timeArray, self.timeSlider.value())
+            dataArray = deque_tail(line.dataArray, self.timeSlider.value())
+            line.curve.setData(timeArray, dataArray)
+
+    def timeScaleChanged(self):
+        self.refresh()
 
     @staticmethod
     def plotFactory(new_plot_callback, msgClass, fieldNames, msgKey = None, fieldLabels = None, runButton = None, clearButton = None, timeSlider = None, displayControls=True):

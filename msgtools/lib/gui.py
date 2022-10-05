@@ -119,7 +119,7 @@ class MsgTextWidget(QtWidgets.QWidget):
                 pass
             i += 1
 
-    def addData(self, msg, autoscroll=1):
+    def addData(self, msg, autoscroll=True):
         msgStringList = []
         columnAlerts = []
         if self.fieldAllowed("Time"):
@@ -159,7 +159,7 @@ class MsgTextWidget(QtWidgets.QWidget):
             else:
                 if self.fieldAllowed(fieldInfo.name):
                     columnText = ""
-                    alert = 0
+                    alert = False
                     for i in range(0,fieldInfo.count):
                         fieldValue = str(Messaging.get(msg, fieldInfo, i))
                         # if the value is what is given when we go off the end of an array, break.
@@ -167,7 +167,7 @@ class MsgTextWidget(QtWidgets.QWidget):
                             break
                         columnText += str(fieldValue)
                         if Messaging.getAlert(msg, fieldInfo, i):
-                            alert = 1
+                            alert = True
                         if(i<fieldInfo.count-1):
                             columnText += ", "
                     msgStringList.append(columnText)
@@ -210,7 +210,14 @@ class MsgTreeWidget(TreeWidget):
         # show sort indicator ascending on Time, if not sorting, because we append incoming messages
         self.header().setSortIndicator(0, QtCore.Qt.AscendingOrder)
         self.header().sectionClicked.connect(self.tableHeaderClicked)
-        
+
+        # Use a timer to autoscroll, to reduce CPU usage and make it a little
+        # easier to read the screen while it's scrolling.
+        self.scrollTimer = QtCore.QTimer()
+        self.scrollTimer.setInterval(500)
+        self.scrollTimer.setSingleShot(True)
+        self.scrollTimer.timeout.connect(self.scrollToBottom)
+
         self.maxRows = maxRows
         if rowsToDelete > maxRows:
             rowsToDelete = maxRows
@@ -219,9 +226,9 @@ class MsgTreeWidget(TreeWidget):
         # key field for our message, that we display one row per value of
         self.keyField = keyField
 
-        self.firstTimeDataAdded = 1
+        self.firstTimeDataAdded = True
 
-    def addData(self, msg, autoscroll=1):
+    def addData(self, msg, autoscroll=True):
         msgStringList = []
         columnAlerts = []
         try:
@@ -267,7 +274,7 @@ class MsgTreeWidget(TreeWidget):
                     columnCounter += 1
             else:
                 columnText = ""
-                alert = 0
+                alert = False
                 for i in range(0,fieldInfo.count):
                     fieldValue = str(Messaging.get(msg, fieldInfo, i))
                     # if the value is what is given when we go off the end of an array, break.
@@ -275,7 +282,7 @@ class MsgTreeWidget(TreeWidget):
                         break
                     columnText += str(fieldValue)
                     if Messaging.getAlert(msg, fieldInfo, i):
-                        alert = 1
+                        alert = True
                     if(i<fieldInfo.count-1):
                         columnText += ", "
                 msgStringList.append(columnText)
@@ -294,11 +301,11 @@ class MsgTreeWidget(TreeWidget):
                 msgItem.setBackground(column, brush)
         if self.keyField != None and keyColumn >= 0:
             # find row that has key field that matches ours
-            foundAndReplaced = 0
+            foundAndReplaced = False
             for i in range(0, self.topLevelItemCount()):
                 item = self.topLevelItem(i)
                 if item.text(keyColumn) == keyValue:
-                    foundAndReplaced = 1
+                    foundAndReplaced = True
                     self.takeTopLevelItem(i)
                     self.insertTopLevelItem(i, msgItem)
             if not foundAndReplaced:
@@ -306,8 +313,9 @@ class MsgTreeWidget(TreeWidget):
                 self.sortItems(keyColumn, QtCore.Qt.AscendingOrder)
         else:
             self.addTopLevelItem(msgItem)
-            if(autoscroll):
-                self.scrollToItem(msgItem)
+            if autoscroll and not self.scrollTimer.isActive():
+                self.scrollTimer.start()
+
             # when deleting, make a bunch of room so that if we're auto scrolling we have a bit of time before it
             # shifts the data.  Otherwise the user can't read stuff if it's going by too fast.
             if self.topLevelItemCount() > self.maxRows:
@@ -319,7 +327,7 @@ class MsgTreeWidget(TreeWidget):
             for fieldInfo in type(msg).fields:
                 self.resizeColumnToContents(count)
                 count += 1
-        self.firstTimeDataAdded = 0
+        self.firstTimeDataAdded = False
         
     def tableHeaderClicked(self, column):
         fieldName = self.headerItem().text(column)

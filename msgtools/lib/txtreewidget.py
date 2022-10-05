@@ -232,16 +232,25 @@ class MessageItem(QTreeWidgetItem):
         tree_widget.resizeColumnToContents(0)
         self.setExpanded(True)
 
+        # create a timer to refresh at a fixed rate, so we don't refresh
+        # needlessly fast for high rate data, and use too much CPU
+        self.repaint_timer = QTimer()
+        self.repaint_timer.setInterval(250)
+        self.repaint_timer.timeout.connect(self.repaintAll)
+
     def repaintAll(self):
         # Refresh the paint on the entire tree
         # TODO This is not a good solution!  We should refresh *only* the item that changed, not whole tree!
         region = self.tree_widget.childrenRegion()
         self.tree_widget.setDirtyRegion(region)
+        self.repaint_timer.stop()
 
     def set_msg_buffer(self, msg_buffer):
         self.msg.msg_buffer_wrapper["msg_buffer"] = msg_buffer
         self.msg.hdr.msg_buffer_wrapper["msg_buffer"] = msg_buffer
-        self.repaintAll()
+        if not self.repaint_timer.isActive():
+            self.repaint_timer.start()
+        #self.repaintAll()
 
     def setup_fields(self, tree_widget, child_constructor, child_array_constructor, child_bitfield_constructor):
         headerTreeItemParent = QTreeWidgetItem(None, [ "Header" ])

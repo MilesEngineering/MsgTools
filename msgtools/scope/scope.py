@@ -419,7 +419,8 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             self.rx_message_list.resizeColumnToContents(0)
             self.rx_msg_list[msg_key] = msg_list_item
 
-        self.rx_msg_list[msg_key].setText(1, rx_time.strftime('%H:%M:%S.%f')[:-3])
+        self.rx_msg_list[msg_key].rx_time = rx_time
+        self.rx_msg_list[msg_key].rx_time_changed = True
         self.rx_msg_list[msg_key].msg = msg
         self.rx_msg_list[msg_key].rx_count += 1
 
@@ -428,7 +429,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         for msg_key, widget in self.rx_msg_list.items():
             rate = float(widget.rx_count)
             widget.rx_count = 0
-            widget.avg_rate = weight * widget.avg_rate + (1-weight) * rate
+            widget.avg_rate = (1-weight) * widget.avg_rate + weight * rate
 
             if widget.avg_rate > 0.05:
                 output = "{0:0.1f} Hz".format(widget.avg_rate)
@@ -437,6 +438,9 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             else:
                 output = "-- Hz"
 
+            if self.rx_msg_list[msg_key].rx_time_changed:
+                self.rx_msg_list[msg_key].setText(1, self.rx_msg_list[msg_key].rx_time.strftime('%H:%M:%S.%f')[:-3])
+            self.rx_msg_list[msg_key].rx_time_changed = False
             self.rx_msg_list[msg_key].setText(2, output)
 
     def add_message_to_rx_tree(self, msg_key, msg):
