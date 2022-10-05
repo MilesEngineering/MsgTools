@@ -71,8 +71,7 @@ class TestClass(unittest.TestCase):
     
     def info(self, testCase, tcNum, fieldName):
         ret  = "\nTest Case #" + str(tcNum) + "\n"
-        ret += testCase[0] + " != \n"
-        ret += str(testCase[1]) + "\n"
+        ret += "'%s' != '%s'\n" % (str(testCase[0]), str(testCase[1]))
         ret += "at field " + fieldName
         return ret
 
@@ -108,11 +107,11 @@ class TestClass(unittest.TestCase):
         for tc in testData:
             try:
                 msg = msgcsv.csvToMsg(tc[0])
-                json = msgjson.toJson(msg)
+                j = msgjson.toJson(msg)
                 msg2 = msgjson.dictToMsg(tc[1])
                 #print("csv is " + tc[0])
                 self.assertEqual(msg.hdr.GetDataLength(), msg2.hdr.GetDataLength(), self.info(tc, tcNum, "hdr.DataLength"))
-                #print("json of csv is " + json)
+                #print("json of csv is " + j)
                 for fieldInfo in type(msg).fields:
                     if(fieldInfo.count == 1):
                         if not fieldInfo.exists(msg):

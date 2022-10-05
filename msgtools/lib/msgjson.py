@@ -57,15 +57,17 @@ def jsonToMsg(jsonString):
 def dictToMsg(d):
     terminationLen = None
     def handle_header(hdrDict):
+        length = None
         for fieldName in hdrDict:
             if fieldName == "DataLength":
                 if hdrDict[fieldName] == ";":
-                    terminationLen = 0
+                    length = 0
                 else:
-                    terminationLen = int(hdrDict[fieldName])
+                    length = int(hdrDict[fieldName])
+        return length
     if "hdr" in d:
         hdrDict = d["hdr"]
-        handle_header(hdrDict)
+        terminationLen = handle_header(hdrDict)
     for msgName in d:
         if msgName == "hdr":
             # hdr handled above, *before* message body
@@ -76,7 +78,7 @@ def dictToMsg(d):
             msg = msgClass()
             for fieldName in fieldDict:
                 if fieldName == "hdr":
-                    handle_header(fieldDict["hdr"])
+                    terminationLen = handle_header(fieldDict["hdr"])
                     continue
                 fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
                 if fieldInfo == None:
