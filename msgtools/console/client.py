@@ -1,15 +1,34 @@
 #!/usr/bin/env python3
 #
-# Client is a class that contains a TCP client which run asynchronously
-# in a background thread, and also allows synchronous code to send and receives messages with it.
+# Client is a class that uses a TCP client socket to allow synchronous code to
+# send and receives messages.  All instances of Client share a single TCP socket,
+# and can also communicate amongst themselves whether the socket is connected or
+# not.
 #
+import gevent.queue
+import gevent.monkey
+gevent.monkey.patch_socket()
 import os
 import sys
 import socket
 import time
 from msgtools.lib.messaging import Messaging
+from msgtools.sim.sim_exec import SimExec
 
 class Client:
+    # keep a list of all clients, so that when any of them send anything it goes to the others.
+    _clients = []
+    # One socket, shared by all clients
+    # Each client blocks on reading from it's own gevent.queue
+    _sock = None
+    # A totally separate coroutine does a blocking read with infinite timeout,
+    # and writes to all the Client queues.
+    _rx_greenlet = None
+    # A combined name for all clients
+    _name = None
+    # record particular messages the user wants to record, even if they never called recv on them
+    _extra_msgs_to_record = {}
+    received = {}
     def __init__(self, name='Client', timeout=10):
         # keep a reference to Messages, for convenience of cmdline scripts
         self.Messages = Messaging.Messages
@@ -17,45 +36,123 @@ class Client:
         if Messaging.hdr == None:
             Messaging.LoadAllMessages()
 
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sock.connect(("127.0.0.1", 5678))
         self._timeout = timeout
 
-        if self._timeout == 0.0:
-            self._sock.setblocking(0)
-        else:
-            self._sock.setblocking(1)
-            self._sock.settimeout(self._timeout)
+        if Client._sock == None and SimExec.allow_socket_comms:
+            try:
+                # if there isn't yet a socket but there should be,
+                # open the socket, configure the timeout, and spawn
+                # a coroutine to read from the socket.
+                Client._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                Client._sock.connect(("127.0.0.1", 5678))
+                Client._sock.setblocking(True)
+                Client._sock.settimeout(None)
+                Client._rx_greenlet = gevent.spawn(Client.read_for_all_clients)
+            except:
+                print("couldn't open socket!!")
+                if not SimExec.sim_exists:
+                    raise
 
-        # say my name
+        # send combined name
+        if Client._name == None:
+            Client._name = name
+        else:
+            Client._name = Client._name + "," + name
         connectMsg = Messaging.Messages.Network.Connect()
-        connectMsg.SetName(name)
+        connectMsg.SetName(Client._name)
         self.send(connectMsg)
-        
+
         # do default subscription to get *everything*
         subscribeMsg = Messaging.Messages.Network.MaskedSubscription()
         self.send(subscribeMsg)
-        
+
+        # make a queue for receiving messages from other clients in this
+        # same process and from the socket.
+        self._rx_queue = gevent.queue.Queue()
+
         # keep a dictionary of the latest value of all received messages
         self.received = {}
         
-        # also record particular messages the user wants to record, even if
-        # they never called recv on them
-        self._extra_msgs_to_record = {}
-    
-    def send(self, msg):
-        bufferSize = len(msg.rawBuffer().raw)
-        computedSize = msg.hdr.SIZE + msg.hdr.GetDataLength()
-        if(computedSize > bufferSize):
-            msg.hdr.SetDataLength(bufferSize - msg.hdr.SIZE)
-            print("Truncating message to "+str(computedSize)+" bytes")
-        if(computedSize < bufferSize):
-            # don't send the *whole* message, just a section of it up to the specified length
-            self._sock.send(msg.rawBuffer().raw[0:computedSize])
-        else:
-            self._sock.send(msg.rawBuffer().raw)
+        # add us to the list of clients
+        Client._clients.append(self)
 
-    
+    # supposedly it's dangerous for multiple greenlets to send to the same socket!
+    #TODO If this causes problems, we'll need to use tx queues to send to a single greenlet,
+    #TODO and then have it put data in the socket (like the reverse of how rx works)
+    def send(self, msg):
+        try:
+            bufferSize = len(msg.rawBuffer().raw)
+            computedSize = msg.hdr.SIZE + msg.hdr.GetDataLength()
+            if(computedSize > bufferSize):
+                msg.hdr.SetDataLength(bufferSize - msg.hdr.SIZE)
+                print("Truncating message to "+str(computedSize)+" bytes")
+            if(computedSize < bufferSize):
+                # don't send the *whole* message, just a section of it up to the specified length
+                Client._sock.send(msg.rawBuffer().raw[0:computedSize])
+            else:
+                Client._sock.send(msg.rawBuffer().raw)
+
+            Client.queue_for_clients(msg, self)
+        except:
+            if not SimExec.sim_exists:
+                raise
+
+    @staticmethod
+    def queue_for_clients(msg, excluded_client):
+        if len(Client._clients) > 1:
+            for c in Client._clients:
+                if c != excluded_client:
+                    c._rx_queue.put(msg)
+
+    @staticmethod
+    def read_msg_from_socket():
+        try:
+            # see if there's enough for header
+            data = Client._sock.recv(Messaging.hdr.SIZE, socket.MSG_PEEK)
+            if len(data) == Messaging.hdr.SIZE:
+                # create header based on peek'd data
+                hdr = Messaging.hdr(data)
+
+                # see if there's enough for the body, too
+                data += Client._sock.recv(hdr.GetDataLength(), socket.MSG_PEEK)
+                if len(data) != Messaging.hdr.SIZE + hdr.GetDataLength():
+                    #print("didn't get whole body, error!")
+                    return None
+
+                # read out what we peek'd.
+                data = Client._sock.recv(Messaging.hdr.SIZE + hdr.GetDataLength())
+
+                # reset the header based on appended data
+                hdr = Messaging.hdr(data)
+                msg = Messaging.MsgFactory(hdr)
+                return msg
+        except socket.timeout:
+            print("timeout")
+            return None
+        except BlockingIOError:
+            print('blocking')
+            return None
+        return None
+
+    @staticmethod
+    def read_for_all_clients():
+        while True:
+            msg = Client.read_msg_from_socket()
+            if msg:
+                #TODO Should we put everything in the queue?
+                #TODO The client might decide to receive a message by ID
+                #TODO after it got read from the socket, in which case we'd miss it.
+                #TODO That's slightly different than in the single Client version
+                #TODO where a Client reads directly from the scoket because then
+                #TODO nothing is read from the socket until the Client
+                #TODO decides to read and passes a list of msgIds.
+                Client.queue_for_clients(msg, None)
+            else:
+                #TODO If the server disconnects, we get a ton of these printouts!
+                # need to add logic to reconnect automatically, and then remove
+                # this print statement.
+                print("got NO msg")
+
     def recv(self, msgIds=[], timeout=None):
         # if user didn't pass a list, put the single param into a list
         if not isinstance(msgIds, list):
@@ -64,43 +161,44 @@ class Client:
         for i in range(0,len(msgIds)):
             if hasattr(msgIds[i], 'ID'):
                 msgIds[i] = msgIds[i].ID
+
+        # reset the timeout member variable
         if timeout != None and self._timeout != timeout:
             self._timeout = timeout
-            if self._timeout == 0.0:
-                self._sock.setblocking(0)
-            else:
-                self._sock.setblocking(1)
-                self._sock.settimeout(self._timeout)
+
+        if self._timeout == 0.0:
+            block = False
+            timeout = None
+        else:
+            block = True
+            timeout = self._timeout
+
+        # Process any messages in our rx queue
         while True:
-            try:
-                # see if there's enough for header
-                data = self._sock.recv(Messaging.hdr.SIZE, socket.MSG_PEEK)
-                if len(data) == Messaging.hdr.SIZE:
-                    # create header based on peek'd data
-                    hdr = Messaging.hdr(data)
+            if block and SimExec.sim_exists:
+                # Delay for a period of simulation time, not real time!
+                start_time = SimExec.time()
+                while True:
+                    try:
+                        msg = self._rx_queue.get(block=False)
+                    except:
+                        SimExec.tick_event.wait()
+                        SimExec.tick_event.clear()
+                        if SimExec.time() > start_time + timeout:
+                            return None
+            else:
+                # if we dont't want to block, or else the sim isn't running,
+                # then we can read from the queue directly without
+                # worrying about simulation time.
+                try:
+                    msg = self._rx_queue.get(block, timeout)
+                except:
+                    return None
 
-                    # see if there's enough for the body, too
-                    data += self._sock.recv(hdr.GetDataLength(), socket.MSG_PEEK)
-                    if len(data) != Messaging.hdr.SIZE + hdr.GetDataLength():
-                        print("didn't get whole body, error!")
-                        continue
-
-                    # read out what we peek'd.
-                    data = self._sock.recv(Messaging.hdr.SIZE + hdr.GetDataLength())
-
-                    # reset the header based on appended data
-                    hdr = Messaging.hdr(data)
-                    id = hdr.GetMessageID()
-                    if id in self._extra_msgs_to_record:
-                        self.received[id] = msg
-                    if len(msgIds) == 0 or id in msgIds:
-                        msg = Messaging.MsgFactory(hdr)
-                        self.received[id] = msg
-                        return msg
-            except socket.timeout:
-                return None
-            except BlockingIOError:
-                return None
+            id = msg.hdr.GetMessageID()
+            if len(msgIds) == 0 or id in msgIds:
+                self.received[id] = msg
+                return msg
 
     def wait_for(self, msgIds=[], fn=None, timeout=None):
         ret = False
@@ -108,12 +206,12 @@ class Client:
             timeout = self._timeout
         remaining_timeout = timeout
         while(1):
-            before = time.time()
+            before = SimExec.time()
             msg = self.recv(msgIds, remaining_timeout)
             if msg != None and fn(msg):
                 ret = True
                 break
-            after = time.time()
+            after = SimExec.time()
             elapsed = after - before
             if remaining_timeout:
                 # if we have a timeout, update it for the amount of time spent
@@ -121,14 +219,11 @@ class Client:
                 if remaining_timeout < 0:
                     ret = False
                     break
-        if timeout:
-            self._sock.setblocking(1)
-            self._sock.settimeout(self._timeout)
         return ret
 
     def stop(self):
-        self._sock.close()
+        Client._clients.remove(self)
 
     # select set of messages to record the last value of
     def record(self, msgs_to_record):
-        self._extra_msgs_to_record = msgs_to_record
+        Client._extra_msgs_to_record.update(msgs_to_record)
