@@ -174,6 +174,11 @@ or specify that directory with --msgdir=PATH''')
         headerName - the default header to use when processing messages.  We assume this module resides
             in a 'headers' folder below our base message root directory.
         '''
+        if Messaging.hdr != None:
+            print("Messaging.LoadAllMessages() called more than once.")
+            print("Returning immediately instead of re-executing it!")
+            return
+
         loadDir = Messaging.DetermineLoadDir(loaddir, searchdir)
         
         # if we didn't find valid auto-generated code, this will cause an import error!
@@ -194,10 +199,11 @@ or specify that directory with --msgdir=PATH''')
                 Messaging.MsgIDFromName     = msglibinfo["MsgIDFromName"]
                 Messaging.MsgModuleFromName = msglibinfo["MsgModuleFromName"]
                 for name in Messaging.MsgIDFromName:
-                    # initialize all class lookups to None.
-                    # this is a signal for MessageNameLoader to do a lookup, while
+                    # Initialize all class lookups to None, unless they are already set.
+                    # This is a signal for MessageNameLoader to do a lookup, while
                     # still providing keys() for users to access.
-                    Messaging.MsgClassFromName[name] = None
+                    if not name in Messaging.MsgClassFromName:
+                        Messaging.MsgClassFromName[name] = None
                     
                     # the below is used to populate the hierarchy of dot-notation,
                     # *except* for the final class at the end (which will be done
