@@ -39,32 +39,23 @@ class Client:
         self._timeout = timeout
 
         if Client._sock == None and SimExec.allow_socket_comms:
-            try:
-                # if there isn't yet a socket but there should be,
-                # open the socket, configure the timeout, and spawn
-                # a coroutine to read from the socket.
-                Client._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                Client._sock.connect(("127.0.0.1", 5678))
-                Client._sock.setblocking(True)
-                Client._sock.settimeout(None)
-                Client._rx_greenlet = gevent.spawn(Client.read_for_all_clients)
-            except:
-                print("couldn't open socket!!")
-                if not SimExec.sim_exists:
-                    raise
+            # if there isn't yet a socket but there should be,
+            # call the function to open it.
+            Client.reconnect_socket(False)
+            # Start a greenlet thread to read from the socket.
+            # If the socket closes or has an error, the thread will reconnect it.
+            Client._rx_greenlet = gevent.spawn(Client.read_for_all_clients)
 
-        # send combined name
+        # store combined name
         if Client._name == None:
             Client._name = name
         else:
             Client._name = Client._name + "," + name
+
+        # Send the connect message with the name
         connectMsg = Messaging.Messages.Network.Connect()
         connectMsg.SetName(Client._name)
         self.send(connectMsg)
-
-        # do default subscription to get *everything*
-        subscribeMsg = Messaging.Messages.Network.MaskedSubscription()
-        self.send(subscribeMsg)
 
         # make a queue for receiving messages from other clients in this
         # same process and from the socket.
@@ -76,10 +67,37 @@ class Client:
         # add us to the list of clients
         Client._clients.append(self)
 
+    @staticmethod
+    def reconnect_socket(retry=True):
+        if retry:
+            # If we're trying to reconnect, wait a little bit so we don't spend
+            # a ton of time doing network stuff in the case where the server
+            # isn't even running.
+            gevent.sleep(0.5)
+        try:
+            Client._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            Client._sock.connect(("127.0.0.1", 5678))
+            Client._sock.setblocking(True)
+            Client._sock.settimeout(None)
+
+            # do default subscription to get *everything*
+            subscribeMsg = Messaging.Messages.Network.MaskedSubscription()
+            Client.send(subscribeMsg)
+
+            # Send the connect message with the name
+            connectMsg = Messaging.Messages.Network.Connect()
+            connectMsg.SetName(Client._name)
+            Client.send(connectMsg)
+        except:
+            #print("couldn't open socket!!")
+            if not SimExec.sim_exists:
+                raise
+
     # supposedly it's dangerous for multiple greenlets to send to the same socket!
     #TODO If this causes problems, we'll need to use tx queues to send to a single greenlet,
     #TODO and then have it put data in the socket (like the reverse of how rx works)
-    def send(self, msg):
+    @staticmethod
+    def send(msg):
         try:
             bufferSize = len(msg.rawBuffer().raw)
             computedSize = msg.hdr.SIZE + msg.hdr.GetDataLength()
@@ -126,6 +144,13 @@ class Client:
                 hdr = Messaging.hdr(data)
                 msg = Messaging.MsgFactory(hdr)
                 return msg
+            else:
+                # reopen the socket
+                Client.reconnect_socket()
+        except ConnectionResetError:
+            Client.reconnect_socket()
+        except OSError:
+            Client.reconnect_socket()
         except socket.timeout:
             print("timeout")
             return None
@@ -148,10 +173,10 @@ class Client:
                 #TODO decides to read and passes a list of msgIds.
                 Client.queue_for_clients(msg, None)
             else:
-                #TODO If the server disconnects, we get a ton of these printouts!
-                # need to add logic to reconnect automatically, and then remove
-                # this print statement.
-                print("got NO msg")
+                # If the server disconnects we'll get to this case.
+                # That's ok because read_msg_from_socket() will attempt
+                # to reconnect.
+                pass
 
     def recv(self, msgIds=[], timeout=None):
         # if user didn't pass a list, put the single param into a list
