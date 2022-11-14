@@ -87,7 +87,7 @@ class SimExec:
         if self._args.asap:
             self.incremental_wallclock_time += actual_dt
             if self.iterations % self.iterations_per_second == 0:
-                self.logging.info("simtime %.1f / walltime %.1f = %.1fx acceleration" % (self.incremental_sim_time, self.incremental_wallclock_time, self.incremental_sim_time/self.incremental_wallclock_time))
+                self.logging.info("simtime %.1f / walltime %.3f = %.1fx acceleration" % (self.incremental_sim_time, self.incremental_wallclock_time, self.incremental_sim_time/self.incremental_wallclock_time))
                 self.incremental_sim_time = 0.0
                 self.incremental_wallclock_time = 0.0
             # do zero-time sleep, so other coroutines can run if they had yielded
@@ -98,7 +98,7 @@ class SimExec:
             sleep_time = self.dt - actual_dt
             self.logging.log(logging.ERROR if sleep_time < 0.25 * self.dt else logging.DEBUG, "Execution took %f seconds, want to run every %f seconds, sleeping %f seconds" % (actual_dt, self.dt, sleep_time))
             if self.iterations % self.iterations_per_second == 0:
-                self.logging.warning("cputime %.2f / walltime %.1f = %.2f%% processor usage" % (self.incremental_execution_time, self.incremental_sim_time, 100.0*(self.incremental_execution_time/self.incremental_sim_time)))
+                self.logging.warning("cputime %.3f / walltime %.1f = %.2f%% processor usage" % (self.incremental_execution_time, self.incremental_sim_time, 100.0*(self.incremental_execution_time/self.incremental_sim_time)))
                 self.incremental_sim_time = 0.0
                 self.incremental_wallclock_time = 0.0
                 self.incremental_execution_time = 0.0
