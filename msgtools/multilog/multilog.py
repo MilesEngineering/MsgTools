@@ -42,15 +42,12 @@ DESCRIPTION='''
         YEAR_MONTH_DAY.TEXT1.TEXT2.TAG1.log'''
 
 EPILOG='''
-    Example usage: msgmultilog --note LABEL1 LABEL2 --button hotkey:X logtag:TAG1 label:LABEL3  
-    --button hotkey:X logtag:TAG2 label:LABEL4 --show MSGNAME MSGNAME2 --plot MSGNAME=fieldname1,fieldname2
+Example usage:
+    msgmultilog --note LABEL1 LABEL2 --button hotkey:X logtag:TAG1 label:LABEL3  
+    --button hotkey:X logtag:TAG2 label:LABEL4 --show MSGNAME MSGNAME2
+    --plot MSGNAME1=fieldname1,fieldname2 MSGNAME2 --plot MSGNAME3
     MSGNAME2=fieldname3,fieldname4 --send MSGNAME MSGNAME2
-    '''
 
-def removePrefix(text, prefix):
-    return text[len(prefix):] if text.startswith(prefix) else text
-
-help = '''
     --note: each --note argument adds a text field named the specified LABEL, and 
                the value of the text field will become part of the filename.  
                Example argument: LABEL1
@@ -64,8 +61,10 @@ help = '''
     --endrow: end the current row of active layout
     --col: switch to a column for active layout
     --endcol: end the current column of active layout
-    --plot: each --plot argument adds a plot of the fields within MSGNAME.  If fields left off, all 
-                fields are plotted.  Add [idx] to field name if array and want element
+    --plot: each --plot argument adds a new plot of the fields within MSGNAMEs that follow it.
+                If fields left off, all fields within that MSGNAME are plotted.
+                If multiple MSGNAME arguments are listed for one --plot, they will be added to
+                the same plot.  Add [idx] to field name if array and want element
                 other than element zero.  Example argument: MSGNAME=fieldname1,fieldname2[2]
     --send:each --send argument is a message name that adds a tree view to edit a message with a 'send' 
                 button to send it.  Example argument: MSGNAME
@@ -188,6 +187,7 @@ class Multilog(msgtools.lib.gui.Gui):
 
             elif argname == '--plot':
                 if plottingLoaded:
+                    thisPlot = None
                     for plotarg in argvalue:
                         if "=" in plotarg:
                             split = plotarg.split("=")
@@ -197,11 +197,19 @@ class Multilog(msgtools.lib.gui.Gui):
                             msgname = plotarg
                             fieldNames = []
                         msgClass = Messaging.MsgClassFromName[msgname]
-                        msgPlot = None
                         if firstPlot:
-                            MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, **plotargs)
+                            if thisPlot:
+                                # Add to existing plot
+                                for fieldName in fieldNames:
+                                    thisPlot.addLine(msgClass, msgKey=None, fieldName=fieldName, fieldLabel=None)
+                                    if not msgClass.ID in self.msgHandlers:
+                                        self.msgHandlers[msgClass.ID] = []
+                                    self.msgHandlers[msgClass.ID].append(thisPlot)
+                            else:
+                                thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, **plotargs)
                         else:
-                            firstPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, displayControls=False)
+                            thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, displayControls=False)
+                            firstPlot = thisPlot
                             plotargs = {"runButton":firstPlot.runButton, "clearButton":firstPlot.clearButton, "timeSlider":firstPlot.timeSlider, "displayControls":False}
 
             elif argname == '--send':
