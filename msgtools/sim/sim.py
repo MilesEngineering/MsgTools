@@ -4,6 +4,7 @@ import gevent
 import importlib
 import logging
 import os
+import signal
 import sys
 
 from msgtools.console.client import Client
@@ -169,6 +170,13 @@ class SimBaseClass:
             self.fsw = importlib.import_module(fsw_module)
         else:
             self.fsw = None
+
+        gevent.signal_handler(signal.SIGTERM, SimBaseClass.close, signal.SIGTERM)
+        gevent.signal_handler(signal.SIGINT, SimBaseClass.close, signal.SIGINT)
+
+    @staticmethod
+    def close(signo):
+        sys.exit('\n%s received - aborting.' % (str(signo)))
 
     @staticmethod
     def setup_args(parser):
