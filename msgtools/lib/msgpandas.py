@@ -114,7 +114,13 @@ def load_binary(filename, serial=None):
     pandas_reader = PandasBinaryReader(filename, serial)
 
     return pandas_reader.dict_of_dataframes
-    
+
+# A global variable for the last filename that was loaded.
+# This is useful for when None is passed in to load(),
+# and the user wants to know what file was auto-loaded.
+last_filename = None
+
+# Return a hashtable of pandas dataframes from the file that was loaded.
 def load(filename=None, serial=None):
     if filename == None:
         from os import listdir
@@ -132,7 +138,9 @@ def load(filename=None, serial=None):
         filenames = [f for f in listdir(".") if isfile(f) and filename_is_log(f)]
         filenames.sort(reverse=True)
         filename = filenames[0]
-        print("Reading %s, newest file in current directory." % (filename))
+
+    global last_filename
+    last_filename = filename
 
     if filename.endswith(".json"):
         return load_json(filename)
