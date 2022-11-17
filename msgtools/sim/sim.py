@@ -1,7 +1,9 @@
+import copy
 import datetime
 import fileinput
 import gevent
 import importlib
+import json
 import logging
 import os
 import signal
@@ -10,6 +12,7 @@ import sys
 from msgtools.console.client import Client
 from msgtools.lib.messaging import Messaging
 from msgtools.sim.sim_exec import SimExec
+from msgtools.lib.message import Message
 
 # Script files can have blank lines and comments (started with #)
 # Commands within them are of the form:
@@ -129,7 +132,7 @@ class SimBaseClass:
         logging.basicConfig(level=10*self._args.loglevel, format='')
         self.logging = StyleAdapter(logging.getLogger(__name__), self)
         self.time_stats = SimExec(dt, self._args, self.logging)
-        self.cxn = None
+        self.cxn = Client('Sim', timeout=0.0)
 
         self.log_file_type = None
         self.log_file = None
@@ -315,7 +318,6 @@ class SimBaseClass:
 
     def run(self):
         while True:
-            self.create_connection()
             self.process_script_inputs()
             self.get_commands()
             
@@ -421,15 +423,3 @@ class SimBaseClass:
             tick = Messaging.Messages.TimeTick()
             tick.Time = simtime
             self.send(tick, self.fdm)
-
-    def create_connection(self):
-        if SimExec.allow_socket_comms:
-            try:
-                if self.cxn:
-                    return
-            except AttributeError:
-                pass
-            try:
-                self.cxn = Client('Sim', timeout=0.0)
-            except ConnectionRefusedError:
-                self.cxn = None
