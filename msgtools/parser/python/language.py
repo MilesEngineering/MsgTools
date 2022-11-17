@@ -124,7 +124,7 @@ def fnHdr(field, offset, count, name):
     try:
         fieldSize = MsgParser.fieldSize(field)
         if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
-            count = MsgParser.fieldCount(field)
+            count = pythonFieldCount(field)
     except KeyError:
         fieldSize = 0
         
