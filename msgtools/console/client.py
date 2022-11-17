@@ -82,22 +82,22 @@ class Client:
 
             # do default subscription to get *everything*
             subscribeMsg = Messaging.Messages.Network.MaskedSubscription()
-            Client.send(subscribeMsg)
+            Client.static_send(subscribeMsg)
 
             # Send the connect message with the name
             connectMsg = Messaging.Messages.Network.Connect()
             connectMsg.SetName(Client._name)
-            Client.send(connectMsg)
+            Client.static_send(connectMsg)
         except:
             #print("couldn't open socket!!")
             if not SimExec.sim_exists:
                 raise
 
-    # supposedly it's dangerous for multiple greenlets to send to the same socket!
-    #TODO If this causes problems, we'll need to use tx queues to send to a single greenlet,
-    #TODO and then have it put data in the socket (like the reverse of how rx works)
     @staticmethod
-    def send(msg):
+    def static_send(msg):
+        if Client._sock == None:
+            pass#return
+
         try:
             bufferSize = len(msg.rawBuffer().raw)
             computedSize = msg.hdr.SIZE + msg.hdr.GetDataLength()
@@ -110,10 +110,16 @@ class Client:
             else:
                 Client._sock.send(msg.rawBuffer().raw)
 
-            Client.queue_for_clients(msg, self)
-        except:
+        except Exception as e:
             if not SimExec.sim_exists:
                 raise
+        
+    # supposedly it's dangerous for multiple greenlets to send to the same socket!
+    #TODO If this causes problems, we'll need to use tx queues to send to a single greenlet,
+    #TODO and then have it put data in the socket (like the reverse of how rx works)
+    def send(self, msg):
+        Client.static_send(msg)
+        Client.queue_for_clients(msg, self)
 
     @staticmethod
     def queue_for_clients(msg, excluded_client):
