@@ -38,6 +38,12 @@ class Client:
 
         self._timeout = timeout
 
+        # store combined name
+        if Client._name == None:
+            Client._name = name
+        else:
+            Client._name = Client._name + "," + name
+
         if Client._sock == None and SimExec.allow_socket_comms:
             # if there isn't yet a socket but there should be,
             # call the function to open it.
@@ -45,17 +51,6 @@ class Client:
             # Start a greenlet thread to read from the socket.
             # If the socket closes or has an error, the thread will reconnect it.
             Client._rx_greenlet = gevent.spawn(Client.read_for_all_clients)
-
-        # store combined name
-        if Client._name == None:
-            Client._name = name
-        else:
-            Client._name = Client._name + "," + name
-
-        # Send the connect message with the name
-        connectMsg = Messaging.Messages.Network.Connect()
-        connectMsg.SetName(Client._name)
-        self.send(connectMsg)
 
         # make a queue for receiving messages from other clients in this
         # same process and from the socket.
