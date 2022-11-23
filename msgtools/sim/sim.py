@@ -11,7 +11,7 @@ import sys
 
 from msgtools.console.client import Client
 from msgtools.lib.messaging import Messaging
-from msgtools.sim.sim_exec import SimExec
+from msgtools.sim.sim_exec import SimExec, StyleAdapter
 from msgtools.lib.message import Message
 
 # Script files can have blank lines and comments (started with #)
@@ -110,17 +110,6 @@ class ScriptReader:
         self._line.exec_time += self._last_time
         self._last_time = self._line.exec_time
 
-# This is used for formatting logging messages.
-class StyleAdapter(logging.LoggerAdapter):
-    def __init__(self, logger, sim):
-        self.logger = logger
-        self.sim = sim
-
-    def log(self, level, msg, *args):
-        if self.isEnabledFor(level):
-            t = self.sim.get_time()
-            self.logger._log(level, ("%7.3f: " % t) + msg, args, ())
-
 # The sim base class executes a FDM (flight dynamics model), and optionally
 # FSW (flight software), along with an optional test script (text based, or
 # python).  The various entities are all run according to simulation time,
@@ -143,18 +132,21 @@ class SimBaseClass:
 
         # Open the initial script file
         if self._args.script != None:
-            if self._args.script.endswith('.py'):
+            script_filename = self._args.script[0]
+            if script_filename.endswith('.py'):
+                script_args = self._args.script[1:]
+                print("script_args {%s}" % (script_args))
                 # spawn the script using gevent
-                spec = importlib.util.spec_from_file_location("sim.script", self._args.script)
+                spec = importlib.util.spec_from_file_location("sim.script", script_filename)
                 sim_script = importlib.util.module_from_spec(spec)
                 sys.modules["sim.script"] = sim_script
                 spec.loader.exec_module(sim_script)
 
                 #TODO does something need to join with this?!
-                gevent.spawn(sim_script.main)
+                gevent.spawn(sim_script.main, *script_args)
                 self.script_reader = None
             else:
-                self.script_reader = ScriptReader(self._args.script, self.get_time(), self.logging)
+                self.script_reader = ScriptReader(script_filename, self.get_time(), self.logging)
         else:
             self.script_reader = None
 
@@ -186,7 +178,7 @@ class SimBaseClass:
         parser.add_argument('--lockstep', action='store_true', help='Set if you want sim and FSW to run in lockstep.')
         parser.add_argument('--asap', action='store_true', help='Set if you want sim and FSW to run in lockstep, and as fast as possible (no sleep).')
         parser.add_argument('--loglevel', default="2", type=int, help='Set to how verbose of debug info you want printed. 0=none, 1=more, 2=even more, etc.')
-        parser.add_argument('--script', default=None, help="Filename to load for scripted actions.")
+        parser.add_argument('--script', default=None, nargs='+', help="Filename to load for scripted actions, and command-line arguments to give to the script.")
         parser.add_argument('--log', nargs='?', const='', help='The log file type (csv/json/bin) or complete log file name.  Can use strftime formatting for datetime, and a "+" is replaced with "%%Y%%m%%d_%%H%%M%%S"')
 
     def start_log(self, log_name):

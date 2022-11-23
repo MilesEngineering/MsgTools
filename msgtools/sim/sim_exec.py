@@ -4,6 +4,17 @@ from gevent.event import Event
 import logging
 import time
 
+# This is used for formatting logging messages.
+class StyleAdapter(logging.LoggerAdapter):
+    def __init__(self, logger, sim):
+        self.logger = logger
+        self.sim = sim
+
+    def log(self, level, msg, *args):
+        if self.isEnabledFor(level):
+            t = SimExec.time()
+            self.logger._log(level, ("%7.3f: " % t) + msg, args, ())
+
 # This class is used to execute a simulation, and allow tasks to be run along
 # with it, at the appropriate simulation time rate.
 # If no simulation exists, it falls back to using Python system time instead
@@ -16,6 +27,7 @@ class SimExec:
     sim_exists = False
     allow_socket_comms = True
     _current_time = 0.0
+    logging = StyleAdapter(logging.getLogger(__name__), None)
     def __init__(self, dt, args, logging):
         SimExec.tick_event = Event()
         self._args = args
