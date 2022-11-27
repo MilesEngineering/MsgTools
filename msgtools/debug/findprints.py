@@ -29,20 +29,33 @@ def theSameWithoutComments(file1, file2):
     return False
     
 def printDictionary(dictFilename, headerFilename, dictionaryDeployDir):
+    # Read in the old dictionary file so we can compare it to new desired
+    # contents, to decide if we need to rewrite it.
+    try:
+        with open(dictFilename, 'r') as file:
+            old_file_contents = file.read()
+    except:
+        old_file_contents = ""
+    new_file_contents = ""
     md5 = hashlib.md5()
-    with open(dictFilename,'w') as dictFile:
-        header = \
+    header = \
 '''# AUTO-GENERATED FILE, DO NOT HAND EDIT!
 # Created by %s
 ''' % thisInvocation
-        dictFile.write(header)
-        for formatInfo in dictionary:
-            s = str(formatInfo.id) + ": " + formatInfo.formatStr+", "+formatInfo.filename+", " + str(formatInfo.linenumber) + "\n"
-            md5.update(s.encode('utf-8'))
-            dictFile.write(s)
-        md5 = md5.hexdigest()
-        dictFile.write("# Dictionary md5 is %s\n" % (md5))
+    new_file_contents += header
+    for formatInfo in dictionary:
+        s = str(formatInfo.id) + ": " + formatInfo.format_str+", "+formatInfo.filename+", " + str(formatInfo.linenumber) + "\n"
+        md5.update(s.encode('utf-8'))
+        new_file_contents += s
+    md5 = md5.hexdigest()
+    new_file_contents += "# Dictionary md5 is %s\n" % (md5)
+
+    # Only write the file if the contents changed.
+    if new_file_contents != old_file_contents:
+        with open(dictFilename,'w') as dictFile:
+            dictFile.write(new_file_contents)
     
+    # copy the dictionary file to the deploy directory
     if dictionaryDeployDir != None:
         deployedFile = "%s/%s.json" % (dictionaryDeployDir,md5)
         if os.path.isfile(deployedFile):
@@ -50,26 +63,65 @@ def printDictionary(dictFilename, headerFilename, dictionaryDeployDir):
                 raise ValueError("ERROR!  Files %s and %s exist but are not identical!!" % (dictFilename, deployedFile))
         shutil.copy2(dictFilename, deployedFile)
 
+
+    # Read in the old dictionary header file so we can compare it to new
+    # desired contents, to decide if we need to rewrite it.
+    try:
+        with open(headerFilename, 'r') as file:
+            old_file_contents = file.read()
+    except:
+        old_file_contents = ""
+    new_file_contents = ""
+
     lineEndings = os.linesep
     # for windows, override lineseperator, to force windows native line endings,
     # even if we're running cygwin with \n line endings.
     if sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
         lineEndings="\r\n"
 
-    with open(headerFilename,'w', newline=lineEndings) as hdrFile:
-        header = \
+    header = \
 '''/* AUTO-GENERATED FILE, DO NOT HAND EDIT!
-  Created by %s
-  */
+Created by %s
+*/
 ''' % thisInvocation
-        hdrFile.write(header)
-        for formatInfo in dictionary:
-            formatStrIdName = formatInfo.filename.replace("/","_").replace(".cpp","").replace(".c","").replace(".","_")+"_line_"+str(formatInfo.linenumber)
-            hdrFile.write("#define " + formatStrIdName + " " + str(formatInfo.id)+"\n")
-        md5array = "0x" + ", 0x".join([md5[i:i+2] for i in range(0, len(md5), 2)])
-        hdrFile.write("#define FORMAT_STR_DICTIONARY_ID " + md5array+"\n")
+    new_file_contents += header
+    for formatInfo in dictionary:
+        format_str_id_name = formatInfo.filename.replace("/","_").replace(".cpp","").replace(".c","").replace(".","_")+"_line_"+str(formatInfo.linenumber)
+        new_file_contents += "#define %s %d\n" % (format_str_id_name, formatInfo.id)
+        new_file_contents +="#define %s_PARAM_TYPE_BITMASK 0x%X\n" % (format_str_id_name, formatInfo.param_type_bitmask)
+    md5array = "0x" + ", 0x".join([md5[i:i+2] for i in range(0, len(md5), 2)])
+    new_file_contents +="#define FORMAT_STR_DICTIONARY_ID %s\n" % (md5array)
 
-PrintfInfo = collections.namedtuple('PrintfInfo', ['id', 'formatStr', 'filename', 'linenumber'])
+    # Only write the file if the contents changed.
+    # This prevents changes to source code from regenerating the dictionary
+    # file and changing it's timestamp unless it actually changed, so that
+    # we won't needlessly recompile code that depends on it.
+    if new_file_contents != old_file_contents:
+        print("Contents changed, regenerating %s" % (headerFilename))
+        with open(headerFilename,'w', newline=lineEndings) as hdrFile:
+            hdrFile.write(new_file_contents)
+    else:
+        print("Contents haven't changed, not regenerating %s" % (headerFilename))
+
+def format_specifier_list(format_str):
+    return re.findall(r'%[0-9\.lh]*[cdeEfgGiuopsxX%]', format_str)
+
+def param_type_bitmask(format_str):
+    bitmask = 0
+    format_specifiers = format_specifier_list(format_str)
+    for format_specifier in format_specifiers:
+        bitmask <<= 1
+        if 'f' in format_specifier:
+            bitmask |= 1
+    return bitmask
+
+class PrintfInfo:
+    def __init__(self, id, format_str, filename, linenumber):
+        self.id = id
+        self.format_str = format_str
+        self.filename = filename
+        self.linenumber = linenumber
+        self.param_type_bitmask = param_type_bitmask(format_str)
 
 def ProcessFile(inputFilename):
     try:
@@ -77,11 +129,11 @@ def ProcessFile(inputFilename):
         with open(inputFilename, 'r') as inputFile:
             inputData = inputFile.read().splitlines() 
         global maxSubscriptions
-        global formatStrId
+        global format_str_id
         lineNumber = 0;
         for line in inputData:
             lineNumber+=1
-            formatStr = ""
+            format_str = ""
             try:
                 printStatement = ""
                 if "#define ESCAPED_FILE_PATH" in line:
@@ -92,22 +144,22 @@ def ProcessFile(inputFilename):
                         sedCmd = "sed -i '"+str(lineNumber)+"s/"+escapedFilePathFromFile+"/"+escapedFilePath+"/' "+inputFilename
                         #print("need to " + sedCmd)
                         os.system(sedCmd)
-                if "debugPrintf(" in line:
+                elif "debugPrintf(" in line:
                     printStatement = "debugPrintf"
                     matchObj = re.search( r'debugPrintf\(.*("[^"]*")', line)
-                    formatStr = matchObj.group(1).strip()
-                if "debugWarn(" in line:
+                    format_str = matchObj.group(1).strip()
+                elif "debugWarn(" in line:
                     printStatement = "debugWarn"
                     matchObj = re.search( r'debugWarn\(.*("[^"]*")', line)
-                    formatStr = matchObj.group(1).strip()
-                if "debugError(" in line:
+                    format_str = matchObj.group(1).strip()
+                elif "debugError(" in line:
                     printStatement = "debugError"
                     matchObj = re.search( r'debugError\(.*("[^"]*")', line)
-                    formatStr = matchObj.group(1).strip()
-                if(formatStr != ""):
-                    printInfo = PrintfInfo(formatStrId, formatStr, inputFilename, lineNumber)
+                    format_str = matchObj.group(1).strip()
+                if format_str != "":
+                    printInfo = PrintfInfo(format_str_id, format_str, inputFilename, lineNumber)
                     dictionary.append(printInfo)
-                    formatStrId+=1
+                    format_str_id+=1
             except AttributeError:
                 print("Regex search error on " + inputFilename + ", line " + str(lineNumber))
                 print(line)
@@ -131,8 +183,8 @@ def main():
     global dictionary
     dictionary = []
     
-    global formatStrId
-    formatStrId = 0
+    global format_str_id
+    format_str_id = 0
     
     inputDirList = inputDir.split(',')
     for d in inputDirList:

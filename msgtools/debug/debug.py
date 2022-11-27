@@ -9,6 +9,8 @@ import time
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from .findprints import format_specifier_list
+
 # if started via invoking this file directly (like would happen with source sitting on disk),
 # insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
 # any other already in the path.
@@ -27,6 +29,9 @@ DESCRIPTION='''DebugPrint provides a graphical interface that allows you to view
 
 QUERY_DEVICE_INFO_TIMEOUT = 3.0
 QUERY_STREAM_INFO_TIMEOUT = 5.0
+
+def float_from_integer(integer):
+    return struct.unpack('!f', struct.pack('!I', integer))[0]
 
 class DebugStream(QtWidgets.QWidget):
     messageOutput = QtCore.pyqtSignal(object)
@@ -152,11 +157,15 @@ class DebugStream(QtWidgets.QWidget):
                 linenumber = info.linenumber
                 # need to evaluate the formatStr and parameters to produce a new string!
                 try:
-                    paramsNeeded = info.formatStr.count("%")
+                    format_specifiers = format_specifier_list(info.formatStr)
+                    paramsNeeded = min(info.formatStr.count("%"), msg.GetParameters.count)
                     params = []
-                    for i in range(0,min(paramsNeeded,4)):
+                    for i in range(0, paramsNeeded):
                         try:
-                            value = int(msg.GetParameters(i))
+                            if 'f' in format_specifiers[i]:
+                                value = float_from_integer(msg.GetParameters(i))
+                            else:
+                                value = int(msg.GetParameters(i))
                         except struct.error:
                             value = 0
                         params.append(value)
@@ -168,7 +177,7 @@ class DebugStream(QtWidgets.QWidget):
 
             # if we couldn't format the string for whatever reason, fall back to just displaying the parameters
             if strFormatError:
-                text = str(formatStringId) +"("
+                text = "undecoded %d(" % (formatStringId)
                 for i in range(0,4):
                     try:
                         text += str(msg.GetParameters(i))+","
