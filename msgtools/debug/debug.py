@@ -267,26 +267,29 @@ class DebugDevice(QtWidgets.QWidget):
         self.dictionaryFilename = filename
         self.dictionary = []
         nextId = 0
-        with open(filename, 'r') as formatStringFile:
-            lines = formatStringFile.read().splitlines()
-            for line in lines:
-                matchObj = re.search( r'(\d+).*:\s*"([^"]*)", (.*), (\d+)', line)
-                if matchObj != None:
-                    DebugInfo = collections.namedtuple('DebugInfo', ['formatStr', 'filename', 'linenumber'])
-                    id = matchObj.group(1).strip()
-                    if int(id) != nextId:
-                        self.statusUpdate.emit("ERROR! Format string ID " + str(id) + " != " + str(nextId))
-                    formatStr = matchObj.group(2).strip()
-                    filename = matchObj.group(3).strip()
-                    linenumber = matchObj.group(4).strip()
-                    info = DebugInfo(formatStr, filename, linenumber)
-                    self.dictionary.append(info)
-                    nextId += 1
-                else:
-                    matchObj = re.search( r'Dictionary md5 is (.*)', line)
+        try:
+            with open(filename, 'r') as formatStringFile:
+                lines = formatStringFile.read().splitlines()
+                for line in lines:
+                    matchObj = re.search( r'(\d+).*:\s*"([^"]*)", (.*), (\d+)', line)
                     if matchObj != None:
-                        self.dictionaryID = matchObj.group(1).strip()
-                        self.statusUpdate.emit("Device %s read dictionary %s" % (self.route, self.dictionaryID))
+                        DebugInfo = collections.namedtuple('DebugInfo', ['formatStr', 'filename', 'linenumber'])
+                        id = matchObj.group(1).strip()
+                        if int(id) != nextId:
+                            self.statusUpdate.emit("ERROR! Format string ID " + str(id) + " != " + str(nextId))
+                        formatStr = matchObj.group(2).strip()
+                        filename = matchObj.group(3).strip()
+                        linenumber = matchObj.group(4).strip()
+                        info = DebugInfo(formatStr, filename, linenumber)
+                        self.dictionary.append(info)
+                        nextId += 1
+                    else:
+                        matchObj = re.search( r'Dictionary md5 is (.*)', line)
+                        if matchObj != None:
+                            self.dictionaryID = matchObj.group(1).strip()
+                            self.statusUpdate.emit("Device %s read dictionary %s" % (self.route, self.dictionaryID))
+        except FileNotFoundError:
+            self.statusUpdate.emit("Cannot open file %s" % filename)
 
     def ProcessMessage(self, msg):
         if type(msg) == self.debugWidget.deviceInfoMsg:

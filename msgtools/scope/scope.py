@@ -106,6 +106,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.debugWidget = msgtools.debug.debug.MsgDebugWidget(debugdictList, parent)
         self.debugWidget.messageOutput.connect(self.SendMsg)
         self.debugWidget.autocompleted.connect(self.textAutocomplete)
+        self.debugWidget.statusUpdate.connect(self.statusUpdate)
 
         # tracking what reply to expect from a typed command
         self.expectedReply = None
