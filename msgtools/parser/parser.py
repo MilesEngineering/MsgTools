@@ -31,9 +31,9 @@ if __name__ == '__main__':
     sys.path.insert(1, srcroot)
 from msgtools.parser.MsgUtils import *
 
-# default to big endian, to match Network Byte Order
-# can be overridden globally.
-big_endian = True
+# Default to little endian, because ARM and x86 are little endian.
+# Can be overridden globally.
+big_endian = False
 def isBigEndian(inputData):
     endian_string = inputData["Endian"]
     if "big" in endian_string.lower():
