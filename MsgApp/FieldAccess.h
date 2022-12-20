@@ -47,7 +47,7 @@ class FieldAccess
             uint8_t* source = (uint8_t*)&value;
 
             for (unsigned k = 0; k < sizeof(AccessType); k++)
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
                 dest[k] = source[k];
 #else
                 dest[k] = source[sizeof(AccessType) - k - 1];
@@ -65,7 +65,7 @@ class FieldAccess
             const uint8_t* source = (const uint8_t*)location;
 
             for (unsigned k = 0; k < sizeof(AccessType); k++)
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
                 dest.u8[k] = source[k];
 #else
                 dest.u8[k] = source[sizeof(AccessType) - k - 1];

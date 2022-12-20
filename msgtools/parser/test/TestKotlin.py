@@ -21,7 +21,7 @@ class TestKotlin(unittest.TestCase):
         expected.append("""\
 //  m/s, (0 to 4294967295)
 fun getFieldA(): UInt {
-    return data.getUInt(0)
+    return data.getUInt(0, true)
 }""")
         expected.append("""\
 //  , (0 to 2147483647)
@@ -31,17 +31,17 @@ fun getFABitsA(): UInt {
         expected.append("""\
 //  , (0 to 65535)
 fun getFieldB(): UShort {
-    return data.getUShort(4)
+    return data.getUShort(4, true)
 }""")
         expected.append("""\
 //  , (0 to 255)
 fun getFieldC(index: Int): UByte {
-    return data.getUByte(6 + index*1)
+    return data.getUByte(6 + index*1, true)
 }""")
         expected.append("""\
 //  , (0 to 255)
 fun getFieldD(): UByte {
-    return data.getUByte(11)
+    return data.getUByte(11, true)
 }""")
         expected.append("""\
 //  , (0.0 to 215.355)
@@ -63,39 +63,39 @@ fun getBitsC(): UByte {
         expected.append("""\
 //  , (0.0 to 10.0)
 fun getFieldE(): Float {
-    return data.getFloat(12)
+    return data.getFloat(12, true)
 }""")
         expected.append("""\
 //  , (-2147483648 to 2147483647)
 fun getFieldS1_Member1(): Int {
-    return data.getInt(16)
+    return data.getInt(16, true)
 }""")
         expected.append("""\
 //  , (DBL_MIN to DBL_MAX)
 fun getFieldS1_Member2(): Double {
-    return data.getDouble(20)
+    return data.getDouble(20, true)
 }""")
         expected.append("""\
 //  , (1.828 to 176946.328)
 fun getFieldF(): Float {
-    val valI : UShort = data.getUShort(28)
+    val valI : UShort = data.getUShort(28, true)
     val valD = ((valI.toInt().toDouble() * 2.7f) + 1.828f).toFloat()
     return valD
 }""")
         expected.append("""\
 //  , (-2147483648 to 2147483647)
 fun getFieldS2_Member1(index: Int): Int {
-    return data.getInt(30 + index*12)
+    return data.getInt(30 + index*12, true)
 }""")
         expected.append("""\
 //  , (DBL_MIN to DBL_MAX)
 fun getFieldS2_Member2(index: Int): Double {
-    return data.getDouble(34 + index*12)
+    return data.getDouble(34 + index*12, true)
 }""")
         expected.append("""\
 //  m/s, (0 to 4294967295)
 fun setFieldA(value: UInt) {
-    data.putUInt(0, value)
+    data.putUInt(0, value, true)
 }""")
         expected.append("""\
 //  , (0 to 2147483647)
@@ -108,17 +108,17 @@ fun setFABitsA(value: UInt) {
         expected.append("""\
 //  , (0 to 65535)
 fun setFieldB(value: UShort) {
-    data.putUShort(4, value)
+    data.putUShort(4, value, true)
 }""")
         expected.append("""\
 //  , (0 to 255)
 fun setFieldC(value: UByte, index: Int) {
-    data.putUByte(6 + index*1, value)
+    data.putUByte(6 + index*1, value, true)
 }""")
         expected.append("""\
 //  , (0 to 255)
 fun setFieldD(value: UByte) {
-    data.putUByte(11, value)
+    data.putUByte(11, value, true)
 }""")
         expected.append("""\
 //  , (0.0 to 215.355)
@@ -147,32 +147,32 @@ fun setBitsC(value: UByte) {
         expected.append("""\
 //  , (0.0 to 10.0)
 fun setFieldE(value: Float) {
-    data.putFloat(12, value)
+    data.putFloat(12, value, true)
 }""")
         expected.append("""\
 //  , (-2147483648 to 2147483647)
 fun setFieldS1_Member1(value: Int) {
-    data.putInt(16, value)
+    data.putInt(16, value, true)
 }""")
         expected.append("""\
 //  , (DBL_MIN to DBL_MAX)
 fun setFieldS1_Member2(value: Double) {
-    data.putDouble(20, value)
+    data.putDouble(20, value, true)
 }""")
         expected.append("""\
 //  , (1.828 to 176946.328)
 fun setFieldF(value: Float) {
-    data.putUShort(28, ((value - 1.828f) / 2.7f).toUShort())
+    data.putUShort(28, ((value - 1.828f) / 2.7f).toUShort(), true)
 }""")
         expected.append("""\
 //  , (-2147483648 to 2147483647)
 fun setFieldS2_Member1(value: Int, index: Int) {
-    data.putInt(30 + index*12, value)
+    data.putInt(30 + index*12, value, true)
 }""")
         expected.append("""\
 //  , (DBL_MIN to DBL_MAX)
 fun setFieldS2_Member2(value: Double, index: Int) {
-    data.putDouble(34 + index*12, value)
+    data.putDouble(34 + index*12, value, true)
 }""")
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])

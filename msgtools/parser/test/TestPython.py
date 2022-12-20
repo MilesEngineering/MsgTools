@@ -28,7 +28,7 @@ class TestCpp(unittest.TestCase):
 @msg.count(1)
 def GetFieldA(self):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>L', self.rawBuffer(), TestCase1.MSG_OFFSET + 0)[0]
+    value = struct.unpack_from('<L', self.rawBuffer(), TestCase1.MSG_OFFSET + 0)[0]
     return value
 """)
         expected.append("""\
@@ -54,7 +54,7 @@ def GetFABitsA(self):
 @msg.count(1)
 def GetFieldB(self):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>H', self.rawBuffer(), TestCase1.MSG_OFFSET + 4)[0]
+    value = struct.unpack_from('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 4)[0]
     return value
 """)
         expected.append("""\
@@ -136,7 +136,7 @@ def GetBitsC(self):
 @msg.count(1)
 def GetFieldE(self):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>f', self.rawBuffer(), TestCase1.MSG_OFFSET + 12)[0]
+    value = struct.unpack_from('<f', self.rawBuffer(), TestCase1.MSG_OFFSET + 12)[0]
     return value
 """)
         expected.append("""\
@@ -149,7 +149,7 @@ def GetFieldE(self):
 @msg.count(1)
 def GetFieldS1_Member1(self):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>l', self.rawBuffer(), TestCase1.MSG_OFFSET + 16)[0]
+    value = struct.unpack_from('<l', self.rawBuffer(), TestCase1.MSG_OFFSET + 16)[0]
     return value
 """)
         expected.append("""\
@@ -162,7 +162,7 @@ def GetFieldS1_Member1(self):
 @msg.count(1)
 def GetFieldS1_Member2(self):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>d', self.rawBuffer(), TestCase1.MSG_OFFSET + 20)[0]
+    value = struct.unpack_from('<d', self.rawBuffer(), TestCase1.MSG_OFFSET + 20)[0]
     return value
 """)
         expected.append("""\
@@ -175,7 +175,7 @@ def GetFieldS1_Member2(self):
 @msg.count(1)
 def GetFieldF(self, convertFloat=True):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>H', self.rawBuffer(), TestCase1.MSG_OFFSET + 28)[0]
+    value = struct.unpack_from('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 28)[0]
     if convertFloat:
         value = ((value * 2.7) + 1.828)
     return value
@@ -190,7 +190,7 @@ def GetFieldF(self, convertFloat=True):
 @msg.count(3)
 def GetFieldS2_Member1(self, idx):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>l', self.rawBuffer(), TestCase1.MSG_OFFSET + 30+idx*12)[0]
+    value = struct.unpack_from('<l', self.rawBuffer(), TestCase1.MSG_OFFSET + 30+idx*12)[0]
     return value
 """)
         expected.append("""\
@@ -203,7 +203,7 @@ def GetFieldS2_Member1(self, idx):
 @msg.count(3)
 def GetFieldS2_Member2(self, idx):
     \"\"\"\"\"\"
-    value = struct.unpack_from('>d', self.rawBuffer(), TestCase1.MSG_OFFSET + 34+idx*12)[0]
+    value = struct.unpack_from('<d', self.rawBuffer(), TestCase1.MSG_OFFSET + 34+idx*12)[0]
     return value
 """)
         expected.append("""\
@@ -217,7 +217,7 @@ def GetFieldS2_Member2(self, idx):
 def SetFieldA(self, value):
     \"\"\"\"\"\"
     value = min(max(value, 0), 4294967295)
-    struct.pack_into('>L', self.rawBuffer(), TestCase1.MSG_OFFSET + 0, value)
+    struct.pack_into('<L', self.rawBuffer(), TestCase1.MSG_OFFSET + 0, value)
 """)
         expected.append("""\
 @msg.units('')
@@ -243,7 +243,7 @@ def SetFABitsA(self, value):
 def SetFieldB(self, value):
     \"\"\"\"\"\"
     value = min(max(value, 0), 65535)
-    struct.pack_into('>H', self.rawBuffer(), TestCase1.MSG_OFFSET + 4, value)
+    struct.pack_into('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 4, value)
 """)
         expected.append("""\
 @msg.units('')
@@ -330,7 +330,7 @@ def SetBitsC(self, value):
 @msg.count(1)
 def SetFieldE(self, value):
     \"\"\"\"\"\"
-    struct.pack_into('>f', self.rawBuffer(), TestCase1.MSG_OFFSET + 12, value)
+    struct.pack_into('<f', self.rawBuffer(), TestCase1.MSG_OFFSET + 12, value)
 """)
         expected.append("""\
 @msg.units('')
@@ -343,7 +343,7 @@ def SetFieldE(self, value):
 def SetFieldS1_Member1(self, value):
     \"\"\"\"\"\"
     value = min(max(value, -2147483648), 2147483647)
-    struct.pack_into('>l', self.rawBuffer(), TestCase1.MSG_OFFSET + 16, value)
+    struct.pack_into('<l', self.rawBuffer(), TestCase1.MSG_OFFSET + 16, value)
 """)
         expected.append("""\
 @msg.units('')
@@ -355,7 +355,7 @@ def SetFieldS1_Member1(self, value):
 @msg.count(1)
 def SetFieldS1_Member2(self, value):
     \"\"\"\"\"\"
-    struct.pack_into('>d', self.rawBuffer(), TestCase1.MSG_OFFSET + 20, value)
+    struct.pack_into('<d', self.rawBuffer(), TestCase1.MSG_OFFSET + 20, value)
 """)
         expected.append("""\
 @msg.units('')
@@ -370,7 +370,7 @@ def SetFieldF(self, value, convertFloat=True):
     if convertFloat:
         value = int((value - 1.828) / 2.7)
     value = min(max(value, 0), 65535)
-    struct.pack_into('>H', self.rawBuffer(), TestCase1.MSG_OFFSET + 28, value)
+    struct.pack_into('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 28, value)
 """)
         expected.append("""\
 @msg.units('')
@@ -383,7 +383,7 @@ def SetFieldF(self, value, convertFloat=True):
 def SetFieldS2_Member1(self, value, idx):
     \"\"\"\"\"\"
     value = min(max(value, -2147483648), 2147483647)
-    struct.pack_into('>l', self.rawBuffer(), TestCase1.MSG_OFFSET + 30+idx*12, value)
+    struct.pack_into('<l', self.rawBuffer(), TestCase1.MSG_OFFSET + 30+idx*12, value)
 """)
         expected.append("""\
 @msg.units('')
@@ -395,7 +395,7 @@ def SetFieldS2_Member1(self, value, idx):
 @msg.count(3)
 def SetFieldS2_Member2(self, value, idx):
     \"\"\"\"\"\"
-    struct.pack_into('>d', self.rawBuffer(), TestCase1.MSG_OFFSET + 34+idx*12, value)
+    struct.pack_into('<d', self.rawBuffer(), TestCase1.MSG_OFFSET + 34+idx*12, value)
 """)
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
