@@ -159,9 +159,9 @@ class HeaderTranslator:
                     if int(tmax) >= 2**32:
                         return True
                 def timeScaling(fromUnits, toUnits):
-                    if fromUnits == 'ms' and toUnits == 's':
+                    if fromUnits.lower() == 'ms' and toUnits.lower() == 's':
                         return 0.001
-                    if fromUnits == 's' and toUnits == 'ms':
+                    if fromUnits.lower() == 's' and toUnits.lower() == 'ms':
                         return 1000.0
                     return 1.0
                 time_scale = timeScaling(fromHdrInfo.timeField.units, toHdrInfo.timeField.units)

@@ -118,7 +118,7 @@ class Client:
 
     @staticmethod
     def queue_for_clients(msg, excluded_client):
-        if len(Client._clients) > 1:
+        if len(Client._clients) > 0:#1:
             for c in Client._clients:
                 if c != excluded_client:
                     c._rx_queue.put(msg)
@@ -186,6 +186,7 @@ class Client:
         # if they passed classes, get the ID of each
         for i in range(0,len(msgIds)):
             if hasattr(msgIds[i], 'ID'):
+                #print("replacing %s with %s" % (msgIds[i], msgIds[i].ID))
                 msgIds[i] = msgIds[i].ID
 
         # reset the timeout member variable

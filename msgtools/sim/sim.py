@@ -135,7 +135,7 @@ class SimBaseClass:
             script_filename = self._args.script[0]
             if script_filename.endswith('.py'):
                 script_args = self._args.script[1:]
-                print("script_args {%s}" % (script_args))
+                #print("script_args {%s}" % (script_args))
                 # spawn the script using gevent
                 spec = importlib.util.spec_from_file_location("sim.script", script_filename)
                 sim_script = importlib.util.module_from_spec(spec)

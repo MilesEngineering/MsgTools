@@ -82,7 +82,12 @@ class SimExec:
                 t2 = SimExec._current_time
         else:
             t1 = time.time()
-            time.sleep(dt)
+            #time.sleep(dt)
+            # The Client implementation changed to always use greenlets, so we
+            # should *always* do a gevent.sleep() here!
+            # Undo this if the Client changes so that it doens't use greenlets
+            # when SimExec.sim_exists is False!
+            gevent.sleep(0)
             t2 = time.time()
         SimExec.logging.debug("SimExec.wait(%.3f ms): %.3f ms" % (1000.0*dt, 1000.0*(t2-t1)))
         #print(f"{i} waited {dt} seconds")
