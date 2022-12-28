@@ -211,6 +211,10 @@ class SimBaseClass:
 
     def log(self, msg):
         if self.log_file:
+            # if the message doesn't have a time set, set it to current sim time.
+            if msg.hdr.GetTime() == 0.0:
+                msg.hdr.SetTime(self.get_time())
+
             if self.log_file_type == "json":
                 txt = msg.toJson(includeHeader=True) + "\n"
             elif self.log_file_type == "csv":
