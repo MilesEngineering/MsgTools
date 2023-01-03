@@ -122,6 +122,15 @@ last_filename = None
 
 # Return a hashtable of pandas dataframes from the file that was loaded.
 def load(filename=None, serial=None):
+    # if the filename was an int, use it as an index into the list of files,
+    # and reset filename to None.  If filename was a valid file name, then
+    # the cast to int will raise an exception and filename won't be reset.
+    fileindex = 0
+    try:
+        fileindex = int(filename)
+        filename = None
+    except:
+        pass
     if filename == None:
         from os import listdir
         from os.path import splitext, isfile, join
@@ -137,7 +146,7 @@ def load(filename=None, serial=None):
             return True
         filenames = [f for f in listdir(".") if isfile(f) and filename_is_log(f)]
         filenames.sort(reverse=True)
-        filename = filenames[0]
+        filename = filenames[fileindex]
 
     global last_filename
     last_filename = filename
