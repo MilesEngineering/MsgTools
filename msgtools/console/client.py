@@ -208,6 +208,8 @@ class Client:
                 while True:
                     try:
                         msg = self._rx_queue.get(block=False)
+                    except KeyboardInterrupt:
+                        raise
                     except:
                         SimExec.tick_event.wait()
                         SimExec.tick_event.clear()
@@ -219,6 +221,8 @@ class Client:
                 # worrying about simulation time.
                 try:
                     msg = self._rx_queue.get(block, timeout)
+                except KeyboardInterrupt:
+                    raise
                 except:
                     return None
 
