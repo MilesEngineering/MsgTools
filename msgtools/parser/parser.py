@@ -32,7 +32,7 @@ if __name__ == '__main__':
 from msgtools.parser.MsgUtils import *
 
 # Default to little endian, because ARM and x86 are little endian.
-# Can be overridden globally.
+# Can be overridden per-file.
 big_endian = False
 def isBigEndian(inputData):
     endian_string = inputData["Endian"]
@@ -192,18 +192,25 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     
     PatchStructs(inputData)
     
-    # set endianness 
+    # reset endianness to default of Little Endian each time we load a file,
+    # but then check if a new endian is specified for that file.
     global big_endian
+    per_file_endian = False
     if "Endian" in inputData:
-        big_endian = isBigEndian(inputData)
+        per_file_endian = isBigEndian(inputData)
     elif "includes" in inputData:
         for data in inputData["includes"]:
             if "Endian" in data:
-                big_endian = isBigEndian(data)
+                per_file_endian = isBigEndian(data)
     
     firstTime = True
     if "Messages" in inputData:
         for msg in Messages(inputData):
+            # for each message in the file, start out with endian set to the setting for the whole file
+            big_endian = per_file_endian
+            # if the endian is specified for the message, override with that just for this one message.
+            if "Endian" in msg:
+                big_endian = isBigEndian(msg)
             msg["ids"] = ids
             try:
                 msg["commonSubdir"] = CommonSubdir(inputFilename, outDir+"/fake")
