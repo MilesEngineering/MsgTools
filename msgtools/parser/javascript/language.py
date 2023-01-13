@@ -166,15 +166,17 @@ def initField(field):
             ret += "    this.Set" + field["Name"] + "(" + str(field["Default"]) + ", i);" 
             return ret;
         else:
-            if MsgParser.fieldCount(field) > 1:
-                ret = "for (i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
-                ret += "    this.Set" + field["Name"] + "(" + str(field["Default"]) + ", i);"
-            return ret;
+            return  "this.Set" + field["Name"] + "(" + str(field["Default"]) + ");"
     return ""
 
 def initBitfield(field, bits):
     if "Default" in bits:
-        return  "this.Set" + MsgParser.BitfieldName(field, bits) + "(" +str(bits["Default"]) + ");"
+        if MsgParser.fieldCount(field) > 1:
+            ret = "for (i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
+            ret += "    this.Set" + MsgParser.BitfieldName(field, bits) + "(" +str(bits["Default"]) + ", i);"
+            return ret;
+        else:
+            return  "this.Set" + MsgParser.BitfieldName(field, bits) + "(" +str(bits["Default"]) + ");"
     return ""
 
 def initCode(msg):
