@@ -119,6 +119,27 @@ double GetFieldS2_Member2(int idx) const
 #endif
 """)
         expected.append("""\
+/* Test Field G, array of bitfields , (0 to 65535)*/
+uint16_t GetFieldG(int idx) const
+{
+    return Get_uint16_t(&m_data[66+idx*2]);
+}""")
+        expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
+/*  m/s, (0.0 to 215.355)*/
+float GetBitsD(int idx) const
+{
+    return (float((GetFieldG(idx) >> 0) & 0xf) * 14.357f);
+}
+#endif
+""")
+        expected.append("""\
+/*  m/s2, (0 to 511)*/
+uint16_t GetBitsE(int idx) const
+{
+    return (GetFieldG(idx) >> 4) & 0x1ff;
+}""")
+        expected.append("""\
 /*  m/s, (0 to 4294967295)*/
 void SetFieldA(uint32_t value)
 {
@@ -218,6 +239,27 @@ void SetFieldS2_Member2(double value, int idx)
 #endif
 """)
         expected.append("""\
+/* Test Field G, array of bitfields , (0 to 65535)*/
+void SetFieldG(uint16_t value, int idx)
+{
+    Set_uint16_t(&m_data[66+idx*2], value);
+}""")
+        expected.append("""\
+#ifndef DISABLE_FLOAT_ACCESSORS
+/*  m/s, (0.0 to 215.355)*/
+void SetBitsD(float value, int idx)
+{
+    SetFieldG((GetFieldG(idx) & ~(0xf << 0)) | (((uint16_t)(value / 14.357f) & 0xf) << 0), idx);
+}
+#endif
+""")
+        expected.append("""\
+/*  m/s2, (0 to 511)*/
+void SetBitsE(uint16_t value, int idx)
+{
+    SetFieldG((GetFieldG(idx) & ~(0x1ff << 4)) | ((value & 0x1ff) << 4), idx);
+}""")
+        expected.append("""\
 /*  , (0 to 255)*/
 void CopyInFieldC(const uint8_t* in, int len)
 {
@@ -281,7 +323,33 @@ void CopyOutFieldS2_Member2(double* out, int len)
     }
 }
 """)
-
+        expected.append("""\
+/* Test Field G, array of bitfields , (0 to 65535)*/
+void CopyInFieldG(const uint16_t* in, int len)
+{
+    int count = ((len < 3) ? len : 3);
+    for(int i=0; i<count; i++)
+    {
+        SetFieldG(in[i], i);
+    }
+}
+/* Test Field G, array of bitfields , (0 to 65535)*/
+void CopyOutFieldG(uint16_t* out, int len)
+{
+    int count = ((len < 3) ? len : 3);
+    for(int i=0; i<count; i++)
+    {
+        out[i] = GetFieldG(i);
+    }
+}
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ 
+/* Test Field G, array of bitfields , (0 to 65535)*/
+uint16_t* FieldG()
+{
+    return (uint16_t*)&m_data[66];
+}
+#endif
+""")
 
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
@@ -314,6 +382,7 @@ void CopyOutFieldS2_Member2(double* out, int len)
         expected.append("SetBitsC(1);")
         expected.append("SetFieldE(3.14159);")
         expected.append("SetFieldF(3.14);")
+        expected.append("for (int i=0; i<3; i++)\n    SetBitsD(7.1, i);")
         expCount = len(expected)
         observed = language.initCode(MsgParser.Messages(self.msgDict)[0])
         obsCount = len(observed)

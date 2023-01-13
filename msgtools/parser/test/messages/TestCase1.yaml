@@ -68,3 +68,17 @@ Messages:
       - Name: FieldS2
         Type: SomeStructDefinition
         Count: 3
+      - Name: FieldG
+        Type: uint16
+        Units: ""
+        Count: 3
+        Description: Test Field G, array of bitfields
+        Bitfields:
+            - Name: BitsD
+              NumBits: 4
+              Default: 7.1
+              Scale: 14.357
+              Units: m/s
+            - Name: BitsE
+              NumBits: 9
+              Units: m/s2

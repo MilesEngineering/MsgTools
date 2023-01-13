@@ -227,7 +227,12 @@ def initField(field):
 
 def initBitfield(field, bits):
     if "Default" in bits:
-        return  namespace+"Set" + MsgParser.BitfieldName(field, bits) + "(" + joinParams(firstParam,str(bits["Default"])) + ");"
+        if MsgParser.fieldCount(field) > 1:
+            ret = "for (int i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
+            ret += "    "+namespace+"Set" + MsgParser.BitfieldName(field, bits) + "(" + joinParams(firstParam, str(fieldDefault(bits, True))) + ", i);" 
+            return ret;
+        else:
+            return  namespace+"Set" + MsgParser.BitfieldName(field, bits) + "(" + joinParams(firstParam, str(fieldDefault(bits, True))) + ");"
     return ""
 
 def initCode(msg):

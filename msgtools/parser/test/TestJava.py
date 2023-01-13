@@ -103,6 +103,24 @@ public double GetFieldS2_Member2(int idx)
     return (double)m_data.getDouble(34+idx*12);
 }""")
         expected.append("""\
+// Test Field G, array of bitfields , (0 to 65535)
+public int GetFieldG(int idx)
+{
+    return (int)FieldAccess.toUnsignedInt(m_data.getShort(66+idx*2));
+}""")
+        expected.append("""\
+//  m/s, (0.0 to 215.355)
+public float GetBitsD()
+{
+    return ((float)((GetFieldG() >> 0) & 0xf) * 14.357f);
+}""")
+        expected.append("""\
+//  m/s2, (0 to 511)
+public int GetBitsE()
+{
+    return (int)((GetFieldG() >> 4) & 0x1ff);
+}""")
+        expected.append("""\
 //  m/s, (0 to 4294967295)
 public void SetFieldA(long value)
 {
@@ -186,6 +204,24 @@ public void SetFieldS2_Member2(double value, int idx)
 {
     m_data.putDouble(34+idx*12, (double)value);
 }""")
+        expected.append("""\
+// Test Field G, array of bitfields , (0 to 65535)
+public void SetFieldG(int value, int idx)
+{
+    m_data.putShort(66+idx*2, (short)value);
+}""")
+        expected.append("""\
+//  m/s, (0.0 to 215.355)
+public void SetBitsD(float value)
+{
+    SetFieldG((int)((GetFieldG() & ~(0xf << 0)) | (((int)(value / 14.357f) & 0xf) << 0)));
+}""")
+        expected.append("""\
+//  m/s2, (0 to 511)
+public void SetBitsE(int value)
+{
+    SetFieldG((int)((GetFieldG() & ~(0x1ff << 4)) | ((value & 0x1ff) << 4)));
+}""")
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
         obsCount = len(observed)
@@ -230,6 +266,7 @@ public void SetFieldS2_Member2(double value, int idx)
         expected.append("SetBitsC((short)1);")
         expected.append("SetFieldE((float)3.14159);")
         expected.append("SetFieldF((int)3.14);")
+        expected.append("SetBitsD((int)7.1);")
         expCount = len(expected)
         observed = language.initCode(MsgParser.Messages(self.msgDict)[0])
         obsCount = len(observed)

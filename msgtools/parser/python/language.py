@@ -281,7 +281,14 @@ def initField(field, messageName):
 def initBitfield(field, bits, messageName):
     ret = []
     if "Default" in bits:
-        ret.append("self.Set" + MsgParser.BitfieldName(field, bits) + "(" + str(bits["Default"]) + ")")
+        count = pythonFieldCount(field)
+        prefix = ""
+        index = ""
+        if count > 1:
+            ret.append("for i in range(0,%d):" % (count))
+            prefix = "    "
+            index = ", i"
+        ret.append(prefix+"self.Set" + MsgParser.BitfieldName(field, bits) + "(" + str(bits["Default"]) + index +")")
     return ret
 
 def initCode(msg):

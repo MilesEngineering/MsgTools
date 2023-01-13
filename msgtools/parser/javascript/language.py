@@ -166,7 +166,10 @@ def initField(field):
             ret += "    this.Set" + field["Name"] + "(" + str(field["Default"]) + ", i);" 
             return ret;
         else:
-            return  "this.Set" + field["Name"] + "(" + str(field["Default"]) + ");"
+            if MsgParser.fieldCount(field) > 1:
+                ret = "for (i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
+                ret += "    this.Set" + field["Name"] + "(" + str(field["Default"]) + ", i);"
+            return ret;
     return ""
 
 def initBitfield(field, bits):

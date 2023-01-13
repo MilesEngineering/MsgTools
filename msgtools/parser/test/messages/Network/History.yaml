@@ -1,3 +1,10 @@
+Structs:
+  ResultType:
+    Fields:
+      - Name: Timestamp
+        Type: float64
+      - Name: Value
+        Type: float64
 Messages:
   - Name: GetData
     ID: 0xFFFFFF0B
@@ -43,6 +50,5 @@ Messages:
         Type: uint16
         Description: Sequence number of our data message
       - Name: Data
-        Type: float64
-        Description: Alternating timestamps and values
-        Count: 64
+        Type: ResultType
+        Count: 32

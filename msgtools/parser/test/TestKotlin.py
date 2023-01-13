@@ -93,6 +93,23 @@ fun getFieldS2_Member2(index: Int): Double {
     return data.getDouble(34 + index*12, true)
 }""")
         expected.append("""\
+// Test Field G, array of bitfields , (0 to 65535)
+fun getFieldG(index: Int): UShort {
+    return data.getUShort(66 + index*2, true)
+}""")
+        expected.append("""\
+//  m/s, (0.0 to 215.355)
+fun getBitsD(): Float {
+    val valI = ((getFieldG().toInt() ushr 0) and 0xf).toFloat()
+    val valD = (valI.toInt().toDouble() * 14.357f).toFloat()
+    return valD
+}""")
+        expected.append("""\
+//  m/s2, (0 to 511)
+fun getBitsE(): UShort {
+    return ((getFieldG().toInt() ushr 4) and 0x1ff).toUShort()
+}""")
+        expected.append("""\
 //  m/s, (0 to 4294967295)
 fun setFieldA(value: UInt) {
     data.putUInt(0, value, true)
@@ -174,6 +191,27 @@ fun setFieldS2_Member1(value: Int, index: Int) {
 fun setFieldS2_Member2(value: Double, index: Int) {
     data.putDouble(34 + index*12, value, true)
 }""")
+        expected.append("""\
+// Test Field G, array of bitfields , (0 to 65535)
+fun setFieldG(value: UShort, index: Int) {
+    data.putUShort(66 + index*2, value, true)
+}""")
+        expected.append("""\
+//  m/s, (0.0 to 215.355)
+fun setBitsD(value: Float) {
+    var valI = getFieldG().toInt() // read
+    valI = valI and (0xf shl 0).inv() // clear our bits
+    valI = valI or (((value / 14.357f).toInt() and 0xf) shl 0) // set our bits
+    setFieldG(valI.toUShort()) // write
+}""")
+        expected.append("""\
+//  m/s2, (0 to 511)
+fun setBitsE(value: UShort) {
+    var valI = getFieldG().toInt() // read
+    valI = valI and (0x1ff shl 4).inv() // clear our bits
+    valI = valI or ((value.toInt() and 0x1ff) shl 4) // set our bits
+    setFieldG(valI.toUShort()) // write
+}""")
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
         obsCount = len(observed)
@@ -213,6 +251,7 @@ fun setFieldS2_Member2(value: Double, index: Int) {
         expected.append("setBitsC(1u)")
         expected.append("setFieldE(3.14159f)")
         expected.append("setFieldF(3.14f)")
+        expected.append("setBitsD(7.1f)")
         expCount = len(expected)
         observed = language.initCode(MsgParser.Messages(self.msgDict)[0])
         obsCount = len(observed)

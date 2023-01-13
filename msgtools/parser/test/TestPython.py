@@ -8,7 +8,7 @@ from msgtools.parser.MsgUtils import PatchStructs
 sys.path.append("../python")
 import language
 
-class TestCpp(unittest.TestCase):
+class TestPython(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
         with open("messages/TestCase1.yaml", 'r') as inputFile:
@@ -207,6 +207,47 @@ def GetFieldS2_Member2(self, idx):
     return value
 """)
         expected.append("""\
+@msg.units('')
+@msg.default('')
+@msg.minVal('0')
+@msg.maxVal('65535')
+@msg.offset('66')
+@msg.size('2')
+@msg.count(3)
+def GetFieldG(self, idx):
+    \"\"\"Test Field G, array of bitfields\"\"\"
+    value = struct.unpack_from('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 66+idx*2)[0]
+    return value
+""")
+        expected.append("""\
+@msg.units('m/s')
+@msg.default('7.1')
+@msg.minVal('0.0')
+@msg.maxVal('215.355')
+@msg.offset('66')
+@msg.size('0')
+@msg.count(3)
+def GetBitsD(self, idx, convertFloat=True):
+    \"\"\"\"\"\"
+    value = (self.GetFieldG(idx) >> 0) & 0xf
+    if convertFloat:
+        value = (float(value) * 14.357)
+    return value
+""")
+        expected.append("""\
+@msg.units('m/s2')
+@msg.default('')
+@msg.minVal('0')
+@msg.maxVal('511')
+@msg.offset('66')
+@msg.size('0')
+@msg.count(3)
+def GetBitsE(self, idx):
+    \"\"\"\"\"\"
+    value = (self.GetFieldG(idx) >> 4) & 0x1ff
+    return value
+""")
+        expected.append("""\
 @msg.units('m/s')
 @msg.default('1')
 @msg.minVal('0')
@@ -397,6 +438,47 @@ def SetFieldS2_Member2(self, value, idx):
     \"\"\"\"\"\"
     struct.pack_into('<d', self.rawBuffer(), TestCase1.MSG_OFFSET + 34+idx*12, value)
 """)
+        expected.append("""\
+@msg.units('')
+@msg.default('')
+@msg.minVal('0')
+@msg.maxVal('65535')
+@msg.offset('66')
+@msg.size('2')
+@msg.count(3)
+def SetFieldG(self, value, idx):
+    \"\"\"Test Field G, array of bitfields\"\"\"
+    value = min(max(value, 0), 65535)
+    struct.pack_into('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 66+idx*2, value)
+""")
+        expected.append("""\
+@msg.units('m/s')
+@msg.default('7.1')
+@msg.minVal('0.0')
+@msg.maxVal('215.355')
+@msg.offset('66')
+@msg.size('0')
+@msg.count(3)
+def SetBitsD(self, value, idx, convertFloat=True):
+    \"\"\"\"\"\"
+    if convertFloat:
+        value = int(value / 14.357)
+    value = min(max(value, 0), 15)
+    self.SetFieldG((self.GetFieldG(idx) & ~(0xf << 0)) | ((value & 0xf) << 0), idx)
+""")
+        expected.append("""\
+@msg.units('m/s2')
+@msg.default('')
+@msg.minVal('0')
+@msg.maxVal('511')
+@msg.offset('66')
+@msg.size('0')
+@msg.count(3)
+def SetBitsE(self, value, idx):
+    \"\"\"\"\"\"
+    value = min(max(value, 0), 511)
+    self.SetFieldG((self.GetFieldG(idx) & ~(0x1ff << 4)) | ((value & 0x1ff) << 4), idx)
+""")
         expCount = len(expected)
         observed = language.accessors(MsgParser.Messages(self.msgDict)[0])
         obsCount = len(observed)
@@ -429,6 +511,8 @@ def SetFieldS2_Member2(self, value, idx):
         expected.append("self.SetBitsC(1)")
         expected.append("self.SetFieldE(3.14159)")
         expected.append("self.SetFieldF(3.14)")
+        expected.append("for i in range(0,3):")
+        expected.append("    self.SetBitsD(7.1, i)")
 
         expCount = len(expected)
 
