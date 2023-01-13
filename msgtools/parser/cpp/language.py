@@ -10,12 +10,6 @@ const = " const"
 enumNamespace = 0
 functionPrefix = ""
 
-def params(p1, p2):
-    splitter = ""
-    if p1 != "" and p2 != "":
-        splitter = ", "
-    return p1 + splitter + p2
-
 def fieldType(field):
     typeStr = field["Type"]
     if "int" in typeStr:
@@ -53,7 +47,7 @@ def arrayAccessor(field):
         %sSet%s(%s);
     }
 }
-''' % (fnHdr(field), functionPrefix, namespace+field["Name"], params(firstParamDecl, "const "+fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), namespace, field["Name"], params(firstParam, "in[i], i"))
+''' % (fnHdr(field), functionPrefix, namespace+field["Name"], joinParams(firstParamDecl, "const "+fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), namespace, field["Name"], joinParams(firstParam, "in[i], i"))
     ret += '''\
 %s
 %svoid CopyOut%s(%s* out, int len)
@@ -64,7 +58,7 @@ def arrayAccessor(field):
         out[i] = %sGet%s(%s);
     }
 }
-''' % (fnHdr(field), functionPrefix, namespace+field["Name"], params(firstParamDecl, fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), namespace, field["Name"], params(firstParam, "i"))
+''' % (fnHdr(field), functionPrefix, namespace+field["Name"], joinParams(firstParamDecl, fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), namespace, field["Name"], joinParams(firstParam, "i"))
 
     # Only return a pointer to the array if we have natural alignment,
     # and are contiguous
@@ -113,7 +107,7 @@ def getFn(field):
 %s %s(%s)%s
 {
     return %s;
-}''' % (fnHdr(field), functionPrefix+retType, namespace+"Get"+field["Name"], params(firstParamDecl, param), const, access)
+}''' % (fnHdr(field), functionPrefix+retType, namespace+"Get"+field["Name"], joinParams(firstParamDecl, param), const, access)
     if "float" in retType or "double" in retType:
         ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
@@ -136,13 +130,16 @@ def setFn(field):
 %s %s(%s)
 {
     Set_%s(&m_data[%s], %s);
-}''' % (fnHdr(field), functionPrefix+"void", namespace+"Set"+field["Name"], params(firstParamDecl, param), fieldType(field), loc, valueString)
+}''' % (fnHdr(field), functionPrefix+"void", namespace+"Set"+field["Name"], joinParams(firstParamDecl, param), fieldType(field), loc, valueString)
     if "float" in paramType or "double" in paramType:
         ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
 
 def getBitsFn(field, bits, bitOffset, numBits):
-    access = "(%sGet%s(%s) >> %s) & %s" % (namespace, field["Name"], firstParam, str(bitOffset), MsgParser.Mask(numBits))
+    count = MsgParser.fieldCount(field)
+    idx = "" if count == 1 else "idx"
+    idxDecl = "" if count == 1 else "int idx"
+    access = "(%sGet%s(%s) >> %s) & %s" % (namespace, field["Name"], joinParams(firstParam, idx), str(bitOffset), MsgParser.Mask(numBits))
     access = getMath(access, bits, castForScaledInt(bits), 'f')
     retType = fieldType(field)
     if fieldHasConversion(bits):
@@ -155,12 +152,15 @@ def getBitsFn(field, bits, bitOffset, numBits):
 %s %s(%s)%s
 {
     return %s;
-}''' % (fnHdr(bits), functionPrefix+retType, namespace+"Get"+MsgParser.BitfieldName(field, bits), firstParamDecl, const, access)
+}''' % (fnHdr(bits), functionPrefix+retType, namespace+"Get"+MsgParser.BitfieldName(field, bits), joinParams(firstParamDecl, idxDecl), const, access)
     if "float" in retType or "double" in retType:
         ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
 
 def setBitsFn(field, bits, bitOffset, numBits):
+    count = MsgParser.fieldCount(field)
+    idx = "" if count == 1 else "idx"
+    idxDecl = "" if count == 1 else "int idx"
     paramType = fieldType(field)
     valueString = setMath("value", bits, "("+fieldType(field)+")", 'f')
     if fieldHasConversion(bits):
@@ -168,14 +168,18 @@ def setBitsFn(field, bits, bitOffset, numBits):
     elif "Enum" in bits and namespace == "":
         valueString = "("+paramType+")" + "(" + valueString + ")"
         paramType = namespace+bits["Enum"]
-    oldVal = '''%s(%s) & ~(%s << %s)''' % (namespace+"Get"+field["Name"], firstParam, MsgParser.Mask(numBits), str(bitOffset));
+    mask_bits = MsgParser.Mask(numBits)
+    if numBits + bitOffset > 32:
+        mask_bits += "ull"
+    clear_bits = "%s << %s" % (mask_bits, str(bitOffset))
+    oldVal = '''%s(%s) & ~(%s)''' % (namespace+"Get"+field["Name"], joinParams(firstParam, idx), clear_bits);
     newVal = '''(%s) | ((%s & %s) << %s)''' % (oldVal, valueString, MsgParser.Mask(numBits), str(bitOffset));
     ret = '''\
 %s
-%s %s(%s value)
+%s %s(%s)
 {
     %s(%s);
-}''' % (fnHdr(bits), functionPrefix+"void", namespace+"Set"+MsgParser.BitfieldName(field, bits), params(firstParamDecl, paramType), namespace+"Set"+field["Name"], params(firstParam, newVal))
+}''' % (fnHdr(bits), functionPrefix+"void", namespace+"Set"+MsgParser.BitfieldName(field, bits), joinParams(firstParamDecl, paramType+" value", idxDecl), namespace+"Set"+field["Name"], joinParams(firstParam, newVal, idx))
     if "float" in paramType or "double" in paramType:
         ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
@@ -215,15 +219,15 @@ def initField(field):
     if "Default" in field:
         if MsgParser.fieldCount(field) > 1:
             ret = "for (int i=0; i<" + str(MsgParser.fieldCount(field)) + "; i++)\n"
-            ret += "    "+namespace+"Set" + field["Name"] + "(" + params(firstParam, str(fieldDefault(field, True))) + ", i);" 
+            ret += "    "+namespace+"Set" + field["Name"] + "(" + joinParams(firstParam, str(fieldDefault(field, True))) + ", i);" 
             return ret;
         else:
-            return  namespace+"Set" + field["Name"] + "(" + params(firstParam, str(fieldDefault(field, True))) + ");"
+            return  namespace+"Set" + field["Name"] + "(" + joinParams(firstParam, str(fieldDefault(field, True))) + ");"
     return ""
 
 def initBitfield(field, bits):
     if "Default" in bits:
-        return  namespace+"Set" + MsgParser.BitfieldName(field, bits) + "(" + params(firstParam,str(bits["Default"])) + ");"
+        return  namespace+"Set" + MsgParser.BitfieldName(field, bits) + "(" + joinParams(firstParam,str(bits["Default"])) + ");"
     return ""
 
 def initCode(msg):

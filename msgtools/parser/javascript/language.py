@@ -109,11 +109,10 @@ def setFn(field):
     return ret
 
 def getBitsFn(field, bits, bitOffset, numBits):
-    access = "(this.Get%s() / 2**%s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+    idx = "" if MsgParser.fieldCount(field) == 1 else "idx"
+    access = "(this.Get%s(%s) / 2**%s) & %s" % (field["Name"], idx, str(bitOffset), MsgParser.Mask(numBits))
     access = getMath(access, bits, "")
-    param = ""
-    if "Enum" in bits:
-        param += "enumAsInt=false"
+    enumParam = "enumAsInt=false" if "Enum" in bits else ""
     cleanup = ""
     if "Enum" in bits:
         cleanup = reverseEnumLookup(bits)
@@ -123,7 +122,7 @@ def getBitsFn(field, bits, bitOffset, numBits):
 {
     var value = %s;
     %sreturn value;
-};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), param, access, cleanup)
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), joinParams(idx, enumParam), access, cleanup)
     return ret
 
 def setBitsFn(field, bits, bitOffset, numBits):
@@ -132,12 +131,14 @@ def setBitsFn(field, bits, bitOffset, numBits):
     if "Enum" in bits:
         # find index that corresponds to string input param
         lookup = enumLookup(bits)
+    idx = "" if MsgParser.fieldCount(field) == 1 else "idx"
+    set_value = "(this.Get%s() & ~(%s * 2**%s)) | ((%s & %s) * 2**%s)" % (field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
     ret = '''\
 %s
-<MSGNAME>.prototype.Set%s = function(value)
+<MSGNAME>.prototype.Set%s = function(%s)
 {
-    %sthis.Set%s((this.Get%s() & ~(%s * 2**%s)) | ((%s & %s) * 2**%s));
-};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), lookup, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), valueString, MsgParser.Mask(numBits), str(bitOffset))
+    %sthis.Set%s(%s);
+};''' % (fnHdr(bits), MsgParser.BitfieldName(field, bits), joinParams("value", idx), lookup, field["Name"], joinParams(set_value, idx))
     return ret
 
 def accessors(msg):

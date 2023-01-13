@@ -601,6 +601,15 @@ def fieldOffset(field, floatTag):
             ret = str(ret) + floatTag
     return ret
 
+def joinParams(*param_list):
+    ret = ""
+    for p in param_list:
+        if ret == "":
+            ret = p
+        elif p != "":
+            ret += ", " + p
+    return ret
+
 def conversionParams(conversion, conversionParamNames):
     c = ""
     for param in conversion:

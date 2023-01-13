@@ -558,6 +558,9 @@ class FieldInfo(object):
         # give our bitfields a reference to us
         for bfi in self.bitfieldInfo:
             bfi.parent = self
+            # Set the count of the bitfield to our own count, so that bitfields
+            # in arrays work properly.
+            bfi.count = count
 
     def exists(self, msg, index=0):
         end_of_field = self.offset + self.size * (index+1)

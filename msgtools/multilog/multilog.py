@@ -224,7 +224,7 @@ class Multilog(msgtools.lib.gui.Gui):
                     
                     msg = msgClass()
                     # set fields to defaults
-                    msgWidget = msgtools.lib.txtreewidget.EditableMessageItem(txMsgs, msg, None)
+                    msgWidget = msgtools.lib.txtreewidget.MessageItem(editable=True, tree_widget=txMsgs, msg=msg, msg_key=None)
                     msgWidget.qobjectProxy.send_message.connect(self.on_tx_message_send)
             elif argname == '--row':
                 l = QtWidgets.QHBoxLayout()

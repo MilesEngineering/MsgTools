@@ -8,21 +8,44 @@ from PyQt5.QtWidgets import *
 from msgtools.lib.messaging import Messaging
 
 class FieldItem(QTreeWidgetItem):
-    def __init__(self, msg, msg_key, fieldInfo, column_strings = []):
-        column_strings = column_strings if len(column_strings) > 0 else [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
-        
+    def __init__(self, editable, tree_widget, msg, msg_key, fieldInfo, column_strings, index):
+        if len(column_strings) == 0:
+            column_strings = [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
+            if index != None:
+                column_strings[1] = "    [" + str(index) + "]"
         QTreeWidgetItem.__init__(self, None, column_strings)
         
+        self.editable = editable
         self.fieldInfo = fieldInfo
-        self.fieldName = fieldInfo.name
+        if index == None:
+            self.fieldName = fieldInfo.name
+        else:
+            self.fieldName = "%s[%d]" % (fieldInfo.name, index)
         self.msg = msg
         self.msg_key = msg_key
+        self.index = index
+
+        if self.editable:
+            self.setFlags(self.flags() | Qt.ItemIsEditable)
+            
+            if fieldInfo.type == "enumeration":
+                self.overrideWidget = QComboBox()
+                self.overrideWidget.addItems(fieldInfo.enum[0].keys())
+                self.overrideWidget.activated.connect(self.overrideWidgetValueChanged)
+                # there's some odd behavior in the UI when the box is editable :(
+                # if you want it editable, uncomment this line, and play around and see if you like it
+                #self.overrideWidget.setEditable(1)
+                # store a hash table of value->ComboBoxIndex
+                # this is NOT the same as value->enumIndex!
+                self.comboBoxIndexOfEnum = {}
+                for i in range(0, self.overrideWidget.count()):
+                    self.comboBoxIndexOfEnum[self.overrideWidget.itemText(i)] = i
         
     def data(self, column, role):
         if column != 2:
             return super(FieldItem, self).data(column, role)
 
-        alert = Messaging.getAlert(self.msg, self.fieldInfo)
+        alert = Messaging.getAlert(self.msg, self.fieldInfo, self.index)
         if role == Qt.FontRole:
             font = QFont()
             if alert == 1:
@@ -35,11 +58,11 @@ class FieldItem(QTreeWidgetItem):
             return brush
 
         if role == Qt.DisplayRole:
-            value  = str(Messaging.get(self.msg, self.fieldInfo))
+            value  = str(Messaging.get(self.msg, self.fieldInfo, self.index))
             
             try:
                 self.overrideWidget
-                valueAsString = str(Messaging.get(self.msg, self.fieldInfo))
+                valueAsString = str(Messaging.get(self.msg, self.fieldInfo, self.index))
                 
                 if valueAsString in self.comboBoxIndexOfEnum:
                     #self.overrideWidget.setCurrentText(valueAsString)
@@ -54,25 +77,6 @@ class FieldItem(QTreeWidgetItem):
             
         return super(FieldItem, self).data(column, role)
 
-class EditableFieldItem(FieldItem):
-    def __init__(self, msg, msg_key, fieldInfo, column_strings = []):
-        super(EditableFieldItem, self).__init__(msg, msg_key, fieldInfo, column_strings)
-
-        self.setFlags(self.flags() | Qt.ItemIsEditable)
-        
-        if fieldInfo.type == "enumeration":
-            self.overrideWidget = QComboBox()
-            self.overrideWidget.addItems(fieldInfo.enum[0].keys())
-            self.overrideWidget.activated.connect(self.overrideWidgetValueChanged)
-            # there's some odd behavior in the UI when the box is editable :(
-            # if you want it editable, uncomment this line, and play around and see if you like it
-            #self.overrideWidget.setEditable(1)
-            # store a hash table of value->ComboBoxIndex
-            # this is NOT the same as value->enumIndex!
-            self.comboBoxIndexOfEnum = {}
-            for i in range(0, self.overrideWidget.count()):
-                self.comboBoxIndexOfEnum[self.overrideWidget.itemText(i)] = i
-
     def overrideWidgetValueChanged(self, value):
         valueAsString = self.overrideWidget.itemText(value)
         # set the value in the message/header buffer
@@ -82,6 +86,9 @@ class EditableFieldItem(FieldItem):
         # \todo: need to if they type something, though.
         
     def setData(self, column, role, value):
+        if not self.editable:
+            return
+
         if not column == 2:
             return
 
@@ -97,115 +104,69 @@ class EditableFieldItem(FieldItem):
             return
 
         # set the value in the message/header buffer
-        Messaging.set(self.msg, self.fieldInfo, value)
+        Messaging.set(self.msg, self.fieldInfo, value, self.index)
 
         # get the value back from the message/header buffer and pass on to super-class' setData
-        super(FieldItem, self).setData(column, role, str(Messaging.get(self.msg, self.fieldInfo)))
+        super(FieldItem, self).setData(column, role, str(Messaging.get(self.msg, self.fieldInfo, self.index)))
 
+# This is used for the bits within the containing bit
 class FieldBits(FieldItem):
-    def __init__(self, msg, msg_key, bitfieldInfo):
+    def __init__(self, editable, tree_widget, msg, msg_key, bitfieldInfo, index):
        column_strings = [None, "    " + bitfieldInfo.name, "", bitfieldInfo.units, bitfieldInfo.description]
-       super(FieldBits, self).__init__(msg, msg_key, bitfieldInfo, column_strings)
+       super(FieldBits, self).__init__(editable, tree_widget, msg, msg_key, bitfieldInfo, column_strings=column_strings, index=index)
 
 class FieldBitfieldItem(FieldItem):
-    def __init__(self, tree_widget, msg, msg_key, fieldInfo):
-        super(FieldBitfieldItem, self).__init__(msg, msg_key, fieldInfo)
+    def __init__(self, editable, tree_widget, msg, msg_key, fieldInfo, index):
+        super(FieldBitfieldItem, self).__init__(editable, tree_widget, msg, msg_key, fieldInfo, column_strings=[], index=index)
 
         for bitfieldInfo in fieldInfo.bitfieldInfo:
-            bitfieldBitsItem = FieldBits(self.msg, msg_key, bitfieldInfo)
+            bitfieldBitsItem = FieldBits(self.editable, tree_widget, self.msg, msg_key, bitfieldInfo, index)
             self.addChild(bitfieldBitsItem)
+            if self.editable:
+                try:
+                    bitfieldBitsItem.overrideWidget
+                    tree_widget.setItemWidget(bitfieldBitsItem, 2, bitfieldBitsItem.overrideWidget)
+                except AttributeError:
+                    pass
 
-class EditableFieldBits(EditableFieldItem):
-    def __init__(self, msg, msg_key, bitfieldInfo):
-       column_strings = [None, "    " + bitfieldInfo.name, "", bitfieldInfo.units, bitfieldInfo.description]
-       super(EditableFieldBits, self).__init__(msg, msg_key, bitfieldInfo, column_strings)
-
-class EditableFieldBitfieldItem(EditableFieldItem):
-    def __init__(self, tree_widget, msg, msg_key, fieldInfo):
-        super(EditableFieldBitfieldItem, self).__init__(msg, msg_key, fieldInfo)
-
-        for bitfieldInfo in fieldInfo.bitfieldInfo:
-            bitfieldBitsItem = EditableFieldBits(self.msg, msg_key, bitfieldInfo)
-            self.addChild(bitfieldBitsItem)
-            try:
-                bitfieldBitsItem.overrideWidget
-                tree_widget.setItemWidget(bitfieldBitsItem, 2, bitfieldBitsItem.overrideWidget)
-            except AttributeError:
-                pass
-
+# This is for holding a list of elements of an array, each of which is a
+# regular FieldItem or a FieldBitfieldItem.
 class FieldArrayItem(QTreeWidgetItem):
-    def __init__(self, msg, msg_key, fieldInfo, field_array_constructor, index = None):
+    def __init__(self, editable, tree_widget, msg, msg_key, fieldInfo):
         column_strings = [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
         
-        if index != None:
-            column_strings[1] = "    [" + str(index) + "]"
-        
         QTreeWidgetItem.__init__(self, None, column_strings)
-        
+        self.editable = editable
+
         self.fieldInfo = fieldInfo
-        if index == None:
-            self.fieldName = fieldInfo.name
-        else:
-            self.fieldName = "%s[%d]" % (fieldInfo.name, index)
+        self.fieldName = fieldInfo.name
         self.msg = msg
         self.msg_key = msg_key
-        self.index = index
 
-        if index == None:
-            for i in range(0, self.fieldInfo.count):
-                messageFieldTreeItem = field_array_constructor(self.msg, self.msg_key, self.fieldInfo, field_array_constructor, i)
+        for i in range(0, self.fieldInfo.count):
+            if fieldInfo.bitfieldInfo == None:
+                messageFieldTreeItem = FieldItem(self.editable, tree_widget, self.msg, self.msg_key, self.fieldInfo, [], i)
                 self.addChild(messageFieldTreeItem)
+            else:
+                # This adds a bitfield container item, which in turn has bits within it.
+                messageFieldTreeItem = FieldBitfieldItem(self.editable, tree_widget, self.msg, self.msg_key, fieldInfo, i)
+                self.addChild(messageFieldTreeItem)
+
+        if self.editable:
+            self.setFlags(self.flags() | Qt.ItemIsEditable)
 
     def data(self, column, role):
         if column != 2:
             return super(FieldArrayItem, self).data(column, role)
 
-        if self.index == None:
-            if role == Qt.FontRole:
-                return QFont()
-            return ""
-
-        alert = Messaging.getAlert(self.msg, self.fieldInfo, self.index)
+        # There's no data to display for the array itself, all data is in children.
         if role == Qt.FontRole:
-            font = QFont()
-            if alert == 1:
-                font.setBold(1)
-            return font
-        if role == Qt.ForegroundRole:
-            brush = QBrush()
-            if alert == 1:
-                brush.setColor(Qt.red)
-            return brush
-
-        if role == Qt.DisplayRole:
-            return str(Messaging.get(self.msg, self.fieldInfo, self.index))
-
-        return super(FieldArrayItem, self).data(column, role)
-
-class EditableFieldArrayItem(FieldArrayItem):
-    def __init__(self, msg, msg_key, fieldInfo, field_array_constructor, index = None):
-        super(EditableFieldArrayItem, self).__init__(msg, msg_key, fieldInfo, field_array_constructor, index)
-
-        self.setFlags(self.flags() | Qt.ItemIsEditable)
+            return QFont()
+        return ""
 
     def setData(self, column, role, value):
-        if self.index == None:
-            return
-
-        if column != 2:
-            return
-
-        if self.fieldInfo.name == "ID":
-            return
-
-        if self.fieldInfo.type == "int" and value.startswith("0x"):
-            value = str(int(value, 0))
-
-        # set the value in the message/header buffer
-        Messaging.set(self.msg, self.fieldInfo, value, int(self.index))
-
-        # get the value back from the message/header buffer and pass on to super-class' setData
-        super(EditableFieldArrayItem, self).setData(column, role, str(Messaging.get(self.msg, self.fieldInfo, int(self.index))))
+        # There's no data to set for the array, all data is in children.
+        return
 
 class QObjectProxy(QObject):
     send_message = pyqtSignal(object)
@@ -213,11 +174,10 @@ class QObjectProxy(QObject):
         QObject.__init__(self)
 
 class MessageItem(QTreeWidgetItem):
-    def __init__(self, tree_widget, msg, msg_key,
-                 child_constructor = FieldItem,
-                 child_array_constructor = FieldArrayItem,
-                 child_bitfield_constructor = FieldBitfieldItem):
+    def __init__(self, editable, tree_widget, msg, msg_key):
         QTreeWidgetItem.__init__(self, None, [msg.MsgName()])
+
+        self.editable = editable
         
         self.qobjectProxy = QObjectProxy()
 
@@ -226,17 +186,42 @@ class MessageItem(QTreeWidgetItem):
         self.msg = msg
         self.msg_key = msg_key
 
-        self.setup_fields(tree_widget, child_constructor, child_array_constructor, child_bitfield_constructor)
+        self.setup_fields(tree_widget)
 
         tree_widget.addTopLevelItem(self)
         tree_widget.resizeColumnToContents(0)
         self.setExpanded(True)
 
-        # create a timer to refresh at a fixed rate, so we don't refresh
-        # needlessly fast for high rate data, and use too much CPU
+        # Create a timer to refresh at a fixed rate, so we don't refresh
+        # needlessly fast for high rate data, and use too much CPU.
+        # The timer isn't activated unless application code calls
+        # set_msg_buffer().
         self.repaint_timer = QTimer()
         self.repaint_timer.setInterval(250)
         self.repaint_timer.timeout.connect(self.repaintAll)
+        
+        if self.editable:
+            # text entry for rate, and a 'send' button
+            self.sendTimer = QTimer()
+            self.sendTimer.timeout.connect(lambda: self.qobjectProxy.send_message.emit(self.msg))
+            containerWidget = QWidget(tree_widget)
+            containerLayout = QHBoxLayout()
+            containerWidget.setLayout(containerLayout)
+            self.sendButton = QPushButton("Send", tree_widget)
+            self.sendButton.autoFillBackground()
+            self.sendButton.clicked.connect(self.sendClicked)
+            self.rateEdit = QLineEdit("", tree_widget)
+            self.rateEdit.setValidator(QDoubleValidator(0, 100, 2, containerWidget))
+            self.rateEdit.setMaximumWidth(50)
+            self.rateEdit.setFixedWidth(50)
+            self.rateEdit.setPlaceholderText("Rate")
+            containerLayout.addWidget(self.rateEdit)
+            containerLayout.addWidget(QLabel("Hz"))
+            containerLayout.addWidget(self.sendButton)
+            tree_widget.setItemWidget(self, 4, containerWidget)
+            
+            for i in range(0, tree_widget.columnCount()):
+                tree_widget.resizeColumnToContents(i);
 
     def repaintAll(self):
         # Refresh the paint on the entire tree
@@ -252,15 +237,15 @@ class MessageItem(QTreeWidgetItem):
             self.repaint_timer.start()
         #self.repaintAll()
 
-    def setup_fields(self, tree_widget, child_constructor, child_array_constructor, child_bitfield_constructor):
+    def setup_fields(self, tree_widget):
         headerTreeItemParent = QTreeWidgetItem(None, [ "Header" ])
         self.addChild(headerTreeItemParent)
 
         for headerFieldInfo in Messaging.hdr.fields:
             if headerFieldInfo.bitfieldInfo != None:
-                headerFieldTreeItem = child_bitfield_constructor(tree_widget, self.msg.hdr, None, headerFieldInfo)
+                headerFieldTreeItem = FieldBitfieldItem(self.editable, tree_widget, self.msg.hdr, None, headerFieldInfo, index=None)
             else:
-                headerFieldTreeItem = child_constructor(self.msg.hdr, None, headerFieldInfo)
+                headerFieldTreeItem = FieldItem(self.editable, tree_widget, self.msg.hdr, None, headerFieldInfo, column_strings=[], index=None)
             headerTreeItemParent.addChild(headerFieldTreeItem)
 
         for fieldInfo in type(self.msg).fields:
@@ -268,11 +253,11 @@ class MessageItem(QTreeWidgetItem):
 
             if fieldInfo.count == 1:
                 if fieldInfo.bitfieldInfo != None:
-                    messageFieldTreeItem = child_bitfield_constructor(tree_widget, self.msg, self.msg_key, fieldInfo)
+                    messageFieldTreeItem = FieldBitfieldItem(self.editable, tree_widget, self.msg, self.msg_key, fieldInfo, index=None)
                 else:
-                    messageFieldTreeItem = child_constructor(self.msg, self.msg_key, fieldInfo)
+                    messageFieldTreeItem = FieldItem(self.editable, tree_widget, self.msg, self.msg_key, fieldInfo, column_strings=[], index=None)
             else:
-                messageFieldTreeItem = child_array_constructor(self.msg, self.msg_key, fieldInfo, child_array_constructor)
+                messageFieldTreeItem = FieldArrayItem(self.editable, tree_widget, self.msg, self.msg_key, fieldInfo)
             
             self.addChild(messageFieldTreeItem)
             try:
@@ -280,33 +265,6 @@ class MessageItem(QTreeWidgetItem):
                 tree_widget.setItemWidget(messageFieldTreeItem, 2, messageFieldTreeItem.overrideWidget)
             except AttributeError:
                 pass
-
-class EditableMessageItem(MessageItem):
-
-    def __init__(self, tree_widget, msg, msg_key):
-        super(EditableMessageItem, self).__init__(tree_widget, msg, msg_key, EditableFieldItem, EditableFieldArrayItem, EditableFieldBitfieldItem)
-
-        # text entry for rate, and a 'send' button
-        self.sendTimer = QTimer()
-        self.sendTimer.timeout.connect(lambda: self.qobjectProxy.send_message.emit(self.msg))
-        containerWidget = QWidget(tree_widget)
-        containerLayout = QHBoxLayout()
-        containerWidget.setLayout(containerLayout)
-        self.sendButton = QPushButton("Send", tree_widget)
-        self.sendButton.autoFillBackground()
-        self.sendButton.clicked.connect(self.sendClicked)
-        self.rateEdit = QLineEdit("", tree_widget)
-        self.rateEdit.setValidator(QDoubleValidator(0, 100, 2, containerWidget))
-        self.rateEdit.setMaximumWidth(50)
-        self.rateEdit.setFixedWidth(50)
-        self.rateEdit.setPlaceholderText("Rate")
-        containerLayout.addWidget(self.rateEdit)
-        containerLayout.addWidget(QLabel("Hz"))
-        containerLayout.addWidget(self.sendButton)
-        tree_widget.setItemWidget(self, 4, containerWidget)
-        
-        for i in range(0, tree_widget.columnCount()):
-            tree_widget.resizeColumnToContents(i);
 
     def sendClicked(self):
         if self.sendButton.text() == "Send":

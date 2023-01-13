@@ -234,7 +234,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             message_class = Messaging.MsgClassFromName[messageName]
             messageObj = message_class() # invoke constructor
 
-            messageTreeWidgetItem = txtreewidget.EditableMessageItem(self.txMsgs, messageObj, None)
+            messageTreeWidgetItem = txtreewidget.MessageItem(editable=True, tree_widget=self.txMsgs, msg=messageObj, msg_key=None)
             messageTreeWidgetItem.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
     def on_open(self):
@@ -446,7 +446,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 
     def add_message_to_rx_tree(self, msg_key, msg):
         if not msg_key in self.rx_msg_widgets:
-            msg_widget = txtreewidget.MessageItem(self.rx_messages_widget, msg, msg_key)
+            msg_widget = txtreewidget.MessageItem(editable=False, tree_widget=self.rx_messages_widget, msg=msg, msg_key=msg_key)
             self.rx_msg_widgets[msg_key] = msg_widget
             self.rx_messages_widget.addTopLevelItem(msg_widget)
             self.rx_messages_widget.resizeColumnToContents(0)

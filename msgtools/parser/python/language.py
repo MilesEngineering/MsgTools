@@ -176,7 +176,7 @@ def getFn(msg, field):
     value = str(value)[2:ascii_len]
     ''' 
     elif count > 1:
-            loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
+        loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     if fieldHasConversion(field):
         cleanup = "if convertFloat:\n    "
         cleanup += "    value = " + MsgParser.getMath("value", field, "", conversionParamNames=True)+"\n    "
@@ -215,7 +215,9 @@ def setFn(msg, field):
 
 def getBitsFn(msg, field, bits, bitOffset, numBits):
     cleanup = ""
-    access = "(self.Get%s() >> %s) & %s" % (field["Name"], str(bitOffset), MsgParser.Mask(numBits))
+    count = MsgParser.fieldCount(field)
+    idx = "" if count == 1 else "idx"
+    access = "(self.Get%s(%s) >> %s) & %s" % (field["Name"], idx, str(bitOffset), MsgParser.Mask(numBits))
     if fieldHasConversion(bits):
         cleanup = "if convertFloat:\n    "
         cleanup += "    value = " + MsgParser.getMath("value", bits, "float", conversionParamNames=True)+"\n    "
@@ -226,7 +228,7 @@ def getBitsFn(msg, field, bits, bitOffset, numBits):
 %s
     value = %s
     %sreturn value
-''' % (fnHdr(bits,MsgParser.fieldLocation(field),1,"Get"+MsgParser.BitfieldName(field, bits)), access, cleanup)
+''' % (fnHdr(bits,MsgParser.fieldLocation(field),count,"Get"+MsgParser.BitfieldName(field, bits)), access, cleanup)
     return ret
 
 def setBitsFn(msg, field, bits, bitOffset, numBits):
@@ -234,14 +236,17 @@ def setBitsFn(msg, field, bits, bitOffset, numBits):
     if "Enum" in bits:
         # find index that corresponds to string input param
         lookup = enumLookup(msg, bits)
+    count = MsgParser.fieldCount(field)
+    idx = "" if count == 1 else "idx"
     if fieldHasConversion(bits):
         lookup += "if convertFloat:\n    "
         lookup += "    value = %s\n    " % (MsgParser.setMath("value", bits, "int", conversionParamNames=True))
     lookup += "value = min(max(value, %s), %s)\n    " % (0, str(2**numBits-1))
+    set_value = "(self.Get%s(%s) & ~(%s << %s)) | ((%s & %s) << %s)" % (field["Name"], idx, MsgParser.Mask(numBits), str(bitOffset), "value", MsgParser.Mask(numBits), str(bitOffset))
     ret = '''\
 %s
-    %sself.Set%s((self.Get%s() & ~(%s << %s)) | ((%s & %s) << %s))
-''' % (fnHdr(bits,MsgParser.fieldLocation(field),1,"Set"+MsgParser.BitfieldName(field, bits)), lookup, field["Name"], field["Name"], MsgParser.Mask(numBits), str(bitOffset), "value", MsgParser.Mask(numBits), str(bitOffset))
+    %sself.Set%s(%s)
+''' % (fnHdr(bits,MsgParser.fieldLocation(field),count,"Set"+MsgParser.BitfieldName(field, bits)), lookup, field["Name"], joinParams(set_value, idx))
     return ret
 
 def accessors(msg):
