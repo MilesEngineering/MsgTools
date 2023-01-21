@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import re
-import sys
-import os
-import string
 import collections
 import hashlib
+import json
+import os
+import re
+import sys
+import string
 import shutil
 
 def Usage():
@@ -44,7 +45,8 @@ def printDictionary(dictFilename, headerFilename, dictionaryDeployDir):
 ''' % thisInvocation
     new_file_contents += header
     for formatInfo in dictionary:
-        s = str(formatInfo.id) + ": " + formatInfo.format_str+", "+formatInfo.filename+", " + str(formatInfo.linenumber) + "\n"
+        s = json.dumps(formatInfo.to_dict())+"\n"
+        #s = str(formatInfo.id) + ": " + formatInfo.format_str+", "+formatInfo.filename+", " + str(formatInfo.linenumber) + "\n"
         md5.update(s.encode('utf-8'))
         new_file_contents += s
     md5 = md5.hexdigest()
@@ -115,13 +117,60 @@ def param_type_bitmask(format_str):
             bitmask |= 1
     return bitmask
 
+inttypes_format_specifiers = {
+    "PRId8": "d",
+    "PRId16": "d",
+    "PRId32": "d",
+    "PRId64": "ld",
+    "PRId64": "lld",
+    "PRIi8": "i",
+    "PRIi16": "i",
+    "PRIi32": "i",
+    "PRIi64": "li",
+    "PRIi64": "lli",
+    "PRIo8": "o",
+    "PRIo16": "o",
+    "PRIo32": "o",
+    "PRIo64": "lo",
+    "PRIo64": "llo",
+    "PRIx8": "x",
+    "PRIx16": "x",
+    "PRIx32": "x",
+    "PRIx64": "lx",
+    "PRIx64": "llx",
+    "PRIX8": "X",
+    "PRIX16": "X",
+    "PRIX32": "X",
+    "PRIX64": "lX",
+    "PRIX64": "llX",
+    "PRIu8": "u",
+    "PRIu16": "u",
+    "PRIu32": "u",
+    "PRIu64": "lu",
+    "PRIu64": "llu"
+}
+
 class PrintfInfo:
     def __init__(self, id, format_str, filename, linenumber):
         self.id = id
-        self.format_str = format_str
         self.filename = filename
         self.linenumber = linenumber
         self.param_type_bitmask = param_type_bitmask(format_str)
+        # replace inttypes format specifiers
+        while '" PRI' in format_str:
+            matchObj = re.search( r'.*" (.*) ".*', format_str)
+            specifier = matchObj.group(1).strip()
+            conversion = inttypes_format_specifiers[specifier]
+            format_str = format_str.replace('" %s "' % specifier, conversion)
+        self.format_str = format_str
+    def to_dict(self):
+        ret = {}
+        ret['id'] = self.id
+        ret['format'] = self.format_str
+        ret['filename'] = self.filename
+        ret['linenumber'] = self.linenumber
+        ret['type_bitmask'] = self.param_type_bitmask
+        return ret
 
 def ProcessFile(inputFilename):
     try:
@@ -146,15 +195,15 @@ def ProcessFile(inputFilename):
                         os.system(sedCmd)
                 elif "debugPrintf(" in line:
                     printStatement = "debugPrintf"
-                    matchObj = re.search( r'debugPrintf\(.*("[^"]*")', line)
+                    matchObj = re.search( r'debugPrintf\("(.*)"', line)
                     format_str = matchObj.group(1).strip()
                 elif "debugWarn(" in line:
                     printStatement = "debugWarn"
-                    matchObj = re.search( r'debugWarn\(.*("[^"]*")', line)
+                    matchObj = re.search( r'debugWarn\("(.*)"', line)
                     format_str = matchObj.group(1).strip()
                 elif "debugError(" in line:
                     printStatement = "debugError"
-                    matchObj = re.search( r'debugError\(.*("[^"]*")', line)
+                    matchObj = re.search( r'debugError\("(.*)"', line)
                     format_str = matchObj.group(1).strip()
                 if format_str != "":
                     printInfo = PrintfInfo(format_str_id, format_str, inputFilename, lineNumber)

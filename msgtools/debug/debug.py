@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import re
-import collections
-import os
-import sys
-import struct
 import argparse
+import collections
+import json
+import os
+import re
+import struct
+import sys
 import time
 
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -29,6 +30,8 @@ DESCRIPTION='''DebugPrint provides a graphical interface that allows you to view
 
 QUERY_DEVICE_INFO_TIMEOUT = 3.0
 QUERY_STREAM_INFO_TIMEOUT = 5.0
+
+DebugInfo = collections.namedtuple('DebugInfo', ['formatStr', 'filename', 'linenumber'])
 
 def float_from_integer(integer):
     return struct.unpack('!f', struct.pack('!I', integer))[0]
@@ -166,6 +169,9 @@ class DebugStream(QtWidgets.QWidget):
                                 value = float_from_integer(msg.GetParameters(i))
                             else:
                                 value = int(msg.GetParameters(i))
+                        except IndexError:
+                            print("i is %d, len(format_specifiers) is %d" % (i, len(format_specifiers)))
+                            print(format_specifiers)
                         except struct.error:
                             value = 0
                         params.append(value)
@@ -192,7 +198,7 @@ class DebugStream(QtWidgets.QWidget):
                     
         msgStringList.append(str(priority))
         msgStringList.append(filename)
-        msgStringList.append(linenumber)
+        msgStringList.append(str(linenumber))
         msgStringList.append(text)
 
         msgItem = QtWidgets.QTreeWidgetItem(None,msgStringList)
@@ -272,22 +278,19 @@ class DebugDevice(QtWidgets.QWidget):
                 lines = formatStringFile.read().splitlines()
                 for line in lines:
                     matchObj = re.search( r'(\d+).*:\s*"([^"]*)", (.*), (\d+)', line)
-                    if matchObj != None:
-                        DebugInfo = collections.namedtuple('DebugInfo', ['formatStr', 'filename', 'linenumber'])
-                        id = matchObj.group(1).strip()
-                        if int(id) != nextId:
-                            self.statusUpdate.emit("ERROR! Format string ID " + str(id) + " != " + str(nextId))
-                        formatStr = matchObj.group(2).strip()
-                        filename = matchObj.group(3).strip()
-                        linenumber = matchObj.group(4).strip()
-                        info = DebugInfo(formatStr, filename, linenumber)
-                        self.dictionary.append(info)
-                        nextId += 1
-                    else:
+                    if line.startswith("#"):
                         matchObj = re.search( r'Dictionary md5 is (.*)', line)
                         if matchObj != None:
                             self.dictionaryID = matchObj.group(1).strip()
                             self.statusUpdate.emit("Device %s read dictionary %s" % (self.route, self.dictionaryID))
+                    else:
+                        data_dict = json.loads(line)
+                        id = data_dict["id"]
+                        if int(id) != nextId:
+                            self.statusUpdate.emit("ERROR! Format string ID " + str(id) + " != " + str(nextId))
+                        info = DebugInfo(data_dict["format"], data_dict["filename"], data_dict["linenumber"])
+                        self.dictionary.append(info)
+                        nextId += 1
         except FileNotFoundError:
             self.statusUpdate.emit("Cannot open file %s" % filename)
 
