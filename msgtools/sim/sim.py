@@ -319,6 +319,9 @@ class SimBaseClass:
             
             if self._args.lockstep:
                 if not self.time_stats.ready_to_run:
+                    # If we're not ready to run, do a gevent sleep to let other
+                    # coroutines run.
+                    gevent.sleep(0)
                     continue
                 self.time_stats.ready_to_run = False
             
