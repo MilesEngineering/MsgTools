@@ -186,7 +186,7 @@ class HeaderTranslator:
                             self._timestampOffset += 1
                     self._lastTimestamp = thisTimestamp
                     # need to handle different size timestamps!
-                    set_time(toHdr, self._timestampOffset * (1+int(fromHdrInfo.timeField.maxVal)) + thisTimestamp)
+                    set_time(toHdr, self._timestampOffset * (1+int(fromHdrInfo.timeField.maxVal)*time_scale) + thisTimestamp)
                 else:
                     set_time(toHdr, fromHdr.GetTime()*time_scale)
             else:
