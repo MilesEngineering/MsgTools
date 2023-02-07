@@ -382,6 +382,9 @@ class SimBaseClass:
             if msgbuf:
                 hdr = Messaging.hdr(messageBuffer=msgbuf)
                 msg = Messaging.MsgFactory(hdr)
+                # when logging, always override received message time with sim
+                # time, so all messages have a consistent timestamp.
+                msg.hdr.SetTime(self.get_time())
                 self.log(msg)
                 if self.cxn:
                     try:
@@ -395,6 +398,9 @@ class SimBaseClass:
             try:
                 msg = self.cxn.recv()
                 if msg:
+                    # when logging, always override received message time with sim
+                    # time, so all messages have a consistent timestamp.
+                    msg.hdr.SetTime(self.get_time())
                     self.log(msg)
                     if self.fsw:
                         self.fsw.send(msg.rawBuffer().raw)
@@ -420,5 +426,5 @@ class SimBaseClass:
         if self._args.lockstep or self._args.fsw:
             simtime = self.get_time()
             tick = Messaging.Messages.TimeTick()
-            tick.Time = simtime
+            tick.SetTime(simtime)
             self.send(tick, self.fdm)
