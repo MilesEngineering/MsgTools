@@ -99,7 +99,7 @@ class HeaderTranslator:
         self._hdr2Info = HdrInfo(hdr2, 1, Messaging.findFieldInfo(hdr2.fields, "Time"))
         self._timestampOffset = 0
         self._lastTimestamp = 0
-        self.lastWrapTime = None
+        self._lastWrapTime = None
 
     def translateHdrAndBody(self, fromHdr, body):
         toHdr = self.translateHdr(fromHdr)
@@ -144,7 +144,7 @@ class HeaderTranslator:
         # do special timestamp stuff to convert from relative to absolute time
         if toHdrInfo.timeField != None:
             def set_time(hdr, t):
-                # This is a bit ugly, but it's hard to tell with the Time field is a float or
+                # This is a bit ugly, but it's hard to tell if the Time field is a float or
                 # an int.  If it's an int and we give it a float, struct.error gets raised.
                 try:
                     hdr.SetTime(t)
@@ -177,16 +177,21 @@ class HeaderTranslator:
                     # Detect time rolling
                     thisTimestamp = fromHdr.GetTime() * time_scale
                     thisTime = datetime.datetime.now()
-                    if thisTimestamp < self._lastTimestamp:
-                        # If the timestamp shouldn't have wrapped yet, assume messages sent out-of-order,
-                        # and do not wrap again.
-                        if (self.lastWrapTime == None or
-                            thisTime > self.lastWrapTime + datetime.timedelta(0,30)):
-                            self.lastWrapTime = thisTime
+                    # if the new timestamp is less than the old one plus some margin,
+                    # do further checks to see if a wrap occurred.
+                    if thisTimestamp < self._lastTimestamp - float(fromHdrInfo.timeField.maxVal) * time_scale * 0.1:
+                        # If the check above shows the new timestamp is less than the last timestamp,
+                        # count it as wrapping only if the current system time is beyond the last time
+                        # a wrap occured by more than 0.5 times the time it should take for the
+                        # timestamp to wrap again.  The assumption is that if it's not that far beyond
+                        # the last time it wrapped, then messages were sent slightly out-of-order.
+                        if (self._lastWrapTime == None or
+                            thisTime > self._lastWrapTime + datetime.timedelta(seconds=float(fromHdrInfo.timeField.maxVal) * time_scale * 0.5)):
+                            self._lastWrapTime = thisTime
                             self._timestampOffset += 1
                     self._lastTimestamp = thisTimestamp
                     # need to handle different size timestamps!
-                    set_time(toHdr, self._timestampOffset * (1+int(fromHdrInfo.timeField.maxVal)*time_scale) + thisTimestamp)
+                    set_time(toHdr, self._timestampOffset * float(fromHdrInfo.timeField.maxVal) * time_scale + thisTimestamp)
                 else:
                     set_time(toHdr, fromHdr.GetTime()*time_scale)
             else:
