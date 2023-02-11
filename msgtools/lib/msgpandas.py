@@ -115,6 +115,28 @@ def load_binary(filename, serial=None):
 
     return pandas_reader.dict_of_dataframes
 
+# Make a subclass of pandas.DataFrame that doesn't raise exceptions when
+# plot is called, even if there's no data to plot.
+class DataFrameSubclass(pd.DataFrame):
+    def plot(self, *args, **kwargs):
+        try:
+            super().plot(*args, **kwargs)
+        except TypeError:
+            print("Not plotting %s%s, nothing to plot!" % (self.msgname, self.columns.values))
+
+# Make a subclass of dict that has a function that returns an empty dataframe
+# if there's no matching dataframe with the specified keys.
+class DataFrameDict(dict):
+    def data(self, msgname, fieldnames):
+        try:
+            msg_dataframe = self[msgname]
+        except KeyError:
+            print("ERROR! [%s][%s] not in dataframe!" % (msgname, fieldnames))
+            ret = DataFrameSubclass(columns=fieldnames)
+            ret.msgname = msgname
+            return ret
+        return  msg_dataframe[fieldnames]
+
 # A global variable for the last filename that was loaded.
 # This is useful for when None is passed in to load(),
 # and the user wants to know what file was auto-loaded.
@@ -152,9 +174,11 @@ def load(filename=None, serial=None):
     last_filename = filename
 
     if filename.endswith(".json"):
-        return load_json(filename)
+        ret = load_json(filename)
     elif filename.endswith(".bin") or filename.endswith(".log") or filename.endswith(".txt"):
-        return load_binary(filename, serial)
+        ret = load_binary(filename, serial)
+    
+    return DataFrameDict(ret)
 
 # Make this script executable from the shell, with command line arguments.
 # This is just for testing, since there's not much point in printing a DataFrame
