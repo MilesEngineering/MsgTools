@@ -58,6 +58,12 @@ def fieldArrayElementOffset(field):
         return int(field['StructSize'])
     return fieldSize(field)
 
+def nativeAlignment(field):
+    native_alignment = (fieldLocation(field) % fieldSize(field)) == 0
+    if 'StructSize' in field:
+        native_alignment = native_alignment and ((fieldLocation(field) % fieldArrayElementOffset(field)) == 0)
+    return native_alignment
+
 def msgSize(msg):
     offset = 0
     if "Fields" in msg:

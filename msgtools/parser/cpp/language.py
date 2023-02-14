@@ -94,7 +94,11 @@ def getFn(field):
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
         param += "int idx"
-    access = "Get_%s(&m_data[%s])" % (fieldType(field), loc)
+    accessor_name = "Get"
+    if MsgParser.nativeAlignment(field):
+        accessor_name = "GetAligned"
+    accessor_name += "BE" if MsgParser.big_endian else "LE"
+    access = "%s_%s(&m_data[%s])" % (accessor_name, fieldType(field), loc)
     access = getMath(access, field, castForScaledInt(field), 'f')
     retType = fieldType(field)
     if fieldHasConversion(field):
@@ -125,12 +129,16 @@ def setFn(field):
     if MsgParser.fieldCount(field) > 1:
         loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
         param += ", int idx"
+    accessor_name = "Set"
+    if MsgParser.nativeAlignment(field):
+        accessor_name = "SetAligned"
+    accessor_name += "BE" if MsgParser.big_endian else "LE"
     ret = '''\
 %s
 %s %s(%s)
 {
-    Set_%s(&m_data[%s], %s);
-}''' % (fnHdr(field), functionPrefix+"void", namespace+"Set"+field["Name"], joinParams(firstParamDecl, param), fieldType(field), loc, valueString)
+    %s_%s(&m_data[%s], %s);
+}''' % (fnHdr(field), functionPrefix+"void", namespace+"Set"+field["Name"], joinParams(firstParamDecl, param), accessor_name, fieldType(field), loc, valueString)
     if "float" in paramType or "double" in paramType:
         ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
