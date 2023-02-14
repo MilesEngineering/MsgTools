@@ -23,7 +23,7 @@ class TestCpp(unittest.TestCase):
 /*  m/s, (0 to 4294967295)*/
 uint32_t GetFieldA() const
 {
-    return Get_uint32_t(&m_data[0]);
+    return GetAlignedLE_uint32_t(&m_data[0]);
 }""")
         expected.append("""\
 /*  , (0 to 2147483647)*/
@@ -35,19 +35,19 @@ uint32_t GetFABitsA() const
 /*  , (0 to 65535)*/
 uint16_t GetFieldB() const
 {
-    return Get_uint16_t(&m_data[4]);
+    return GetAlignedLE_uint16_t(&m_data[4]);
 }""")
         expected.append("""\
 /*  , (0 to 255)*/
 uint8_t GetFieldC(int idx) const
 {
-    return Get_uint8_t(&m_data[6+idx*1]);
+    return GetAlignedLE_uint8_t(&m_data[6+idx*1]);
 }""")
         expected.append("""\
 /*  , (0 to 255)*/
 uint8_t GetFieldD() const
 {
-    return Get_uint8_t(&m_data[11]);
+    return GetAlignedLE_uint8_t(&m_data[11]);
 }""")
         expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
@@ -75,7 +75,7 @@ uint8_t GetBitsC() const
 /*  , (0.0 to 10.0)*/
 float GetFieldE() const
 {
-    return Get_float(&m_data[12]);
+    return GetAlignedLE_float(&m_data[12]);
 }
 #endif
 """)
@@ -83,14 +83,14 @@ float GetFieldE() const
 /*  , (-2147483648 to 2147483647)*/
 int32_t GetFieldS1_Member1() const
 {
-    return Get_int32_t(&m_data[16]);
+    return GetAlignedLE_int32_t(&m_data[16]);
 }""")
         expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (DBL_MIN to DBL_MAX)*/
 double GetFieldS1_Member2() const
 {
-    return Get_double(&m_data[20]);
+    return GetLE_double(&m_data[20]);
 }
 #endif
 """)
@@ -99,7 +99,7 @@ double GetFieldS1_Member2() const
 /*  , (1.828 to 176946.328)*/
 float GetFieldF() const
 {
-    return ((float(Get_uint16_t(&m_data[28])) * 2.7f) + 1.828f);
+    return ((float(GetAlignedLE_uint16_t(&m_data[28])) * 2.7f) + 1.828f);
 }
 #endif
 """)
@@ -107,14 +107,14 @@ float GetFieldF() const
 /*  , (-2147483648 to 2147483647)*/
 int32_t GetFieldS2_Member1(int idx) const
 {
-    return Get_int32_t(&m_data[30+idx*12]);
+    return GetLE_int32_t(&m_data[30+idx*12]);
 }""")
         expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (DBL_MIN to DBL_MAX)*/
 double GetFieldS2_Member2(int idx) const
 {
-    return Get_double(&m_data[34+idx*12]);
+    return GetLE_double(&m_data[34+idx*12]);
 }
 #endif
 """)
@@ -122,7 +122,7 @@ double GetFieldS2_Member2(int idx) const
 /* Test Field G, array of bitfields , (0 to 65535)*/
 uint16_t GetFieldG(int idx) const
 {
-    return Get_uint16_t(&m_data[66+idx*2]);
+    return GetAlignedLE_uint16_t(&m_data[66+idx*2]);
 }""")
         expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
@@ -143,7 +143,7 @@ uint16_t GetBitsE(int idx) const
 /*  m/s, (0 to 4294967295)*/
 void SetFieldA(uint32_t value)
 {
-    Set_uint32_t(&m_data[0], value);
+    SetAlignedLE_uint32_t(&m_data[0], value);
 }""")
         expected.append("""\
 /*  , (0 to 2147483647)*/
@@ -155,19 +155,19 @@ void SetFABitsA(uint32_t value)
 /*  , (0 to 65535)*/
 void SetFieldB(uint16_t value)
 {
-    Set_uint16_t(&m_data[4], value);
+    SetAlignedLE_uint16_t(&m_data[4], value);
 }""")
         expected.append("""\
 /*  , (0 to 255)*/
 void SetFieldC(uint8_t value, int idx)
 {
-    Set_uint8_t(&m_data[6+idx*1], value);
+    SetAlignedLE_uint8_t(&m_data[6+idx*1], value);
 }""")
         expected.append("""\
 /*  , (0 to 255)*/
 void SetFieldD(uint8_t value)
 {
-    Set_uint8_t(&m_data[11], value);
+    SetAlignedLE_uint8_t(&m_data[11], value);
 }""")
         expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
@@ -195,7 +195,7 @@ void SetBitsC(uint8_t value)
 /*  , (0.0 to 10.0)*/
 void SetFieldE(float value)
 {
-    Set_float(&m_data[12], value);
+    SetAlignedLE_float(&m_data[12], value);
 }
 #endif
 """)
@@ -203,14 +203,14 @@ void SetFieldE(float value)
 /*  , (-2147483648 to 2147483647)*/
 void SetFieldS1_Member1(int32_t value)
 {
-    Set_int32_t(&m_data[16], value);
+    SetAlignedLE_int32_t(&m_data[16], value);
 }""")
         expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (DBL_MIN to DBL_MAX)*/
 void SetFieldS1_Member2(double value)
 {
-    Set_double(&m_data[20], value);
+    SetLE_double(&m_data[20], value);
 }
 #endif
 """)
@@ -219,7 +219,7 @@ void SetFieldS1_Member2(double value)
 /*  , (1.828 to 176946.328)*/
 void SetFieldF(float value)
 {
-    Set_uint16_t(&m_data[28], (uint16_t)((value - 1.828f) / 2.7f));
+    SetAlignedLE_uint16_t(&m_data[28], (uint16_t)((value - 1.828f) / 2.7f));
 }
 #endif
 """)
@@ -227,14 +227,14 @@ void SetFieldF(float value)
 /*  , (-2147483648 to 2147483647)*/
 void SetFieldS2_Member1(int32_t value, int idx)
 {
-    Set_int32_t(&m_data[30+idx*12], value);
+    SetLE_int32_t(&m_data[30+idx*12], value);
 }""")
         expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
 /*  , (DBL_MIN to DBL_MAX)*/
 void SetFieldS2_Member2(double value, int idx)
 {
-    Set_double(&m_data[34+idx*12], value);
+    SetLE_double(&m_data[34+idx*12], value);
 }
 #endif
 """)
@@ -242,7 +242,7 @@ void SetFieldS2_Member2(double value, int idx)
 /* Test Field G, array of bitfields , (0 to 65535)*/
 void SetFieldG(uint16_t value, int idx)
 {
-    Set_uint16_t(&m_data[66+idx*2], value);
+    SetAlignedLE_uint16_t(&m_data[66+idx*2], value);
 }""")
         expected.append("""\
 #ifndef DISABLE_FLOAT_ACCESSORS
