@@ -274,7 +274,7 @@ class MessageItem(QTreeWidgetItem):
                 self.sendButton.setText("Stop")
                 rate = float(self.rateEdit.text())
                 if rate > 0.01:
-                    period = 1000.0/rate
+                    period = int(1000.0/rate)
                     # send once now, then periodically after
                     self.qobjectProxy.send_message.emit(self.msg)
                     self.sendTimer.start(period)
