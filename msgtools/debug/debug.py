@@ -43,7 +43,7 @@ class DebugStream(QtWidgets.QWidget):
         super(DebugStream, self).__init__()
         self.debugDevice = debugDevice
         self.debugWidget = debugWidget
-        self.name = "Stream" + str(streamID)
+        self.name = None
         self.widget = msgtools.lib.gui.TreeWidget()
         self.widget.debugStream = self
         self.streamID = streamID
@@ -69,14 +69,14 @@ class DebugStream(QtWidgets.QWidget):
 
         # add it to the tab widget, so the user can see it
         added = 0
-        tabName = debugDevice.name+", " + self.name
+        self.fullName = debugDevice.name+", " + "Stream" + str(streamID)
         for index in range(0,self.debugWidget.tabWidget.count()):
-            if(tabName < self.debugWidget.tabWidget.tabText(index)):
-                self.debugWidget.tabWidget.insertTab(index, self.widget, tabName)
+            if(self.fullName < self.debugWidget.tabWidget.tabText(index)):
+                self.debugWidget.tabWidget.insertTab(index, self.widget, self.fullName)
                 added = 1
                 break
         if not added:
-            self.debugWidget.tabWidget.addTab(self.widget, tabName)
+            self.debugWidget.tabWidget.addTab(self.widget, self.fullName)
 
         # add table header, one column for each message field
         tableHeader = []
@@ -97,17 +97,24 @@ class DebugStream(QtWidgets.QWidget):
 
     def Rename(self, deviceName, streamName=None):
         if streamName == None:
-            # if we're renaming because we just learned the deviceName, we ought to query the stream name.
-            self.getStreamInfo()
+            # if we're renaming because we just learned the deviceName,
+            # get the stream name if it's not yet set.
+            if self.name == None:
+                self.getStreamInfo()
         else:
             # if we got the stream name, then set it.
-            self.name = streamName
+            if self.name != streamName:
+                self.name = streamName
+        
+        # If the name changed, update the GUI.
         newName = deviceName + ", " + self.name
-        tabIndex = self.debugWidget.tabWidget.indexOf(self.widget)
-        if tabIndex < 0:
-            self.statusUpdate.emit("Warning!  Couldn't find debug tab for device " + route + " stream " + str(streamID))
-        else:
-            self.debugWidget.tabWidget.setTabText(tabIndex, newName)
+        if newName != self.fullName:
+            self.fullName = newName
+            tabIndex = self.debugWidget.tabWidget.indexOf(self.widget)
+            if tabIndex < 0:
+                self.statusUpdate.emit("Warning!  Couldn't find debug tab for device " + route + " stream " + str(streamID))
+            else:
+                self.debugWidget.tabWidget.setTabText(tabIndex, newName)
 
     def debugThresholdChanged(self):
         action = self.sender()
@@ -306,6 +313,7 @@ class DebugDevice(QtWidgets.QWidget):
                     # If dictionary ID changed or wasn't previously set, load the dictionary.
                     self.ReadDictionary("%s/PrintfDictionaries/%s.json" % (Messaging.objdir, dictionaryID))
 
+            # If we get the deviceinfo, rename all the streams.
             try:
                 deviceName = msg.GetDeviceName()
             except AttributeError:
