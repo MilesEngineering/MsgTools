@@ -95,19 +95,23 @@ class DebugStream(QtWidgets.QWidget):
     def clear(self):
         self.widget.clear()
 
-    def Rename(self, deviceName, streamName=None):
-        if streamName == None:
+    def Rename(self, deviceName, new_stream_name=None):
+        if new_stream_name == None:
             # if we're renaming because we just learned the deviceName,
             # get the stream name if it's not yet set.
             if self.name == None:
                 self.getStreamInfo()
         else:
             # if we got the stream name, then set it.
-            if self.name != streamName:
-                self.name = streamName
+            if self.name != new_stream_name:
+                self.name = new_stream_name
         
         # If the name changed, update the GUI.
-        newName = deviceName + ", " + self.name
+        if self.name:
+            stream_name = self.name
+        else:
+            stream_name = "Stream" + str(self.streamID)
+        newName = deviceName + ", " + stream_name
         if newName != self.fullName:
             self.fullName = newName
             tabIndex = self.debugWidget.tabWidget.indexOf(self.widget)
