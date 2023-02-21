@@ -111,7 +111,7 @@ def format_specifier_list(format_str):
 def param_type_bitmask(format_str):
     bitmask = 0
     format_specifiers = format_specifier_list(format_str)
-    for format_specifier in format_specifiers:
+    for format_specifier in reversed(format_specifiers):
         bitmask <<= 1
         if 'f' in format_specifier:
             bitmask |= 1
