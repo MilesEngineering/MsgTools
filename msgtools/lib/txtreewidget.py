@@ -175,7 +175,7 @@ class QObjectProxy(QObject):
 
 class MessageItem(QTreeWidgetItem):
     def __init__(self, editable, tree_widget, msg, msg_key):
-        QTreeWidgetItem.__init__(self, None, [msg.MsgName()])
+        QTreeWidgetItem.__init__(self, tree_widget, [msg.MsgName()])
 
         self.editable = editable
         
@@ -189,7 +189,7 @@ class MessageItem(QTreeWidgetItem):
         self.setup_fields(tree_widget)
 
         tree_widget.addTopLevelItem(self)
-        tree_widget.resizeColumnToContents(0)
+        self.setFirstColumnSpanned(True)
         self.setExpanded(True)
 
         # Create a timer to refresh at a fixed rate, so we don't refresh
@@ -215,13 +215,18 @@ class MessageItem(QTreeWidgetItem):
             self.rateEdit.setMaximumWidth(50)
             self.rateEdit.setFixedWidth(50)
             self.rateEdit.setPlaceholderText("Rate")
+            # Set first column's text to empty, and replace it with a layout
+            # with a few items in it, including the text we removed, rateEdit,
+            # a "Hz" label, and a Send button.
+            self.setText(0,"")
+            containerLayout.addWidget(QLabel(msg.MsgName()))
             containerLayout.addWidget(self.rateEdit)
             containerLayout.addWidget(QLabel("Hz"))
             containerLayout.addWidget(self.sendButton)
-            tree_widget.setItemWidget(self, 4, containerWidget)
+            tree_widget.setItemWidget(self, 0, containerWidget)
             
-            for i in range(0, tree_widget.columnCount()):
-                tree_widget.resizeColumnToContents(i);
+        for i in range(0, tree_widget.columnCount()):
+            tree_widget.resizeColumnToContents(i);
 
     def repaintAll(self):
         # Refresh the paint on the entire tree
@@ -238,8 +243,9 @@ class MessageItem(QTreeWidgetItem):
         #self.repaintAll()
 
     def setup_fields(self, tree_widget):
-        headerTreeItemParent = QTreeWidgetItem(None, [ "Header" ])
+        headerTreeItemParent = QTreeWidgetItem(self, [ "Header" ])
         self.addChild(headerTreeItemParent)
+        headerTreeItemParent.setFirstColumnSpanned(True)
 
         for headerFieldInfo in Messaging.hdr.fields:
             if headerFieldInfo.bitfieldInfo != None:
