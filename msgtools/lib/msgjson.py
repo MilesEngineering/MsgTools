@@ -25,7 +25,6 @@ def toDict(msg, includeHeader=False):
     msgClass = Messaging.MsgClass(msg.hdr)
     for fieldInfo in msgClass.fields:
         if(fieldInfo.count == 1):
-            #TODO Broken for arrays-of-structs acting like parallel arrays!
             if not fieldInfo.exists(msg):
                 break
             if len(fieldInfo.bitfieldInfo) == 0:
@@ -34,17 +33,27 @@ def toDict(msg, includeHeader=False):
                 for bitInfo in fieldInfo.bitfieldInfo:
                     pythonObj[bitInfo.name] = Messaging.get(msg, bitInfo)
         else:
-            arrayList = []
-            terminate = 0
-            for i in range(0,fieldInfo.count):
-                #TODO Broken for arrays-of-structs acting like parallel arrays!
-                if not fieldInfo.exists(msg, i):
-                    terminate = 1
+            if len(fieldInfo.bitfieldInfo) == 0:
+                arrayList = []
+                terminate = 0
+                for i in range(0,fieldInfo.count):
+                    if not fieldInfo.exists(msg, i):
+                        terminate = 1
+                        break
+                    arrayList.append(Messaging.get(msg, fieldInfo, i))
+                pythonObj[fieldInfo.name] = arrayList
+                if terminate:
                     break
-                arrayList.append(Messaging.get(msg, fieldInfo, i))
-            pythonObj[fieldInfo.name] = arrayList
-            if terminate:
-                break
+            else:
+                # Arrays-of-structs acting like parallel arrays.
+                for bitInfo in fieldInfo.bitfieldInfo:
+                    arrayList = []
+                    for i in range(0,fieldInfo.count):
+                        if not fieldInfo.exists(msg, i):
+                            break
+                        arrayList.append(Messaging.get(msg, bitInfo, i))
+                    pythonObj[bitInfo.name] = arrayList
+
     return {msg.MsgName() : pythonObj}
 
 def toJson(msg, includeHeader=False):
@@ -78,6 +87,8 @@ def dictToMsg(d):
             msg = msgClass()
             for fieldName in fieldDict:
                 if fieldName == "hdr":
+                    if "Time" in fieldDict["hdr"]:
+                        msg.hdr.SetTime(fieldDict["hdr"]["Time"])
                     terminationLen = handle_header(fieldDict["hdr"])
                     continue
                 fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)

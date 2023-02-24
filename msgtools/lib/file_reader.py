@@ -1,6 +1,9 @@
+from msgtools.lib.message import Message
 from msgtools.lib.messaging import Messaging
-from msgtools.lib.header_translator import HeaderHelper
+from msgtools.lib.header_translator import HeaderHelper, HeaderTranslator
 import ctypes
+import importlib
+import json
 import math
 
 class MessageFileReader:
@@ -13,86 +16,94 @@ class MessageFileReader:
         print(str)
 
     def read_file(self, filename, header_name):
-        try:
-            Messaging.LoadAllMessages(headerName=header_name)
-        except RuntimeError as e:
-            print(e)
-            quit()
-        except:
-            import traceback
-            print(traceback.format_exc())
-            quit()
+        # load the messages if not already loaded
+        if Messaging.hdr == None:
+            try:
+                if header_name != None:
+                    Messaging.LoadAllMessages(headerName=header_name)
+                else:
+                    Messaging.LoadAllMessages()
+            except RuntimeError as e:
+                print(e)
+                quit()
+            except:
+                import traceback
+                print(traceback.format_exc())
+                quit()
 
-        self.header_helper = HeaderHelper(Messaging.hdr, self.error_fn)
+        # find the specific header used in the log, and create a translator
+        # between that and regular messages.
+        if header_name != None and header_name != Messaging.hdr.__name__:
+            header_module = importlib.import_module("headers." + header_name)
+            self.log_header = getattr(header_module, header_name)
+            self.header_translator = HeaderTranslator(self.log_header, Messaging.hdr)
+        else:
+            self.log_header = Messaging.hdr
+            self.header_translator = None
+        self.header_helper = HeaderHelper(self.log_header, self.error_fn)
 
+        if filename.endswith(".json"):
+            self.read_json_file(filename)
+        else:
+            self.read_binary_file(filename)
+
+    def read_binary_file(self, filename):
         with open(filename, mode='rb') as f:
             while(1):
-                # Below are three versions of accomplishing the same thing.
-                # Each is faster but perhaps less straightforward than the previous.
-                # The last one is about 10% faster than the first one.
-                # For the purpose of constructing Pandas DataFrames, all methods are
-                # slower than reading a JSON file
-                if 0: # <- read bytes, create a header
-                    msg_bytes = f.read(Messaging.hdr.SIZE)
-                    if len(msg_bytes) < Messaging.hdr.SIZE:
+                # If we need to translate the header, then read the header and body separately.
+                # Otherwise do a single big read and seek backwards for the next message's start, because that is ~10% faster.
+                if self.header_translator:
+                    # read bytes, create a header
+                    msg_bytes = f.read(self.log_header.SIZE)
+                    if len(msg_bytes) < self.log_header.SIZE:
                         break
-                    hdr = Messaging.hdr(msg_bytes)
-                elif 0: # <- read into a header object
-                    last_header_pos = f.tell()
-                    hdr = Messaging.hdr()
-                    length_read = f.readinto(hdr.rawBuffer())
-                    if length_read < Messaging.hdr.SIZE:
+                    hdr = self.log_header(msg_bytes)
+
+                    if not self.header_helper.header_valid(hdr):
+                        print("Invalid header!")
                         break
-                else: # <- read a kB of data so we do fewer (but larger) reads
+
+                    # read the body
+                    msg_body = f.read(hdr.GetDataLength())
+
+                    #if not self.header_helper.body_valid(hdr, msg.rawBuffer()[self.log_header.SIZE:]):
+                    if not self.header_helper.body_valid(hdr, msg_body):
+                        print("Invalid body!")
+                        break
+
+                    network_msg = self.header_translator.translateHdrAndBody(hdr, msg_body)
+                else:
+                    # <- read a kB of data so we do fewer (but larger) reads
                     last_header_pos = f.tell()
                     msg_bytes = ctypes.create_string_buffer(Messaging.hdr.SIZE+1024)
                     length_read = f.readinto(msg_bytes)
-                    #print("%d %d" % (last_header_pos, length_read))
+                    # Construct a header object
                     hdr = Messaging.hdr(msg_bytes)
+
                     if length_read < Messaging.hdr.SIZE:
                         break
 
-                if not self.header_helper.header_valid(hdr):
-                    print("Invalid header!")
-                    break
+                    if not self.header_helper.header_valid(hdr):
+                        print("Invalid header!")
+                        break
 
-                if 0: # <- read more data for the body
-                    msg_bytes += f.read(hdr.GetDataLength())
-                elif 0: # <- seek back to before we read the header, make a new buffer, and read into it
-                    f.seek(last_header_pos)
-                    msg_bytes = ctypes.create_string_buffer(Messaging.hdr.SIZE+hdr.GetDataLength())
-                    f.readinto(msg_bytes)
-                else: # <- seek back to just after the last message's data (where the next header starts)
+                    # <- seek back to just after the last message's data (where the next header starts)
                     f.seek(last_header_pos+Messaging.hdr.SIZE+hdr.GetDataLength())
-                hdr = Messaging.hdr(msg_bytes)
-                msg = Messaging.MsgFactory(hdr)
-                #if not self.header_helper.body_valid(hdr, msg.rawBuffer()[Messaging.hdr.SIZE:]):
-                if not self.header_helper.msg_valid(msg):
-                    print("Invalid body!")
-                    break
 
-                timestamp = self.timestamp(msg)
-                self.process_message(msg, timestamp)
+                    hdr = Messaging.hdr(msg_bytes)
 
-    def timestamp(self, msg):
-        try:
-            # \todo Detect time rolling.  this only matters when we're processing a log file
-            # with insufficient timestamp size, such that time rolls over from a large number
-            # to a small one, during the log.
-            thisTimestamp = msg.hdr.GetTime()
-            if thisTimestamp < self._lastTimestamp:
-                self._timestampOffset+=1
+                    if not self.header_helper.body_valid(hdr, hdr.rawBuffer()[Messaging.hdr.SIZE:]):
+                        print("Invalid body!")
+                        break
+                    
+                    network_msg = hdr
+                
+                # Get a specifically typed message, to give to process_msg
+                msg = Messaging.MsgFactory(network_msg)
+                self.process_message(msg)
 
-            self._lastTimestamp = thisTimestamp
-
-            maxTime = Messaging.findFieldInfo(msg.hdr.fields, "Time").maxVal
-            if maxTime != 'DBL_MAX' and maxTime != 'FLT_MAX':
-                timeSizeInBits = int(round(math.log(int(maxTime), 2)))
-                timestamp = (self._timestampOffset << timeSizeInBits) + thisTimestamp
-            else:
-                timestamp = thisTimestamp
-            if Messaging.findFieldInfo(msg.hdr.fields, "Time").units == "ms":
-                timestamp = timestamp / 1000.0
-        except AttributeError:
-            timestamp = 0.0
-        return timestamp
+    def read_json_file(self, filename):
+        with open(filename) as f:
+            for line in f:
+                msg = Message.fromJson(line)
+                self.process_message(msg)

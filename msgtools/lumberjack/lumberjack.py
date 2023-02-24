@@ -62,12 +62,12 @@ class Lumberjack(MessageFileReader):
 
         self.message_count = 0
 
-        header_name = "NetworkHeader"
+        header_name = None
         if self.args.serial:
             header_name = "SerialHeader"
         self.read_file(self.args.logfile, header_name)
 
-    def process_message(self, msg, timestamp):
+    def process_message(self, msg):
         self.message_count += 1
         
         id = msg.hdr.GetMessageID()
@@ -97,13 +97,10 @@ class Lumberjack(MessageFileReader):
             # the dict has one key, which is the name of the message
             msgname = list(dict.keys())[0]
 
-            # Within the value for that key, there's a "hdr", which contains "Time",
-            # and we should override that with the corrected timestamp
-            dict[msgname]['hdr']['Time'] = timestamp
-
             text = json.dumps(dict) + '\n'
             output_file.write(text)
         else:
+            timestamp = msg.hdr.GetTime()
             text = str(timestamp) + ", "
             text += msgcsv.toCsv(msg, nameColumn=False, timeColumn=False)
             text += '\n'

@@ -67,7 +67,7 @@ class PandasBinaryReader(MessageFileReader):
     def __init__(self, filename, serial):
         super(PandasBinaryReader, self).__init__()
         self.dict_of_dataframes = {}
-        header_name = "NetworkHeader"
+        header_name = None
         if serial:
             header_name = "SerialHeader"
         self.read_file(filename, header_name)
@@ -76,16 +76,12 @@ class PandasBinaryReader(MessageFileReader):
             self.dict_of_dataframes[msgname] = pd.DataFrame.from_records(self.dict_of_dataframes[msgname], index="Time")
         
 
-    def process_message(self, msg, timestamp):
+    def process_message(self, msg):
         # Get a dictionary of the message
         d = msg.toDict(includeHeader=True)
 
         # the dictionary has one key, which is the name of the message
         msgname = list(d.keys())[0]
-
-        # Within the value for that key, there's a "hdr", which contains "Time",
-        # and we should override that with the corrected timestamp
-        d[msgname]['hdr']['Time'] = timestamp
 
         flat = flatten_msg(d[msgname])
 
