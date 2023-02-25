@@ -118,6 +118,7 @@ def dictToMsg(d):
                         else:
                             #TODO Broken for arrays-of-structs acting like parallel arrays!
                             terminationLen = max(terminationLen, fieldInfo.end_location())
-    if terminationLen != None:
+    # Shorten the message if necessary.
+    if terminationLen != None and terminationLen < msg.hdr.GetDataLength():
         msg.hdr.SetDataLength(terminationLen)
     return msg
