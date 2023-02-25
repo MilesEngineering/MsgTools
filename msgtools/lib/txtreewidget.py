@@ -7,6 +7,17 @@ from PyQt5.QtWidgets import *
 
 from msgtools.lib.messaging import Messaging
 
+class NoEditDelegate(QStyledItemDelegate):
+    def __init__(self, parent, item_for_delegate):
+        QStyledItemDelegate.__init__(self, parent)
+        self.item_for_delegate = item_for_delegate
+
+    def createEditor(self, parent, option, index):
+        item = self.item_for_delegate.itemFromIndex(index)
+        if not item.editableColumn(index.column()):
+            return None
+        return QStyledItemDelegate.createEditor(self, parent, option, index)
+
 class FieldItem(QTreeWidgetItem):
     def __init__(self, editable, tree_widget, msg, msg_key, fieldInfo, column_strings, index):
         if len(column_strings) == 0:
@@ -40,7 +51,14 @@ class FieldItem(QTreeWidgetItem):
                 self.comboBoxIndexOfEnum = {}
                 for i in range(0, self.overrideWidget.count()):
                     self.comboBoxIndexOfEnum[self.overrideWidget.itemText(i)] = i
-        
+
+    def editableColumn(self, column):
+        if not self.editable:
+            return False
+        if column != 2:
+            return False
+        return True
+
     def data(self, column, role):
         if column != 2:
             return super(FieldItem, self).data(column, role)
@@ -132,6 +150,7 @@ class FieldBitfieldItem(FieldItem):
 # This is for holding a list of elements of an array, each of which is a
 # regular FieldItem or a FieldBitfieldItem.
 class FieldArrayItem(QTreeWidgetItem):
+    CHILD_STRING_MAX_LENGTH = 12
     def __init__(self, editable, tree_widget, msg, msg_key, fieldInfo):
         column_strings = [None, fieldInfo.name, "", fieldInfo.units, fieldInfo.description]
         
@@ -155,6 +174,9 @@ class FieldArrayItem(QTreeWidgetItem):
         if self.editable:
             self.setFlags(self.flags() | Qt.ItemIsEditable)
 
+    def editableColumn(self, column):
+        return False
+
     def data(self, column, role):
         if column != 2:
             return super(FieldArrayItem, self).data(column, role)
@@ -162,7 +184,32 @@ class FieldArrayItem(QTreeWidgetItem):
         # There's no data to display for the array itself, all data is in children.
         if role == Qt.FontRole:
             return QFont()
-        return ""
+        if role == Qt.ForegroundRole:
+            brush = QBrush()
+            return brush
+        if role == Qt.DisplayRole:
+            if "hex" == self.fieldInfo.units.lower():
+                ret = "0x"
+                for i in range(0,self.fieldInfo.count):
+                    ret += Messaging.get(self.msg, self.fieldInfo, i).replace("0x","")
+                    if len(ret) > FieldArrayItem.CHILD_STRING_MAX_LENGTH:
+                        ret += "..."
+                        break
+                return ret
+            else:
+                ret = ""
+                for i in range(0,self.fieldInfo.count):
+                    ret += str(Messaging.get(self.msg, self.fieldInfo, i))+", "
+                    if len(ret) > FieldArrayItem.CHILD_STRING_MAX_LENGTH:
+                        # remove the ", " from the string before appending ellipses,
+                        # and then add two extra bytes at the end before returning
+                        # because the return statements *also* removes two bytes.
+                        ret = ret[:-2]+"..., "
+                        break
+                return ret[:-2]
+                
+            return ""
+        return super(FieldArrayItem, self).data(column, role)
 
     def setData(self, column, role, value):
         # There's no data to set for the array, all data is in children.

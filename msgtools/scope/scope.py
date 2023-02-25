@@ -154,6 +154,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 
     def configure_tx_messages(self, parent):
         txMsgs = QTreeWidget(parent)
+        txMsgs.setItemDelegate(txtreewidget.NoEditDelegate(parent, txMsgs))
         txMsgs.setColumnCount(4)
         
         txMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
@@ -182,6 +183,8 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
     def configure_rx_messages_widget(self, parent):
         self.rx_msg_widgets = {}
         rxMessagesTreeWidget = QTreeWidget(parent)
+        rxMessagesTreeWidget.setItemDelegate(txtreewidget.NoEditDelegate(parent, self.rx_msg_widgets))
+
         rxMessagesTreeWidget.setColumnCount(4)
         rxMessagesTreeWidget.setDragEnabled(1)
         rxMessagesTreeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
