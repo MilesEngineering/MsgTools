@@ -176,6 +176,9 @@ def getFn(msg, field):
     value = str(value)[2:ascii_len]
     ''' 
     elif count > 1:
+        preface += "\n"
+        preface += "    if idx >= %d:\n" % (count)
+        preface += "        raise struct.error('ERROR! Invalid idx %d >= "+str(count)+"' % (idx))\n"
         loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     if fieldHasConversion(field):
         cleanup = "if convertFloat:\n    "
@@ -201,16 +204,22 @@ def setFn(msg, field):
     storageType = field["Type"]
     if "int" in storageType:
         lookup += "value = min(max(value, %s), %s)\n    " % (MsgParser.fieldStorageMin(storageType), MsgParser.fieldStorageMax(storageType))
+    preface = ""
     if MsgParser.fieldUnits(field) == "ASCII" and (field["Type"] == "uint8" or field["Type"] == "int8"):
         type = str(count) + "s"
         count = 1
         lookup = "value = value.encode('utf-8')\n    "
     elif count > 1:
+        preface += "\n"
+        preface += "    if idx >= %d:\n" % (count)
+        preface += "        print('ERROR! "+msgName(msg)+"."+field["Name"]+", Invalid idx %d >= "+str(count)+"' % (idx))\n"
+        preface += "        return\n"
         loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     ret  = '''\
 %s
-    %sstruct.pack_into('%s', self.rawBuffer(), %s, value)
-''' % (fnHdr(field,MsgParser.fieldLocation(field),count, "Set"+field["Name"]), lookup, type, loc)
+    %s%s
+    struct.pack_into('%s', self.rawBuffer(), %s, value)
+''' % (fnHdr(field,MsgParser.fieldLocation(field),count, "Set"+field["Name"]), lookup, preface, type, loc)
     return ret
 
 def getBitsFn(msg, field, bits, bitOffset, numBits):
