@@ -385,6 +385,9 @@ or specify that directory with --msgdir=PATH''')
                 value = fieldInfo.get(msg, index)
         except struct.error:
             value = "UNALLOCATED"
+        if "hex" == fieldInfo.units.lower():
+            digits = fieldInfo.size*2
+            value = ("0x%0"+str(digits)+"X") % (value)
         return value
 
     @staticmethod
