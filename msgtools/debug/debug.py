@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import collections
+import glob
 import json
 import os
 import re
@@ -285,7 +286,13 @@ class DebugDevice(QtWidgets.QWidget):
         self.dictionary = []
         nextId = 0
         try:
-            with open(filename, 'r') as formatStringFile:
+            all_filenames = glob.glob(filename)
+            if len(all_filenames) == 0:
+                self.statusUpdate.emit("ERROR! No files match %s" % (filename))
+            elif len(all_filenames) > 1:
+                self.statusUpdate.emit("ERROR! Multiple files %s match %s" % (all_filenames, filename))
+            specific_filename = all_filenames[0]
+            with open(specific_filename, 'r') as formatStringFile:
                 lines = formatStringFile.read().splitlines()
                 for line in lines:
                     matchObj = re.search( r'(\d+).*:\s*"([^"]*)", (.*), (\d+)', line)
@@ -310,8 +317,10 @@ class DebugDevice(QtWidgets.QWidget):
             dictionaryID = ""
             for i in range(msg.GetDebugStringDictionaryID.count):
                 dictionaryID += '{:02x}'.format(msg.GetDebugStringDictionaryID(i))
+            if msg.GetDebugStringDictionaryID.count < 16:
+                dictionaryID = "*%s*" % dictionaryID
             if dictionaryID != self.dictionaryID:
-                if "00000000000000000000000000000000" in dictionaryID:
+                if "0000000000000000" in dictionaryID:
                     self.statusUpdate.emit("ERROR!  Dictionary ID %s invalid, being ignored" % self.statusUpdate.emit)
                 else:
                     # If dictionary ID changed or wasn't previously set, load the dictionary.
