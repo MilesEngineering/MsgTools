@@ -164,7 +164,8 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
             return
 
     # read the input file
-    inputData = readFile(inputFilename)
+    inputData, inputFileHash = readFile(inputFilename)
+    inputFileHashBytes = "0x" + ", 0x".join([inputFileHash[i:i+2] for i in range(0, len(inputFileHash), 2)])
 
     # if there's no input, return without creating output
     if inputData == 0:
@@ -214,6 +215,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
             msg["ids"] = ids
             try:
                 msg["commonSubdir"] = CommonSubdir(inputFilename, outDir+"/fake")
+                escapedInputFilename = inputFilename.split('.', 1)[0].replace("/", "_").upper()
 
                 if oneOutputFilePerMsg:
                     # if outputting one file per message, add the input filename to the path,
@@ -264,6 +266,9 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<MESSAGE_PACKAGE>"] = msg["commonSubdir"].replace( '/', '.').replace( '\\', '.')
                 replacements["<MSGDESCRIPTOR>"] = msgDescriptor(msg, inputFilename)
                 replacements["<DATE>"] = currentDateTime
+                replacements["<ESCAPED_INPUT_FILENAME>"] = escapedInputFilename
+                replacements["<INPUT_FILE_HASH>"] = inputFileHash
+                replacements["<INPUT_FILE_HASH_BYTES>"] = inputFileHashBytes
                 replacements["<MSGALIAS>"] = msgAlias(msg)
                 doingMultilineSection = False
                 subfieldsOnly = False

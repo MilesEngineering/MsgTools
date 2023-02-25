@@ -20,4 +20,6 @@ INLINE void <MSGFULLNAME>_Init(uint8_t* m_data)
     <INIT_CODE>
 }
 
+<ONCE>#define <ESCAPED_INPUT_FILENAME>_FILE_HASH <INPUT_FILE_HASH_BYTES>
+
 #endif

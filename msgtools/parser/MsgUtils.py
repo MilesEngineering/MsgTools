@@ -1,4 +1,5 @@
 import re
+import hashlib
 import io
 import json
 import os.path
@@ -35,12 +36,17 @@ use_nonlinear_conversions = False
 
 def readFile(filename):
     #print("Processing ", filename)
+    inFile = io.open(filename)
+    # read the file to compute the MD5
+    fileHash = hashlib.md5()
+    fileHash.update(inFile.read().encode('utf-8'))
+    fileHash = fileHash.hexdigest()
+    # reset the file so we can read from the beginning
+    inFile.seek(0)
     if filename.endswith(".yaml"):
-        inFile = io.open(filename)
-        return yaml.load(inFile, YamlLoader)
+        return yaml.load(inFile, YamlLoader), fileHash
     elif filename.endswith(".json"):
-        inFile = io.open(filename)
-        return json.load(inFile)
+        return json.load(inFile), fileHash
     else:
         return 0
 

@@ -30,7 +30,7 @@ def ProcessDir(outFile, msgDir, subdirComponent, isHeaderDir):
             ProcessDir(outFile, inputFilename, subdirParam, filename=='headers' or isHeaderDir)
         else:
             try:
-                inputData = readFile(inputFilename)
+                inputData, inputFileHash = readFile(inputFilename)
                 if inputData != 0:
                     ProcessFile(filename, outFile, inputData, subdirComponent, isHeaderDir)
             except MessageException as e:
