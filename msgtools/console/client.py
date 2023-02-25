@@ -98,7 +98,7 @@ class Client:
             computedSize = msg.hdr.SIZE + msg.hdr.GetDataLength()
             if(computedSize > bufferSize):
                 msg.hdr.SetDataLength(bufferSize - msg.hdr.SIZE)
-                print("Truncating message to "+str(computedSize)+" bytes")
+                print("client.py: Truncating message %s from %d to %d bytes" % (msg.__class__.__name__, computedSize, bufferSize))
             if(computedSize < bufferSize):
                 # don't send the *whole* message, just a section of it up to the specified length
                 Client._sock.send(msg.rawBuffer().raw[0:computedSize])
