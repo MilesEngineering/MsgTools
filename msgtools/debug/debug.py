@@ -315,17 +315,20 @@ class DebugDevice(QtWidgets.QWidget):
     def ProcessMessage(self, msg):
         if type(msg) == self.debugWidget.deviceInfoMsg:
             dictionaryID = ""
-            for i in range(msg.GetDebugStringDictionaryID.count):
-                dictionaryID += '{:02x}'.format(msg.GetDebugStringDictionaryID(i))
-            if msg.GetDebugStringDictionaryID.count < 16:
-                dictionaryID = "*%s*" % dictionaryID
-            if dictionaryID != self.dictionaryID:
-                if "0000000000000000" in dictionaryID:
-                    self.statusUpdate.emit("ERROR!  Dictionary ID %s invalid, being ignored" % self.statusUpdate.emit)
-                else:
-                    # If dictionary ID changed or wasn't previously set, load the dictionary.
-                    self.ReadDictionary("%s/PrintfDictionaries/%s.json" % (Messaging.objdir, dictionaryID))
-
+            try:
+                for i in range(msg.GetDebugStringDictionaryID.count):
+                    dictionaryID += '{:02x}'.format(msg.GetDebugStringDictionaryID(i))
+                if msg.GetDebugStringDictionaryID.count < 16:
+                    dictionaryID = "*%s*" % dictionaryID
+                if dictionaryID != self.dictionaryID:
+                    if "0000000000000000" in dictionaryID:
+                        self.statusUpdate.emit("ERROR!  Dictionary ID %s invalid, being ignored" % self.statusUpdate.emit)
+                    else:
+                        # If dictionary ID changed or wasn't previously set, load the dictionary.
+                        self.ReadDictionary("%s/PrintfDictionaries/%s.json" % (Messaging.objdir, dictionaryID))
+            except struct.error:
+                print("Cannot access DebugStringDictionaryID in %s message %s" % (self.debugWidget.deviceInfoMsg.MsgName(), msg))
+                return
             # If we get the deviceinfo, rename all the streams.
             try:
                 deviceName = msg.GetDeviceName()
