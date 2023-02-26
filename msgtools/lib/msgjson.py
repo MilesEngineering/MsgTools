@@ -3,6 +3,7 @@ from .messaging import Messaging
 # for conversion to JSON
 from collections import OrderedDict
 import json
+import struct
 
 def toDict(msg, includeHeader=False):
     pythonObj = OrderedDict()
@@ -98,7 +99,11 @@ def dictToMsg(d):
                 if isinstance(fieldValue, list):
                     #print(fieldName + " list type is " + type(fieldValue))
                     for i in range(0,len(fieldValue)):
-                        Messaging.set(msg, fieldInfo, fieldValue[i], i)
+                        try:
+                            Messaging.set(msg, fieldInfo, fieldValue[i], i)
+                        except struct.error as e:
+                            print(e)
+                            break
                         if terminationLen != None:
                             #TODO Broken for arrays-of-structs acting like parallel arrays!
                             terminationLen = max(terminationLen, fieldInfo.end_location(i))
