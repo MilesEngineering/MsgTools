@@ -178,7 +178,7 @@ def getFn(msg, field):
     elif count > 1:
         preface += "\n"
         preface += "    if idx >= %d:\n" % (count)
-        preface += "        raise struct.error('ERROR! Invalid idx %d >= "+str(count)+"' % (idx))\n"
+        preface += "        raise struct.error('Error getting "+msgName(msg)+"."+field["Name"]+"[%d], invalid index >= "+str(count)+"' % (idx))\n"
         loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     if fieldHasConversion(field):
         cleanup = "if convertFloat:\n    "
@@ -212,7 +212,7 @@ def setFn(msg, field):
     elif count > 1:
         preface += "\n"
         preface += "    if idx >= %d:\n" % (count)
-        preface += "        print('ERROR! "+msgName(msg)+"."+field["Name"]+", Invalid idx %d >= "+str(count)+"' % (idx))\n"
+        preface += "        raise struct.error('Error setting "+msgName(msg)+"."+field["Name"]+"[%d], invalid index >= "+str(count)+"' % (idx))\n"
         preface += "        return\n"
         loc += "+idx*" + str(MsgParser.fieldArrayElementOffset(field))
     ret  = '''\
