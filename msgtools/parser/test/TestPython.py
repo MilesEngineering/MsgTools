@@ -67,6 +67,9 @@ def GetFieldB(self):
 @msg.count(5)
 def GetFieldC(self, idx):
     \"\"\"\"\"\"
+    if idx >= 5:
+        raise struct.error('Error getting TestCase1.FieldC[%d], invalid index >= 5' % (idx))
+
     value = struct.unpack_from('B', self.rawBuffer(), TestCase1.MSG_OFFSET + 6+idx*1)[0]
     return value
 """)
@@ -190,6 +193,9 @@ def GetFieldF(self, convertFloat=True):
 @msg.count(3)
 def GetFieldS2_Member1(self, idx):
     \"\"\"\"\"\"
+    if idx >= 3:
+        raise struct.error('Error getting TestCase1.FieldS2_Member1[%d], invalid index >= 3' % (idx))
+
     value = struct.unpack_from('<l', self.rawBuffer(), TestCase1.MSG_OFFSET + 30+idx*12)[0]
     return value
 """)
@@ -203,6 +209,9 @@ def GetFieldS2_Member1(self, idx):
 @msg.count(3)
 def GetFieldS2_Member2(self, idx):
     \"\"\"\"\"\"
+    if idx >= 3:
+        raise struct.error('Error getting TestCase1.FieldS2_Member2[%d], invalid index >= 3' % (idx))
+
     value = struct.unpack_from('<d', self.rawBuffer(), TestCase1.MSG_OFFSET + 34+idx*12)[0]
     return value
 """)
@@ -216,6 +225,9 @@ def GetFieldS2_Member2(self, idx):
 @msg.count(3)
 def GetFieldG(self, idx):
     \"\"\"Test Field G, array of bitfields\"\"\"
+    if idx >= 3:
+        raise struct.error('Error getting TestCase1.FieldG[%d], invalid index >= 3' % (idx))
+
     value = struct.unpack_from('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 66+idx*2)[0]
     return value
 """)
@@ -258,6 +270,7 @@ def GetBitsE(self, idx):
 def SetFieldA(self, value):
     \"\"\"\"\"\"
     value = min(max(value, 0), 4294967295)
+    
     struct.pack_into('<L', self.rawBuffer(), TestCase1.MSG_OFFSET + 0, value)
 """)
         expected.append("""\
@@ -284,6 +297,7 @@ def SetFABitsA(self, value):
 def SetFieldB(self, value):
     \"\"\"\"\"\"
     value = min(max(value, 0), 65535)
+    
     struct.pack_into('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 4, value)
 """)
         expected.append("""\
@@ -297,6 +311,11 @@ def SetFieldB(self, value):
 def SetFieldC(self, value, idx):
     \"\"\"\"\"\"
     value = min(max(value, 0), 255)
+    
+    if idx >= 5:
+        raise struct.error('Error setting TestCase1.FieldC[%d], invalid index >= 5' % (idx))
+        return
+
     struct.pack_into('B', self.rawBuffer(), TestCase1.MSG_OFFSET + 6+idx*1, value)
 """)
         expected.append("""\
@@ -310,6 +329,7 @@ def SetFieldC(self, value, idx):
 def SetFieldD(self, value):
     \"\"\"\"\"\"
     value = min(max(value, 0), 255)
+    
     struct.pack_into('B', self.rawBuffer(), TestCase1.MSG_OFFSET + 11, value)
 """)
         expected.append("""\
@@ -371,6 +391,7 @@ def SetBitsC(self, value):
 @msg.count(1)
 def SetFieldE(self, value):
     \"\"\"\"\"\"
+    
     struct.pack_into('<f', self.rawBuffer(), TestCase1.MSG_OFFSET + 12, value)
 """)
         expected.append("""\
@@ -384,6 +405,7 @@ def SetFieldE(self, value):
 def SetFieldS1_Member1(self, value):
     \"\"\"\"\"\"
     value = min(max(value, -2147483648), 2147483647)
+    
     struct.pack_into('<l', self.rawBuffer(), TestCase1.MSG_OFFSET + 16, value)
 """)
         expected.append("""\
@@ -396,6 +418,7 @@ def SetFieldS1_Member1(self, value):
 @msg.count(1)
 def SetFieldS1_Member2(self, value):
     \"\"\"\"\"\"
+    
     struct.pack_into('<d', self.rawBuffer(), TestCase1.MSG_OFFSET + 20, value)
 """)
         expected.append("""\
@@ -411,6 +434,7 @@ def SetFieldF(self, value, convertFloat=True):
     if convertFloat:
         value = int((value - 1.828) / 2.7)
     value = min(max(value, 0), 65535)
+    
     struct.pack_into('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 28, value)
 """)
         expected.append("""\
@@ -424,6 +448,11 @@ def SetFieldF(self, value, convertFloat=True):
 def SetFieldS2_Member1(self, value, idx):
     \"\"\"\"\"\"
     value = min(max(value, -2147483648), 2147483647)
+    
+    if idx >= 3:
+        raise struct.error('Error setting TestCase1.FieldS2_Member1[%d], invalid index >= 3' % (idx))
+        return
+
     struct.pack_into('<l', self.rawBuffer(), TestCase1.MSG_OFFSET + 30+idx*12, value)
 """)
         expected.append("""\
@@ -436,6 +465,11 @@ def SetFieldS2_Member1(self, value, idx):
 @msg.count(3)
 def SetFieldS2_Member2(self, value, idx):
     \"\"\"\"\"\"
+    
+    if idx >= 3:
+        raise struct.error('Error setting TestCase1.FieldS2_Member2[%d], invalid index >= 3' % (idx))
+        return
+
     struct.pack_into('<d', self.rawBuffer(), TestCase1.MSG_OFFSET + 34+idx*12, value)
 """)
         expected.append("""\
@@ -449,6 +483,11 @@ def SetFieldS2_Member2(self, value, idx):
 def SetFieldG(self, value, idx):
     \"\"\"Test Field G, array of bitfields\"\"\"
     value = min(max(value, 0), 65535)
+    
+    if idx >= 3:
+        raise struct.error('Error setting TestCase1.FieldG[%d], invalid index >= 3' % (idx))
+        return
+
     struct.pack_into('<H', self.rawBuffer(), TestCase1.MSG_OFFSET + 66+idx*2, value)
 """)
         expected.append("""\
