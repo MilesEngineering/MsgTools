@@ -179,6 +179,7 @@ class MsgTextWidget(QtWidgets.QWidget):
 class MsgTreeWidget(TreeWidget):
     MAX_ROWS = 1000
     ROWS_TO_DELETE = 50
+    ARRAY_STRING_MAX_LENGTH = 64
     def __init__(self, msgClass, keyField=None, maxRows=1000, rowsToDelete=50):
         super(MsgTreeWidget, self).__init__()
         from msgtools.lib.unknownmsg import UnknownMsg
@@ -275,16 +276,27 @@ class MsgTreeWidget(TreeWidget):
             else:
                 columnText = ""
                 alert = False
-                for i in range(0,fieldInfo.count):
-                    fieldValue = str(Messaging.get(msg, fieldInfo, i))
-                    # if the value is what is given when we go off the end of an array, break.
-                    if fieldInfo.type == "int" and fieldValue == "UNALLOCATED":
-                        break
-                    columnText += str(fieldValue)
-                    if Messaging.getAlert(msg, fieldInfo, i):
-                        alert = True
-                    if(i<fieldInfo.count-1):
-                        columnText += ", "
+                if "hex" == fieldInfo.units.lower():
+                    columnText = "0x"
+                    for i in range(0, fieldInfo.count):
+                        fieldValue = Messaging.get(msg, fieldInfo, i).replace("0x","")
+                        if fieldInfo.type == "int" and fieldValue == "UNALLOCATED":
+                            break
+                        columnText += fieldValue
+                        if len(columnText) > MsgTreeWidget.ARRAY_STRING_MAX_LENGTH:
+                            columnText += "..."
+                            break
+                else:
+                    for i in range(0,fieldInfo.count):
+                        fieldValue = str(Messaging.get(msg, fieldInfo, i))
+                        # if the value is what is given when we go off the end of an array, break.
+                        if fieldInfo.type == "int" and fieldValue == "UNALLOCATED":
+                            break
+                        columnText += str(fieldValue)
+                        if Messaging.getAlert(msg, fieldInfo, i):
+                            alert = True
+                        if(i<fieldInfo.count-1):
+                            columnText += ", "
                 msgStringList.append(columnText)
                 columnAlerts.append(alert)
                 columnCounter += 1
