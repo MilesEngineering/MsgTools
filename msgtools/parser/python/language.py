@@ -226,7 +226,16 @@ def getBitsFn(msg, field, bits, bitOffset, numBits):
     cleanup = ""
     count = MsgParser.fieldCount(field)
     idx = "" if count == 1 else "idx"
-    access = "(self.Get%s(%s) >> %s) & %s" % (field["Name"], idx, str(bitOffset), MsgParser.Mask(numBits))
+    # Special logic for bitfields within a signed integer is required because python isn't consistent
+    # about how shifts and masks work with negative integer values.  The simplest thing to do is save
+    # the sign, do the shift and mask on the unsigned value, and reapply the sign.
+    if field["Type"].startswith('i'):
+        access = '''\
+self.Get%s(%s)
+    value = math.copysign((abs(value) >> %s) & %s, value)
+''' % (field["Name"], idx, str(bitOffset), MsgParser.Mask(numBits))
+    else:
+        access = "(self.Get%s(%s) >> %s) & %s" % (field["Name"], idx, str(bitOffset), MsgParser.Mask(numBits))
     if fieldHasConversion(bits):
         cleanup = "if convertFloat:\n    "
         cleanup += "    value = " + MsgParser.getMath("value", bits, "float", conversionParamNames=True)+"\n    "

@@ -98,13 +98,15 @@ def fieldNumBits(field):
     return numBits
 
 def fieldIsSigned(field):
-    isSigned = 0
     if "Type" in field:
+        isSigned = 0
         fieldType = field["Type"]
         if "int" in fieldType:
             if fieldType.startswith("int"):
                 isSigned = 1
-    return isSigned
+        return isSigned
+    else:
+        return field['parent_field_type'].startswith("int")
 
 def transformInt(field, value):
     if "Scale" in field or "Offset" in field:
@@ -519,6 +521,9 @@ def PatchStructs(inputData):
                             if resolve_sizes_and_locations:
                                 if not 'Location' in field:
                                     field['Location'] = location
+                                    if "Bitfields" in field:
+                                        for bits in field["Bitfields"]:
+                                            bits['parent_field_type'] = field['Type']
                                 location += fieldSize(field) * fieldCount(field)
                     msg['Fields'] = outfields
 
