@@ -289,8 +289,9 @@ class DebugDevice(QtWidgets.QWidget):
             all_filenames = glob.glob(filename)
             if len(all_filenames) == 0:
                 self.statusUpdate.emit("ERROR! No files match %s" % (filename))
+                return
             elif len(all_filenames) > 1:
-                self.statusUpdate.emit("ERROR! Multiple files %s match %s" % (all_filenames, filename))
+                self.statusUpdate.emit("WARNING! Multiple files %s match %s" % (all_filenames, filename))
             specific_filename = all_filenames[0]
             with open(specific_filename, 'r') as formatStringFile:
                 lines = formatStringFile.read().splitlines()
