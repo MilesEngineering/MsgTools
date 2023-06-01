@@ -259,7 +259,7 @@ def setBitsFn(msg, field, bits, bitOffset, numBits):
     if fieldHasConversion(bits):
         lookup += "if convertFloat:\n    "
         lookup += "    value = %s\n    " % (MsgParser.setMath("value", bits, "int", conversionParamNames=True))
-    lookup += "value = min(max(value, %s), %s)\n    " % (0, str(2**numBits-1))
+    lookup += "value = min(max(value, %s), %s)\n    " % (MsgParser.fieldStorageMin(field["Type"]), str(2**numBits-1))
     set_value = "(self.Get%s(%s) & ~(%s << %s)) | ((%s & %s) << %s)" % (field["Name"], idx, MsgParser.Mask(numBits), str(bitOffset), "value", MsgParser.Mask(numBits), str(bitOffset))
     ret = '''\
 %s

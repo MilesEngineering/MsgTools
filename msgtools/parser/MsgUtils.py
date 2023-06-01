@@ -637,30 +637,32 @@ def conversionParams(conversion, conversionParamNames):
     return c[:-2]
 
 # add tag (such as 'f') to scale and offset for floats
-def getMath(x, field, cast, floatTag="", conversionParamNames=False):
+def getMath(x, field, cast, floatTag="", conversionParamNames=False, as_int=False):
     ret = x
-    if cast and ("Offset" in field or "Scale" in field):
-        ret = "%s(%s)" % (cast, ret)
-    if "Scale" in field:
-        ret = "(%s * %s)" % (ret, fieldScale(field, floatTag))
-    if "Offset" in field:
-        ret = "(%s + %s)" % (ret, fieldOffset(field, floatTag))
-    if use_nonlinear_conversions and "Conversion" in field:
-        conversion = field["Conversion"]
-        ret = "%s.Convert(%s, %s)" % (conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
+    if not as_int:
+        if cast and ("Offset" in field or "Scale" in field):
+            ret = "%s(%s)" % (cast, ret)
+        if "Scale" in field:
+            ret = "(%s * %s)" % (ret, fieldScale(field, floatTag))
+        if "Offset" in field:
+            ret = "(%s + %s)" % (ret, fieldOffset(field, floatTag))
+        if use_nonlinear_conversions and "Conversion" in field:
+            conversion = field["Conversion"]
+            ret = "%s.Convert(%s, %s)" % (conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
     return ret
 
-def setMath(x, field, cast, floatTag="", conversionParamNames=False):
+def setMath(x, field, cast, floatTag="", conversionParamNames=False, as_int=False):
     ret = x
-    if "Offset" in field:
-        ret = "(%s - %s)" % (ret, fieldOffset(field, floatTag))
-    if "Scale" in field:
-        ret = "%s / %s" % (ret, fieldScale(field, floatTag))
-    if cast and ("Offset" in field or "Scale" in field):
-        ret = "%s(%s)" % (cast, ret)
-    if use_nonlinear_conversions and "Conversion" in field:
-        conversion = field["Conversion"]
-        ret = "%s.Invert(%s, %s)" % (conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
+    if not as_int:
+        if "Offset" in field:
+            ret = "(%s - %s)" % (ret, fieldOffset(field, floatTag))
+        if "Scale" in field:
+            ret = "%s / %s" % (ret, fieldScale(field, floatTag))
+        if cast and ("Offset" in field or "Scale" in field):
+            ret = "%s(%s)" % (cast, ret)
+        if use_nonlinear_conversions and "Conversion" in field:
+            conversion = field["Conversion"]
+            ret = "%s.Invert(%s, %s)" % (conversion["Type"], ret, conversionParams(conversion, conversionParamNames))
     return ret
 
 def fieldHasConversion(field):

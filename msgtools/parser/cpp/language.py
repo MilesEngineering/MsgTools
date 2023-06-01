@@ -88,7 +88,7 @@ def castForScaledInt(field):
         ret = "(" + ret + ")"
     return ret
 
-def getFn(field):
+def getFn(field, as_int=False):
     loc = str(MsgParser.fieldLocation(field))
     param = ""
     if MsgParser.fieldCount(field) > 1:
@@ -99,9 +99,9 @@ def getFn(field):
         accessor_name = "GetAligned"
     accessor_name += "BE" if MsgParser.big_endian else "LE"
     access = "%s_%s(&m_data[%s])" % (accessor_name, fieldType(field), loc)
-    access = getMath(access, field, castForScaledInt(field), 'f')
+    access = getMath(access, field, castForScaledInt(field), 'f', as_int=as_int)
     retType = fieldType(field)
-    if fieldHasConversion(field):
+    if fieldHasConversion(field) and not as_int:
         retType = typeForScaledInt(field)
     elif "Enum" in field and namespace == "":
         retType = namespace+field["Enum"]
@@ -111,15 +111,15 @@ def getFn(field):
 %s %s(%s)%s
 {
     return %s;
-}''' % (fnHdr(field), functionPrefix+retType, namespace+"Get"+field["Name"], joinParams(firstParamDecl, param), const, access)
+}''' % (fnHdr(field), functionPrefix+retType, namespace+"Get"+field["Name"]+("AsInt" if as_int else ""), joinParams(firstParamDecl, param), const, access)
     if "float" in retType or "double" in retType:
         ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
 
-def setFn(field):
+def setFn(field, as_int=False):
     paramType = fieldType(field)
-    valueString = setMath("value", field, "("+fieldType(field)+")", 'f')
-    if fieldHasConversion(field):
+    valueString = setMath("value", field, "("+fieldType(field)+")", 'f', as_int=as_int)
+    if fieldHasConversion(field) and not as_int:
         paramType = typeForScaledInt(field)
     elif "Enum" in field and namespace == "":
         valueString = "("+paramType+")" + "(" + valueString + ")"
@@ -138,19 +138,19 @@ def setFn(field):
 %s %s(%s)
 {
     %s_%s(&m_data[%s], %s);
-}''' % (fnHdr(field), functionPrefix+"void", namespace+"Set"+field["Name"], joinParams(firstParamDecl, param), accessor_name, fieldType(field), loc, valueString)
+}''' % (fnHdr(field), functionPrefix+"void", namespace+"Set"+field["Name"]+("AsInt" if as_int else ""), joinParams(firstParamDecl, param), accessor_name, fieldType(field), loc, valueString)
     if "float" in paramType or "double" in paramType:
         ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
 
-def getBitsFn(field, bits, bitOffset, numBits):
+def getBitsFn(field, bits, bitOffset, numBits, as_int=False):
     count = MsgParser.fieldCount(field)
     idx = "" if count == 1 else "idx"
     idxDecl = "" if count == 1 else "int idx"
     access = "(%sGet%s(%s) >> %s) & %s" % (namespace, field["Name"], joinParams(firstParam, idx), str(bitOffset), MsgParser.Mask(numBits))
-    access = getMath(access, bits, castForScaledInt(bits), 'f')
+    access = getMath(access, bits, castForScaledInt(bits), 'f', as_int=as_int)
     retType = fieldType(field)
-    if fieldHasConversion(bits):
+    if fieldHasConversion(bits) and not as_int:
         retType = typeForScaledInt(bits)
     elif "Enum" in bits and namespace == "":
         retType = namespace+bits["Enum"]
@@ -160,18 +160,18 @@ def getBitsFn(field, bits, bitOffset, numBits):
 %s %s(%s)%s
 {
     return %s;
-}''' % (fnHdr(bits), functionPrefix+retType, namespace+"Get"+MsgParser.BitfieldName(field, bits), joinParams(firstParamDecl, idxDecl), const, access)
+}''' % (fnHdr(bits), functionPrefix+retType, namespace+"Get"+MsgParser.BitfieldName(field, bits)+("AsInt" if as_int else ""), joinParams(firstParamDecl, idxDecl), const, access)
     if "float" in retType or "double" in retType:
         ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
 
-def setBitsFn(field, bits, bitOffset, numBits):
+def setBitsFn(field, bits, bitOffset, numBits, as_int=False):
     count = MsgParser.fieldCount(field)
     idx = "" if count == 1 else "idx"
     idxDecl = "" if count == 1 else "int idx"
     paramType = fieldType(field)
-    valueString = setMath("value", bits, "("+fieldType(field)+")", 'f')
-    if fieldHasConversion(bits):
+    valueString = setMath("value", bits, "("+fieldType(field)+")", 'f', as_int=as_int)
+    if fieldHasConversion(bits) and not as_int:
         paramType = typeForScaledInt(bits)
     elif "Enum" in bits and namespace == "":
         valueString = "("+paramType+")" + "(" + valueString + ")"
@@ -187,7 +187,7 @@ def setBitsFn(field, bits, bitOffset, numBits):
 %s %s(%s)
 {
     %s(%s);
-}''' % (fnHdr(bits), functionPrefix+"void", namespace+"Set"+MsgParser.BitfieldName(field, bits), joinParams(firstParamDecl, paramType+" value", idxDecl), namespace+"Set"+field["Name"], joinParams(firstParam, newVal, idx))
+}''' % (fnHdr(bits), functionPrefix+"void", namespace+"Set"+MsgParser.BitfieldName(field, bits)+("AsInt" if as_int else ""), joinParams(firstParamDecl, paramType+" value", idxDecl), namespace+"Set"+field["Name"], joinParams(firstParam, newVal, idx))
     if "float" in paramType or "double" in paramType:
         ret = "#ifndef DISABLE_FLOAT_ACCESSORS\n" + ret + "\n#endif\n"
     return ret
@@ -201,6 +201,9 @@ def accessors(msg):
         for field in msg["Fields"]:
             gets.append(getFn(field))
             sets.append(setFn(field))
+            if fieldHasConversion(field):
+                gets.append(getFn(field, as_int=True))
+                sets.append(setFn(field, as_int=True))
             arrAcc = arrayAccessor(field)
             if arrAcc != "":
                 arrayAccessors.append(arrAcc)
@@ -210,6 +213,9 @@ def accessors(msg):
                     numBits = bits["NumBits"]
                     gets.append(getBitsFn(field, bits, bitOffset, numBits))
                     sets.append(setBitsFn(field, bits, bitOffset, numBits))
+                    if fieldHasConversion(bits):
+                        gets.append(getBitsFn(field, bits, bitOffset, numBits, as_int=True))
+                        sets.append(setBitsFn(field, bits, bitOffset, numBits, as_int=True))
                     bitOffset += numBits
 
     return gets+sets+arrayAccessors
