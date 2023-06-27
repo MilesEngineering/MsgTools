@@ -35,6 +35,11 @@ def arrayAccessor(field):
     if MsgParser.fieldCount(field) == 1:
         return ""
     
+    enumSetCast = ""
+    enumGetCast = ""
+    if "Enum" in field and namespace == "":
+        enumGetCast = "("+fieldType(field)+")"
+        enumSetCast = "("+namespace+field["Enum"]+")"
     # Functions to copy in and out.  These call the field Set/Get functions so
     # that they work regardless of endian, and for non-contiguous arrays.
     ret = '''\
@@ -47,7 +52,7 @@ def arrayAccessor(field):
         %sSet%s(%s);
     }
 }
-''' % (fnHdr(field), functionPrefix, namespace+field["Name"], joinParams(firstParamDecl, "const "+fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), namespace, field["Name"], joinParams(firstParam, "in[i], i"))
+''' % (fnHdr(field), functionPrefix, namespace+field["Name"], joinParams(firstParamDecl, "const "+fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), namespace, field["Name"], joinParams(firstParam, enumSetCast+"in[i], i"))
     ret += '''\
 %s
 %svoid CopyOut%s(%s* out, int len)
@@ -58,7 +63,7 @@ def arrayAccessor(field):
         out[i] = %sGet%s(%s);
     }
 }
-''' % (fnHdr(field), functionPrefix, namespace+field["Name"], joinParams(firstParamDecl, fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), namespace, field["Name"], joinParams(firstParam, "i"))
+''' % (fnHdr(field), functionPrefix, namespace+field["Name"], joinParams(firstParamDecl, fieldType(field)), inline_min("len", MsgParser.fieldCount(field)), enumGetCast+namespace, field["Name"], joinParams(firstParam, "i"))
 
     # Only return a pointer to the array if we have natural alignment,
     # and are contiguous
