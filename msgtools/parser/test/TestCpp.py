@@ -59,6 +59,12 @@ float GetBitsA() const
 #endif
 """)
         expected.append("""\
+/*  , (0.0 to 215.355)*/
+uint8_t GetBitsAAsInt() const
+{
+    return (GetFieldD() >> 0) & 0xf;
+}""")
+        expected.append("""\
 /*  , (0 to 7)*/
 EnumA GetBitsB() const
 {
@@ -104,6 +110,12 @@ float GetFieldF() const
 #endif
 """)
         expected.append("""\
+/*  , (1.828 to 176946.328)*/
+uint16_t GetFieldFAsInt() const
+{
+    return GetAlignedLE_uint16_t(&m_data[28]);
+}""")
+        expected.append("""\
 /*  , (-2147483648 to 2147483647)*/
 int32_t GetFieldS2_Member1(int idx) const
 {
@@ -133,6 +145,12 @@ float GetBitsD(int idx) const
 }
 #endif
 """)
+        expected.append("""\
+/*  m/s, (0.0 to 215.355)*/
+uint16_t GetBitsDAsInt(int idx) const
+{
+    return (GetFieldG(idx) >> 0) & 0xf;
+}""")
         expected.append("""\
 /*  m/s2, (0 to 511)*/
 uint16_t GetBitsE(int idx) const
@@ -179,6 +197,12 @@ void SetBitsA(float value)
 #endif
 """)
         expected.append("""\
+/*  , (0.0 to 215.355)*/
+void SetBitsAAsInt(uint8_t value)
+{
+    SetFieldD((GetFieldD() & ~(0xf << 0)) | ((value & 0xf) << 0));
+}""")
+        expected.append("""\
 /*  , (0 to 7)*/
 void SetBitsB(EnumA value)
 {
@@ -224,6 +248,12 @@ void SetFieldF(float value)
 #endif
 """)
         expected.append("""\
+/*  , (1.828 to 176946.328)*/
+void SetFieldFAsInt(uint16_t value)
+{
+    SetAlignedLE_uint16_t(&m_data[28], value);
+}""")
+        expected.append("""\
 /*  , (-2147483648 to 2147483647)*/
 void SetFieldS2_Member1(int32_t value, int idx)
 {
@@ -253,6 +283,12 @@ void SetBitsD(float value, int idx)
 }
 #endif
 """)
+        expected.append("""\
+/*  m/s, (0.0 to 215.355)*/
+void SetBitsDAsInt(uint16_t value, int idx)
+{
+    SetFieldG((GetFieldG(idx) & ~(0xf << 0)) | ((value & 0xf) << 0), idx);
+}""")
         expected.append("""\
 /*  m/s2, (0 to 511)*/
 void SetBitsE(uint16_t value, int idx)
