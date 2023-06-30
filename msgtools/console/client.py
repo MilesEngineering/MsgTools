@@ -21,6 +21,7 @@ class Client:
     # One socket, shared by all clients
     # Each client blocks on reading from it's own gevent.queue
     _sock = None
+    _socket_connected = False
     # A totally separate coroutine does a blocking read with infinite timeout,
     # and writes to all the Client queues.
     _rx_greenlet = None
@@ -62,6 +63,10 @@ class Client:
         # add us to the list of clients
         Client._clients.append(self)
 
+    # This will be called once on startup with retry=False, and after that,
+    # will only be called from the read_msg_from_socket() greenlet thread,
+    # with retry=True.  Because of that, if retry=True, we'll gevent.sleep()
+    # when called with retry==True, to prevent too much network activity.
     @staticmethod
     def reconnect_socket(retry=True):
         if retry:
@@ -83,7 +88,9 @@ class Client:
             connectMsg = Messaging.Messages.Network.Connect()
             connectMsg.SetName(Client._name)
             Client.static_send(connectMsg)
+            Client._socket_connected = True
         except:
+            Client._socket_connected = False
             #print("couldn't open socket!!")
             if not SimExec.sim_exists:
                 raise

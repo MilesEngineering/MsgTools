@@ -169,6 +169,42 @@ class SimBaseClass:
         gevent.signal_handler(signal.SIGTERM, SimBaseClass.close, signal.SIGTERM)
         gevent.signal_handler(signal.SIGINT, SimBaseClass.close, signal.SIGINT)
 
+        if self._args.asap:
+            if self._args.hitl:
+                print("ERROR!")
+                print("The simulation was run with --asap and --hitl, and these are incompatible.")
+                print("You must choose only one of --asap or --hitl.")
+                exit(1)
+            if not self._args.fsw:
+                print("ERROR!")
+                print("The simulation was run with --asap but without --fsw.")
+                print("If you want to run --asap, you also need --fsw to run the flight software internal to the sim")
+                exit(1)
+
+        if not Client._socket_connected:
+            if not self._args.fsw and not self._args.hitl:
+                print("ERROR!")
+                print("The simulation was run without --fsw and without --hitl, but has been unable to make a socket connection to msgserver!")
+                print("This means the sim has nothing to talk to!")
+                print("You probably should run with one of:")
+                print("1) --fsw to run the flight software internal to the sim")
+                print("2) --hitl to use hardware links or virtual hardware links to send simulation data to the flight software")
+                print("3) or you should run msgserver and run")
+                print("  a. the flight software as a Linux software application on this PC")
+                print("  b. the flight software on an embedded processor with a link to msgserver (USB, CAN, serial, etc.)")
+                if self._args.asap:
+                    print("Note that the sim will not make a socket connection to msgserver when run with --asap,")
+                    print("so if you want to use msgserver, you should NOT specify --asap")
+                exit(1)
+            if not self._args.log:
+                print("ERROR!")
+                print("The simulation was run without --log, but has been unable to make a socket connection to msgserver!")
+                print("You ought to either specify --log so data is recorded for post-processing, or else have msgserver")
+                print("running so you can use other applications to see what's happening or log it.")
+                print("If you don't include --log or run msgserver, then there's no good reason to run the sim")
+                print("because you won't know what it did while it ran.")
+                exit(1)
+
     @staticmethod
     def close(signo):
         sys.exit('\n%s received - aborting.' % (str(signo)))
