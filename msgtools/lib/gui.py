@@ -2,17 +2,23 @@ import sys
 import datetime
 import inspect
 import argparse
+import json
 
 from PyQt5 import QtGui, QtWidgets, QtCore, QtNetwork
 
 from .app import *
 
 import msgtools.lib.msgcsv as msgcsv
+import msgtools.lib.txtreewidget as txtreewidget
 
-# tree widget item with support for sorting by a column
+# Tree widget item with support for sorting by a column, and support for per-column editability
+# For per-column editability to work, you need to setItemDelegate(NoEditDelegate), and
+# NoEditDelegate is defined in txtreewidget.py
 class TreeWidgetItem(QtWidgets.QTreeWidgetItem):
-    def __init__(self, parent, stringList):
-        QtWidgets.QTreeWidgetItem.__init__(self, parent, stringList)
+    def __init__(self, stringList):
+        QtWidgets.QTreeWidgetItem.__init__(self, stringList)
+        self.editable = False
+        self.editable_columns = {}
 
     def __lt__(self, otherItem):
         column = self.treeWidget().sortColumn()
@@ -20,6 +26,19 @@ class TreeWidgetItem(QtWidgets.QTreeWidgetItem):
             return float(self.text(column)) < float(otherItem.text(column))
         except ValueError:
             return self.text(column) < otherItem.text(column)
+
+    def makeEditable(self, editable_columns):
+        self.editable = True
+        self.setFlags(self.flags() | QtCore.Qt.ItemIsEditable)
+        for c in editable_columns:
+            self.editable_columns[c] = True
+
+    def editableColumn(self, column):
+        if not self.editable:
+            return False
+        if column in self.editable_columns:
+            return True
+        return False
 
 # tree widget that we can copy-and-paste on
 class TreeWidget(QtWidgets.QTreeWidget):
@@ -177,7 +196,6 @@ class MsgTextWidget(QtWidgets.QWidget):
 
 # tree widget that allows us to push msg data directly into the tree
 class MsgTreeWidget(TreeWidget):
-    MAX_ROWS = 1000
     ROWS_TO_DELETE = 50
     ARRAY_STRING_MAX_LENGTH = 64
     def __init__(self, msgClass, keyField=None, maxRows=1000, rowsToDelete=50):
@@ -580,3 +598,251 @@ class Gui(App, QtWidgets.QMainWindow):
         else:
             self.connectionCheckbox.setText("NOT Connected")
             self.CloseConnection()
+
+import re
+def get_trailing_number(s):
+    m = re.search(r'\d+$', s)
+    return int(m.group()) if m else None
+
+def rchop(s, suffix):
+    if suffix and s.endswith(suffix):
+        return s[:-len(suffix)]
+    return s
+
+def get_type(s):
+    type_names = {"_f":"float", "_u":"uint32", "_i":"int32"}
+    if s.endswith(tuple(type_names.keys())):
+        return type_names[s[-2:]]
+    else:
+        return ""
+
+def get_name_type_and_count(s):
+    count = get_trailing_number(s)
+    if count != None:
+        s = rchop(s, str(count))
+    else:
+        count = 1
+    type = get_type(s)
+    name = s[:-2]
+    return name, type, count
+
+class ConfigTreeWidgetItem(TreeWidgetItem):
+    NAME_COLUMN = 0
+    TYPE_COLUMN = 1
+    DEVICE_VALUE_COLUMN = 2
+    SYNC_COLUMN = 3
+    FILE_VALUE_COLUMN = 4
+    COLUMN_COUNT = 5
+    def __init__(self, key):
+        name, type, count = get_name_type_and_count(key)
+        if count == 1:
+            type_string = type
+        else:
+            type_string = "%s[%s]" % (type, count)
+        string_list = [name, type_string, "", "", ""]
+        super().__init__(string_list)
+        self.makeEditable([ConfigTreeWidgetItem.DEVICE_VALUE_COLUMN, ConfigTreeWidgetItem.FILE_VALUE_COLUMN])
+        
+        self.key = key
+        self.name = name
+        self.type = type
+        self.count = count
+        
+        self.device_value = None
+        self.file_value = None
+        sync_left = QtWidgets.QToolButton()
+        sync_left.setText("\u2190")
+        sync_right = QtWidgets.QToolButton()
+        sync_right.setText("\u2192")
+        self.sync_widget = QtWidgets.QWidget()
+        self.sync_widget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(sync_left)
+        hbox.addWidget(sync_right)
+        self.sync_widget.setLayout(hbox)
+        sync_left.clicked.connect(self.syncLeft)
+        sync_right.clicked.connect(self.syncRight)
+
+    def data(self, column, role):
+        if role != QtCore.Qt.FontRole and role != QtCore.Qt.ForegroundRole:
+            return super(ConfigTreeWidgetItem, self).data(column, role)
+
+        if column == ConfigTreeWidgetItem.DEVICE_VALUE_COLUMN:
+            alert = self.device_value != self.text(ConfigTreeWidgetItem.DEVICE_VALUE_COLUMN)
+            alert_color = QtGui.QColor("darkOrange")
+        elif column == ConfigTreeWidgetItem.FILE_VALUE_COLUMN:
+            alert = self.file_value != self.text(ConfigTreeWidgetItem.FILE_VALUE_COLUMN)
+            alert_color = QtGui.QColor("darkOrange")
+        else:
+            device_value = self.text(ConfigTreeWidgetItem.DEVICE_VALUE_COLUMN)
+            file_value = self.text(ConfigTreeWidgetItem.FILE_VALUE_COLUMN)
+            alert = False if device_value == file_value else True
+            alert_color = QtCore.Qt.red
+        if alert:
+            self.treeWidget().alert.emit(alert_color)
+        if role == QtCore.Qt.FontRole:
+            font = QtGui.QFont()
+            if alert:
+                font.setBold(True)
+            return font
+        if role == QtCore.Qt.ForegroundRole:
+            brush = QtGui.QBrush()
+            if alert:
+                brush.setColor(alert_color)
+            return brush
+
+        return super(ConfigTreeWidgetItem, self).data(column, role)
+
+    def syncLeft(self):
+        self.setText(ConfigTreeWidgetItem.DEVICE_VALUE_COLUMN, self.text(ConfigTreeWidgetItem.FILE_VALUE_COLUMN))
+
+    def syncRight(self):
+        self.setText(ConfigTreeWidgetItem.FILE_VALUE_COLUMN, self.text(ConfigTreeWidgetItem.DEVICE_VALUE_COLUMN))
+    
+    def setDeviceValue(self, value):
+        self.device_value = value
+        self.setText(ConfigTreeWidgetItem.DEVICE_VALUE_COLUMN, value)
+
+    def setFileValue(self, value):
+        self.file_value = value
+        self.setText(ConfigTreeWidgetItem.FILE_VALUE_COLUMN, value)
+
+# Tree widget that synchronizes configuration settings between a device and a config file,
+# and lets the user edit both.
+class ConfigTreeWidget(TreeWidget):
+    send_msg = QtCore.pyqtSignal(object)
+    alert = QtCore.pyqtSignal(object)
+    ARRAY_STRING_MAX_LENGTH = 64
+    def __init__(self, msg_namespace, cfg_filename):
+        super(ConfigTreeWidget, self).__init__()
+        self.msg_namespace = msg_namespace
+        self.cfg_filename = cfg_filename
+
+        # add table header, one column for each message field
+        tableHeader = []
+        tableHeader.append("Setting Name")
+        tableHeader.append("Type")
+        tableHeader.append("Device Value")
+        tableHeader.append("Sync")
+        tableHeader.append("File Value")
+        self.setHeaderLabels(tableHeader)
+        
+        self.items_by_key = {}
+        for key, value in self.msg_namespace.GetConfigValue.ConfigSettingsKeys.items():
+            # Don't use value 0, it's a marker for an Invalid value.
+            if value == 0:
+                continue
+            tree_item = ConfigTreeWidgetItem(key)
+            self.addTopLevelItem(tree_item)
+            self.setItemDelegate(txtreewidget.NoEditDelegate(self, self))
+            self.items_by_key[key] = tree_item
+            self.setItemWidget(tree_item, ConfigTreeWidgetItem.SYNC_COLUMN, tree_item.sync_widget)
+
+        for c in range(ConfigTreeWidgetItem.COLUMN_COUNT):
+            self.resizeColumnToContents(c)
+    
+    def load_from_device(self):
+        query_msg = self.msg_namespace.GetConfigKeys()
+        self.send_msg.emit(query_msg)
+
+    def save_to_device(self):
+        for key, tree_item in self.items_by_key.items():
+            values = tree_item.text(ConfigTreeWidgetItem.DEVICE_VALUE_COLUMN)
+            if values == "":
+                delete_value_msg = self.msg_namespace.DeleteConfigValue()
+                delete_value_msg.SetKey(key)
+                self.send_msg.emit(delete_value_msg)
+            else:
+                set_value_msg = self.msg_namespace.SetConfigValue()
+                set_value_msg.SetKey(key)
+                idx = 0
+                for value in values.split(","):
+                    set_value_msg.SetValues(float(value), idx)
+                    idx += 1
+                self.send_msg.emit(set_value_msg)
+        # After saving to device, re-load from the device
+        self.load_from_device()
+
+    def process_msg(self, msg):
+        if type(msg) == self.msg_namespace.CurrentConfigKeys:
+            # if we got a message with a list of config setting keys,
+            # iterate through the keys and request the config setting for each.
+            for i in range(msg.GetCount()):
+                query_msg = self.msg_namespace.GetConfigValue()
+                query_msg.SetKey(msg.GetKey(i))
+                self.send_msg.emit(query_msg)
+
+        elif type(msg) == self.msg_namespace.CurrentConfigValue:
+            # if we got a message with the value of a config setting,
+            # display it in the table, unless it's an invalid key
+            key_int = msg.GetKey(enumAsInt=True)
+            key = msg.GetKey()
+            if key == "Invalid" or key_int == 0:
+                return
+            if key in self.items_by_key:
+                count = msg.GetCount()
+                value = ""
+                for i in range(count):
+                    value += str(msg.GetValues(i)) + ", "
+                value = value[:-2]
+                tree_item = self.items_by_key[key]
+                tree_item.setDeviceValue(value)
+                self.viewport().update()
+            else:
+                print("Key %s not in keys %s" % (key, list(self.items_by_key.keys())))
+
+    def load_from_file(self):
+        with open(self.cfg_filename, 'r') as f:
+            for line in f:
+                data = json.loads(line)
+                for key, value in data.items():
+                    try:
+                        tree_item = self.items_by_key[key]
+                        tree_item.setFileValue(value)
+                    except KeyError:
+                        print("ERROR! Invalid Key %s not in %s" % (key, self.items_by_key.keys()))
+        self.viewport().update()
+
+    def save_to_file(self):
+        with open(self.cfg_filename, 'w') as f:
+            for key, tree_item in self.items_by_key.items():
+                value = tree_item.text(ConfigTreeWidgetItem.FILE_VALUE_COLUMN)
+                if value:
+                    d = {key: value}
+                    f.write(json.dumps(d)+"\n")
+        # After writing, re-read the file.
+        self.load_from_file()
+
+class ConfigEditor(QtWidgets.QWidget):
+    send_msg = QtCore.pyqtSignal(object)
+    alert = QtCore.pyqtSignal(object)
+    def __init__(self, msg_namespace, cfg_filename):
+        super(ConfigEditor, self).__init__()
+
+        hbox = QtWidgets.QHBoxLayout()
+        load_from_device_button = QtWidgets.QPushButton("Load from device")
+        save_to_device_button = QtWidgets.QPushButton("Save to device")
+        load_from_file_button = QtWidgets.QPushButton("Load from file")
+        save_to_file_button = QtWidgets.QPushButton("Save to file")
+        hbox.addWidget(load_from_device_button)
+        hbox.addWidget(save_to_device_button)
+        hbox.addWidget(load_from_file_button)
+        hbox.addWidget(save_to_file_button)
+
+        self.edit_tree = ConfigTreeWidget(msg_namespace, cfg_filename)
+        self.edit_tree.send_msg.connect(self.send_msg)
+        self.edit_tree.alert.connect(self.alert)
+
+        load_from_file_button.clicked.connect(self.edit_tree.load_from_file)
+        load_from_device_button.clicked.connect(self.edit_tree.load_from_device)
+        save_to_file_button.clicked.connect(self.edit_tree.save_to_file)
+        save_to_device_button.clicked.connect(self.edit_tree.save_to_device)
+        
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addLayout(hbox)
+        vbox.addWidget(self.edit_tree)
+        self.setLayout(vbox)
+    
+    def process_msg(self, msg):
+        self.edit_tree.process_msg(msg)
+    

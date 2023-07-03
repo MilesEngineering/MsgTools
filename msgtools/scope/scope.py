@@ -91,11 +91,11 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
 
         self.configure_gui(parent, args.debugdicts)
         
-        self.ReadTxDictionary()
+        self.txDictionary.ReadTxDictionary()
 
     def configure_gui(self, parent, debugdicts):
         # create widgets for tx
-        self.txDictionary = self.configure_tx_dictionary(parent)
+        self.txDictionary = self.configure_tx_dictionary()
         self.txMsgs = self.configure_tx_messages(parent)
         txClearBtn = QPushButton("Clear")
 
@@ -116,15 +116,14 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.txSplitter = vsplitter(parent, self.txDictionary, txVBox, self.debugWidget)
         
         # create widgets for rx
-        self.rx_message_list = self.configure_rx_message_list(parent)
+        self.rx_message_list = self.configure_rx_message_list()
         self.rx_messages_widget = self.configure_rx_messages_widget(parent)
         self.configure_msg_plots(parent)
         rxClearListBtn = QPushButton("Clear")
-        rxSortListBtn = QPushButton("Sort")
         rxClearMsgsBtn = QPushButton("Clear")
         
         # add them to the rx layout
-        rxMsgListBox = slim_vbox(self.rx_message_list, rxClearListBtn, rxSortListBtn)
+        rxMsgListBox = slim_vbox(self.rx_message_list, rxClearListBtn)
         rxMsgsBox = slim_vbox(self.rx_messages_widget, rxClearMsgsBtn)
         self.rxSplitter = vsplitter(parent, rxMsgListBox, rxMsgsBox)
 
@@ -138,7 +137,6 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         # connect signals for 'clear' buttons
         txClearBtn.clicked.connect(self.clear_tx)
         rxClearListBtn.clicked.connect(self.clear_rx_list)
-        rxSortListBtn.clicked.connect(self.sort_rx_list)
         rxClearMsgsBtn.clicked.connect(self.clear_rx_msgs)
         
     def configure_msg_plots(self, parent):
@@ -146,10 +144,98 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.msgPlotsByKey = {}
         self.msgPlotList = []
 
-    def configure_tx_dictionary(self, parent):
-        txDictionary = QTreeWidget(parent)
+    class TxDictionaryItem(QTreeWidgetItem):
+        index = 0
+        def __init__(self, parent):
+            super(QTreeWidgetItem, self).__init__(parent)
+            # Remember the index that messages were created with, because
+            # that is the same as the order of the messages in the YAML.
+            self.initial_order_index = MessageScopeGui.TxDictionaryItem.index
+            MessageScopeGui.TxDictionaryItem.index += 1
+
+        def __lt__(self, otherItem):
+            # return comparison based on initial sort order, which is based
+            # on the order messages are defined in the YAML.
+            if not self.treeWidget().header().isSortIndicatorShown():
+                return self.initial_order_index < otherItem.initial_order_index
+            column = self.treeWidget().sortColumn()
+            return self.text(column) < otherItem.text(column)
+
+    class TxDictionary(QTreeWidget):
+        def __init__(self):
+            super(MessageScopeGui.TxDictionary, self).__init__()
+            self.setHeaderLabels(["Transmit Dictionary"])
+            # configure the header so we can click on it to sort
+            self.header().setSectionsClickable(True)
+            self.header().setSortIndicatorShown(False)
+            self.header().sectionClicked.connect(self.tableHeaderClicked)
+        
+        def isSorted(self):
+            return self.header().isSortIndicatorShown()
+        
+        def setSorted(self, sorted):
+            self.header().setSortIndicatorShown(sorted)
+            self.sortItems(0, Qt.AscendingOrder)
+
+        def tableHeaderClicked(self, column):
+            if self.header().isSortIndicatorShown():
+                self.header().setSortIndicatorShown(False)
+            else:
+                self.header().setSortIndicatorShown(True)
+
+            # Always sort so that top-level items are sorted, but if our
+            # sortIndicator isn't shown, children will sort themselves
+            # according to their initial order and not alphabetically.
+            self.sortItems(column, Qt.AscendingOrder)
+
+        def ReadTxDictionary(self):
+            #print("Tx Dictionary:")
+            # We want to read the dictionary in numerical order, but MsgNameFromID
+            # has keys that are hex strings, so create a dictionary of integer ID
+            # to hex ID and iterate over the sorted version of integer IDs.
+            msg_id_from_int = {}
+            for msg_id in Messaging.MsgNameFromID:
+                msg_id_from_int[int(msg_id, 16)] = msg_id
+            for int_id in sorted(msg_id_from_int):
+                id = msg_id_from_int[int_id]
+                name = Messaging.MsgNameFromID[id]
+                components = name.split('.')
+                dirs = components[:-1]
+                msgName = components[-1]
+                
+                parentWidget = self
+                parentPath = ""
+                for dir in dirs:
+                    # find the node that matches the directory we're looking for
+                    dirItemMatches = self.findItems(dir, Qt.MatchExactly | Qt.MatchRecursive, 0)
+                    foundMatch = False
+                    for dirItem in dirItemMatches:
+                        try:
+                            if parentPath == dirItem.parentPath:
+                                parentWidget = dirItem
+                                foundMatch = True
+                                break
+                        except AttributeError:
+                            pass
+                    # if we didn't find the node for the directory, add it
+                    if not foundMatch:
+                        if parentWidget == self:
+                            newWidget = QTreeWidgetItem(parentWidget)
+                            newWidget.initial_order_index = -1
+                        else:
+                            newWidget = MessageScopeGui.TxDictionaryItem(parentWidget)
+                        newWidget.setText(0, dir)
+                        newWidget.parentPath = parentPath
+                        parentWidget = newWidget
+                    parentPath += dir + "."
+                msgItem = MessageScopeGui.TxDictionaryItem(parentWidget)
+                msgItem.setText(0, msgName)
+                msgItem.msgName = name
+            self.sortByColumn(0, Qt.AscendingOrder)
+
+    def configure_tx_dictionary(self):
+        txDictionary = MessageScopeGui.TxDictionary()
         txDictionary.itemDoubleClicked.connect(self.onTxMessageSelected)
-        txDictionary.setHeaderLabels(["Transmit Dictionary"])
         return txDictionary
 
     def configure_tx_messages(self, parent):
@@ -162,19 +248,100 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         txMsgs.setHeaderItem(txMsgsHeader)
         return txMsgs
 
-    def configure_rx_message_list(self, parent):
-        self.rx_msg_list = {}
+    class RxMessageListItem(QTreeWidgetItem):
+        def __init__(self, msg_key, msg, rx_time):
+            widget_name = msg.MsgName()
+            msg_route = Messaging.MsgRoute(msg)
+            if len(msg_route) > 0 and not(all ("0" == a for a in msg_route)):
+                widget_name += " ("+",".join(msg_route)+")"
+            QTreeWidgetItem.__init__([ widget_name, rx_time.strftime('%H:%M:%S.%f')[:-3], "- Hz" ])
+            self.msg_key = msg_key
+            self.msg = msg
+            self.rx_count = 1
+            self.avg_rate = 1.0
 
-        timer = QTimer(self)
-        timer.timeout.connect(self.show_rx_msg_rates)
-        timer.start(1000)
+        def __lt__(self, otherItem):
+            column = self.treeWidget().sortColumn()
+            if column == 2:
+                return self.avg_rate < otherItem.avg_rate
+            try:
+                return float(self.text(column)) < float(otherItem.text(column))
+            except ValueError:
+                return self.text(column) < otherItem.text(column)
 
-        rxMessageList = QTreeWidget(parent)
-        rxMessageList.setColumnCount(3)
-        rxMsgHeader = QTreeWidgetItem(None, [ "Name", "Last Received", "Rx Rate" ])
-        rxMessageList.setHeaderItem(rxMsgHeader)
-        rxMessageList.setContextMenuPolicy(Qt.CustomContextMenu)
+    class RxMessageList(QTreeWidget):
+        def __init__(self):
+            super(MessageScopeGui.RxMessageList, self).__init__()
+            self.setColumnCount(3)
+            rxMsgHeader = QTreeWidgetItem(None, [ "Name", "Last Received", "Rx Rate" ])
+            self.setHeaderItem(rxMsgHeader)
+            self.setContextMenuPolicy(Qt.CustomContextMenu)
+            # configure the header so we can click on it to sort
+            self.header().setSectionsClickable(True)
+            self.header().setSortIndicatorShown(False)
+            self.keyField = None
+            self.sortOrder = Qt.AscendingOrder
+            self.header().sectionClicked.connect(self.tableHeaderClicked)
 
+            self.items_by_key = {}
+
+            timer = QTimer(self)
+            timer.timeout.connect(self.show_rx_msg_rates)
+            timer.start(1000)
+
+        def tableHeaderClicked(self, column):
+            self.header().setSortIndicatorShown(True)
+            fieldName = self.headerItem().text(column)
+            if self.keyField == None or self.keyField != fieldName:
+                self.keyField = fieldName
+                self.sortOrder = Qt.AscendingOrder
+            else:
+                self.sortOrder = Qt.DescendingOrder if self.sortOrder == Qt.AscendingOrder else Qt.AscendingOrder
+            self.header().setSortIndicator(column, self.sortOrder)
+            self.sortItems(column, self.sortOrder)
+
+        def show_rx_msg_rates(self):
+            weight = 0.5
+            for msg_key, widget in self.items_by_key.items():
+                rate = float(widget.rx_count)
+                widget.rx_count = 0
+                widget.avg_rate = (1-weight) * widget.avg_rate + weight * rate
+
+                if widget.avg_rate > 0.05:
+                    output = "{0:0.1f} Hz".format(widget.avg_rate)
+                elif widget.avg_rate > 0.01:
+                    output = "0 Hz"
+                else:
+                    output = "-- Hz"
+
+                if self.items_by_key[msg_key].rx_time_changed:
+                    self.items_by_key[msg_key].setText(1, self.items_by_key[msg_key].rx_time.strftime('%H:%M:%S.%f')[:-3])
+                self.items_by_key[msg_key].rx_time_changed = False
+                self.items_by_key[msg_key].setText(2, output)
+
+        def updateMessage(self, msg_key, msg):
+            rx_time = datetime.now()
+            if not msg_key in self.items_by_key:
+                msg_list_item = MessageScopeGui.RxMessageListItem(msg_key, msg, rx_time)
+
+                # Add an item at the end of the list
+                self.addTopLevelItem(msg_list_item)
+                # Hide the sort indicator, since we added at the end and sorting has been broken
+                self.header().setSortIndicatorShown(False)
+                self.resizeColumnToContents(0)
+                self.items_by_key[msg_key] = msg_list_item
+
+            self.items_by_key[msg_key].rx_time = rx_time
+            self.items_by_key[msg_key].rx_time_changed = True
+            self.items_by_key[msg_key].msg = msg
+            self.items_by_key[msg_key].rx_count += 1
+        
+        def clear(self):
+            self.items_by_key = {}
+            super(MessageScopeGui.RxMessageList, self).rx_message_list.clear()
+
+    def configure_rx_message_list(self):
+        rxMessageList = MessageScopeGui.RxMessageList()
         rxMessageList.itemDoubleClicked.connect(self.onRxListDoubleClicked)
         rxMessageList.customContextMenuRequested.connect(lambda position : self.onRxMessageContextMenuRequested(position, rxMessageList))
         return rxMessageList
@@ -194,39 +361,6 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         rxMessagesTreeWidget.customContextMenuRequested.connect(lambda position : self.onRxMessageContextMenuRequested(position, rxMessagesTreeWidget))
         return rxMessagesTreeWidget
 
-    def ReadTxDictionary(self):
-        #print("Tx Dictionary:")
-        for id in Messaging.MsgNameFromID:
-            name = Messaging.MsgNameFromID[id]
-            components = name.split('.')
-            dirs = components[:-1]
-            msgName = components[-1]
-            
-            parentWidget = self.txDictionary
-            parentPath = ""
-            for dir in dirs:
-                # find the node that matches the directory we're looking for
-                dirItemMatches = self.txDictionary.findItems(dir, Qt.MatchExactly | Qt.MatchRecursive, 0)
-                foundMatch = False
-                for dirItem in dirItemMatches:
-                    try:
-                        if parentPath == dirItem.parentPath:
-                            parentWidget = dirItem
-                            foundMatch = True
-                            break
-                    except AttributeError:
-                        pass
-                # if we didn't find the node for the directory, add it
-                if not foundMatch:
-                    newWidget = QTreeWidgetItem(parentWidget)
-                    newWidget.setText(0, dir)
-                    newWidget.parentPath = parentPath
-                    parentWidget = newWidget
-                parentPath += dir + "."
-            msgItem = QTreeWidgetItem(parentWidget)
-            msgItem.setText(0, msgName)
-            msgItem.msgName = name
-        self.txDictionary.sortByColumn(0, Qt.AscendingOrder)
 
     def onTxMessageSelected(self, txListWidgetItem):
         # directories have children but messages don't, so only add messages by verifying the childCount is zero
@@ -268,6 +402,8 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                     print(e)
             self.settings.endArray()
         self.settings.endArray()
+        
+        self.txDictionary.setSorted(self.settings.value("txDictionarySorted", False, type=bool))
 
         self.txSplitter.restoreState(self.settings.value("txSplitterSizes", self.txSplitter.saveState()));
         self.rxSplitter.restoreState(self.settings.value("rxSplitterSizes", self.rxSplitter.saveState()));
@@ -292,6 +428,9 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             i += 1
         self.settings.endArray()
         
+        # remember if the Tx Dictionary was sorted
+        self.settings.setValue("txDictionarySorted", self.txDictionary.isSorted())
+
         # save splitter sizes and command history
         self.settings.setValue("txSplitterSizes", self.txSplitter.saveState());
         self.settings.setValue("rxSplitterSizes", self.rxSplitter.saveState());
@@ -406,46 +545,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.add_message_to_rx_tree(rxListItem.msg_key, rxListItem.msg)
 
     def display_message_in_rx_list(self, msg_key, msg):
-        rx_time = datetime.now()
-
-        if not msg_key in self.rx_msg_list:
-            widget_name = msg.MsgName()
-            msg_route = Messaging.MsgRoute(msg)
-            if len(msg_route) > 0 and not(all ("0" == a for a in msg_route)):
-                widget_name += " ("+",".join(msg_route)+")"
-            msg_list_item = QTreeWidgetItem([ widget_name, rx_time.strftime('%H:%M:%S.%f')[:-3], "- Hz" ])
-            msg_list_item.msg_key = msg_key
-            msg_list_item.msg = msg
-            msg_list_item.rx_count = 1
-            msg_list_item.avg_rate = 1.0
-
-            self.rx_message_list.addTopLevelItem(msg_list_item)
-            self.rx_message_list.resizeColumnToContents(0)
-            self.rx_msg_list[msg_key] = msg_list_item
-
-        self.rx_msg_list[msg_key].rx_time = rx_time
-        self.rx_msg_list[msg_key].rx_time_changed = True
-        self.rx_msg_list[msg_key].msg = msg
-        self.rx_msg_list[msg_key].rx_count += 1
-
-    def show_rx_msg_rates(self):
-        weight = 0.5
-        for msg_key, widget in self.rx_msg_list.items():
-            rate = float(widget.rx_count)
-            widget.rx_count = 0
-            widget.avg_rate = (1-weight) * widget.avg_rate + weight * rate
-
-            if widget.avg_rate > 0.05:
-                output = "{0:0.1f} Hz".format(widget.avg_rate)
-            elif widget.avg_rate > 0.01:
-                output = "0 Hz"
-            else:
-                output = "-- Hz"
-
-            if self.rx_msg_list[msg_key].rx_time_changed:
-                self.rx_msg_list[msg_key].setText(1, self.rx_msg_list[msg_key].rx_time.strftime('%H:%M:%S.%f')[:-3])
-            self.rx_msg_list[msg_key].rx_time_changed = False
-            self.rx_msg_list[msg_key].setText(2, output)
+        self.rx_message_list.updateMessage(msg_key, msg)
 
     def add_message_to_rx_tree(self, msg_key, msg):
         if not msg_key in self.rx_msg_widgets:
@@ -465,11 +565,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 plot.addData(msg)
     
     def clear_rx_list(self):
-        self.rx_msg_list = {}
         self.rx_message_list.clear()
-
-    def sort_rx_list(self):
-        self.rx_message_list.setSortingEnabled(not self.rx_message_list.isSortingEnabled())
 
     def clear_rx_msgs(self):
         self.rx_msg_widgets = {}
