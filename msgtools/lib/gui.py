@@ -319,7 +319,7 @@ class MsgTreeWidget(TreeWidget):
                 columnAlerts.append(alert)
                 columnCounter += 1
 
-        msgItem = TreeWidgetItem(None,msgStringList)
+        msgItem = TreeWidgetItem(msgStringList)
         for column in range(0, len(columnAlerts)):
             if columnAlerts[column]:
                 font = msgItem.font(column)
@@ -759,6 +759,7 @@ class ConfigTreeWidget(TreeWidget):
                 for value in values.split(","):
                     set_value_msg.SetValues(float(value), idx)
                     idx += 1
+                set_value_msg.SetCount(idx)
                 self.send_msg.emit(set_value_msg)
         # After saving to device, re-load from the device
         self.load_from_device()
