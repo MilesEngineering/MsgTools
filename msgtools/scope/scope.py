@@ -254,7 +254,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             msg_route = Messaging.MsgRoute(msg)
             if len(msg_route) > 0 and not(all ("0" == a for a in msg_route)):
                 widget_name += " ("+",".join(msg_route)+")"
-            QTreeWidgetItem.__init__([ widget_name, rx_time.strftime('%H:%M:%S.%f')[:-3], "- Hz" ])
+            super(MessageScopeGui.RxMessageListItem, self).__init__([ widget_name, rx_time.strftime('%H:%M:%S.%f')[:-3], "- Hz" ])
             self.msg_key = msg_key
             self.msg = msg
             self.rx_count = 1
@@ -338,7 +338,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         
         def clear(self):
             self.items_by_key = {}
-            super(MessageScopeGui.RxMessageList, self).rx_message_list.clear()
+            super(MessageScopeGui.RxMessageList, self).clear()
 
     def configure_rx_message_list(self):
         rxMessageList = MessageScopeGui.RxMessageList()
