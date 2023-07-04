@@ -117,11 +117,11 @@ class ConfigSettings:
 #include "config_settings.h"
 #include "<MSG_HEADER_NAME>"
 
-const int DefaultConfigSetting::Count = <SETTINGS_COUNT>;
-DefaultConfigSetting* DefaultConfigSetting::Defaults()
+int DefaultConfigSetting::Count() { return <SETTINGS_COUNT>; }
+ConfigSettings::ConfigSetting<ConfigSettings::MAX_LEN>** DefaultConfigSetting::Defaults()
 {
-<CONFIG_VALUES>
-    static DefaultConfigSetting defaults[] = {
+<CONFIG_SETTINGS>
+    static ConfigSettings::ConfigSetting<ConfigSettings::MAX_LEN>* defaults[] = {
 <CONFIG_DECLS>
     };
     return defaults;
@@ -132,22 +132,25 @@ DefaultConfigSetting* DefaultConfigSetting::Defaults()
         import sys
         if enum_prefix:
             enum_prefix = "(int)"+enum_prefix
-        cfg_values = ""
+        cfg_settings = ""
         for key, value in self.settings.items():
             value = value.replace(",", "f,")+"f"
-            cfg_values += "    ConfigSettings::ConfigValue %s_values[] = {%s};\n" % (key, value)
+            length = value.count(",")+1
+            crc = 0
+            cfg_settings += "    static const ConfigSettings::ConfigSetting<%s> %s_setting = {%s/*crc*/, %s, %s-1/*size=len-1*/, {%s}};\n" % (length, key, crc, enum_prefix+key, length, value)
         cfg_decls = ""
         if len(self.settings) > 0:
             for key, value in self.settings.items():
-                cfg_decls += "        {%s, %s, %s_values},\n" % (enum_prefix+key, value.count(",")+1, key)
+                length = value.count(",")+1
+                cfg_decls += "        {(ConfigSettings::ConfigSetting<ConfigSettings::MAX_LEN>*)&%s_setting},\n" % (key)
         else:
-            cfg_decls += "        {0, 0, 0},\n"
+            cfg_decls += "        {0},\n"
         cfg_decls = cfg_decls[:-2]
         output = ConfigSettings.CPP_FILE_TEMPLATE
         output = output.replace("<CMDLINE>", " ".join(sys.argv[:]))
         output = output.replace("<DATETIME>", str(datetime.datetime.now()))
         output = output.replace("<SETTINGS_COUNT>", str(len(self.settings)))
-        output = output.replace("<CONFIG_VALUES>", cfg_values)
+        output = output.replace("<CONFIG_SETTINGS>", cfg_settings)
         output = output.replace("<CONFIG_DECLS>", cfg_decls)
         output = output.replace("<MSG_HEADER_NAME>", msg_header_name)
         with open(filename, 'w') as f:
