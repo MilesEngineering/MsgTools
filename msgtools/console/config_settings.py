@@ -137,8 +137,11 @@ DefaultConfigSetting* DefaultConfigSetting::Defaults()
             value = value.replace(",", "f,")+"f"
             cfg_values += "    ConfigSettings::ConfigValue %s_values[] = {%s};\n" % (key, value)
         cfg_decls = ""
-        for key, value in self.settings.items():
-            cfg_decls += "        {%s, %s, %s_values},\n" % (enum_prefix+key, value.count(",")+1, key)
+        if len(self.settings) > 0:
+            for key, value in self.settings.items():
+                cfg_decls += "        {%s, %s, %s_values},\n" % (enum_prefix+key, value.count(",")+1, key)
+        else:
+            cfg_decls += "        {0, 0, 0},\n"
         cfg_decls = cfg_decls[:-2]
         output = ConfigSettings.CPP_FILE_TEMPLATE
         output = output.replace("<CMDLINE>", " ".join(sys.argv[:]))
