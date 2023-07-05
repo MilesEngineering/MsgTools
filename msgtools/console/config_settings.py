@@ -50,6 +50,7 @@ class ConfigSettings:
                     for value in values.split(","):
                         msg.SetValues(float(value), idx)
                         idx += 1
+                    msg.SetCount(idx)
                 self.connection.send(msg)
             except KeyError:
                 print("ERROR! Invalid Key %s not in %s" % (key, self.items_by_key.keys()))
