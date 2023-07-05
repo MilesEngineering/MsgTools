@@ -5,6 +5,10 @@
 #include <QHash>
 #include "FieldAccess.h"
 
+//# NOTE: Accessor functions all use little-endian "LE" versions!
+//# This should use the correct accessor for each field, but that would require
+//# the endian of each field being in the reflection data.
+
 class FieldInfo
 {
     public:
@@ -66,16 +70,16 @@ class IntFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 1:
-                    Set_int8_t(ptr, value);
+                    SetLE_int8_t(ptr, value);
                     break;
                 case 2:
-                    Set_int16_t(ptr, value);
+                    SetLE_int16_t(ptr, value);
                     break;
                 case 4:
-                    Set_int32_t(ptr, value);
+                    SetLE_int32_t(ptr, value);
                     break;
                 case 8:
-                    Set_int64_t(ptr, value);
+                    SetLE_int64_t(ptr, value);
                     break;
             }
         }
@@ -86,16 +90,16 @@ class IntFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 1:
-                    value = Get_int8_t(ptr);
+                    value = GetLE_int8_t(ptr);
                     break;
                 case 2:
-                    value = Get_int16_t(ptr);
+                    value = GetLE_int16_t(ptr);
                     break;
                 case 4:
-                    value = Get_int32_t(ptr);
+                    value = GetLE_int32_t(ptr);
                     break;
                 case 8:
-                    value = Get_int64_t(ptr);
+                    value = GetLE_int64_t(ptr);
                     break;
             }
             return value;
@@ -138,16 +142,16 @@ class UIntFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 1:
-                    Set_uint8_t(ptr, value);
+                    SetLE_uint8_t(ptr, value);
                     break;
                 case 2:
-                    Set_uint16_t(ptr, value);
+                    SetLE_uint16_t(ptr, value);
                     break;
                 case 4:
-                    Set_uint32_t(ptr, value);
+                    SetLE_uint32_t(ptr, value);
                     break;
                 case 8:
-                    Set_uint64_t(ptr, value);
+                    SetLE_uint64_t(ptr, value);
                     break;
             }
         }
@@ -158,16 +162,16 @@ class UIntFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 1:
-                    value = Get_uint8_t(ptr);
+                    value = GetLE_uint8_t(ptr);
                     break;
                 case 2:
-                    value = Get_uint16_t(ptr);
+                    value = GetLE_uint16_t(ptr);
                     break;
                 case 4:
-                    value = Get_uint32_t(ptr);
+                    value = GetLE_uint32_t(ptr);
                     break;
                 case 8:
-                    value = Get_uint64_t(ptr);
+                    value = GetLE_uint64_t(ptr);
                     break;
             }
             return value;
@@ -187,10 +191,10 @@ class FloatFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 4:
-                    Set_float(ptr, value.toFloat());
+                    SetLE_float(ptr, value.toFloat());
                     break;
                 case 8:
-                    Set_double(ptr, value.toDouble());
+                    SetLE_double(ptr, value.toDouble());
                     break;
             }
         }
@@ -201,10 +205,10 @@ class FloatFieldInfo : public  FieldInfo
             switch(_fieldSize)
             {
                 case 4:
-                    value = QString("%1").arg(Get_float(ptr));
+                    value = QString("%1").arg(GetLE_float(ptr));
                     break;
                 case 8:
-                    value = QString("%1").arg(Get_double(ptr));
+                    value = QString("%1").arg(GetLE_double(ptr));
                     break;
             }
             return value;
