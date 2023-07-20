@@ -51,6 +51,8 @@ Example usage:
     --note: each --note argument adds a text field named the specified LABEL, and 
                the value of the text field will become part of the filename.  
                Example argument: LABEL1
+    --annotation: creates a text field and "Add Note" button, such that when the button is clicked,
+               the text from the text field is put into a Network.Note message.
     --button: each --button argument adds a pushbutton named for the specified LABEL, with a 
                 hotkey of the specified key.  If logtag value is specified, a button press
                 will start/stop logging, and the logtag will become part of the filename.
@@ -70,8 +72,9 @@ Example usage:
                 button to send it.  Example argument: MSGNAME
 '''
 
-local_args = {"--note":True, "--button": True, "--show":True, "--plot":True, "--send": True, "--tab": True, "--endtab": True, "--log": True,
-              "--row": True, "--endrow": True, "--col": True, "--endcol": True}
+local_args = {"--note":True, "--annotation": True, "--button": True, "--show":True, "--plot":True,
+              "--send": True, "--tab": True, "--endtab": True, "--log": True, "--row": True,
+              "--endrow": True, "--col": True, "--endcol": True}
 def base_args(argv):
     ret = []
     ignore = False
@@ -150,6 +153,14 @@ class Multilog(msgtools.lib.gui.Gui):
                     noteField = QtWidgets.QLineEdit()
                     rightvLayout.addWidget(noteField)
                     self.noteFields.append(noteField)
+            elif argname == '--annotation':
+                hLayout = QtWidgets.QHBoxLayout()
+                self.activeLayout.addLayout(hLayout)
+                self.annotation = QtWidgets.QLineEdit()
+                add_note_button = QtWidgets.QPushButton("Add Note")
+                add_note_button.clicked.connect(self.AddAnnotation)
+                hLayout.addWidget(self.annotation)
+                hLayout.addWidget(add_note_button)
             elif argname == '--button':
                 options = {}
                 for option in argvalue:
@@ -360,6 +371,10 @@ class Multilog(msgtools.lib.gui.Gui):
                     value = parts[1]
                     Messaging.set(msg, Messaging.findFieldInfo(msgClass.fields, name), value)
                 self.SendMsg(msg)
+
+    def AddAnnotation(self):
+        annotation_msg = Messaging.Messages.Network.Note(Text=self.annotation.text())
+        self.SendMsg(annotation_msg)
 
 def main(args=None):
     app = QtWidgets.QApplication(sys.argv)
