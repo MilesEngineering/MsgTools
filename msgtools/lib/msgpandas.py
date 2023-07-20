@@ -155,7 +155,7 @@ def load(filename=None, serial=None):
             if not os.path.isfile(filename):
                 return False
             # the filename should contain something that looks like YYYYMMDD in it
-            if not re.search(pattern=r'20\d{6}', string=filename):
+            if not re.search(pattern=r'20\d{6}[-_]\d{6}', string=filename):
                 return False
             filename_elements = os.path.splitext(filename)
             if len(filename_elements) < 2:
@@ -166,12 +166,17 @@ def load(filename=None, serial=None):
             return True
         def log_files(dir):
             return [dir+"/"+f for f in os.listdir(dir) if filename_is_log(dir+"/"+f)]
+        def timestring(filename):
+            return re.search(pattern=r'20\d{6}[-_]\d{6}', string=filename).group()
+        # Get log files in current dir
         filenames = log_files(".")
+        # add log files in logs subdir, if it exists
         try:
             filenames += log_files("logs")
         except FileNotFoundError:
             pass
-        filenames.sort(reverse=True)
+        # sort by the timestring that was found in the filename
+        filenames.sort(reverse=True, key=lambda x: timestring(x))
         filename = filenames[fileindex]
 
     global last_filename
