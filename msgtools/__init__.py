@@ -26,7 +26,7 @@ if 1:
                             print("    git pull")
                             print("    make undevelop && make develop")
                         else:
-                            print("    pip3 install --update msgtools")
+                            print("    pip3 install --upgrade msgtools")
                         exit(1)
 
             lastsearchdir = searchdir
