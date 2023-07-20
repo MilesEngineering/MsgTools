@@ -505,10 +505,6 @@ class MessageServer(QtWidgets.QMainWindow):
             # a desktop or other more capable machine. That said, silently eat the request - blindly forwarding
             # this along could be hazardous.
             pass
-        elif hasattr(self.networkMsgs, 'Note') and hdr.GetMessageID() == self.networkMsgs.Note.ID:
-            # The Note message allows a user to annotate a log.  We want to drop it into the log, but not
-            # forward to all other clients.
-            self.logMsg(hdr)
 
         elif hasattr(self.networkMsgs, 'PrivateSubscriptionList') and  hdr.GetMessageID() == self.networkMsgs.PrivateSubscriptionList.ID:
             subListMsg = self.networkMsgs.PrivateSubscriptionList(hdr.rawBuffer())
