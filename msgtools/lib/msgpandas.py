@@ -150,19 +150,27 @@ def load(filename=None, serial=None):
     except:
         pass
     if filename == None:
-        from os import listdir
-        from os.path import splitext, isfile, join
+        import os, re
         def filename_is_log(filename):
-            if not filename.startswith("20"):
+            if not os.path.isfile(filename):
                 return False
-            filename_elements = splitext(filename)
+            # the filename should contain something that looks like YYYYMMDD in it
+            if not re.search(pattern=r'20\d{6}', string=filename):
+                return False
+            filename_elements = os.path.splitext(filename)
             if len(filename_elements) < 2:
                 return False
             ext = filename_elements[1]
-            if not ext in [".json", ".bin"]:
+            if not ext in [".json", ".bin", ".log"]:
                 return False
             return True
-        filenames = [f for f in listdir(".") if isfile(f) and filename_is_log(f)]
+        def log_files(dir):
+            return [dir+"/"+f for f in os.listdir(dir) if filename_is_log(dir+"/"+f)]
+        filenames = log_files(".")
+        try:
+            filenames += log_files("logs")
+        except FileNotFoundError:
+            pass
         filenames.sort(reverse=True)
         filename = filenames[fileindex]
 
