@@ -232,7 +232,7 @@ class SimBaseClass:
         
         if log_name in ["csv","json","bin","log"]:
             # if they *only* supplied a suffix, assume they want the default datetime format string
-            log_file_name = "%Y%m%d_%H%M%S" + "." + self.log_file_type
+            log_file_name = "logs/%Y%m%d_%H%M%S" + "." + self.log_file_type
         else:
             # if they supplied more than just a suffix, then assume they named it the way they want.
             log_file_name = log_name
@@ -240,6 +240,9 @@ class SimBaseClass:
         # if not, generate a filename based on current date/time
         now = datetime.datetime.now()
         log_file_name = now.strftime(log_file_name)
+        dir = os. path. dirname(log_file_name)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
         if self.log_file_type == "bin":
             self.log_file = open(log_file_name, "wb")
         else:
