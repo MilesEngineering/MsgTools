@@ -24,7 +24,7 @@ if 1:
                         if install_dir.endswith(".egg-info"):
                             print("    cd %s" % (install_dir.replace("msgtools.egg-info", "")))
                             print("    git pull")
-                            print("    make undevelop && make develop")
+                            print("    make undevelop ; make develop")
                         else:
                             print("    pip3 install --upgrade msgtools")
                         exit(1)
