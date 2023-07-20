@@ -75,7 +75,8 @@ class MsgPlot(QWidget):
     Paused = QtCore.pyqtSignal(bool)
     AddLineError = QtCore.pyqtSignal(str)
     RegisterForMessage = QtCore.pyqtSignal(str)
-    MAX_LENGTH = 1024
+    MAX_LENGTH = 4096
+    MAX_TIME = 60*5
     def __init__(self, msgClass, msgKey, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None):
         super(QWidget,self).__init__()
         
@@ -125,8 +126,8 @@ class MsgPlot(QWidget):
         # create slider bar to control time scale
         if timeSlider == None:
             self.timeSlider = QSlider(Qt.Horizontal)
-            self.timeSlider.setMinimum(50)
-            self.timeSlider.setMaximum(MsgPlot.MAX_LENGTH)
+            self.timeSlider.setMinimum(10)
+            self.timeSlider.setMaximum(MsgPlot.MAX_TIME)
             self.timeSlider.setSingleStep(10)
             self.timeSlider.setPageStep(50)
         else:
@@ -302,19 +303,15 @@ class MsgPlot(QWidget):
                 # if header has no time, fallback to PC time.
                 newTime = elapsedSeconds(datetime.now().timestamp())
             
-            # Disable this optimization because different lines having a different number of points
-            # in the same period of time screws up X-axis autoscaling.
-            if 0 and (len(line.dataArray) > 2 and
-                # if the last two data points have the same value as us, then instead of adding a point,
-                # we can just change the time of the previous point to our time
+            if (len(line.dataArray) > 2 and
                 line.dataArray[-2] == line.dataArray[-1] and
                 line.dataArray[-1] == newDataPoint):
+                # if the last two data points have the same value as us, then instead of adding a point,
+                # we can just change the time of the previous point to our time
                 line.timeArray[-1] = newTime
             else:
                 # Add data in the fixed-size deque.
-                # This will drop data off start when the deque is full,
-                # such that plot appears to scroll horizontally so the last
-                # point is always at the right edge.
+                # This will drop data off start when the deque is full.
                 line.dataArray.append(newDataPoint)
                 line.timeArray.append(newTime)
 
@@ -323,11 +320,17 @@ class MsgPlot(QWidget):
                 self.refresh_timer.start()
 
     def refresh(self):
+        max_time = -1.0
+        time_scale = self.timeSlider.value()
         for line in self.lines:
-            #line.curve.setData(line.timeArray, line.dataArray)
-            timeArray = deque_tail(line.timeArray, self.timeSlider.value())
-            dataArray = deque_tail(line.dataArray, self.timeSlider.value())
-            line.curve.setData(timeArray, dataArray)
+            max_time = max(max_time, line.timeArray[-1])
+        min_time = max_time - time_scale
+        self.plotWidget.setRange(xRange=[min_time, max_time])
+        point_count = MsgPlot.MAX_LENGTH
+
+        # Set the line data to the time and data arrays
+        for line in self.lines:
+            line.curve.setData(line.timeArray, line.dataArray)
 
     def timeScaleChanged(self):
         self.refresh()
