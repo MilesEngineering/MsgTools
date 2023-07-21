@@ -320,10 +320,19 @@ class MsgPlot(QWidget):
                 self.refresh_timer.start()
 
     def refresh(self):
-        max_time = -1.0
+        # Read the time scale value from the slider
         time_scale = self.timeSlider.value()
+        # look for the time of the newest data on any line on this plot
+        max_time = -1
         for line in self.lines:
-            max_time = max(max_time, line.timeArray[-1])
+            if len(line.timeArray) > 0:
+                max_time = max(max_time, line.timeArray[-1])
+        # if there was no data, then try to leave the max time at whatever was visible
+        if max_time == -1:
+            old_xrange = self.plotWidget.viewRange()[0]
+            max_time = int(old_xrange[1])
+
+        # set the minimum time to be less than max time by the scale
         min_time = max_time - time_scale
         self.plotWidget.setRange(xRange=[min_time, max_time])
         point_count = MsgPlot.MAX_LENGTH
