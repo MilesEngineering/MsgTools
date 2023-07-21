@@ -40,6 +40,7 @@ class LineInfo:
     dataArray: deque
     timeArray: deque
     curve: ...
+    evaluator: ...
 
 start_time = datetime.now().timestamp()
 def elapsedSeconds(timestamp):
@@ -52,6 +53,56 @@ def deque_tail(d, count):
     start = max(0, len(d) - count)
     slice = list(itertools.islice(d, start, len(d)))
     return slice
+
+import ast
+import operator
+
+# This class is to evaluate arithmetical expressions that contain variable
+# names for a specific value of those variables.
+class EquationEvaluator:
+    OPERATORS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+                 ast.Div: operator.truediv, ast.Pow: operator.pow, ast.BitXor: operator.xor,
+                 ast.USub: operator.neg}
+    def __init__(self, equation):
+        if "[" in equation or "]" in equation:
+            raise KeyError("equation %s has brackets, which are not supported!" % (equation))
+            self.variable_name = None
+            return
+        self.top_node = ast.parse(equation, mode='eval')
+        self.variable_name = EquationEvaluator.find_variable_name(self.top_node)
+        if self.variable_name:
+            self.equation = equation.replace(" ","")
+    
+    def has_equation(self):
+        return self.variable_name != self.equation
+
+    def evaluate(self, variable_value):
+        self.variable_value = variable_value
+        return self.node_eval(self.top_node.body)
+
+    def node_eval(self, node):
+        if isinstance(node, ast.Name):
+            if node.id == self.variable_name:
+                return self.variable_value
+            raise KeyError(node.id)
+        elif isinstance(node, ast.Num): # <number>
+            return node.n
+        elif isinstance(node, ast.BinOp): # <left> <operator> <right>
+            return EquationEvaluator.OPERATORS[type(node.op)](self.node_eval(node.left), self.node_eval(node.right))
+        elif isinstance(node, ast.UnaryOp): # <operator> <operand> e.g., -1
+            return EquationEvaluator.OPERATORS[type(node.op)](self.node_eval(node.operand))
+        else:
+            raise TypeError(node)
+
+    @staticmethod
+    def find_variable_name(node):
+        if isinstance(node, ast.Name):
+            return node.id
+        for child in ast.iter_child_nodes(node):
+            name = EquationEvaluator.find_variable_name(child)
+            if name:
+                return name
+        return None
 
 # I added an optimization that replaces sequences of flat data
 # with just two points, so we're starting to be a little smarter
@@ -80,7 +131,7 @@ class MsgPlot(QWidget):
     def __init__(self, msgClass, msgKey, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None):
         super(QWidget,self).__init__()
         
-        newFieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
+        newFieldName, fieldIndex, evaluator = MsgPlot.split_fieldname(fieldName)
         fieldInfo = Messaging.findFieldInfo(msgClass.fields, newFieldName)
         if fieldInfo == None:
             raise MsgPlot.PlotError("Invalid field %s for message %s" % (newFieldName, msgClass.MsgName()))
@@ -152,12 +203,22 @@ class MsgPlot(QWidget):
     @staticmethod
     def split_fieldname(fieldName):
         fieldIndex = None
+        fieldEvaluator = None
+        # Look for brackets, and use them to find an array index.
+        # Don't do an equation evaluator if there are brackets, it won't work
+        # properly because AST will try to do array indexing, and we don't
+        # want it to.
         if '[' in fieldName  and ']' in fieldName:
             splits = fieldName.split('[')
             splits[1] = splits[1].replace(']','')
             fieldName = splits[0]
             fieldIndex = int(splits[1])
-        return (fieldName, fieldIndex)
+        else:
+            evaluator = EquationEvaluator(fieldName)
+            if evaluator.has_equation():
+                fieldName = evaluator.variable_name
+                fieldEvaluator = evaluator
+        return (fieldName, fieldIndex, fieldEvaluator)
 
     def dragEnterEvent(self, ev):
         # need to accept enter event, or we won't get move event
@@ -186,7 +247,7 @@ class MsgPlot(QWidget):
         self.refresh()
 
     def addLine(self, msgClass, msgKey, fieldName, fieldLabel = None):
-        fieldName, fieldIndex = MsgPlot.split_fieldname(fieldName)
+        fieldName, fieldIndex, evaluator = MsgPlot.split_fieldname(fieldName)
         fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
         if fieldInfo == None:
             raise MsgPlot.PlotError("Invalid field %s for message %s" % (fieldName, msgClass.MsgName()))
@@ -216,9 +277,9 @@ class MsgPlot(QWidget):
                     #line.curve.setName(line.baseName)
 
         if fieldIndex != None:
-            self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend)
+            self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend, evaluator)
         elif fieldInfo.count == 1:
-            self._addLine(msgClass, msgKey, fieldInfo, 0, fieldLabel, self.showUnitsOnLegend)
+            self._addLine(msgClass, msgKey, fieldInfo, 0, fieldLabel, self.showUnitsOnLegend, evaluator)
         else:
             dups = []
             for fieldIndex in range(0, fieldInfo.count):
@@ -229,7 +290,7 @@ class MsgPlot(QWidget):
                         duplicate = True
                         break
                 if not duplicate:
-                    self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend)
+                    self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend, evaluator)
             if len(dups) > 0:
                 if len(dups) == 1:
                     s = ' '+str(dups[0])
@@ -241,19 +302,21 @@ class MsgPlot(QWidget):
                         s += '%s,' % d
                 raise MsgPlot.PlotError("Line%s already on plot" % s)
 
-    def _addLine(self, msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel = None, showUnits=False):
+    def _addLine(self, msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel = None, showUnits=False, evaluator=None):
         lineName = fieldInfo.name
         baseName = lineName
-        if showUnits and fieldInfo.units != '' and fieldInfo.units != 'UNKNOWN':
-            lineName = lineName + " (%s)" % fieldInfo.units
-        if fieldLabel != None:
-            lineName = fieldLabel
-            baseName = lineName
+        if evaluator:
+            lineName = evaluator.equation
         try:
             if fieldInfo.count != 1:
                 lineName += "["+str(fieldIndex)+"]"
         except:
             pass
+        if showUnits and fieldInfo.units != '' and fieldInfo.units != 'UNKNOWN':
+            lineName = lineName + " (%s)" % fieldInfo.units
+        if fieldLabel != None:
+            lineName = fieldLabel
+            baseName = lineName
         dataArray = deque([], maxlen=MsgPlot.MAX_LENGTH)
         timeArray = deque([], maxlen=MsgPlot.MAX_LENGTH)
         self.useHeaderTime = False
@@ -264,7 +327,7 @@ class MsgPlot(QWidget):
             line_count_estimate = line_count_estimate + 6
             line_number = (line_number - 6)*2+1
         curve = self.plotWidget.plot(timeArray, dataArray, name=lineName, pen=(line_number,line_count_estimate))
-        lineInfo = LineInfo(msgClass, msgKey, baseName, fieldInfo, fieldIndex, dataArray, timeArray, curve)
+        lineInfo = LineInfo(msgClass, msgKey, baseName, fieldInfo, fieldIndex, dataArray, timeArray, curve, evaluator)
         self.lines.append(lineInfo)
         
     def pauseOrRun(self):
@@ -284,6 +347,8 @@ class MsgPlot(QWidget):
                 if type(msg) != line.msgClass:
                     continue
                 newDataPoint = Messaging.getFloat(msg, line.fieldInfo, line.fieldSubindex)
+                if line.evaluator != None:
+                    newDataPoint = line.evaluator.evaluate(newDataPoint)
             except ValueError:
                 print("ERROR! Plot of %s.%s cannot accept value %s" % (
                     self.msgClass.MsgName(),
