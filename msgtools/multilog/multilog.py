@@ -68,13 +68,14 @@ Example usage:
                 If multiple MSGNAME arguments are listed for one --plot, they will be added to
                 the same plot.  Add [idx] to field name if array and want element
                 other than element zero.  Example argument: MSGNAME=fieldname1,fieldname2[2]
+    --timeslider: add a timeslider for all previously added plots.  subsequent plots will use a separate timeslider.
     --send:each --send argument is a message name that adds a tree view to edit a message with a 'send' 
                 button to send it.  Example argument: MSGNAME
 '''
 
 local_args = {"--note":True, "--annotation": True, "--button": True, "--show":True, "--plot":True,
               "--send": True, "--tab": True, "--endtab": True, "--log": True, "--row": True,
-              "--endrow": True, "--col": True, "--endcol": True}
+              "--endrow": True, "--col": True, "--endcol": True, "--timeslider": True}
 def base_args(argv):
     ret = []
     ignore = False
@@ -259,15 +260,23 @@ class Multilog(msgtools.lib.gui.Gui):
                 self.logFileType = argvalue[0]
             elif argname.startswith('--log='):
                 self.logFileType = argname.split("=")[1]
+            elif argname == '--timeslider':
+                if firstPlot:
+                    self.addTimeSlider(firstPlot, self.activeLayout)
+                firstPlot = None
 
         if firstPlot:
-            hLayout = QtWidgets.QHBoxLayout()
-            mainLayout.addLayout(hLayout)
-            hLayout.addWidget(firstPlot.runButton)
-            hLayout.addWidget(firstPlot.clearButton)
-            hLayout.addWidget(QtWidgets.QLabel("Time Scale"))
-            hLayout.addWidget(firstPlot.timeSlider)
+            self.addTimeSlider(firstPlot, mainLayout)
 
+    def addTimeSlider(self, plot, layout):
+        if plot:
+            hLayout = QtWidgets.QHBoxLayout()
+            layout.addLayout(hLayout)
+            hLayout.addWidget(plot.runButton)
+            hLayout.addWidget(plot.clearButton)
+            hLayout.addWidget(QtWidgets.QLabel("Time Scale"))
+            hLayout.addWidget(plot.timeSlider)
+        
     def printLayout(self, prefix):
         layouts = prefix
         for l in self.layoutStack:
