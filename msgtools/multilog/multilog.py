@@ -383,6 +383,7 @@ class Multilog(msgtools.lib.gui.Gui):
 
     def AddAnnotation(self):
         annotation_msg = Messaging.Messages.Network.Note(Text=self.annotation.text())
+        self.logMsg(annotation_msg)
         self.SendMsg(annotation_msg)
 
 def main(args=None):
