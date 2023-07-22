@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import time
+from .pytimedinput import GetKey
 
 # if started via invoking this file directly (like would happen with source sitting on disk),
 # insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
@@ -29,6 +30,7 @@ class Replay(MessageFileReader):
         parser.add_argument('logfile', help='''The log file you want to play back.  
             .bin or .log extension assumes the log is binary.
             .json assumes the log file is JSON.''')
+        parser.add_argument('--speed', type=float, default="1.0", help='''Speed.  Less than 1 to slow down, greater than 1 to speed up.''')
         parser.add_argument('-i', '--include', nargs='+', help='''A list of message names to exclude from replay.''')
         parser.add_argument('-e', '--exclude', nargs='+', help='''A list of message names to exclude from replay.''')
         parser.add_argument('--debug', action='store_true', help='''Set to get more debug info.''')
@@ -79,11 +81,12 @@ class Replay(MessageFileReader):
 
         self.last_msg_time = None
         self.last_time = time.time()
+        print("Press space or p to pause, f to speed up, s to slow down, ctrl-c to quit")
         try:
             self.read_file(self.args.logfile, "NetworkHeader")
         except KeyboardInterrupt:
             pass
-        print("\nExited after replaying %d, skipping %d" % (self.total_message_sent_count, self.total_message_skipped_count))
+        print("\nFinal Log time %.3f: replayed %d, skipped %d" % (self.last_msg_time, self.total_message_sent_count, self.total_message_skipped_count))
 
     def msgid_from_name(self, msg_name):
         try:
@@ -118,21 +121,40 @@ class Replay(MessageFileReader):
         if self.args.newtime:
             msg.hdr.SetTime(currenttime() / self.time_scale)
         
-        if self.last_msg_time != None:
-            delta_time = msg_time - self.last_msg_time
+        def do_speeds(user_key):
+            if user_key == 'f':
+                self.args.speed *= 2
+                print("  Speeding up to speed %s" % (self.args.speed))
+            elif user_key == 's':
+                self.args.speed /= 2
+                print("  Slowing down to speed %s" % (self.args.speed))
+            
+        if self.last_msg_time == None:
+            self.last_msg_time = msg_time
+        else:
+            delta_time = (msg_time - self.last_msg_time) / self.args.speed
             if delta_time <= 0.0:
                 pass
             else:
-                time.sleep(delta_time)
+                user_key = GetKey(allowCharacters=" sfp", timeout=delta_time)
+                if user_key != None:
+                    if user_key in [' ','p']:
+                        while True:
+                            print("  Paused!  Press space or p to un-pause, f to speed up, s to slow down, ctrl-c to quit")
+                            user_key = GetKey(allowCharacters=" sfp", timeout=10)
+                            if user_key != None:
+                                do_speeds(user_key)
+                                break
+                    else:
+                        do_speeds(user_key)
                 self.last_msg_time = msg_time
-        else:
-            self.last_msg_time = msg_time
         self.message_sent_count += 1
         self.connection.send(msg)
         current_time = time.time()
         if current_time > self.last_time + 1.0:
             self.last_time = current_time
-            print("Replayed %d, skipped %d" % (self.message_sent_count, self.message_skipped_count))
+            skipped_str = ", skipped %d" % self.message_skipped_count if self.message_skipped_count else ""
+            print("Log time %.3f: Replayed %d%s" % (self.last_msg_time, self.message_sent_count, skipped_str))
             self.total_message_sent_count += self.message_sent_count
             self.total_message_skipped_count += self.message_skipped_count
             self.message_sent_count=0
