@@ -211,7 +211,7 @@ class Multilog(msgtools.lib.gui.Gui):
             elif argname == '--plot':
                 if plottingLoaded:
                     thisPlot = None
-                    multiple_message = False # len(argvalue) != 1
+                    multiple_messages = len(argvalue) != 1
                     for plotarg in argvalue:
                         if "=" in plotarg:
                             split = plotarg.split("=")
@@ -225,14 +225,14 @@ class Multilog(msgtools.lib.gui.Gui):
                             if thisPlot:
                                 # Add to existing plot
                                 for fieldName in fieldNames:
-                                    thisPlot.addLine(msgClass, msgKey=None, fieldName=fieldName, fieldLabel=None, multiple_messages=multiple_message)
+                                    thisPlot.addLine(msgClass, msgKey=None, fieldName=fieldName, fieldLabel=None, multiple_messages=multiple_messages)
                                     if not msgClass.ID in self.msgHandlers:
                                         self.msgHandlers[msgClass.ID] = []
                                     self.msgHandlers[msgClass.ID].append(thisPlot)
                             else:
-                                thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, **plotargs, multiple_messages=multiple_message)
+                                thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, **plotargs, multiple_messages=multiple_messages)
                         else:
-                            thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, displayControls=False, multiple_messages=multiple_message)
+                            thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, displayControls=False, multiple_messages=multiple_messages)
                             firstPlot = thisPlot
                             plotargs = {"runButton":firstPlot.runButton, "clearButton":firstPlot.clearButton, "timeSlider":firstPlot.timeSlider, "displayControls":False}
 

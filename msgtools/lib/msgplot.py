@@ -128,7 +128,7 @@ class MsgPlot(QWidget):
     RegisterForMessage = QtCore.pyqtSignal(str)
     MAX_LENGTH = 4096
     MAX_TIME = 60*5
-    def __init__(self, msgClass, msgKey, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None):
+    def __init__(self, msgClass, msgKey, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None, multiple_messages=False):
         super(QWidget,self).__init__()
         
         newFieldName, fieldIndex, evaluator = MsgPlot.split_fieldname(fieldName)
@@ -148,7 +148,7 @@ class MsgPlot(QWidget):
         self.plotWidget = pg.PlotWidget(labels={'left':yAxisLabel,'bottom':xAxisLabel})
         layout.addWidget(self.plotWidget)
         self.plotWidget.addLegend()
-        self.addLine(msgClass, msgKey, fieldName, fieldLabel)
+        self.addLine(msgClass, msgKey, fieldName, fieldLabel, multiple_messages)
 
         # set up click handler to pause graph
         self.plotWidget.scene().sigMouseClicked.connect(self.mouseClicked)
@@ -246,7 +246,7 @@ class MsgPlot(QWidget):
             line.timeArray.clear()
         self.refresh()
 
-    def addLine(self, msgClass, msgKey, fieldName, fieldLabel = None):
+    def addLine(self, msgClass, msgKey, fieldName, fieldLabel = None, multiple_messages=False):
         fieldName, fieldIndex, evaluator = MsgPlot.split_fieldname(fieldName)
         fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
         if fieldInfo == None:
@@ -277,9 +277,9 @@ class MsgPlot(QWidget):
                     #line.curve.setName(line.baseName)
 
         if fieldIndex != None:
-            self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend, evaluator)
+            self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend, evaluator, multiple_messages)
         elif fieldInfo.count == 1:
-            self._addLine(msgClass, msgKey, fieldInfo, 0, fieldLabel, self.showUnitsOnLegend, evaluator)
+            self._addLine(msgClass, msgKey, fieldInfo, 0, fieldLabel, self.showUnitsOnLegend, evaluator, multiple_messages)
         else:
             dups = []
             for fieldIndex in range(0, fieldInfo.count):
@@ -290,7 +290,7 @@ class MsgPlot(QWidget):
                         duplicate = True
                         break
                 if not duplicate:
-                    self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend, evaluator)
+                    self._addLine(msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel, self.showUnitsOnLegend, evaluator, multiple_messages)
             if len(dups) > 0:
                 if len(dups) == 1:
                     s = ' '+str(dups[0])
@@ -302,11 +302,13 @@ class MsgPlot(QWidget):
                         s += '%s,' % d
                 raise MsgPlot.PlotError("Line%s already on plot" % s)
 
-    def _addLine(self, msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel = None, showUnits=False, evaluator=None):
+    def _addLine(self, msgClass, msgKey, fieldInfo, fieldIndex, fieldLabel = None, showUnits=False, evaluator=None, multiple_messages=False):
         lineName = fieldInfo.name
         baseName = lineName
         if evaluator:
             lineName = evaluator.equation
+        if multiple_messages:
+            lineName = msgClass.MsgName() + "." + lineName
         try:
             if fieldInfo.count != 1:
                 lineName += "["+str(fieldIndex)+"]"
@@ -410,7 +412,7 @@ class MsgPlot(QWidget):
         self.refresh()
 
     @staticmethod
-    def plotFactory(new_plot_callback, msgClass, fieldNames, msgKey = None, fieldLabels = None, runButton = None, clearButton = None, timeSlider = None, displayControls=True):
+    def plotFactory(new_plot_callback, msgClass, fieldNames, msgKey = None, fieldLabels = None, runButton = None, clearButton = None, timeSlider = None, displayControls=True, multiple_messages=False):
         msgPlot = None
         if len(fieldNames) == 0:
             fieldNames = [fieldInfo.name for fieldInfo in msgClass.fields]
@@ -422,7 +424,7 @@ class MsgPlot(QWidget):
             # if there's a plot widget, try adding a line to it
             if msgPlot != None:
                 try:
-                    msgPlot.addLine(msgClass, msgKey, fieldName, fieldLabel)
+                    msgPlot.addLine(msgClass, msgKey, fieldName, fieldLabel, multiple_messages)
                 except MsgPlot.NewPlotError as e:
                     # if error on adding to existing plot, then make a new plot
                     msgPlot = None
@@ -432,7 +434,7 @@ class MsgPlot(QWidget):
             # make new plot
             if msgPlot == None:
                 try:
-                    msgPlot = MsgPlot(msgClass, msgKey, fieldName, runButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel)
+                    msgPlot = MsgPlot(msgClass, msgKey, fieldName, runButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel, multiple_messages=multiple_messages)
                     msgPlot.msgClass = msgClass
                     new_plot_callback(msgPlot)
                 except MsgPlot.PlotError as e:
