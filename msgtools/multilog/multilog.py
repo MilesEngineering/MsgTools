@@ -68,7 +68,8 @@ Example usage:
                 If fields left off, all fields within that MSGNAME are plotted.
                 If multiple MSGNAME arguments are listed for one --plot, they will be added to
                 the same plot.  Add [idx] to field name if array and want element
-                other than element zero.  Example argument: MSGNAME=fieldname1,fieldname2[2]
+                other than element zero.  Example argument: MSGNAME=fieldname1,fieldname2[2].
+                You can also specify ymin= and ymax= to set fixed vertical scaling.
     --timeslider: add a timeslider for all previously added plots.  subsequent plots will use a separate timeslider.
     --send:each --send argument is a message name that adds a tree view to edit a message with a 'send' 
                 button to send it.  Example argument: MSGNAME
@@ -212,6 +213,7 @@ class Multilog(msgtools.lib.gui.Gui):
                 if plottingLoaded:
                     thisPlot = None
                     multiple_messages = len(argvalue) != 1
+                    yaxes = None
                     for plotarg in argvalue:
                         if "=" in plotarg:
                             split = plotarg.split("=")
@@ -220,21 +222,29 @@ class Multilog(msgtools.lib.gui.Gui):
                         else:
                             msgname = plotarg
                             fieldNames = []
-                        msgClass = Messaging.MsgClassFromName[msgname]
-                        if firstPlot:
+                        # Check if they're setting vertical scale instead of a message to plot
+                        if msgname == 'yaxes':
+                            yaxes = [int(fieldNames[0]), int(fieldNames[1])]
                             if thisPlot:
-                                # Add to existing plot
-                                for fieldName in fieldNames:
-                                    thisPlot.addLine(msgClass, msgKey=None, fieldName=fieldName, fieldLabel=None, multiple_messages=multiple_messages)
-                                    if not msgClass.ID in self.msgHandlers:
-                                        self.msgHandlers[msgClass.ID] = []
-                                    self.msgHandlers[msgClass.ID].append(thisPlot)
-                            else:
-                                thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, **plotargs, multiple_messages=multiple_messages)
+                                thisPlot.setYAxis(yaxes)
                         else:
-                            thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, displayControls=False, multiple_messages=multiple_messages)
-                            firstPlot = thisPlot
-                            plotargs = {"runButton":firstPlot.runButton, "clearButton":firstPlot.clearButton, "timeSlider":firstPlot.timeSlider, "displayControls":False}
+                            msgClass = Messaging.MsgClassFromName[msgname]
+                            if firstPlot:
+                                if thisPlot:
+                                    # Add to existing plot
+                                    for fieldName in fieldNames:
+                                        thisPlot.addLine(msgClass, msgKey=None, fieldName=fieldName, fieldLabel=None, multiple_messages=multiple_messages)
+                                        if not msgClass.ID in self.msgHandlers:
+                                            self.msgHandlers[msgClass.ID] = []
+                                        self.msgHandlers[msgClass.ID].append(thisPlot)
+                                else:
+                                    thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, **plotargs, multiple_messages=multiple_messages)
+                                if yaxes:
+                                    thisPlot.setYAxis(yaxes)
+                            else:
+                                thisPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, displayControls=False, multiple_messages=multiple_messages)
+                                firstPlot = thisPlot
+                                plotargs = {"runButton":firstPlot.runButton, "clearButton":firstPlot.clearButton, "timeSlider":firstPlot.timeSlider, "displayControls":False}
 
             elif argname == '--send':
                 for msgname in argvalue:

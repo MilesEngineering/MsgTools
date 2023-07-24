@@ -411,6 +411,9 @@ class MsgPlot(QWidget):
     def timeScaleChanged(self):
         self.refresh()
 
+    def setYAxis(self, yaxis):
+        self.plotWidget.setRange(yRange=[yaxis[0], yaxis[1]])
+
     @staticmethod
     def plotFactory(new_plot_callback, msgClass, fieldNames, msgKey = None, fieldLabels = None, runButton = None, clearButton = None, timeSlider = None, displayControls=True, multiple_messages=False):
         msgPlot = None
