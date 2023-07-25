@@ -60,11 +60,11 @@ def toDict(msg, includeHeader=False):
 def toJson(msg, includeHeader=False):
     return json.dumps(toDict(msg,includeHeader))
 
-def jsonToMsg(jsonString):
+def jsonToMsg(jsonString, ignore_invalid=False):
     d = json.loads(jsonString)
-    return dictToMsg(d)
+    return dictToMsg(d, ignore_invalid)
 
-def dictToMsg(d):
+def dictToMsg(d, ignore_invalid=False):
     terminationLen = None
     def handle_header(hdrDict):
         length = None
@@ -94,7 +94,12 @@ def dictToMsg(d):
                     continue
                 fieldInfo = Messaging.findFieldInfo(msgClass.fields, fieldName)
                 if fieldInfo == None:
-                    raise KeyError("Invalid field %s for message %s" % (fieldName, msgName))
+                    if ignore_invalid:
+                        if ignore_invalid != "silent":
+                            print("Ignoring invalid field %s.%s" % (msgName, fieldName))
+                        continue
+                    else:
+                        raise KeyError("Invalid field %s for message %s" % (fieldName, msgName))
                 fieldValue = fieldDict[fieldName]
                 if isinstance(fieldValue, list):
                     #print(fieldName + " list type is " + type(fieldValue))

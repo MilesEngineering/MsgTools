@@ -109,8 +109,8 @@ class Message:
             raise AttributeError('Message %s has no field %s' % (self.MsgName(), attr))
 
     @staticmethod
-    def fromJson(s):
-        return msgjson.jsonToMsg(s)
+    def fromJson(s, ignore_invalid=False):
+        return msgjson.jsonToMsg(s, ignore_invalid)
 
     @staticmethod
     def fromCsv(s):

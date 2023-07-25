@@ -15,7 +15,7 @@ class MessageFileReader:
     def error_fn(self, str):
         print(str)
 
-    def read_file(self, filename, header_name):
+    def read_file(self, filename, header_name, ignore_invalid=False):
         # load the messages if not already loaded
         if Messaging.hdr == None:
             try:
@@ -43,7 +43,7 @@ class MessageFileReader:
         self.header_helper = HeaderHelper(self.log_header, self.error_fn)
 
         if filename.endswith(".json"):
-            self.read_json_file(filename)
+            self.read_json_file(filename, ignore_invalid)
         else:
             self.read_binary_file(filename)
 
@@ -102,8 +102,8 @@ class MessageFileReader:
                 msg = Messaging.MsgFactory(network_msg)
                 self.process_message(msg)
 
-    def read_json_file(self, filename):
+    def read_json_file(self, filename, ignore_invalid=False):
         with open(filename) as f:
             for line in f:
-                msg = Message.fromJson(line)
+                msg = Message.fromJson(line, ignore_invalid)
                 self.process_message(msg)

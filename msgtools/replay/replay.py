@@ -34,6 +34,7 @@ class Replay(MessageFileReader):
         parser.add_argument('-i', '--include', nargs='+', help='''A list of message names to exclude from replay.''')
         parser.add_argument('-e', '--exclude', nargs='+', help='''A list of message names to exclude from replay.''')
         parser.add_argument('--debug', action='store_true', help='''Set to get more debug info.''')
+        parser.add_argument('--ignoreinvalid', nargs='?', default=False, help='''Set to ignore invalid messages and fields in the log file.''')
         parser.add_argument('--newtime', action='store_true', help='''Set new timestamps in the messages we replay.  Default is to use original timestamps.''')
         self.args = parser.parse_args()
 
@@ -83,7 +84,16 @@ class Replay(MessageFileReader):
         self.last_time = time.time()
         print("Press space or p to pause, f to speed up, s to slow down, ctrl-c to quit")
         try:
-            self.read_file(self.args.logfile, "NetworkHeader")
+            if self.args.ignoreinvalid != None:
+                # If it's not none, set the value the user passed in
+                ignore_invalid = self.args.ignoreinvalid
+            else:
+                # If the arg is None, the user used the option, but didn't specify a value, so use true.
+                ignore_invalid = True
+            self.read_file(self.args.logfile, "NetworkHeader", ignore_invalid=ignore_invalid)
+        except KeyError as e:
+            print("\n\nKeyError!\nRe-run with --ignoreinvalid or --ignoreinvalid=silent if you want to ignore these!\n")
+            raise e
         except KeyboardInterrupt:
             pass
         print("\nFinal Log time %.3f: replayed %d, skipped %d" % (self.last_msg_time, self.total_message_sent_count, self.total_message_skipped_count))
