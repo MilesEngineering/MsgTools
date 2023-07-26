@@ -355,22 +355,24 @@ class Multilog(msgtools.lib.gui.Gui):
             handlersList = self.msgHandlers[msg.ID]
             for handler in handlersList:
                 handler.addData(msg)
-        
-        self.logMsg(msg)
 
     def CreateLogFile(self, tag):
         self.CloseLogFile()
 
-        currentDateTime = QtCore.QDateTime.currentDateTime()
-        filename = currentDateTime.toString("yyyyMMdd-hhmmss")
-
+        # Start with a blank filename and add notes and a tag to it if they're defined
+        filename = ""
         for noteField in self.noteFields:
-            filename += "." + noteField.text().replace(" ", "_")
-        
-        if tag:
+            note = noteField.text()
+            if note and note != "":
+                print("added note [%s]" % (note))
+                filename += note.replace(" ", "_") + "."
+        if tag and tag != "":
+            print("added tag [%s]" % (tag))
             filename += "." + tag
-        filename +=  "." + self.logFileType
-        
+
+        currentDateTime = QtCore.QDateTime.currentDateTime()
+        filename += currentDateTime.toString("yyyyMMdd-hhmmss") + "." + self.logFileType
+
         self.startLog(filename)
         self.statusMsg.setText("Logging to " + filename)
 
