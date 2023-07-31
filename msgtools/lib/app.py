@@ -1,7 +1,7 @@
-import socket
-import os
-import sys
 import argparse
+import os
+import socket
+import sys
 
 if sys.version_info<(3,4):
     raise SystemExit('''\n\nSorry, this code need Python 3.4 or higher.\n
@@ -13,7 +13,7 @@ NOT
 from PyQt5 import QtGui, QtWidgets, QtCore, QtNetwork
 from PyQt5.QtWidgets import QInputDialog, QLineEdit
 
-from .messaging import Messaging
+from .messaging import Messaging, TimestampFixer
 
 class App(QtWidgets.QMainWindow):
     RxMsg = QtCore.pyqtSignal(object)
@@ -118,6 +118,9 @@ class App(QtWidgets.QMainWindow):
                 if msg not in Messaging.MsgIDFromName:
                     print('{0} is not a valid message name!'.format(msg))
                     sys.exit(1)
+
+        # object to fix timestamps of messages with no timestamp set
+        self.timestamp_fixer = TimestampFixer()
 
         self.logFileType = None
         self.logFile = None
@@ -326,6 +329,7 @@ class App(QtWidgets.QMainWindow):
             self.sendBytesFn(msg.rawBuffer().raw)
 
     def logMsg(self, msg):
+        self.timestamp_fixer.fix_timestamp(msg.hdr)
         if self.logFile:
             log = ''
             if self.logFileType == "csv":

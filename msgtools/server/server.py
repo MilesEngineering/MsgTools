@@ -2,6 +2,7 @@
 import os
 import sys
 import argparse
+import datetime
 import traceback
 import pkg_resources
 
@@ -11,7 +12,7 @@ import pkg_resources
 if __name__ == '__main__':
     srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/../..")
     sys.path.insert(1, srcroot)
-from msgtools.lib.messaging import Messaging
+from msgtools.lib.messaging import Messaging, TimestampFixer
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtNetwork
 
@@ -221,6 +222,9 @@ class MessageServer(QtWidgets.QMainWindow):
             quit()
 
         self.networkMsgs = Messaging.Messages.Network
+
+        # object to fix timestamps of messages with no timestamp set
+        self.timestamp_fixer = TimestampFixer()
 
         self.clients = {}
         
@@ -450,6 +454,7 @@ class MessageServer(QtWidgets.QMainWindow):
             self.onStatusUpdate("cnx not in list!")
 
     def logMsg(self, hdr):
+        self.timestamp_fixer.fix_timestamp(hdr)
         #write to log, if log is open
         if self.logFile != None:
             log = ''

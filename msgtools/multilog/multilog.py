@@ -10,7 +10,6 @@ import sys
 import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 from time import strftime
-import datetime
 
 # if started via invoking this file directly (like would happen with source sitting on disk),
 # insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
@@ -109,16 +108,6 @@ class Multilog(msgtools.lib.gui.Gui):
         # handling of messages by sub-widgets
         self.msgHandlers = {}
         
-        # Time of last message received, used to set timestamp of Annotations
-        self.last_rx_time = None
-        self.last_rx_timestamp = None
-        self.timeInfo = Messaging.findFieldInfo(Messaging.hdr.fields, "Time")
-        TIME_SCALES = {"s": 1.0, "ms": 1000.0, "us": 1000000.0, "ns": 1e9}
-        try:
-            self.time_scale = TIME_SCALES[self.timeInfo.units]
-        except KeyError:
-            self.time_scale = None
-
         # Top level layout
         widget = QtWidgets.QWidget(self)
         mainLayout = QtWidgets.QVBoxLayout(widget)
@@ -348,9 +337,6 @@ class Multilog(msgtools.lib.gui.Gui):
         self.SendMsg(msg)
 
     def ProcessMessage(self, msg):
-        if self.timeInfo:
-            self.last_rx_time = datetime.datetime.now().timestamp()
-            self.last_rx_timestamp = msg.hdr.GetTime()
         if msg.ID in self.msgHandlers:
             handlersList = self.msgHandlers[msg.ID]
             for handler in handlersList:
@@ -411,20 +397,6 @@ class Multilog(msgtools.lib.gui.Gui):
     def AddAnnotation(self):
         annotation_msg = Messaging.Messages.Network.Note(Text=self.annotation.text())
         self.logMsg(annotation_msg)
-        if self.last_rx_time != None:
-            # If we can scale between wallclock time and message time, compute
-            # a new time based on last rx time and elapsed time.
-            if self.time_scale != None:
-                current_time = datetime.datetime.now().timestamp()
-                elapsed_time = current_time - self.last_rx_time
-                elapsed_time *= self.time_scale
-                if self.timeInfo.type == "int":
-                    elapsed_time = int(elapsed_time)
-                new_time = self.last_rx_timestamp + elapsed_time
-                annotation_msg.hdr.SetTime(new_time)
-            else:
-                # otherwise, set time to timestamp of last reception
-                annotation_msg.hdr.SetTime(self.last_rx_timestamp)
         self.SendMsg(annotation_msg)
 
 def main(args=None):
