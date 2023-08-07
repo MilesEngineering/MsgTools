@@ -24,15 +24,15 @@ def createFieldInfoRow(field):
 
     html = "\
         <tr>\
-            <td class='fieldname'>" + name + "</td>\
-            <td class='fieldtype'>" + fieldtype + "</td>\
-            <td class='fieldcount'>" + count + "</td>\
-            <td class='fieldunits'>" + units + "</td>\
-            <td class='fieldscale'>" + scale + "</td>\
-            <td class='fieldoffset'>" + offset + "</td>\
-            <td class='fielddefault'>" + default + "</td>\
-            <td class='fielddefault'>" + min + " - " + max + "</td>\
-            <td class='fielddescription'>" + description + "</td>\
+    <td class='fieldname'>" + name + "</td>\
+    <td class='fieldtype'>" + fieldtype + "</td>\
+    <td class='fieldcount'>" + count + "</td>\
+    <td class='fieldunits'>" + units + "</td>\
+    <td class='fieldscale'>" + scale + "</td>\
+    <td class='fieldoffset'>" + offset + "</td>\
+    <td class='fielddefault'>" + default + "</td>\
+    <td class='fielddefault'>" + min + " - " + max + "</td>\
+    <td class='fielddescription'>" + description + "</td>\
         </tr>\
     "
     return html
@@ -55,15 +55,15 @@ def createBitfieldInfoRow(bitfield):
 
     html = "\
         <tr>\
-            <td> <span style=\"font-size: 1.3em;\">&#x21e8;</span>" + name + " </td>\
-            <td>" + bitfieldtype + "</td>\
-            <td>" + count + "</td>\
-            <td>" + units + "</td>\
-            <td>" + scale + "</td>\
-            <td>" + offset + "</td>\
-            <td>" + default + "</td>\
-            <td>" + min + " - " + max + "</td>\
-            <td>" + description + "</td>\
+    <td> <span style=\"font-size: 1.3em;\">&#x21e8;</span>" + name + " </td>\
+    <td>" + bitfieldtype + "</td>\
+    <td>" + count + "</td>\
+    <td>" + units + "</td>\
+    <td>" + scale + "</td>\
+    <td>" + offset + "</td>\
+    <td>" + default + "</td>\
+    <td>" + min + " - " + max + "</td>\
+    <td>" + description + "</td>\
         </tr>\
     "
     return html
@@ -95,22 +95,17 @@ def enums(e):
         options = []
 
         for option in enum["Options"]:
-            options.append("<tr><td>" + str(option["Name"]) + "</td><td>" + str(option["Value"]) + "</td></tr>")
+            options.append("                    <tr><td>" + str(option["Name"]) + "</td><td>" + str(option["Value"]) + "</td><td>" + str(MsgParser.fieldDescription(option)) + "</td></tr>")
 
-        html.append("<div class='row'>\
-            <div class='col-lg-4'>\
-                <table class='table table-bordered table-hover table-striped'>\
-                    <caption>Enumeration: " + enum["Name"] + "</caption>\
-                    <thead>\
-                        <tr>\
-                            <th>Option</th>\
-                            <th>Value</th>\
-                        </tr>\
-                    </thead>\
-                    " + "\n".join(options) + "\
-                </table>\
-            </div>\
-        </div>")
+        html.append('''<div class='row'>
+            <div class='col-lg-8'>
+                <table class='table table-bordered table-hover table-striped'>
+                    <caption>Enumeration: ''' + enum["Name"] + '''</caption>
+                    <thead> <tr> <th>Option</th> <th>Value</th> <th>Description</th> </tr> </thead>
+''' + '''\n'''.join(options) + '''
+                </table>
+            </div>
+        </div>''')
 
     return "\n".join(html)
 
