@@ -394,14 +394,7 @@ class SimBaseClass:
         # give the message to whoever didn't send it
 
         if sender != self.fdm:
-            # if it's for setting a sim value, set the value
-            #TODO: This should be modified to set things either within the self.fdm[] object, or outside it
-            #TODO: and we should be able to override sim values temporarily, and restore them to letting the sim calculate them.
-            #TODO: Maybe that means we should require the string to start with "fdm." if it's for the flight dynamics model,
-            #TODO: and otherwise make it be treated like a "normal" simulation variable (which doesn't exist yet)
-            if type(msg) == Messaging.Messages.Hitl.SetSimValue:
-                self.logging.warning("Setting %s = %f" % (msg.GetVariableName(), msg.Value))
-                self.fdm[msg.GetVariableName()] = msg.Value
+            self.send_to_fdm(msg)
 
         if self.fsw and sender != self.fsw:
             self.fsw.send(msg.rawBuffer().raw)
@@ -413,6 +406,16 @@ class SimBaseClass:
             except (BrokenPipeError, ConnectionResetError):
                 self.cxn = None
 
+    def send_to_fdm(self, msg):
+        # if it's for setting a sim value, set the value
+        #TODO: This should be modified to set things either within the self.fdm[] object, or outside it
+        #TODO: and we should be able to override sim values temporarily, and restore them to letting the sim calculate them.
+        #TODO: Maybe that means we should require the string to start with "fdm." if it's for the flight dynamics model,
+        #TODO: and otherwise make it be treated like a "normal" simulation variable (which doesn't exist yet)
+        if type(msg) == Messaging.Messages.Hitl.SetSimValue:
+            print("  ---- Setting %s = %f" % (msg.GetVariableName(), msg.Value))
+            self.fdm[msg.GetVariableName()] = msg.Value
+        
     def recv(self):
         # if there's any messages from flight software, return them,
         # but also send them to the network
@@ -432,7 +435,7 @@ class SimBaseClass:
                         self.cxn = None
                 return msg
         # if there's any messages from the network, return them,
-        # but also send them to flight software
+        # but also send them to flight software and FDM
         if self.cxn:
             try:
                 msg = self.cxn.recv()
@@ -443,6 +446,7 @@ class SimBaseClass:
                     self.log(msg)
                     if self.fsw:
                         self.fsw.send(msg.rawBuffer().raw)
+                    self.send_to_fdm(msg)
                     return msg
             except (BrokenPipeError, ConnectionResetError):
                 self.cxn = None
