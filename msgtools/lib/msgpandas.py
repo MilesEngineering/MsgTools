@@ -59,7 +59,12 @@ def load_json(filename):
                 dict_of_dataframes[msgname].append(flat)
 
     for msgname in dict_of_dataframes:
-        dict_of_dataframes[msgname] = pd.DataFrame.from_records(dict_of_dataframes[msgname], index="Time")
+        if "FIELD_METADATA." in msgname:
+            # message metadata, occurs only once for each message type, with no time tag.
+            dict_of_dataframes[msgname] = pd.DataFrame.from_records(dict_of_dataframes[msgname], index="name")
+        else:
+            # normal messages, with time-tagged data
+            dict_of_dataframes[msgname] = pd.DataFrame.from_records(dict_of_dataframes[msgname], index="Time")
 
     return dict_of_dataframes
 
@@ -111,13 +116,28 @@ def load_binary(filename, serial=None):
 
     return pandas_reader.dict_of_dataframes
 
+def field_units(dict_of_dataframes, msgname, fieldname):
+    return dict_of_dataframes["FIELD_METADATA."+msgname].loc[fieldname]["units"]
+
 # Make a subclass of pandas.DataFrame that doesn't raise exceptions when
 # plot is called, even if there's no data to plot.
 class DataFrameSubclass(pd.DataFrame):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.field_metadata = None
     def plot(self, *args, **kwargs):
+        # Build a mapping for how to rename columns to include units
+        rename_with_units = {}
+        for c in self.columns.values:
+            units = self.field_metadata.loc[c]["units"]
+            if units != "":
+                rename_with_units[c] = "%s (%s)" % (c, units)
+
+        # Plot the columns, with the new column names that include units.
         try:
-            super().plot(*args, **kwargs)
+            super().rename(columns=rename_with_units).plot(*args, **kwargs)
         except TypeError:
+            # If there's nothing to plot, print a message instead of crashing.
             print("Not plotting %s%s, nothing to plot!" % (self.msgname, self.columns.values))
 
 # Make a subclass of dict that has a function that returns an empty dataframe
@@ -131,7 +151,17 @@ class DataFrameDict(dict):
             ret = DataFrameSubclass(columns=fieldnames)
             ret.msgname = msgname
             return ret
-        return  msg_dataframe[fieldnames]
+        
+        # if we didn't hit the exception to return an empty DataFrameSubclass,
+        # return a DataFrameSubclass of the dataframe we care about, but add
+        # some extra members to it to access field metadata from the dataframe
+        # dictionary.
+        ret = DataFrameSubclass(msg_dataframe[fieldnames])
+        ret.field_metadata = self["FIELD_METADATA."+msgname]
+        return ret
+
+    def field_units(self, msgname, fieldname):
+        return self["FIELD_METADATA."+msgname].loc[fieldname]["units"]
 
 # A global variable for the last filename that was loaded.
 # This is useful for when None is passed in to load(),

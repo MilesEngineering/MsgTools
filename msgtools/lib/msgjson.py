@@ -132,3 +132,39 @@ def dictToMsg(d, ignore_invalid=False):
     if terminationLen != None and terminationLen < msg.hdr.GetDataLength():
         msg.hdr.SetDataLength(terminationLen)
     return msg
+
+# return list of metadata for fields
+def jsonHeader(msg):
+    ret = ""
+    msgClass = Messaging.MsgClass(msg.hdr)
+    for fieldInfo in msgClass.fields:
+        e = None
+        if len(fieldInfo.enum) > 0:
+            e = fieldInfo.enum[0] # list element 0 is forward mapping (list element 1 is reverse mapping)
+        pythonObj = OrderedDict()
+        pythonObj["name"]=fieldInfo.name
+        pythonObj["type"]=fieldInfo.type
+        pythonObj["units"]=fieldInfo.units
+        pythonObj["min"]=fieldInfo.minVal
+        pythonObj["max"]=fieldInfo.maxVal
+        pythonObj["description"]=fieldInfo.description
+        pythonObj["count"]=fieldInfo.count
+        #pythonObj["enum"]=e
+        ret += json.dumps({"FIELD_METADATA."+msg.MsgName() : pythonObj}) + "\n"
+        if len(fieldInfo.bitfieldInfo) > 0:
+            for bitInfo in fieldInfo.bitfieldInfo:
+                e = None
+                if len(bitInfo.enum) > 0:
+                    e = bitInfo.enum[0] # list element 0 is forward mapping (list element 1 is reverse mapping)
+                pythonObj = OrderedDict()
+                pythonObj["name"]=bitInfo.name
+                pythonObj["type"]=bitInfo.type
+                pythonObj["units"]=bitInfo.units
+                pythonObj["min"]=bitInfo.minVal
+                pythonObj["max"]=bitInfo.maxVal
+                pythonObj["description"]=bitInfo.description
+                pythonObj["count"]=bitInfo.count
+                #pythonObj["enum"]=e
+
+                ret += json.dumps({"FIELD_METADATA."+msg.MsgName() : pythonObj}) + "\n"
+    return ret

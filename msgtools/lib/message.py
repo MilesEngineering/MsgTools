@@ -143,6 +143,9 @@ class Message:
     def csvHeader(self, nameColumn=True, timeColumn=False):
         return msgcsv.csvHeader(self, nameColumn=nameColumn, timeColumn=timeColumn)
 
+    def jsonHeader(self):
+        return msgjson.jsonHeader(self)
+
     def __repr__(self):
         def add_param(n, v):
             if v == '':

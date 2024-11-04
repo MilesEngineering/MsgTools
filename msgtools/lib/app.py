@@ -199,11 +199,11 @@ class App(QtWidgets.QMainWindow):
         self.connection
 
     def startLog(self, log_name, log_suffix=''):
+        # hash table of booleans for if each type of message has had it's header
+        # put into this log file already.
+        self.loggedMsgHeader = {}
         if log_name.endswith('csv'):
             self.logFileType = "csv"
-            # hash table of booleans for if each type of message has had it's header
-            # put into this log file already.
-            self.loggedMsgHeaderRow = {}
         elif log_name.endswith('json'):
             self.logFileType = "json"
         elif log_name.endswith('bin') or log_name.endswith('log'):
@@ -333,13 +333,16 @@ class App(QtWidgets.QMainWindow):
         if self.logFile:
             log = ''
             if self.logFileType == "csv":
-                if not msg.MsgName() in self.loggedMsgHeaderRow:
-                    self.loggedMsgHeaderRow[msg.MsgName()] = True
+                if not msg.MsgName() in self.loggedMsgHeader:
+                    self.loggedMsgHeader[msg.MsgName()] = True
                     log = msg.csvHeader(timeColumn=True)+'\n'
                 log += msg.toCsv(timeColumn=True)+'\n'
                 log = log.encode('utf-8')
             elif self.logFileType == "json":
-                log = msg.toJson(includeHeader=True)+'\n'
+                if not msg.MsgName() in self.loggedMsgHeader:
+                    self.loggedMsgHeader[msg.MsgName()] = True
+                    log = msg.jsonHeader()
+                log += msg.toJson(includeHeader=True)+'\n'
                 log = log.encode('utf-8')
             elif self.logFileType == "bin":
                 log = msg.rawBuffer().raw

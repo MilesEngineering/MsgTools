@@ -218,11 +218,11 @@ class SimBaseClass:
         parser.add_argument('--log', nargs='?', const='', help='The log file type (csv/json/bin) or complete log file name.  Can use strftime formatting for datetime, and a "+" is replaced with "%%Y%%m%%d_%%H%%M%%S"')
 
     def start_log(self, log_name):
+        # hash table of booleans for if each type of message has had it's header
+        # put into this log file already.
+        self._logged_msg_header = {}
         if log_name.endswith('csv'):
             self.log_file_type = "csv"
-            # hash table of booleans for if each type of message has had it's header
-            # put into this log file already.
-            self._logged_msg_header_row = {}
         elif log_name.endswith('json'):
             self.log_file_type = "json"
         elif log_name.endswith('bin') or log_name.endswith('log'):
@@ -255,11 +255,15 @@ class SimBaseClass:
                 msg.hdr.SetTime(self.get_time())
 
             if self.log_file_type == "json":
-                txt = msg.toJson(includeHeader=True) + "\n"
+                txt = ""
+                if not msg.MsgName() in self._logged_msg_header:
+                    self._logged_msg_header[msg.MsgName()] = True
+                    txt = msg.jsonHeader()
+                txt += msg.toJson(includeHeader=True) + "\n"
             elif self.log_file_type == "csv":
                 txt = ""
-                if not msg.MsgName() in self._logged_msg_header_row:
-                    self._logged_msg_header_row[msg.MsgName()] = True
+                if not msg.MsgName() in self._logged_msg_header:
+                    self._logged_msg_header[msg.MsgName()] = True
                     txt = msg.csvHeader(timeColumn=True)+'\n'
                 txt += msg.toCsv(timeColumn=True) + "\n"
             elif self.log_file_type == "bin":
