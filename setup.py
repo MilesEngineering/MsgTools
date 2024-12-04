@@ -1,8 +1,9 @@
 from setuptools import setup, find_packages
+import os
 
 setup(name='msgtools',
     python_requires='>=3.5',
-    version='0.37.48',
+    version='0.37.50',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -74,7 +75,7 @@ setup(name='msgtools',
         'numpy',
         "python-can",
         "pandas",
-        "gevent"
+        "gevent" if 'MSYSTEM' not in os.environ else ""
     ],
     extras_require={
         # gui used to also require qscintilla, but installing it that way doesn't
@@ -82,7 +83,7 @@ setup(name='msgtools',
         # from PyQt5.Qsci import QsciScintilla, QsciLexerPython
         # However, on Ubuntu at least, the dependency can be resolved with apt:
         # sudo apt install python3-pyqt5.qsci
-        'gui':  ["pyqtgraph", "pyqt5"],
+        'gui':  ["pyqtgraph", "pyqt5", "setuptools"],
     },
     package_data={
         # Include all Template files for the code generator and web app tool
