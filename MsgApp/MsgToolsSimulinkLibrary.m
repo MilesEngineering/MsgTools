@@ -34,7 +34,7 @@ classdef MsgToolsSimulinkLibrary < handle
             %set_param(lib, "SimCustomTerminator", "");%Simulation Custom Code/Insert custom C code in generated: Terminate function
             set_param(lib, "SimUserIncludeDirs", "../obj/CodeGenerator");%Simulation Custom Code/Additional build information: Include directories
             %set_param(lib, "SimUserSources", "");%Simulation Custom Code/Additional build information: Source Files
-            set_param(lib, "SimUserLibraries", "../obj/simulink/msgtools.a");%Simulation Custom Code/Additional build information: Libraries
+            set_param(lib, "SimUserLibraries", "../obj/msgblocks/msgblocks.a");%Simulation Custom Code/Additional build information: Libraries
             %set_param(lib, "SimUserDefines", "");%Simulation Custom Code/Additional build information: Defines
 
             set_param(lib, "RTWUseSimCustomCode", "on"); % Code Generation Custom Code / Use the same custom code settings as Simulation Target
