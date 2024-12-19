@@ -251,7 +251,7 @@ def fieldReplacements(language, line, msg, subfieldsOnly):
                     thisLine = thisLine.replace("<FIELDNAME>", bitfield["Name"])
                     thisLine = thisLine.replace("<FIELDNUMBER>", str(count))
                     thisLine = thisLine.replace("<FIELDCOUNT>", str(fieldCount(bitfield)))
-                    thisLine = thisLine.replace("<FIELDTYPE>", fieldType(language, field, None)) # bitfields inherit type of parent field
+                    thisLine = thisLine.replace("<FIELDTYPE>", fieldType(language, field, bitfield)) # bitfields can inherit type of parent field
                     ret +=  thisLine
                     count+=1
     return ret 

@@ -3,7 +3,7 @@ import os
 
 setup(name='msgtools',
     python_requires='>=3.5',
-    version='0.37.50',
+    version='0.37.51',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
