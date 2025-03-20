@@ -464,38 +464,50 @@ def fieldInfos(msg):
 def structUnpacking(msg):
     ret = []
 
-    if "Fields" in msg:    
-        for field in msg["Fields"]:
-            if "Bitfields" in field:
-                for bits in field["Bitfields"]:
-                    ret.append(bits["Name"] + " = msg.Get" + bits["Name"] + "();")
-            else:
-                if MsgParser.fieldCount(field) == 1:
-                    ret.append(field["Name"] + " = msg.Get" + field["Name"] + "();")
-                else:
-                    ret.append("for(int i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
-                    ret.append("    "+field["Name"] + "[i] = msg.Get" + field["Name"] + "(i);")
-            
-    return "\n".join(ret)
-    
-def structPacking(msg):
-    ret = []
+    obj_name = namespace
+    struct_name = "s->"
+    if firstParam == "":
+        obj_name = "msg."
+        struct_name = ""
 
     if "Fields" in msg:    
         for field in msg["Fields"]:
             if "Bitfields" in field:
                 for bits in field["Bitfields"]:
-                    ret.append("msg.Set" + bits["Name"] + "("+bits["Name"]+");")
+                    ret.append(struct_name+bits["Name"] + " = "+obj_name+"Get" + bits["Name"] + "(%s);" % (firstParam))
             else:
                 if MsgParser.fieldCount(field) == 1:
-                    ret.append("msg.Set" + field["Name"] + "("+field["Name"]+");")
+                    ret.append(struct_name+field["Name"] + " = "+obj_name+"Get" + field["Name"] + "(%s);" % (firstParam))
                 else:
                     ret.append("for(int i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
-                    ret.append("    msg.Set" + field["Name"] + "("+field["Name"] + "[i], i);")
+                    ret.append("    "+struct_name+field["Name"] + "[i] = "+obj_name+"Get" + field["Name"] + "(%s);" % (joinParams(firstParam, "i")))
+            
+    return "\n".join(ret)
+    
+def structPacking(msg):
+    ret = []
+    
+    obj_name = namespace
+    struct_name = "s->"
+    if firstParam == "":
+        obj_name = "msg."
+        struct_name = ""
+
+    if "Fields" in msg:    
+        for field in msg["Fields"]:
+            if "Bitfields" in field:
+                for bits in field["Bitfields"]:
+                    ret.append(obj_name+"Set" + bits["Name"] + "(%s);" % (joinParams(firstParam, struct_name+bits["Name"])))
+            else:
+                if MsgParser.fieldCount(field) == 1:
+                    ret.append(obj_name+"Set" + field["Name"] + "(%s);" % (joinParams(firstParam, struct_name+field["Name"])))
+                else:
+                    ret.append("for(int i=0; i<"+str(MsgParser.fieldCount(field))+"; i++)")
+                    ret.append("    "+obj_name+"Set" + field["Name"] + "(%s);" % (joinParams(firstParam,struct_name+field["Name"] + "[i], i")))
                 
     return "\n".join(ret)
     
-def declarations(msg):
+def declarations(msg, msg_enums):
     ret = []
     if "Fields" in msg:
         for field in msg["Fields"]:

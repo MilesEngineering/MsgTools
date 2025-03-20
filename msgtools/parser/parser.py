@@ -88,8 +88,10 @@ def DoReplacements(line, msg, replacements, firstTime):
     # ugly, but do this twice, before and after other replacements, because the code generator
     # might insert it while doing other replacements.
     ret = replace(ret, "<MSGNAME>", replacements["<MSGNAME>"])
+    ret = replace(ret, "<MSGID>", replacements["<MSGID>"])
     ret = replace(ret, "<MSGFULLNAME>", replacements["<MSGFULLNAME>"])
     ret = replace(ret, "<MSGSHORTNAME>", replacements["<MSGSHORTNAME>"])
+    ret = replace(ret, "<MSGDESCRIPTION>", replacements["<MSGDESCRIPTION>"])
     if "<ONCE>" in ret:
         if firstTime:
             ret = ret.replace("<ONCE>", "")
@@ -100,18 +102,18 @@ def DoReplacements(line, msg, replacements, firstTime):
 def CommonSubdir(f1, f2):
     # find largest string shared at end of 2 filenames
     # remove + symbols added to the path for Matlab namespaces
-    d1 = os.path.dirname(os.path.abspath(f1)).replace("+","")
-    d2 = os.path.dirname(os.path.abspath(f2)).replace("+Messages","").replace("+","")
+    d1 = os.path.dirname(os.path.abspath(f1)).replace("+","").split(os.path.sep)
+    d2 = os.path.dirname(os.path.abspath(f2)).replace("+Messages","").replace("+","").split(os.path.sep)
     minLen = min(len(d1), len(d2))
     subdirComponent = ''
     for i in range(1, minLen):
         if d1[-i].lower() == d2[-i].lower():
-            subdirComponent = d1[-i] + subdirComponent
+            subdirComponent = str(d1[-i]) + os.path.sep + subdirComponent
         else:
             break
 
     # strip slashes at ends
-    r = subdirComponent.strip("/").strip("\\")
+    r = subdirComponent.strip(os.path.sep).strip("\\")
     return r
 
 def OutputFile(inputFilename, inputName, outDir):
@@ -188,7 +190,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
             sys.exit(1)
     
     replacements = {}
-    enums = Enums(inputData)
+    msg_enums = Enums(inputData)
     ids = MsgIDs(inputData)
     
     PatchStructs(inputData)
@@ -233,7 +235,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                     if not outFile:
                         continue
 
-                replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(msg, enums))
+                replacements["<ENUMERATIONS>"] = language.enums(UsedEnums(msg, msg_enums))
                 replacements["<MSGNAME>"] = msgName(msg)
                 replacements["<MSGFULLNAME>"] = msgDescriptor(msg, inputFilename).replace(".","_")
                 replacements["<MSGSHORTNAME>"] = msgShortName(msg)
@@ -245,10 +247,14 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 except AttributeError:
                     pass
                 try:
-                    replacements["<MSGID>"] = language.languageConst(msgID(msg, enums, undefinedMsgId))
+                    replacements["<MSGID>"] = language.languageConst(msgID(msg, msg_enums, undefinedMsgId))
                 except AttributeError:
-                    replacements["<MSGID>"] = str(msgID(msg, enums, undefinedMsgId))
+                    replacements["<MSGID>"] = str(msgID(msg, msg_enums, undefinedMsgId))
                 replacements["<MSGSIZE>"] = str(msgSize(msg))
+                try:
+                    replacements["<MSGENDIAN>"] = str(language.msgEndian(msg))
+                except AttributeError:
+                    pass
                 replacements["<MSGDESCRIPTION>"] = str(fieldItem(msg, "Description", "")).replace('\n', ' ')
                 replacements["<ACCESSORS>"] = "\n".join(language.accessors(msg))
                 try:
@@ -257,7 +263,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                     replacements["<GETFIELDS>"] = "\n".join(language.get_fields(msg))
                 except:
                     pass
-                replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg))
+                replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg, msg_enums))
                 replacements["<INIT_CODE>"] = "\n".join(language.initCode(msg))
                 replacements["<OUTPUTFILENAME>"] = outputFilename
                 replacements["<INPUTFILENAME>"] = inputFilename
@@ -331,8 +337,11 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
             particularTemplate = templateFilename
             if msgDir.endswith("headers"):
                 particularTemplate = headerTemplateFilename
-            if filename.endswith(".yaml") or filename.endswith(".json"):
-                ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
+            if particularTemplate == None:
+                print("Skipping %s, no template defined." % (inputFilename))
+            else:
+                if filename.endswith(".yaml") or filename.endswith(".json"):
+                    ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
 
 def getAvailableLanguages():
     '''Look at all supported languages.  Assume each language is a 
@@ -382,6 +391,7 @@ def getTemplate(language, templateBase):
             return file[index:]
 
     print('Unable to find template base "{0}"" for language {1}'.format(templateBase, language))
+    return None
 
 def main():
 
@@ -427,7 +437,10 @@ def main():
             particularTemplate = templateFilename
             if "/headers/" in outputFilename:
                 particularTemplate = headerTemplateFilename
-            ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
+            if particularTemplate == None:
+                print("Skipping %s, no template defined." % (inputFilename))
+            else:
+                ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
     else:
         print("Path " + inputFilename + " does not exist!")
 

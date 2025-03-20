@@ -1,5 +1,5 @@
 # recursive make in SUBDIRS
-all clean clobber install test ::
+all clean clobber test ::
 	@for dir in _dummy_ $(SUBDIRS); do\
 		if [ "$$dir" = "_dummy_" ]; then\
 			continue ;\

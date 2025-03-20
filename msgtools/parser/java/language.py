@@ -336,7 +336,7 @@ def fieldInfos(msg):
 
     return "\n".join(ret)
 
-def declarations(msg):
+def declarations(msg, msg_enums):
     return []
 
 def getMsgID(msg):

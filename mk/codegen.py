@@ -13,9 +13,10 @@ digestFile=objDir+'/'+"MsgDigest.txt"
 
 languageOptions = {}
 languageOptions['python'] = ["Python", "language.py", "Template.py", "HeaderTemplate.py"]
-languageOptions['cpp'] = ["Cpp", "language.py", "CppTemplate.h", "CppHeaderTemplate.h"]
-languageOptions['c'] = ["Cpp", "Clanguage.py", "CTemplate.h", "CHeaderTemplate.h"]
-languageOptions['java'] = ["Java", "language.py", "JavaTemplate.java", "JavaHeaderTemplate.java"]
+languageOptions['cpp'] = ["Cpp", "language.py", "Template.h", "HeaderTemplate.h"]
+languageOptions['c'] = ["C", "language.py", "Template.h", "HeaderTemplate.h"]
+languageOptions['cosmos'] = ["Cosmos", "language.py", "Template.txt", "HeaderTemplate.txt"]
+languageOptions['java'] = ["Java", "language.py", "Template.java", "HeaderTemplate.java"]
 languageOptions['js'] = ["Javascript", "language.py", "Template.js", "HeaderTemplate.js"]
 languageOptions['matlab'] = ["Matlab", "language.py", "Template.m", "HeaderTemplate.m"]
 languageOptions['html'] = ["HTML", "language.py", "Template.html", "HeaderTemplate.html"]
@@ -40,7 +41,7 @@ def build(languageOptions):
 if __name__ == '__main__':
     if len(sys.argv) < 1:
         sys.stderr.write('Usage: ' + sys.argv[0] + ' [language]\n')
-        sys.stderr.write('[language] is one of python cpp c java js matlab html')
+        sys.stderr.write('[language] is one of python cpp c cosmos java js matlab html')
         sys.stderr.write('If unspecified, all languages are built.')
         sys.exit(1)
     try:

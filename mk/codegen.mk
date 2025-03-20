@@ -12,13 +12,16 @@ DIGEST=$(MSGDIR)/MsgDigest.txt
 
 MSG_FILES := $(shell cd $(mdir) && find * -iname \*.yaml)
 
-.PHONY: python cpp c java js swift kotlin matlab html check
+.PHONY: python cpp c cosmos java js swift kotlin matlab html check
 
 python:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Python python
 
 cpp:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Cpp cpp
+
+cosmos:
+	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/Cosmos cosmos
 
 c:
 	$(PARSER) $(mdir) $(call CYGPATH,$(MSGDIR))/C c
@@ -54,7 +57,7 @@ html:
 
 check: $(DIGEST)
 
-install all:: Makefile check cpp c dart python java js swift kotlin matlab html
+all:: Makefile check cpp c cosmos dart python java js swift kotlin matlab html
 
 clean clobber::
 	rm -rf $(MSGDIR) __pycache__ *.pyc

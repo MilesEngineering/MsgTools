@@ -1,6 +1,6 @@
-all clobber clean install :: 
+all clobber clean install uninstall :: 
 
-.PHONY: all clobber clean install test
+.PHONY: all clobber clean install uninstall test
 
 printdirs:
 	@echo THIS_MAKEFILE is $(THIS_MAKEFILE)

@@ -74,7 +74,7 @@ def accessors(msg):
 def enums(e):
     return ""
 
-def declarations(msg):
+def declarations(msg, msg_enums):
     return []
 
 def fieldDefault(field):

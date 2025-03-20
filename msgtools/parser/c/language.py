@@ -14,6 +14,8 @@ language.enumClass = ""
 enums = language.enums
 accessors = language.accessors
 declarations = language.declarations
+structPacking = language.structPacking
+structUnpacking = language.structUnpacking
 initCode = language.initCode
 
 def fieldDefault(field):

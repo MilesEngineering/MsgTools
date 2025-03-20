@@ -109,5 +109,5 @@ def enums(e):
 
     return "\n".join(html)
 
-def declarations(msg):
+def declarations(msg, msg_enums):
     return [""]

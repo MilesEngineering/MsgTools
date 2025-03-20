@@ -202,7 +202,7 @@ def enums(e):
         ret += fwd + back
     return ret
 
-def declarations(msg):
+def declarations(msg, msg_enums):
     ret = []
     if "Fields" in msg:
         for field in msg["Fields"]:
