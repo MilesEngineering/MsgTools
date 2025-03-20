@@ -32,7 +32,7 @@ upload:
 
 # When not inside a virtual env, add --user option on install.
 ifeq ($(VIRTUAL_ENV), )
-	PIP3_INSTALL:=$(PIP3_INSTALL) --user
+PIP3_INSTALL:=$(PIP3_INSTALL) --user
 endif
 
 install::
