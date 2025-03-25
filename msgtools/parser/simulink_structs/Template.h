@@ -10,22 +10,22 @@
 #ifndef <MSGFULLNAME>Struct_H__
 #define <MSGFULLNAME>Struct_H__
 
+#include <stdint.h>
+
 // This is for creating structs that correspond to messages,
 // copying messages into and out of structs.
+
+
+<ENUMERATIONS>
+
 
 typedef struct
 {
     <DECLARATIONS>
 } <MSGFULLNAME>Struct;
 
-void <MSGFULLNAME>UnpackFromMessage(uint8_t* m_data, <MSGFULLNAME>Struct* s)
-{
-    <STRUCTUNPACKING>
-}
-void <MSGFULLNAME>PackIntoMessage(uint8_t* m_data, <MSGFULLNAME>Struct* s)
-{
-    <STRUCTPACKING>
-}
+void <MSGFULLNAME>Send(const <MSGFULLNAME>Struct* unpackedMsg);
+void <MSGFULLNAME>Receive(<MSGFULLNAME>Struct* unpackedMsg);
 
 <ONCE>#define <ESCAPED_INPUT_FILENAME>_FILE_HASH <INPUT_FILE_HASH_BYTES>
 
