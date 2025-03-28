@@ -27,6 +27,33 @@ typedef struct
 void <MSGFULLNAME>Send(const <MSGFULLNAME>Struct* unpackedMsg);
 void <MSGFULLNAME>Receive(<MSGFULLNAME>Struct* unpackedMsg);
 
+#ifdef <MSGFULLNAME>Struct_IMPL
+
+// include the C header file
+//#include<>
+
+
+void <MSGFULLNAME>Send(const <MSGFULLNAME>Struct* unpackedMsg)
+{
+    // TODO other parameters needed here?
+    uint8_t *data = allocate_msg(<MSGFULLNAME>_MSG_ID, <MSGFULLNAME>_MSG_SIZE);
+    <SETFIELDS>
+    send_msg(data);
+    // TODO free data?
+}
+
+
+void <MSGFULLNAME>Receive(<MSGFULLNAME>Struct* unpackedMsg)
+{
+    // TODO other parameters needed here?
+    uint8_t* data = message_rx_data(<MSGFULLNAME>_MSG_ID);
+    if (!data) return;
+    <GETFIELDS>
+    // TODO free data?
+}
+
+#endif
+
 <ONCE>#define <ESCAPED_INPUT_FILENAME>_FILE_HASH <INPUT_FILE_HASH_BYTES>
 
 #endif
