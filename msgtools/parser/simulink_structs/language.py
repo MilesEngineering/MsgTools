@@ -49,14 +49,9 @@ def declarations(msg, msg_enums):
 
 def set_field(msg, field):
     if fieldCount(field) == 1:
-        ret = "<MSGFULLNAME>_Set%s(data, %s);" % (field["Name"], "unpackedMsg->" + field["Name"])
+        ret = "msg->Set%s(%s);" % (field["Name"], "unpackedMsg->" + field["Name"])
     else:
-        ret = '''\
-for (int i=0; i < %d; i++)
-{
-    <MSGFULLNAME>_Set%s(data, %s[i], i);
-}
-''' % (fieldCount(field), field["Name"], "unpackedMsg->" + field["Name"])
+        ret = "msg->CopyIn%s(%s, %d);" % (field["Name"], "unpackedMsg->" + field["Name"], fieldCount(field))
     return ret
 
 def set_fields(msg):
@@ -73,14 +68,9 @@ def set_fields(msg):
 
 def get_field(msg, field):
     if fieldCount(field) == 1:
-        ret = "%s = <MSGFULLNAME>_Get%s(data);" % ("unpackedMsg->" + field["Name"], field["Name"])
+        ret = "unpackedMsg->%s = msg->Get%s();" % (field["Name"], field["Name"])
     else:
-        ret = '''\
-for (int i=0; i < %d; i++)
-{
-    %s[i] = <MSGFULLNAME>_Get%s(data, i);
-}
-''' % (fieldCount(field), "unpackedMsg->" + field["Name"], field["Name"])
+        ret = "msg->CopyOut%s(%s, %d);" % (field["Name"], "unpackedMsg->" + field["Name"], fieldCount(field))
     return ret
 
 def get_fields(msg):
