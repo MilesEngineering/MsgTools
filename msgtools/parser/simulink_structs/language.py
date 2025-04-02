@@ -9,10 +9,11 @@ cpplanguage.firstParam = "m_data"
 cpplanguage.firstParamDecl = "uint8_t* m_data"
 cpplanguage.const = ""
 cpplanguage.enumNamespace = 1
+enumNamespace = 1
 cpplanguage.functionPrefix = "INLINE "
 cpplanguage.enumClass = ""
 
-enums = cpplanguage.enums
+#enums = cpplanguage.enums
 accessors = cpplanguage.accessors
 #declarations = cpplanguage.declarations
 #structPacking = cpplanguage.structPacking
@@ -21,6 +22,18 @@ initCode = cpplanguage.initCode
 #get_fields = simlanguage.get_fields
 #set_fields = simlanguage.set_fields
 
+def enums(e):
+    ret = ""
+    for enum in e:
+        ret +=  "typedef enum {\n"
+        for option in enum["Options"]:
+            optionName = OptionName(option)
+            if enumNamespace != 0:
+                optionName = "<MSGFULLNAME>"+"_"+enum["Name"] + "_" + optionName
+            ret += "    " + optionName + " = "+str(option["Value"]) + ",\n"
+        ret = ret[:-2] + "\n"
+        ret += "} <MSGFULLNAME>" + "_" + enum["Name"] + ";\n"
+    return ret
 
 def declarations(msg, msg_enums):
     ret = []
@@ -32,14 +45,14 @@ def declarations(msg, msg_enums):
                     if fieldHasConversion(bits):
                         retType = typeForScaledInt(bits)
                     elif "Enum" in bits:
-                        retType = "enum "+bits["Enum"]
+                        retType = "<MSGFULLNAME>" + "_" + bits["Enum"]
                     ret.append(retType + " " + bits["Name"] + ";")
             else:
                 retType = cpplanguage.fieldType(field)
                 if fieldHasConversion(field):
                     retType = typeForScaledInt(field)
                 elif "Enum" in field:
-                    retType = "enum "+field["Enum"]
+                    retType = "<MSGFULLNAME>" + "_" + field["Enum"]
                 if MsgParser.fieldCount(field) == 1:
                     ret.append(retType + " " + field["Name"] + ";")
                 else:

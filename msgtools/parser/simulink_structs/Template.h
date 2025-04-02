@@ -15,7 +15,6 @@
 // This is for creating structs that correspond to messages,
 // copying messages into and out of structs.
 
-
 <ENUMERATIONS>
 
 
