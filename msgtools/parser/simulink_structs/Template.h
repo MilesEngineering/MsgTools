@@ -35,5 +35,3 @@ void <MSGFULLNAME>Receive(<MSGFULLNAME>Unpacked* unpackedMsg);
 #endif
 
 <ONCE>#define <ESCAPED_INPUT_FILENAME>_FILE_HASH <INPUT_FILE_HASH_BYTES>
-
-#endif

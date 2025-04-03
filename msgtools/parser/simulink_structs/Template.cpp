@@ -8,7 +8,8 @@
 
 */
 #include <memory>
-#include "<OUTPUTFILENAME>.h"
+// include the SimulinkStructs generated header
+//#include "<OUTPUTFILENAME>.h"
 
 
 // include the C++ header file
@@ -18,7 +19,7 @@
 void <MSGFULLNAME>Send(const <MSGFULLNAME>Unpacked* unpackedMsg)
 {
     // TODO other parameters needed here?
-    auto msg = std::make_unique<<MSGFULLNAME>>();
+    auto msg = std::make_unique<<MSGFULLNAME>Message>();
     <SETFIELDS>
     sendMessage(std::move(msg));
 }
