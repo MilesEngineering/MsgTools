@@ -21,16 +21,15 @@ void <MSGFULLNAME>Send(const <MSGFULLNAME>Unpacked* unpackedMsg)
     // TODO other parameters needed here?
     auto msg = std::make_unique<<MSGFULLNAME>Message>();
     <SETFIELDS>
-    sendMessage(std::move(msg));
+    //sendMessage(std::move(msg));
 }
 
 
 void <MSGFULLNAME>Receive(<MSGFULLNAME>Unpacked* unpackedMsg)
 {
     // TODO other parameters needed here?
-    auto msg = receiveMessage(<MSGFULLNAME>_MSG_ID);
+    //auto msg = receiveMessage(<MSGFULLNAME>Message::MSG_ID);
+    <MSGFULLNAME>Message *msg = nullptr;
     if (!msg) return;
     <GETFIELDS>
 }
-
-#endif

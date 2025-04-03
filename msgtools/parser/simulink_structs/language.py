@@ -61,8 +61,13 @@ def declarations(msg, msg_enums):
 
 
 def set_field(msg, field):
+    if "Enum" in field:
+        enumCast = "(<MSGFULLNAME>Message" + "::" + field["Enum"] + ")"
+    else:
+        enumCast = ""
+
     if fieldCount(field) == 1:
-        ret = "msg->Set%s(%s);" % (field["Name"], "unpackedMsg->" + field["Name"])
+        ret = "msg->Set%s(%s);" % (field["Name"], enumCast + "unpackedMsg->" + field["Name"])
     else:
         ret = "msg->CopyIn%s(%s, %d);" % (field["Name"], "unpackedMsg->" + field["Name"], fieldCount(field))
     return ret
@@ -80,8 +85,14 @@ def set_fields(msg):
     return ret
 
 def get_field(msg, field):
+    if "Enum" in field:
+        enumCast = "(<MSGFULLNAME>" + "_" + field["Enum"] + ")"
+    else:
+        enumCast = ""
+
     if fieldCount(field) == 1:
-        ret = "unpackedMsg->%s = msg->Get%s();" % (field["Name"], field["Name"])
+        ret = "unpackedMsg->%s = %smsg->Get%s();" % (field["Name"], enumCast, field["Name"])
+#        ret = "unpackedMsg->%s = msg->Get%s();" % (field["Name"], field["Name"])
     else:
         ret = "msg->CopyOut%s(%s, %d);" % (field["Name"], "unpackedMsg->" + field["Name"], fieldCount(field))
     return ret
