@@ -266,7 +266,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg, msg_enums))
                 replacements["<INIT_CODE>"] = "\n".join(language.initCode(msg))
                 replacements["<OUTPUTFILENAME>"] = outputFilename
-                replacements["<OUTPUTFILEBASENAME>"] = outputFilename.split('.')[0]
+                replacements["<OUTPUTFILEBASENAME>"] = os.path.splitext(os.path.basename(outputFilename))[0]
                 replacements["<INPUTFILENAME>"] = inputFilename
                 replacements["<TEMPLATEFILENAME>"] = templateFilename
                 replacements["<LANGUAGEFILENAME>"] = languageFilename

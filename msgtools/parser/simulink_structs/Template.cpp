@@ -8,12 +8,11 @@
 
 */
 #include <memory>
-// include the SimulinkStructs generated header
-//#include "<OUTPUTFILENAME>.h"
+#include "<OUTPUTFILEBASENAME>.h"
 
 
-// include the C++ header file
-//#include</path/to/cpp/<OUTPUTFILENAME>>
+
+#include "../Cpp/<OUTPUTFILEBASENAME>.h"
 
 
 void <MSGFULLNAME>Send(const <MSGFULLNAME>Unpacked* unpackedMsg)
