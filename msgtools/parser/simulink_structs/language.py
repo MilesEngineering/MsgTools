@@ -46,7 +46,10 @@ def declarations(msg, msg_enums):
                         retType = typeForScaledInt(bits)
                     elif "Enum" in bits:
                         retType = "<MSGFULLNAME>" + "_" + bits["Enum"]
-                    ret.append(retType + " " + bits["Name"] + ";")
+                    if MsgParser.fieldCount(field) == 1:
+                        ret.append(retType + " " + bits["Name"] + ";")
+                    else:
+                        ret.append(retType + " " + bits["Name"] + "["+str(MsgParser.fieldCount(field))+"];")
             else:
                 retType = cpplanguage.fieldType(field)
                 if fieldHasConversion(field):
@@ -60,17 +63,21 @@ def declarations(msg, msg_enums):
     return ret
 
 
-def set_field(msg, field):
+def set_field(msg, field, count):
     if "Enum" in field:
         enumCast = "(<MSGFULLNAME>Message" + "::" + field["Enum"] + ")"
     else:
         enumCast = ""
 
-    if fieldCount(field) == 1:
-        ret = "msg->Set%s(%s);" % (field["Name"], enumCast + "unpackedMsg->" + field["Name"])
+    if count == 1:
+        ret = "msg->Set%s(%sunpackedMsg->%s);" % (field["Name"], enumCast, field["Name"])
     else:
-        ret = "msg->CopyIn%s(%s, %d);" % (field["Name"], "unpackedMsg->" + field["Name"], fieldCount(field))
+        ret = ""
+        for idx in range(count):
+            ret = ret + "msg->Set%s(%sunpackedMsg->%s[%d], %d);\n" % (field["Name"], enumCast, field["Name"], idx, idx)
+        ret = ret[:-1]
     return ret
+
 
 def set_fields(msg):
     ret = []
@@ -78,24 +85,26 @@ def set_fields(msg):
         for field in msg["Fields"]:
             if "Bitfields" in field:
                 for bitfield in field["Bitfields"]:
-                    ret.append(set_field(msg, bitfield))
+                    ret.append(set_field(msg, bitfield, fieldCount(field)))
             else:
-                ret.append(set_field(msg, field))
-
+                ret.append(set_field(msg, field, fieldCount(field)))
     return ret
 
-def get_field(msg, field):
+def get_field(msg, field, count):
     if "Enum" in field:
         enumCast = "(<MSGFULLNAME>" + "_" + field["Enum"] + ")"
     else:
         enumCast = ""
 
-    if fieldCount(field) == 1:
+    if count == 1:
         ret = "unpackedMsg->%s = %smsg->Get%s();" % (field["Name"], enumCast, field["Name"])
-#        ret = "unpackedMsg->%s = msg->Get%s();" % (field["Name"], field["Name"])
     else:
-        ret = "msg->CopyOut%s(%s, %d);" % (field["Name"], "unpackedMsg->" + field["Name"], fieldCount(field))
+        ret = ""
+        for idx in range(count):
+            ret = ret + "unpackedMsg->%s[%d] = %smsg->Get%s(%d);\n" % (field["Name"], idx, enumCast, field["Name"], idx)
+        ret = ret[:-1]
     return ret
+
 
 def get_fields(msg):
     ret = []
@@ -103,8 +112,8 @@ def get_fields(msg):
         for field in msg["Fields"]:
             if "Bitfields" in field:
                 for bitfield in field["Bitfields"]:
-                    ret.append(get_field(msg, bitfield))
+                    ret.append(get_field(msg, bitfield, fieldCount(field)))
             else:
-                ret.append(get_field(msg, field))
+                ret.append(get_field(msg, field, fieldCount(field)))
 
     return ret

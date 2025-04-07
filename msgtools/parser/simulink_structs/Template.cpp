@@ -11,7 +11,7 @@
 #include "<OUTPUTFILEBASENAME>.h"
 
 
-
+#include "message.h"
 #include "../Cpp/<OUTPUTFILEBASENAME>.h"
 #include "simulink_message_client.h"
 
