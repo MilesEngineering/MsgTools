@@ -22,7 +22,7 @@ void <MSGFULLNAME>Send(const <MSGFULLNAME>Unpacked* unpackedMsg, int src = 0, in
     msg->m_hdr.SetSource(src);
     msg->m_hdr.SetDestination(dst);
     <SETFIELDS>
-    SimulinkMessageClient::Instance()->SendMessage(*msg);
+    SimulinkMessageClient::Instance()->SendMsg(*msg);
 }
 
 
