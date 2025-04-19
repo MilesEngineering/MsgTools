@@ -214,10 +214,13 @@ class MsgPlot(QWidget):
             fieldName = splits[0]
             fieldIndex = int(splits[1])
         else:
-            evaluator = EquationEvaluator(fieldName)
-            if evaluator.has_equation():
-                fieldName = evaluator.variable_name
-                fieldEvaluator = evaluator
+            try:
+                evaluator = EquationEvaluator(fieldName)
+                if evaluator.has_equation():
+                    fieldName = evaluator.variable_name
+                    fieldEvaluator = evaluator
+            except SyntaxError as e:
+                print("MsgPlot.split_fieldname(%s): exception [%s], ignoring EquationEvaluator" % (fieldName, e))
         return (fieldName, fieldIndex, fieldEvaluator)
 
     def dragEnterEvent(self, ev):
