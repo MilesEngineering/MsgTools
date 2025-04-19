@@ -116,7 +116,7 @@ def CommonSubdir(f1, f2):
     r = subdirComponent.strip(os.path.sep).strip("\\")
     return r
 
-def OutputFile(inputFilename, inputName, outDir):
+def OutputFile(inputFilename, inputName, outDir, templateFilename):
     try:
         outputFilename = language.outputFilename(outDir, inputName, templateFilename)
     except AttributeError:
@@ -161,7 +161,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
     # open output file now
     if not oneOutputFilePerMsg:
         filename = os.path.basename(inputFilename).split('.')[0]
-        outputFilename, outFile = OutputFile(inputFilename, filename, outDir)
+        outputFilename, outFile = OutputFile(inputFilename, filename, outDir, templateFilename)
         if not outFile:
             return
 
@@ -231,7 +231,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                         except AttributeError:
                             outDirForFile = outDir + "/" + inputFileBasename
 
-                    outputFilename, outFile = OutputFile(inputFilename, msgShortName(msg), outDirForFile)
+                    outputFilename, outFile = OutputFile(inputFilename, msgShortName(msg), outDirForFile, templateFilename)
                     if not outFile:
                         continue
 
@@ -266,6 +266,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 replacements["<DECLARATIONS>"] = "\n".join(language.declarations(msg, msg_enums))
                 replacements["<INIT_CODE>"] = "\n".join(language.initCode(msg))
                 replacements["<OUTPUTFILENAME>"] = outputFilename
+                replacements["<OUTPUTFILEBASENAME>"] = os.path.splitext(os.path.basename(outputFilename))[0]
                 replacements["<INPUTFILENAME>"] = inputFilename
                 replacements["<TEMPLATEFILENAME>"] = templateFilename
                 replacements["<LANGUAGEFILENAME>"] = languageFilename
@@ -314,7 +315,7 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
         outfileLen = outFile.tell()
         outFile.close()
 
-def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplateFilename):
+def ProcessDir(msgDir, outDir, languageFilename, templateFilenames, headerTemplateFilenames):
     # make the output directory
     try:
         os.makedirs(outDir)
@@ -332,16 +333,19 @@ def ProcessDir(msgDir, outDir, languageFilename, templateFilename, headerTemplat
                 subdir = language.outputSubdir(outDir, filename)
             except AttributeError:
                 subdir = outDir + "/" + filename
-            ProcessDir(inputFilename, subdir, languageFilename, templateFilename, headerTemplateFilename)
+            ProcessDir(inputFilename, subdir, languageFilename, templateFilenames, headerTemplateFilenames)
         else:
-            particularTemplate = templateFilename
             if msgDir.endswith("headers"):
-                particularTemplate = headerTemplateFilename
-            if particularTemplate == None:
-                print("Skipping %s, no template defined." % (inputFilename))
+                templatesToProcess = headerTemplateFilenames
             else:
-                if filename.endswith(".yaml") or filename.endswith(".json"):
-                    ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
+                templatesToProcess = templateFilenames
+
+            for particularTemplate in templatesToProcess:
+                 if particularTemplate == None:
+                    print("Skipping %s, no template defined." % (inputFilename))
+                 else:
+                    if filename.endswith(".yaml") or filename.endswith(".json"):
+                        ProcessFile(inputFilename, outDir, languageFilename, particularTemplate)
 
 def getAvailableLanguages():
     '''Look at all supported languages.  Assume each language is a 
@@ -381,17 +385,22 @@ def loadlanguage(languageName):
     sys.exit(1)
 
 def getTemplate(language, templateBase):
-    '''Search the given language sub-folder for the template.
-    Basically we are looking for specific filename, with an extension
+    '''Search the given language sub-folder for the templates.
+    Basically we are looking for specific filenames, with an extension
     appropriate to the language we're processing'''
 
+    templateFiles = list()
     for file in os.listdir(os.path.dirname(os.path.realpath(__file__)) + "/" + language):
         index = file.rfind(templateBase)
         if index == 0:
-            return file[index:]
+            templateFiles.append(file)
 
-    print('Unable to find template base "{0}"" for language {1}'.format(templateBase, language))
-    return None
+    if not templateFiles:
+        print('Unable to find template base "{0}"" for language {1}'.format(templateBase, language))
+        return None
+    
+    else:
+        return templateFiles
 
 def main():
 
@@ -407,12 +416,10 @@ def main():
                 template provided by MsgTools.''')
     args = parser.parse_args()
   
-    global inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename
+    global inputFilename, languageFilename
     inputFilename = args.input
     outputFilename = args.output
     languageFilename = args.language
-    templateFilename = args.template
-    headerTemplateFilename = args.headertemplate
 
     # import the language file
     global language
@@ -425,22 +432,30 @@ def main():
 
     # If the user didn't specify a template or header template then
     # use the language defaults
-    if templateFilename is None:
-        templateFilename = getTemplate(languageFilename, DEFAULT_TEMPLATE)
-    if headerTemplateFilename is None:
-        headerTemplateFilename = getTemplate(languageFilename, DEFAULT_HEADER_TEMPLATE)
-    
+    if args.template is None:
+        templateFilenames = getTemplate(languageFilename, DEFAULT_TEMPLATE)
+    else:
+        templateFilenames = [args.template]
+
+    if args.headertemplate is None:
+        headerTemplateFilenames = getTemplate(languageFilename, DEFAULT_HEADER_TEMPLATE)
+    else:
+        headerTemplateFilenames = [args.headertemplate]
+
     if(os.path.exists(inputFilename)):
         if(os.path.isdir(inputFilename)):
-            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilename, headerTemplateFilename)
+            ProcessDir(inputFilename, outputFilename, languageFilename, templateFilenames, headerTemplateFilenames)
         else:
-            particularTemplate = templateFilename
             if "/headers/" in outputFilename:
-                particularTemplate = headerTemplateFilename
-            if particularTemplate == None:
-                print("Skipping %s, no template defined." % (inputFilename))
+                templatesToProcess = headerTemplateFilenames
             else:
-                ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
+                templatesToProcess = templateFilenames
+
+            for particularTemplate in templatesToProcess:
+                 if particularTemplate == None:
+                    print("Skipping %s, no template defined." % (inputFilename))
+                 else:
+                    ProcessFile(inputFilename, outputFilename, languageFilename, particularTemplate)
     else:
         print("Path " + inputFilename + " does not exist!")
 
