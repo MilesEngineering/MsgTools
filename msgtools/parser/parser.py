@@ -131,8 +131,13 @@ def OutputFile(inputFilename, inputName, outDir, templateFilename):
         templateFileTime = os.path.getmtime(templateFilename)
     except:
         templateFileTime = 0
+        try:
+            templateFileTime = os.path.getmtime(languageFilename+'/'+templateFilename)
+        except:
+            templateFileTime = 0
     try:
-        languageFileTime = os.path.getmtime(languageFilename)
+        languageDir = os.path.dirname(os.path.realpath(__file__)) + "/" + languageFilename
+        languageFileTime = os.path.getmtime(languageDir+'/language.py')
     except:
         languageFileTime = 0
     if (inputFileTime > outputFileTime or templateFileTime > outputFileTime or languageFileTime > outputFileTime):
