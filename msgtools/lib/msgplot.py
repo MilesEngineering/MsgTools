@@ -177,7 +177,7 @@ class MsgPlot(QWidget):
         # create slider bar to control time scale
         if timeSlider == None:
             self.timeSlider = QSlider(Qt.Horizontal)
-            self.timeSlider.setMinimum(10)
+            self.timeSlider.setMinimum(1)
             self.timeSlider.setMaximum(MsgPlot.MAX_TIME)
             self.timeSlider.setSingleStep(10)
             self.timeSlider.setPageStep(50)
