@@ -327,6 +327,8 @@ class App(QtWidgets.QMainWindow):
             self.sendBytesFn(msg.rawBuffer().raw[0:computedSize])
         else:
             self.sendBytesFn(msg.rawBuffer().raw)
+        # Log all sent messages
+        self.logMsg(msg)
 
     def logMsg(self, msg):
         self.timestamp_fixer.fix_timestamp(msg.hdr)

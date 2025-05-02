@@ -105,28 +105,40 @@ class TimestampFixer:
             self.time_scale = None
     
     def fix_timestamp(self, hdr):
-        # If there's a valid timestamp record it to use the next time
-        # a message comes in if it has no timestamp.
-        if self.time_info and hdr.GetTime() != 0.0:
+        # if there's no time field, don't do anything
+        if not self.time_info:
+            return
+
+        if hdr.GetTime() == 0.0:
+            # if time is zero, then check if we've previously had non-zero time
+            if self.last_rx_time == None:
+                # if we've never had time, then just use system time, but scaled
+                current_time = datetime.datetime.now().timestamp()
+                if self.time_scale != None:
+                    current_time *= self.time_scale
+                if self.time_info.type == "int":
+                    current_time = int(current_time)
+                hdr.SetTime(current_time)
+            else:
+                # if we have had time, then try scaling between wallclock time and message time.
+                # If we can scale between wallclock time and message time, compute
+                # a new time based on last rx time and elapsed time.
+                if self.time_scale != None:
+                    current_time = datetime.datetime.now().timestamp()
+                    elapsed_time = current_time - self.last_rx_time
+                    elapsed_time *= self.time_scale
+                    if self.time_info.type == "int":
+                        elapsed_time = int(elapsed_time)
+                    new_time = self.last_rx_timestamp + elapsed_time
+                    hdr.SetTime(new_time)
+                else:
+                    # otherwise, set time to timestamp of last reception
+                    hdr.SetTime(self.last_rx_timestamp)
+        else:
+            # If there's a valid timestamp record it to use the next time
+            # a message comes in if it has no timestamp.
             self.last_rx_time = datetime.datetime.now().timestamp()
             self.last_rx_timestamp = hdr.GetTime()
-
-        # If there's no valid timestamp, but we've previously received a,
-        # message, then compute a timestamp for this message.
-        elif self.last_rx_time != None:
-            # If we can scale between wallclock time and message time, compute
-            # a new time based on last rx time and elapsed time.
-            if self.time_scale != None:
-                current_time = datetime.datetime.now().timestamp()
-                elapsed_time = current_time - self.last_rx_time
-                elapsed_time *= self.time_scale
-                if self.time_info.type == "int":
-                    elapsed_time = int(elapsed_time)
-                new_time = self.last_rx_timestamp + elapsed_time
-                hdr.SetTime(new_time)
-            else:
-                # otherwise, set time to timestamp of last reception
-                hdr.SetTime(self.last_rx_timestamp)
 
 class Messaging:
     hdr=None
