@@ -390,6 +390,17 @@ class MsgPlot(QWidget):
                 self.refresh_timer.start()
 
     def refresh(self):
+        # If a popup is open, just return without redrawing.
+        # Otherwise a pyqtgraph context menu for scaling the graph will get
+        # confused because the auto-scale feature will keep editing the
+        # values in the X and Y scale edit boxes.
+        # In theory we'd only need to do this when a pyqtgraph context menu is open,
+        # but it turns out that's pretty hard to determine.  The type of the activePopupWidget
+        # is different for different levels of navigation in the pyqtgraph's hierarchical menu,
+        # sometimes it has pyqtgraph in the name and other times it's just QMenu.
+        if qApp.activePopupWidget() != None:
+            return
+
         # Read the time scale value from the slider
         time_scale = self.timeSlider.value()
         # look for the time of the newest data on any line on this plot
