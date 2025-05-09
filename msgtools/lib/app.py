@@ -331,8 +331,8 @@ class App(QtWidgets.QMainWindow):
         self.logMsg(msg)
 
     def logMsg(self, msg):
-        self.timestamp_fixer.fix_timestamp(msg.hdr)
         if self.logFile:
+            original_timestamp = self.timestamp_fixer.fix_timestamp(msg.hdr)
             log = ''
             if self.logFileType == "csv":
                 if not msg.MsgName() in self.loggedMsgHeader:
@@ -350,6 +350,7 @@ class App(QtWidgets.QMainWindow):
                 log = msg.rawBuffer().raw
             self.logFile.write(log)
             self.logFile.flush()
+            self.timestamp_fixer.restore_timestamp(msg.hdr, original_timestamp)
 
     # this function reads messages (perhaps from a file, like in LumberJack), and calls the message handler.
     # unclear if it ever makes sense to use this in a application that talks to a socket or UART, because

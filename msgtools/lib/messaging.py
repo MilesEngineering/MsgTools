@@ -104,12 +104,17 @@ class TimestampFixer:
         except KeyError:
             self.time_scale = None
     
+    def restore_timestamp(self, hdr, original_timestamp):
+        if original_timestamp != None:
+            hdr.SetTime(original_timestamp)
+
     def fix_timestamp(self, hdr):
         # if there's no time field, don't do anything
         if not self.time_info:
-            return
+            return None
 
         if hdr.GetTime() == 0.0:
+            original_timestamp = hdr.GetTime()
             # if time is zero, then check if we've previously had non-zero time
             if self.last_rx_time == None:
                 # if we've never had time, then just use system time, but scaled
@@ -134,11 +139,13 @@ class TimestampFixer:
                 else:
                     # otherwise, set time to timestamp of last reception
                     hdr.SetTime(self.last_rx_timestamp)
+            return original_timestamp
         else:
             # If there's a valid timestamp record it to use the next time
             # a message comes in if it has no timestamp.
             self.last_rx_time = datetime.datetime.now().timestamp()
             self.last_rx_timestamp = hdr.GetTime()
+        return None
 
 class Messaging:
     hdr=None
