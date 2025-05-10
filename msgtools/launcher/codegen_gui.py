@@ -4,11 +4,25 @@ import os
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-base_dir = "/opt/msgtools"
-msg_dir = base_dir + "/messages"
-obj_dir = base_dir + "/obj/CodeGenerator"
+def find_base_dir():
+    curdir = os.path.abspath(os.path.curdir)
+    while(True):
+        messages_dir = os.path.abspath(os.path.join(curdir, CodegenGui.MSG_SUBDIR))
+        if os.path.isdir(messages_dir):
+            return curdir
+        parent_dir = os.path.abspath(os.path.join(curdir, '..'))
+        # if our path stops changing as we go up, we got to the top
+        if curdir == parent_dir:
+            raise FileNotFoundError("%s does not exist upstream from %s" % (msg_dir, os.path.abspath(os.path.curdir)))
+        curdir = parent_dir
+    if os.path.isdir(GLOBAL_MSGTOOLS_DIR):
+        return GLOBAL_MSGTOOLS_DIR
+    raise FileNotFoundError("%s does not exist" % (msg_dir))
 
 class CodegenGui(QtCore.QObject):
+    GLOBAL_MSGTOOLS_DIR = "/opt/msgtools"
+    MSG_SUBDIR = "messages"
+    OBJ_SUBDIR = "obj/CodeGenerator"
     languageOptions = {}
     languageOptions['C']          = ["c", "C"]
     languageOptions['C++']        = ["cpp", "Cpp"]
@@ -33,7 +47,7 @@ class CodegenGui(QtCore.QObject):
         codegenMenu.addAction(buildAction)
         
         submenu = codegenMenu.addMenu('Languages')
-        languages = self.language_options()
+        languages = self._language_options()
         allAction = QtWidgets.QAction('All', self)
         allAction.triggered.connect(self.language_selected)
         allAction.setCheckable(True)
@@ -73,28 +87,30 @@ class CodegenGui(QtCore.QObject):
         self.settings.setValue("languages", ','.join(self.selectedLanguages))
 
     def codegen(self):
-        self.build(self.selectedLanguages)
+        commands = []
+        for languageName in self.selectedLanguages:
+            languageOptions = self.languageOptions[languageName]
+            languagePluginName = languageOptions[0]
+            outputDir = os.path.join(CodegenGui.OBJ_SUBDIR, languageOptions[1])
+            invoke = 'msgparser %s %s %s' % (CodegenGui.MSG_SUBDIR, outputDir, languagePluginName)
+            commands.append(invoke)
+        self._invoke(commands)
 
     def codegen_clean(self):
         self.clean()
         
-    def build(self, languageNames):
-        commands = []
-        for languageName in languageNames:
-            languageOptions = self.languageOptions[languageName]
-            languagePluginName = languageOptions[0]
-            outputDir = obj_dir + '/' + languageOptions[1]
-            invoke = 'msgparser %s %s %s' % (msg_dir, outputDir, languagePluginName)
-            commands.append(invoke)
-        self.invoke(commands)
-
     def clean(self):
-        self.invoke(['rm -rf %s' % obj_dir])
+        base_dir = find_base_dir()
+        obj_dir = os.path.abspath(os.path.join(base_dir, CodegenGui.OBJ_SUBDIR))
+        if obj_dir.endswith(CodegenGui.OBJ_SUBDIR):
+            self._invoke(['rm -rf %s' % obj_dir])
+        else:
+            raise FileNotFoundError("%s is invalid (needs to end with %s" % (obj_dir, CodegenGui.OBJ_SUBDIR))
 
-    def language_options(self):
+    def _language_options(self):
         return self.languageOptions.keys()
 
-    def invoke(self, commands):
+    def _invoke(self, commands):
         dlg = CodeGeneratorDialog(commands)
         code = dlg.exec_()
 
@@ -119,9 +135,10 @@ class CodeGeneratorDialog(QtWidgets.QDialog):
         self.start_process(self.commands.pop())
     
     def start_process(self, command):
+        base_dir = find_base_dir()
         self.textBox.insertPlainText('> %s\n' % command)
         self.textBox.moveCursor(QtGui.QTextCursor.End)
-        self.proc = QtCore.QProcess(self)
+        self.proc = QtCore.QProcess()
         self.proc.finished.connect(self.process_exited)
         self.proc.readyReadStandardOutput.connect(self.print_output)
         self.proc.readyReadStandardError.connect(self.print_output)
