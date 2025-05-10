@@ -81,6 +81,9 @@ class MessageAttributeLoader(object):
     def __init__(self, basename):
         self.basename = basename
     
+    def Find(self, msgname):
+        return self.__getattr__(msgname)
+
     def __getattr__(self, key):
         if self.basename:
             msgname = self.basename+"."+key
