@@ -49,8 +49,7 @@ class MsgLauncher(QtWidgets.QMainWindow):
         connectMenu.addAction(settingsAction)
         settingsAction.triggered.connect(self.chooseHost)
         
-        if os.path.exists('/opt/msgtools/messages'):
-            self.codegen_gui = codegen_gui.CodegenGui(menubar, self.settings)
+        self.codegen_gui = codegen_gui.CodegenGui(menubar, self.settings)
         
         self.setWindowTitle("MsgLauncher")
         
