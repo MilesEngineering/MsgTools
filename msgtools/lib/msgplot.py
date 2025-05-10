@@ -128,7 +128,7 @@ class MsgPlot(QWidget):
     RegisterForMessage = QtCore.pyqtSignal(str)
     MAX_LENGTH = 4096
     MAX_TIME = 60*5
-    def __init__(self, msgClass, msgKey, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None, multiple_messages=False):
+    def __init__(self, msgClass, msgKey, fieldName, runButton = None, editButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None, multiple_messages=False):
         super(QWidget,self).__init__()
         
         newFieldName, fieldIndex, evaluator = MsgPlot.split_fieldname(fieldName)
@@ -164,6 +164,15 @@ class MsgPlot(QWidget):
         self.runButton.clicked.connect(self.pauseOrRun)
         if displayControls:
             hLayout.addWidget(self.runButton)
+
+        # add a 'Edit' button
+        if editButton == None:
+            self.editButton = QPushButton("Edit")
+        else:
+            self.editButton = editButton
+        self.editButton.clicked.connect(self.editLines)
+        if displayControls:
+            hLayout.addWidget(self.editButton)
 
         # add a 'Clear' button
         if clearButton == None:
@@ -243,6 +252,10 @@ class MsgPlot(QWidget):
         except MsgPlot.PlotError as e:
             self.AddLineError.emit(str(e))
     
+    def editLines(self):
+        d = EditLinesDialog(self)
+        d.exec_()
+        
     def clearData(self):
         for line in self.lines:
             line.dataArray.clear()
@@ -334,7 +347,11 @@ class MsgPlot(QWidget):
         curve = self.plotWidget.plot(timeArray, dataArray, name=lineName, pen=(line_number,line_count_estimate))
         lineInfo = LineInfo(msgClass, msgKey, baseName, fieldInfo, fieldIndex, dataArray, timeArray, curve, evaluator)
         self.lines.append(lineInfo)
-        
+
+    def removeLine(self, line):
+        self.plotWidget.removeItem(line.curve)
+        self.lines.remove(line)
+
     def pauseOrRun(self):
         self.pause = not self.pause
         self.runButton.setText("Run" if self.pause else "Pause")
@@ -429,7 +446,7 @@ class MsgPlot(QWidget):
         self.plotWidget.setRange(yRange=[yaxis[0], yaxis[1]])
 
     @staticmethod
-    def plotFactory(new_plot_callback, msgClass, fieldNames, msgKey = None, fieldLabels = None, runButton = None, clearButton = None, timeSlider = None, displayControls=True, multiple_messages=False):
+    def plotFactory(new_plot_callback, msgClass, fieldNames, msgKey = None, fieldLabels = None, runButton = None, editButton = None, clearButton = None, timeSlider = None, displayControls=True, multiple_messages=False):
         msgPlot = None
         if len(fieldNames) == 0:
             fieldNames = [fieldInfo.name for fieldInfo in msgClass.fields]
@@ -451,7 +468,7 @@ class MsgPlot(QWidget):
             # make new plot
             if msgPlot == None:
                 try:
-                    msgPlot = MsgPlot(msgClass, msgKey, fieldName, runButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel, multiple_messages=multiple_messages)
+                    msgPlot = MsgPlot(msgClass, msgKey, fieldName, runButton, editButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel, multiple_messages=multiple_messages)
                     msgPlot.msgClass = msgClass
                     new_plot_callback(msgPlot)
                 except MsgPlot.PlotError as e:
@@ -459,6 +476,31 @@ class MsgPlot(QWidget):
             idx += 1
         return msgPlot
 
+class EditLinesDialog(QDialog):
+    lineDeleted = QtCore.pyqtSignal(str)
+    def __init__(self, plotwidget, parent=None):
+        super(EditLinesDialog, self).__init__(parent)
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.setWindowTitle("Remove a Line")
+
+        self.plotwidget = plotwidget
+        #self.resize(200, 400)
+
+        layout = QVBoxLayout()
+        self.line_list = QListWidget()
+        self.line_list.itemPressed.connect(self.removeLine)
+        layout.addWidget(self.line_list)
+        self.setLayout(layout)
+
+        for line in plotwidget.lines:
+            remove = QListWidgetItem(line.curve.name())
+            remove.line_to_remove = line
+            self.line_list.addItem(remove)
+        
+    def removeLine(self, list_item):
+        plot = self.plotwidget
+        plot.removeLine(list_item.line_to_remove)
+        self.line_list.takeItem(self.line_list.row(list_item))
 
 import msgtools.lib.gui
 
@@ -506,11 +548,12 @@ class MessagePlotGui(msgtools.lib.gui.Gui):
                     MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, **plotargs)
                 else:
                     firstPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, displayControls=False)
-                    plotargs = {"runButton":firstPlot.runButton, "clearButton":firstPlot.clearButton, "timeSlider":firstPlot.timeSlider, "displayControls":False}
+                    plotargs = {"runButton":firstPlot.runButton, "editButton":firstPlot.editButton, "clearButton":firstPlot.clearButton, "timeSlider":firstPlot.timeSlider, "displayControls":False}
         # add plot controls
         hLayout = QHBoxLayout()
         self.plotlayout.addLayout(hLayout)
         hLayout.addWidget(firstPlot.runButton)
+        hLayout.addWidget(firstPlot.editButton)
         hLayout.addWidget(firstPlot.clearButton)
         hLayout.addWidget(QLabel("Time Scale"))
         hLayout.addWidget(firstPlot.timeSlider)
