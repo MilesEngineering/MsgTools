@@ -141,14 +141,14 @@ def %s(%s):
     return ret
 
 def enumLookup(msg, field):
-    lookup  = "defaultValue = 0\n"
-    lookup += "    try:\n"
-    lookup += "        value = int(float(value))\n"
-    lookup += "    except ValueError:\n"
-    lookup += "        pass\n"
-    lookup += "    if isinstance(value, int) or value.isdigit():\n"
-    lookup += "        defaultValue = int(value)\n"
-    lookup += "    value = " + msgName(msg) + "." + str(field["Enum"]) + ".get(value, defaultValue)\n"
+    enumName = msgName(msg) + "." + str(field["Enum"])
+    lookup  = "if isinstance(value, int) or value.isdigit():\n"
+    lookup += "        value = int(value)\n"
+    lookup += "    else:\n"
+    lookup += "        try:\n"
+    lookup += "            value = %s[value]\n" % (enumName)
+    lookup += "        except KeyError:\n"
+    lookup += "            raise KeyError('%%s not in %s' %% (value))\n" % (enumName)
     lookup += "    "
     return lookup
 

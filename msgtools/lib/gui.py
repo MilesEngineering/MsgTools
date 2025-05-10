@@ -452,12 +452,15 @@ class MsgCommandWidget(QtWidgets.QWidget):
     def returnPressed(self):
         lineOfText = self.lineEdit.text()
         self.addText(lineOfText)
-        msg = msgcsv.csvToMsg(lineOfText)
-        if msg:
-            self.messageEntered.emit(msg)
-            self.addText(" -> Msg\n")
-        else:
-            self.commandEntered.emit(lineOfText)
+        try:
+            msg = msgcsv.csvToMsg(lineOfText)
+            if msg:
+                self.messageEntered.emit(msg)
+                self.addText(" -> Msg\n")
+            else:
+                self.commandEntered.emit(lineOfText)
+        except Exception as e:
+            self.addText(repr(e))
         self.lineEdit.setText("")
 
     def addText(self, text, errorKnown=0):
