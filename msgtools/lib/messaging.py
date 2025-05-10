@@ -627,8 +627,8 @@ class BitFieldInfo(object):
         self.enum=enum
         self.idbits=idbits
         # add a couple fields from decorators of the 'get' function
-        self.offset = int(get.offset)
-        self.size = int(get.size)
+        self.offset = get.offset
+        self.size = get.size
 
     def exists(self, msg, index=0):
         return self.parent.exists(msg, index)

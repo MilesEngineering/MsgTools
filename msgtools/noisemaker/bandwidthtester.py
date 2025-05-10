@@ -123,7 +123,7 @@ class BandwidthTester(msgtools.lib.gui.Gui):
         txDataLenSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
         txDataLenSlider.valueChanged.connect(self.setTxLen)
         txDataLenLabel = QtWidgets.QLabel()
-        txDataLenSlider.valueChanged.connect(lambda newVal: txDataLenLabel.setText(str(newVal*int(self.bandwidthTestMsgClass.GetTestData.size)+int(self.bandwidthTestMsgClass.GetTestData.offset))+" bytes"))
+        txDataLenSlider.valueChanged.connect(lambda newVal: txDataLenLabel.setText(str(newVal*self.bandwidthTestMsgClass.GetTestData.size+self.bandwidthTestMsgClass.GetTestData.offset)+" bytes"))
         txDataLenSlider.setMinimum(0)
         txDataLenSlider.setMaximum(int(self.bandwidthTestMsgClass.GetTestData.count))
         txDataLenSlider.setValue(3)
@@ -162,7 +162,7 @@ class BandwidthTester(msgtools.lib.gui.Gui):
             if self.lastTxSequence > self.maxSeq:
                 self.lastTxSequence = 0
             msg.SetSequenceNumber(self.lastTxSequence)
-            msgLen = int(msg.SetTestData.offset) + int(msg.SetTestData.size)*self.txLen
+            msgLen = msg.SetTestData.offset + msg.SetTestData.size*self.txLen
             if(self.txLen >= 1):
                 sendTime = int(time.time() * 1000)-self.startTime
                 msg.SetTestData(sendTime,0)
@@ -178,7 +178,7 @@ class BandwidthTester(msgtools.lib.gui.Gui):
             if desiredSeq > self.maxSeq:
                 desiredSeq = 0
             if msg.GetSequenceNumber() == desiredSeq:
-                if msg.hdr.GetDataLength() >= int(msg.GetTestData.offset)+int(msg.GetTestData.size):
+                if msg.hdr.GetDataLength() >= msg.GetTestData.offset+msg.GetTestData.size:
                     sendTime = msg.GetTestData(0)
                     recvTime = int(time.time() * 1000)-self.startTime
                     latency = recvTime - sendTime
