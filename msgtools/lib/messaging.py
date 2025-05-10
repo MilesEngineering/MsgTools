@@ -91,7 +91,7 @@ class MessageAttributeLoader(object):
             importlib.import_module(Messaging.MsgModuleFromName[msgname])
         if key in vars(self):
             return getattr(self, key)
-        raise AttributeError
+        raise Messaging.LoadError(self.basename, key)
 
 class TimestampFixer:
     def __init__(self):
@@ -162,6 +162,41 @@ class Messaging:
         
     debug=0
     objdir=None
+
+    class LoadError(Exception):
+        def __init__(self, basename, submsgname):
+            if basename == "":
+                fullname = "Messages"
+            else:
+                fullname = "Messages."+basename
+            txt = "'%s' does not contain '%s.%s'" % (fullname, fullname, submsgname)
+            super().__init__(txt)
+            self.basename = basename
+            self.submsgname = submsgname
+
+        def __str__(self):
+            error_text = super().__str__()
+            suggestions = self.valid_submsgs()
+            if suggestions:
+                error_text += "\nSuggestions:"
+                for suggestion in suggestions:
+                    error_text += f"\n- {suggestion}"
+            return error_text
+
+        def valid_submsgs(self):
+            ret = []
+            basename = self.basename
+            if basename == "":
+                basename = "Messages"
+            else:
+                basename = "Messages."+basename
+            for msgname in Messaging.MsgModuleFromName:
+                fullname = "Messages."+msgname
+                #print("fullname: %s" % (fullname))
+                if fullname.startswith(basename):
+                    if fullname.replace(basename, "").count(".") == 1:
+                        ret.append(fullname)
+            return ret
 
     @staticmethod
     def DetermineLoadDir(loaddir, searchdir):
