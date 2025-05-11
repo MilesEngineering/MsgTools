@@ -357,14 +357,13 @@ def SetBitsA(self, value, convertFloat=True):
 @msg.count(1)
 def SetBitsB(self, value):
     \"\"\"\"\"\"
-    defaultValue = 0
-    try:
-        value = int(float(value))
-    except ValueError:
-        pass
     if isinstance(value, int) or value.isdigit():
-        defaultValue = int(value)
-    value = TestCase1.EnumA.get(value, defaultValue)
+        value = int(value)
+    else:
+        try:
+            value = TestCase1.EnumA[value]
+        except KeyError:
+            raise KeyError('%s not in TestCase1.EnumA' % (value))
     value = min(max(value, 0), 7)
     self.SetFieldD((self.GetFieldD() & ~(0x7 << 4)) | ((value & 0x7) << 4))
 """)
