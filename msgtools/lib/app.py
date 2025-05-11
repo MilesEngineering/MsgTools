@@ -81,9 +81,9 @@ class App(QtWidgets.QMainWindow):
         # directory to load messages from.
         msgLoadDir = None
 
-        # connection modes
-        ip = ""
-        port = ""
+        # Set default that can be overridden by command line arguments.
+        ip = "127.0.0.1"
+        port = 5678
 
         if args.connectionType is not None:
             self.connectionType = args.connectionType
@@ -97,7 +97,11 @@ class App(QtWidgets.QMainWindow):
         
         # if either --ip or --port were used, override connectionName
         if args.ip is not None or args.port is not None:
-            self.connectionName = str(ip)+":"+str(port)
+            if args.ip is not None:
+                ip = args.ip
+            if args.port is not None:
+                port = args.port
+            self.connectionName = "%s:%s" % (ip, port)
         
         # initialize the read function to None, so it's not accidentally called
         self.readBytesFn = None
@@ -127,8 +131,6 @@ class App(QtWidgets.QMainWindow):
         if args.log is not None:
             self.startLog(args.log)
 
-        port = args.port
-        
         self.OpenConnection()
 
     def CloseConnection(self):
@@ -159,12 +161,12 @@ class App(QtWidgets.QMainWindow):
                 from PyQt5.QtWebSockets import QWebSocket
                 from PyQt5.QtCore import QUrl
                 self.connection = QWebSocket()
-                print("opening websocket " + connectionName)
+                #print("opening websocket " + connectionName)
                 self.connection.open(QUrl(connectionName))
                 self.connection.binaryMessageReceived.connect(self.processBinaryMessage)
                 self.sendBytesFn = self.connection.sendBinaryMessage
             else:
-                #print("opening TCP socket " + self.connectionName)
+                #print("opening TCP socket %s" % (self.connectionName))
                 (ip, port) = self.connectionName.rsplit(":",1)
                 if ip == None or ip == "":
                     ip = "127.0.0.1"
@@ -174,7 +176,7 @@ class App(QtWidgets.QMainWindow):
                 
                 port = int(port)
 
-                #print("ip is ", ip, ", port is ", port)
+                #print("OpenConnection(), connecting to %s %s" % (ip, port))
                 self.connection = QtNetwork.QTcpSocket(self)
                 self.connection.error.connect(self.displayConnectError)
                 ret = self.connection.readyRead.connect(self.readRxBuffer)

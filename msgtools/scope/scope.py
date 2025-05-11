@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
+import argparse
+import ast
+import collections
+import datetime
+import functools
 import os
 import sys
 import struct
-from datetime import datetime
-import collections
-import functools
-import argparse
+import yaml
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -26,10 +28,10 @@ import msgtools.debug.debug
 import msgtools.scope.launcher as launcher
 
 import msgtools.lib.txtreewidget as txtreewidget
-plottingLoaded=0
+plotting_loaded=False
 try:
-    from msgtools.lib.msgplot import MsgPlot
-    plottingLoaded=1
+    from msgtools.lib.msgplot import MsgPlot, PlotRegistry
+    plotting_loaded=True
 except ImportError as e:
     print("Error loading plot interface ["+str(e)+"]")
     print("Perhaps you forgot to install pyqtgraph.")
@@ -68,32 +70,76 @@ def vsplitter(parent, *argv):
     return splitter
 
 class ClosableDockWidget(QDockWidget):
-    def __init__(self, name, parent, widget, itemList, itemList2):
+    def __init__(self, name, parent, widget, plot_registry):
         super(QDockWidget,self).__init__(name, parent)
         self.setObjectName(name)
         self.setWidget(widget)
-        # list it needs to be removed from
-        self.itemList = itemList
-        self.itemList2 = itemList2
+        self.plot_registry = plot_registry
 
-    def closeEvent(self, ev):
-        self.itemList.remove(self.widget())
-        self.itemList2.remove(self.widget())
+    def closeEvent(self, event):
+        self.plot_registry.remove_plot(self.widget())
         self.parent().removeDockWidget(self)
+        # Both of the below were added to try to get open plots to close
+        # when we open new YAML configs.  Even so, the dockable windows don't
+        # close and I've no idea why.
+        event.accept()
+        super().closeEvent(event)
 
 class MessageScopeGui(msgtools.lib.gui.Gui):
+    DEFAULT_WINDOW_WIDTH  = 600
+    DEFAULT_WINDOW_HEIGHT = 600
     def __init__(self, args, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Message Scope 0.1", args, parent)
         self.setWindowIcon(QIcon(launcher.info().icon_filename))
 
+        # Detection of things changing that should go into the config file
+        self.connectionNameChanged.connect(self.set_config_file_modified_true)
+
         # event-based way of getting messages
         self.RxMsg.connect(self.ProcessMessage)
 
-        self.configure_gui(parent, args.debugdicts)
+        self.configure_gui(parent, args.debugdicts, args.config)
         
         self.txDictionary.ReadTxDictionary()
 
-    def configure_gui(self, parent, debugdicts):
+    # Override resizeEvent so we can mark that our settings changed.
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.set_config_file_modified_true()
+
+    def configure_gui(self, parent, debugdicts, config):
+        # Set to default size, but this will be overridden with saved size
+        # if there's a saved size, before the user sees the window.
+        self.resize(MessageScopeGui.DEFAULT_WINDOW_WIDTH, MessageScopeGui.DEFAULT_WINDOW_HEIGHT)
+
+        # Add a menu to open or save configuration files
+        self.set_config_filename(config)
+        self.config_file_modified = None
+        new_action = QAction(QIcon.fromTheme("document-new"), '&New', self)
+        open_action = QAction(QIcon.fromTheme("document-open"), '&Open', self)
+        close_action = QAction(QIcon.fromTheme("document-close"), '&Close', self)
+        save_action = QAction(QIcon.fromTheme("document-save"), '&Save', self)
+        save_as_action = QAction(QIcon.fromTheme("document-save-as"), 'Save &As', self)
+
+        # Add menu to start of menubar.  Believe it or not, you *have* to
+        # call menubar.addMenu() to create the menu (not just QMenu()), and
+        # then you have to call menubar.insertMenu(before, m), not anything
+        # sensible like menubar.moveMenu().
+        # Also you have to insert it before an action, not another menu!
+        file_menu = self.menuBar().addMenu('&File')
+        file_menu.addAction(new_action)
+        file_menu.addAction(open_action)
+        file_menu.addAction(close_action)
+        file_menu.addAction(save_action)
+        file_menu.addAction(save_as_action)
+        ret = self.menuBar().insertMenu(self.connectMenu.menuAction(), file_menu)
+
+        new_action.triggered.connect(self.file_new_or_close_action)
+        open_action.triggered.connect(self.file_open_action)
+        save_action.triggered.connect(self.file_save_action)
+        save_as_action.triggered.connect(self.file_save_as_action)
+        close_action.triggered.connect(self.file_new_or_close_action)
+
         # create widgets for tx
         self.txDictionary = self.configure_tx_dictionary()
         self.txMsgs = self.configure_tx_messages(parent)
@@ -114,11 +160,16 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         # add them to the tx layout
         txVBox = slim_vbox(self.txMsgs, txClearBtn)
         self.txSplitter = vsplitter(parent, self.txDictionary, txVBox, self.debugWidget)
+        self.txSplitter.splitterMoved.connect(self.set_config_file_modified_true)
         
         # create widgets for rx
         self.rx_message_list = self.configure_rx_message_list()
         self.rx_messages_widget = self.configure_rx_messages_widget(parent)
-        self.configure_msg_plots(parent)
+        if plotting_loaded:
+            self.plot_registry = PlotRegistry()
+            self.plot_registry.plots_changed.connect(self.set_config_file_modified_true)
+        else:
+            self.plot_registry = None
         rxClearListBtn = QPushButton("Clear")
         rxClearMsgsBtn = QPushButton("Clear")
         
@@ -126,11 +177,13 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         rxMsgListBox = slim_vbox(self.rx_message_list, rxClearListBtn)
         rxMsgsBox = slim_vbox(self.rx_messages_widget, rxClearMsgsBtn)
         self.rxSplitter = vsplitter(parent, rxMsgListBox, rxMsgsBox)
+        self.rxSplitter.splitterMoved.connect(self.set_config_file_modified_true)
 
         # top level horizontal splitter to divide the screen
         self.hSplitter = QSplitter(parent)
         self.hSplitter.addWidget(self.txSplitter)
         self.hSplitter.addWidget(self.rxSplitter)
+        self.hSplitter.splitterMoved.connect(self.set_config_file_modified_true)
 
         self.setCentralWidget(self.hSplitter)
     
@@ -138,11 +191,6 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         txClearBtn.clicked.connect(self.clear_tx)
         rxClearListBtn.clicked.connect(self.clear_rx_list)
         rxClearMsgsBtn.clicked.connect(self.clear_rx_msgs)
-        
-    def configure_msg_plots(self, parent):
-        # dict of plot by msg_key
-        self.msgPlotsByKey = {}
-        self.msgPlotList = []
 
     class TxDictionaryItem(QTreeWidgetItem):
         index = 0
@@ -320,7 +368,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 self.items_by_key[msg_key].setText(2, output)
 
         def updateMessage(self, msg_key, msg):
-            rx_time = datetime.now()
+            rx_time = datetime.datetime.now()
             if not msg_key in self.items_by_key:
                 msg_list_item = MessageScopeGui.RxMessageListItem(msg_key, msg, rx_time)
 
@@ -374,7 +422,8 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             messageTreeWidgetItem = txtreewidget.MessageItem(editable=True, tree_widget=self.txMsgs, msg=messageObj, msg_key=None)
             messageTreeWidgetItem.qobjectProxy.send_message.connect(self.on_tx_message_send)
 
-    def on_open(self):
+    # This is for using our self.settings QSettings object, to read whatever was configured last time we ran.
+    def readLastSettings(self):
         # need to handle fields of multiple messages on same plot
         plot_count = self.settings.beginReadArray("plots")
         for i in range(plot_count):
@@ -397,7 +446,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                         plot = self.addPlot(msgClass, msg_key, fieldName)
                     else:
                         plot.addLine(msgClass, msg_key, fieldName)
-                        self.registerPlotForKey(msg_key, plot)
+                        self.plot_registry.register(msg_key, plot)
                 except MsgPlot.PlotError as e:
                     print(e)
             self.settings.endArray()
@@ -410,12 +459,14 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.hSplitter.restoreState(self.settings.value("hSplitterSizes", self.hSplitter.saveState()));
         self.debugWidget.textEntryWidget.restoreState(self.settings.value("cmdHistory", self.debugWidget.textEntryWidget.saveState()));
 
-    def on_close(self):
+    # This is for using our self.settings QSettings object, to write whatever was
+    # configured as we close, so it can be used next time we run.
+    def writeLastSettings(self):
         self.settings.remove("plots")
         self.settings.beginWriteArray("plots")
         plotList = ""
         i = 0
-        for plot in self.msgPlotList:
+        for plot in self.plot_registry.plot_list:
             self.settings.setArrayIndex(i)
             self.settings.beginWriteArray("lines")
             j = 0
@@ -436,7 +487,94 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.settings.setValue("rxSplitterSizes", self.rxSplitter.saveState());
         self.settings.setValue("hSplitterSizes",  self.hSplitter.saveState());
         self.settings.setValue("cmdHistory", self.debugWidget.textEntryWidget.saveState());
-            
+
+    def on_open(self):
+        if self.config_filename:
+            self.load_config_file(self.config_filename, opening_file_on_startup=True)
+        else:
+            self.readLastSettings()
+
+    def on_close(self):
+        if self.config_filename:
+            self.open_maybe_save_dialog(give_cancel_option=False)
+        else:
+            self.writeLastSettings()
+
+    def clear_settings_struct(self):
+        # Close all the plots
+        for dock_widget in self.findChildren(ClosableDockWidget):
+            # Trying this because close() doesn't work.
+            if dock_widget.isFloating():
+                dock_widget.setFloating(False)
+            dock_widget.close()
+        self.plot_registry.clear()
+        
+        # Restore window size to defaults
+        self.resize(MessageScopeGui.DEFAULT_WINDOW_WIDTH, MessageScopeGui.DEFAULT_WINDOW_HEIGHT)
+
+    def parse_settings_struct(self, s):
+        def str_to_b_get(d, key, default):
+            try:
+                v = d[key]
+                ba = bytearray(ast.literal_eval(v))
+            except:
+                return default
+            return ba
+
+        # Open plots for the stored configuration
+        for plot_setting in s["plots"]:
+            plot = None
+            for line_setting in plot_setting["lines"]:
+                msg_key = line_setting["key"]
+                fieldName = line_setting["fieldname"]
+                msg_id = msg_key.split(',')[-1]
+                try:
+                    msgName = Messaging.MsgNameFromID[msg_id]
+                except KeyError:
+                    print('Error!  msg_id ' + msg_id + ' is undefined!')
+                    continue
+                msgClass = Messaging.MsgClassFromName[msgName]
+                try:
+                    if plot == None:
+                        plot = self.addPlot(msgClass, msg_key, fieldName)
+                    else:
+                        plot.addLine(msgClass, msg_key, fieldName)
+                        self.plot_registry.register(msg_key, plot)
+                except MsgPlot.PlotError as e:
+                    print(e)
+                
+        self.txDictionary.setSorted(s.get("txDictionarySorted", False))
+        self.txSplitter.restoreState(str_to_b_get(s, "txSplitterSizes", self.txSplitter.saveState()))
+        self.rxSplitter.restoreState(str_to_b_get(s, "rxSplitterSizes", self.rxSplitter.saveState()))
+        self.hSplitter.restoreState(str_to_b_get(s, "hSplitterSizes", self.hSplitter.saveState()))
+        self.debugWidget.textEntryWidget.restoreStateStructure(s.get("cmdHistory", self.debugWidget.textEntryWidget.saveState()))
+        self.restoreGeometry(str_to_b_get(s, "geometry", QByteArray()))
+        self.restoreState(str_to_b_get(s, "windowState", QByteArray()))
+        if "connection_name" in s:
+            cxn = s["connection_name"]
+            # If the connection name needs to change, then change it and reconnect.
+            if self.connectionName != cxn:
+                self.connectionName = cxn
+                self.OpenConnection()
+
+    def create_settings_struct(self):
+        def line_settings(line):
+            return {'key': line.msgKey, 'fieldname': "%s[%d]" % (line.fieldInfo.name, line.fieldSubindex)}
+        def plot_settings(plot):
+            return {'lines': [line_settings(line) for line in plot.lines]}
+        settings = {
+            'plots': [plot_settings(plot) for plot in self.plot_registry.plot_list],
+            "txSplitterSizes":    str(self.txSplitter.saveState()),
+            "txDictionarySorted": self.txDictionary.isSorted(),
+            "rxSplitterSizes":    str(self.rxSplitter.saveState()),
+            "hSplitterSizes":     str(self.hSplitter.saveState()),
+            "cmdHistory":         self.debugWidget.textEntryWidget.saveStateStructure(),
+            "geometry":           str(self.saveGeometry()),
+            "windowState":        str(self.saveState()),
+            "connection_name":    self.connectionName
+        }
+        return settings
+
     def on_tx_message_send(self, msg):
         if not self.connected:
             self.OpenConnection()
@@ -444,47 +582,30 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
         self.debugWidget.textEntryWidget.addText(text + " -> Msg\n> ")
         self.debugWidget.textEntryWidget.addToHistory(text)
         self.SendMsg(msg)
-    
-    def registerPlotForKey(self, msg_key, plot):
-        if not msg_key in self.msgPlotsByKey:
-            self.msgPlotsByKey[msg_key] = []
-        if not plot in self.msgPlotsByKey[msg_key]:
-            self.msgPlotsByKey[msg_key].append(plot)
 
     def addPlot(self, msgClass, msg_key, fieldName):
-        plotListForKey = []
-        if msg_key in self.msgPlotsByKey:
-            plotListForKey = self.msgPlotsByKey[msg_key]
-        else:
-            self.msgPlotsByKey[msg_key] = plotListForKey
         plotName = msgClass.MsgName()
-        if plottingLoaded:
-            msgPlot = MsgPlot(msgClass, msg_key, fieldName)
-            self.msgPlotList.append(msgPlot)
+        if plotting_loaded:
+            plot = MsgPlot(msgClass, msg_key, fieldName, plot_registry=self.plot_registry)
+            self.plot_registry.register(msg_key, plot)
             # add a dock widget for new plot
-            dockWidget = ClosableDockWidget(plotName, self, msgPlot, plotListForKey, self.msgPlotList)
+            dockWidget = ClosableDockWidget(plotName, self, plot, plot_registry=self.plot_registry)
             self.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
             # Change title when plot is paused/resumed
-            msgPlot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
-            msgPlot.AddLineError.connect(lambda s: QMessageBox.warning(self, "Message Scope", s))
-            # callback to register a plot to listen to a message ID.
-            # this is triggered by plotting new message fields on a plot (including by drag-and-drop)
-            def register_plot_for_message_key(key):
-                plot = self.sender()
-                self.registerPlotForKey(key, plot)
-            msgPlot.RegisterForMessage.connect(lambda key: register_plot_for_message_key(key))
-            plotListForKey.append(msgPlot)
-            return msgPlot
-        
+            plot.Paused.connect(lambda paused: dockWidget.setWindowTitle(plotName+" (PAUSED)" if paused else plotName))
+            plot.AddLineError.connect(lambda s: QMessageBox.warning(self, "Message Scope", s))
+            return plot
+
     def onRxMessageFieldSelected(self, rxWidgetItem):
         if isinstance(rxWidgetItem, txtreewidget.FieldItem) or isinstance(rxWidgetItem, txtreewidget.FieldArrayItem):
             fieldInfo = rxWidgetItem.fieldInfo
             msg_id = hex(rxWidgetItem.msg.hdr.GetMessageID())
             msg_key = ",".join(Messaging.MsgRoute(rxWidgetItem.msg)) + "," + msg_id
             try:
-                msgPlot = self.addPlot(type(rxWidgetItem.msg), msg_key, rxWidgetItem.fieldName)
-                if msgPlot:
-                    msgPlot.addData(rxWidgetItem.msg)
+                self.set_config_file_modified(True)
+                plot = self.addPlot(type(rxWidgetItem.msg), msg_key, rxWidgetItem.fieldName)
+                if plot:
+                    plot.addData(rxWidgetItem.msg)
             except MsgPlot.PlotError as e:
                 QMessageBox.warning(self, "Message Scope", str(e))
 
@@ -559,10 +680,7 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
             self.rx_msg_widgets[msg_key].set_msg_buffer(msg.rawBuffer())
     
     def display_message_in_plots(self, msg_key, msg):
-        if msg_key in self.msgPlotsByKey:
-            plotListForKey = self.msgPlotsByKey[msg_key]
-            for plot in plotListForKey:
-                plot.addData(msg)
+        self.plot_registry.add_plot_data(msg_key, msg)
     
     def clear_rx_list(self):
         self.rx_message_list.clear()
@@ -596,11 +714,109 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
                 if item_matches(item, msgname_parts):
                     self.txDictionary.setCurrentItem(item)
 
+    def file_open_action(self):
+        if self.open_maybe_save_dialog():
+            filename, _ = QFileDialog.getOpenFileName(self)
+            if filename:
+                self.load_config_file(filename)
+    
+    def file_save_action(self):
+        if self.config_filename == '':
+            return self.file_save_as_action()
+        else:
+            return self.save_file(self.config_filename)
+    
+    def file_save_as_action(self):
+        filename, _ = QFileDialog.getSaveFileName(self,
+            "Save msgscope configuration","","MsgScope Files (*.msgscope)")
+        if not filename:
+            return False
+        return self.save_file(filename)
+
+    def file_new_or_close_action(self):
+        self.set_config_filename('')
+        # Get rid of all user customizations (plots, but maybe also Tx message objects with value?)
+        self.clear_settings_struct()
+        self.set_config_file_modified(False)
+
+    def set_config_filename(self, filename):
+        self.config_filename = filename
+
+    def load_config_file(self, filename, opening_file_on_startup=False):
+        if filename != self.config_filename:
+            self.set_config_filename(filename)
+        
+        if not opening_file_on_startup:
+            self.clear_settings_struct()
+        try:
+            with open(filename, 'r') as file:
+                s = yaml.safe_load(file)
+                self.parse_settings_struct(s)
+                # Right after we've loaded settings, everything matches the file.
+                self.set_config_file_modified(False)
+        except (IOError, FileNotFoundError):
+            QtWidgets.QMessageBox.warning(self, "Application", "Cannot read file %s" % (filename))
+            return
+        else:
+            self.set_config_file_modified(False)
+
+    # Convenience function that can be connected to signals
+    # that occur when any settings change.
+    def set_config_file_modified_true(self):
+        self.set_config_file_modified(True)
+
+    def set_config_file_modified(self, modified):
+        # If it's already marked as modified, don't redo anything here.
+        # This function gets called every time our window is resized and when splitters
+        # move, so it can get called a lot when the user plays with the GUI.
+        if self.config_file_modified == modified:
+            return
+
+        self.config_file_modified = modified
+        title = self.name
+        if self.config_filename:
+            title += " -- Config File %s" % self.config_filename
+            if self.config_file_modified:
+                title = title + " *"
+        self.setWindowTitle(title)
+    
+    def open_maybe_save_dialog(self, give_cancel_option=True):
+        if not self.config_file_modified:
+            return True
+        options = QMessageBox.Save | QMessageBox.Discard
+        if give_cancel_option:
+            options |= QMessageBox.Cancel
+        ret = QMessageBox.warning(self, "Application",
+            "The document has been modified.\nDo you want to save your changes?", options);
+        if ret == QMessageBox.Save:
+            return self.save_file(self.config_filename)
+        elif ret == QMessageBox.Cancel:
+            return False
+
+        return True
+
+    def save_file(self, filename):
+        try:
+            file = open(filename, 'w')
+        except IOError:
+            QMessageBox.warning(self, "Application", "Cannot write file %s" % (filename))
+            return False
+        else:
+            with file as outfile:
+                # write settings to file
+                self.set_config_filename(filename)
+                self.statusBar().showMessage("File saved", 2000)
+                settings_struct = self.create_settings_struct()
+                yaml.dump(settings_struct, outfile, sort_keys=False, default_flow_style=False)
+                return True
+        return True
+
 def main():
     # Setup a command line processor...
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser = msgtools.lib.gui.Gui.addBaseArguments(parser)
     parser.add_argument('--debugdicts', help=''''Dictionaries to use for debug message format strings.''')
+    parser.add_argument('--config', help=''''GUI Configuration file.''')
     args = parser.parse_args()
 
     app = QApplication(sys.argv)

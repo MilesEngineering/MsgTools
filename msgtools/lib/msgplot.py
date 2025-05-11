@@ -104,6 +104,63 @@ class EquationEvaluator:
                 return name
         return None
 
+class PlotRegistry(QWidget):
+    plots_changed = QtCore.pyqtSignal()
+    def __init__(self):
+        super().__init__()
+        # dict of list of plots by msg_key
+        self.plot_list_by_key = {}
+        # list of plots
+        self.plot_list = []
+
+    def register(self, msg_key, plot):
+        if not msg_key in self.plot_list_by_key:
+            self.plot_list_by_key[msg_key] = []
+        if not plot in self.plot_list_by_key[msg_key]:
+            self.plot_list_by_key[msg_key].append(plot)
+        if not plot in self.plot_list:
+            self.plot_list.append(plot)
+        self.plots_changed.emit()
+
+    def add_plot_data(self, msg_key, msg):
+        if msg_key in self.plot_list_by_key:
+            plot_list = self.plot_list_by_key[msg_key]
+            for plot in plot_list:
+                plot.addData(msg)
+
+    def remove_plot(self, plot):
+        # Removing from the plot list requires iterating.
+        # Perhaps this should be a hash table, if the same
+        # plot never needs to be in the list more than once, which it shouldn't?!?!?
+        while plot in self.plot_list:
+            self.plot_list.remove(plot)
+
+        # Seems dumb to iterate through ALL the lists for different
+        # message keys and search them ALL for our plot.  O(N^2) :(
+        keys_list = list(self.plot_list_by_key.keys())
+        for key in keys_list:
+            plot_list = self.plot_list_by_key[key]
+            while plot in plot_list:
+                plot_list.remove(plot)
+            # if the list for a key becomes empty, delete it.
+            if len(plot_list) == 0:
+                del self.plot_list_by_key[key]
+        self.plots_changed.emit()
+
+    def remove_line(self, plot, line):
+        self.plots_changed.emit()
+
+    def clear(self):
+        self.plot_list.clear()
+        keys_list = list(self.plot_list_by_key.keys())
+
+        for key in keys_list:
+            # clear the contents of the list
+            self.plot_list_by_key[key].clear()
+            # delete the list itself
+            del self.plot_list_by_key[key]
+        self.plots_changed.emit()
+
 # I added an optimization that replaces sequences of flat data
 # with just two points, so we're starting to be a little smarter
 # about storing data.  maybe we want to decimate very old data?
@@ -125,10 +182,9 @@ class MsgPlot(QWidget):
 
     Paused = QtCore.pyqtSignal(bool)
     AddLineError = QtCore.pyqtSignal(str)
-    RegisterForMessage = QtCore.pyqtSignal(str)
     MAX_LENGTH = 4096
     MAX_TIME = 60*5
-    def __init__(self, msgClass, msgKey, fieldName, runButton = None, removeLinesButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None, multiple_messages=False):
+    def __init__(self, msgClass, msgKey, fieldName, runButton = None, removeLinesButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None, multiple_messages=False, plot_registry=None):
         super(QWidget,self).__init__()
         
         newFieldName, fieldIndex, evaluator = MsgPlot.split_fieldname(fieldName)
@@ -142,10 +198,13 @@ class MsgPlot(QWidget):
         self.showUnitsOnLegend = True
         self.units = fieldInfo.units
         self.lines = []
+        self.plot_registry = plot_registry
 
         yAxisLabel = fieldInfo.units
         xAxisLabel = "time (s)"
         self.plotWidget = pg.PlotWidget(labels={'left':yAxisLabel,'bottom':xAxisLabel})
+        if self.plot_registry:
+            self.plot_registry.register(msgKey, self)
         layout.addWidget(self.plotWidget)
         self.plotWidget.addLegend()
         self.addLine(msgClass, msgKey, fieldName, fieldLabel, multiple_messages)
@@ -261,7 +320,8 @@ class MsgPlot(QWidget):
             msgClass = type(item.msg)
             self.addLine(msgClass, item.msg_key, item.fieldName)
             # register to receive message updates for the new line
-            self.RegisterForMessage.emit(item.msg_key)
+            if self.plot_registry:
+                self.plot_registry.register(item.msg_key, self)
         except MsgPlot.PlotError as e:
             self.AddLineError.emit(str(e))
     
@@ -364,6 +424,8 @@ class MsgPlot(QWidget):
     def removeLine(self, line):
         self.plotWidget.removeItem(line.curve)
         self.lines.remove(line)
+        if self.plot_registry:
+            self.plot_registry.remove_line(self.plotWidget, line)
 
     def pauseOrRun(self):
         self.pause = not self.pause
