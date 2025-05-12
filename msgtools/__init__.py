@@ -1,4 +1,4 @@
-if 1:
+def check_version():
     import json
     import os
     from packaging import version
@@ -39,3 +39,5 @@ if 1:
         # If msgtools is not installed, but we are somehow running anyway,
         # then don't do version checks.
         pass
+
+check_version()
