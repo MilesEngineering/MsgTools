@@ -256,6 +256,10 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
                 except AttributeError:
                     pass
                 try:
+                    replacements["<MSGTOOLS_CONNECTION>"]  = language.msgtools_connection(msg)
+                except AttributeError as e:
+                    pass
+                try:
                     replacements["<MSGID>"] = language.languageConst(msgID(msg, msg_enums, undefinedMsgId))
                 except AttributeError:
                     replacements["<MSGID>"] = str(msgID(msg, msg_enums, undefinedMsgId))
@@ -441,7 +445,7 @@ def main():
                 template provided by MsgTools.''')
     args = parser.parse_args()
 
-    global inputFilename, languageFilename, language, SavedMessageHeader
+    global inputFilename, outputFilename, languageFilename, language, SavedMessageHeader
 
     inputFilename = args.input
     outputFilename = args.output
@@ -450,11 +454,11 @@ def main():
         try:
             import importlib.util
             spec = importlib.util.spec_from_file_location("MessageHeader", args.messageheader)
-            network_header_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(network_header_module)
+            header_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(header_module)
             filename = os.path.basename(args.messageheader)
             classname = filename.replace('.py', '')
-            SavedMessageHeader = getattr(network_header_module, classname)
+            SavedMessageHeader = getattr(header_module, classname)
         except:
             print("\nERROR!  We need the auto-generated Python code for:\n    %s\n" % (args.messageheader))
             print("to exist!!  Otherwise we CANNOT generate %s language code," % (args.language))

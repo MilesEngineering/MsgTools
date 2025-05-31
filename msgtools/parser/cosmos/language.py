@@ -124,12 +124,7 @@ def header_declarations(header, is_cmd):
         if len(field.bitfieldInfo) > 0:
             bit_offset = 0
             for bitfield in field.bitfieldInfo:
-                # This is a bad idea, but we're trying to calculate the number of bits based on the max value of the
-                # bitfield.  It should work for unsigned integers, but it doesn't work if the bitfield has a scale factor
-                # or offset for floating point conversion.  Unfortunately, the python bitfield info doesn't include
-                # the number of bits or the bit offset.  If it did, we wouldn't need to do this math :(.
-                import math
-                num_bits = int(math.log2(1+int(bitfield.maxVal)))
+                num_bits = bitfield_size(bitfield)
                 ret.append(generic_declaration("  ", is_cmd, bitfield, cosmosType(bitfield.type), 8*field.offset+bit_offset, num_bits, field.enum))
                 bit_offset += num_bits
     return ret
@@ -185,3 +180,105 @@ def setMsgID(msg):
 
 def initCode(msg):
     return []
+
+def bitfield_size(bitfield):
+    # This is a bad idea, but we're trying to calculate the number of bits based on the max value of the
+    # bitfield.  It should work for unsigned integers, but it doesn't work if the bitfield has a scale factor
+    # or offset for floating point conversion.  Unfortunately, the python bitfield info doesn't include
+    # the number of bits or the bit offset.  If it did, we wouldn't need to do this math :(.
+    import math
+    num_bits = int(math.log2(1+int(bitfield.maxVal)))
+    return num_bits
+
+def msgtools_connection(msg):
+    msg_name = msg["Name"]
+    length_field_offset_bits = None
+    length_field_size_bits = None
+    if "Fields" in msg:
+        for field in msg["Fields"]:
+            if field["Name"] == "DataLength":
+                length_field_offset_bits = 8 * MsgParser.fieldLocation(field)
+                length_field_size_bits = 8 * MsgParser.fieldSize(field)
+            if "Bitfields" in field:
+                bitOffset = 0
+                for bits in field["Bitfields"]:
+                    numBits = bits["NumBits"]
+                    if bits["Name"] == "DataLength":
+                        length_field_offset_bits = 8 * MsgParser.fieldLocation(field) + bitOffset
+                        length_field_size_bits = numBits
+                    bitOffset += numBits
+    
+    if length_field_offset_bits == None or length_field_size_bits == None:
+        return "# Invalid header for Cosmos connection, no DataLength field."
+
+    interface = [
+    "INTERFACE",
+    "MSGTOOLS_%s_INTERFACE" % (msg_name.upper().replace("HEADER", "")),
+    # The type of Interface (TCP/IP Server or Client, or Serial, or UDP, or MQTT, or something else)
+    "openc3/interfaces/tcpip_client_interface.py", # or openc3/interfaces/tcpip_server_interface.py
+    # The IP address to connect to (perhaps localhost by default)
+    "127.0.0.1",
+    # msgserver uses port 5678 by default for TCP/IP, and the same port is used to send and receive.
+    "5678 5678",
+    # write timeout in seconds
+    "10.0",
+    # read timeout in seconds (Nil / None to block on read)
+    "None",
+    # Protocol = LENGTH
+    "LENGTH",
+    # Length Bit Offset.  This needs to be the location in bits from the start of the header where the length field is
+    "%d" % (length_field_offset_bits),
+    # Length Bit Size.  The size in bits of the length field.
+    "%d" % (length_field_size_bits),
+    # Length Value Offset.  Value to add to the length field (zero for interoperating with msgtools on TCP/IP)
+    "0",
+    # Bytes per Count.  1 for interoperating with msgtools on TCP/IP.
+    "1",
+    # Length Endianness.
+    "BIG_ENDIAN",
+    # Discard Leading Bytes.  zero for interoperating with msgtools on TCP/IP
+    "0",
+    # Sync Pattern.  Left blank or Nil/None for interoperating with msgtools on TCP/IP
+    "None",
+    # Max Length.  Could be inferred from number of bits of length field, but can leave blank or nil for interoperating with msgtools on TCP/IP
+    "None",
+    # Fill Length and Sync Pattern.  Must be True for interoperating with msgtools on TCP/IP.
+    "True"
+    ]
+    interface_line = " ".join(interface)
+    ret = "# Cosmos msgtools interface using %s and %s\n" % (msg_name, __file__)
+    ret += '''
+# Cosmos needs an Interface defined, with a Protocol:
+#     https://docs.openc3.com/docs/configuration/interfaces
+#     https://docs.openc3.com/docs/configuration/protocols
+#
+# For network communications, Cosmos can use a TCP/IP Server or Client:
+#     https://docs.openc3.com/docs/configuration/interfaces#tcpip-server-interface
+#     https://docs.openc3.com/docs/configuration/interfaces#tcpip-client-interface
+#     If we have msgserver handle all I/O with the hardware, it'd make sense to have Cosmos
+#     connect to msgserver using a TCP/IP Client connection!
+#
+# To interoperate with msgtools' msgserver or client applications, the "LENGTH" Protocol should be used in Cosmos.
+#     https://docs.openc3.com/docs/configuration/protocols#length-protocol
+#
+# If we're going to use a TCP/IP client and LENGTH Protocol, there's still some decisions to be made.
+# To autogenerate the INTERFACE line for use with this header, we'd need to specify:
+# 1) The type of Interface (TCP/IP Server or Client, or Serial, or UDP, or MQTT, or something else)
+# 2) The IP address to connect to (perhaps localhost by default)
+# 3&4) msgserver uses port 5678 by default for TCP/IP, and the same port is used to send and receive.
+# 5) write timeout in seconds
+# 6) read timeout in seconds (Nil / None to block on read)
+# 7) Protocol = LENGTH
+# 8) Length Bit Offset.  This needs to be the location in bits from the start of the header where the length field is
+# 9) Length Bit Size.  The size in bits of the length field.
+# 10) Length Value Offset.  Value to add to the length field (zero for interoperating with msgtools on TCP/IP)
+# 11) Bytes per Count.  1 for interoperating with msgtools on TCP/IP.
+# 12) Length Endianness.
+# 13) Discard Leading Bytes.  zero for interoperating with msgtools on TCP/IP
+# 14) Sync Pattern.  Left blank or Nil/None for interoperating with msgtools on TCP/IP
+# 15) Max Length.  Could be inferred from number of bits of length field, but can leave blank or nil for interoperating with msgtools on TCP/IP
+# 16) Fill Length and Sync Pattern.  Must be True for interoperating with msgtools on TCP/IP.
+'''
+    ret += interface_line
+    ret += "\n"
+    return ret
