@@ -44,7 +44,7 @@ def scale_and_offset(field):
         offset = field["Offset"]
     return (scale, offset)
 
-def generic_declaration(prefix, is_cmd, field, type, bit_location, bit_size, msg_enums):
+def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size, msg_enums):
     ret = ""
     try:
         min = field["Min"] if "Min" in field else "MIN"
@@ -81,8 +81,15 @@ def generic_declaration(prefix, is_cmd, field, type, bit_location, bit_size, msg
         units = None
         scale = None
         offset = None
+        # For any field that has ID bits, we ought to set the min, max, and default value all
+        # to what the message definition says they should be.
         if field.idbits > 0:
             prefix = prefix + "ID_"
+            # Currently we're only setting them for a field named "ID"!
+            if name == "ID":
+                default = msg["ID"]
+                min = default
+                max = default
     array_bitsize = bit_size * count
     if is_cmd:
         if count == 1:
@@ -117,15 +124,15 @@ def generic_declaration(prefix, is_cmd, field, type, bit_location, bit_size, msg
         ret += "\n  %s%s %s %s" % (prefix, conversion, str(offset), str(scale))
     return ret
 
-def header_declarations(header, is_cmd):
+def header_declarations(header, msg, is_cmd):
     ret = []
     for field in header.fields:
-        ret.append(generic_declaration("  ", is_cmd, field, cosmosType(field.type), 8*field.offset, 8*field.size, field.enum))
+        ret.append(generic_declaration(msg, "  ", is_cmd, field, cosmosType(field.type), 8*field.offset, 8*field.size, field.enum))
         if len(field.bitfieldInfo) > 0:
             bit_offset = 0
             for bitfield in field.bitfieldInfo:
                 num_bits = bitfield_size(bitfield)
-                ret.append(generic_declaration("  ", is_cmd, bitfield, cosmosType(bitfield.type), 8*field.offset+bit_offset, num_bits, field.enum))
+                ret.append(generic_declaration(msg, "  ", is_cmd, bitfield, cosmosType(bitfield.type), 8*field.offset+bit_offset, num_bits, field.enum))
                 bit_offset += num_bits
     return ret
 
@@ -137,7 +144,7 @@ def declarations(msg, msg_enums):
     ret = []
     ret += ['COMMAND TARGET_NAME <MSGFULLNAME> %s "<MSGDESCRIPTION>"' % (msgEndian(msg))]
     if MsgParser.MessageHeader:
-        ret += header_declarations(MsgParser.MessageHeader, True)
+        ret += header_declarations(MsgParser.MessageHeader, msg, True)
     ret += [
         '',
         '  # Command Fields have:        PARAMETER        Name  BitOffset BitSize Type  Min Max  Default               Description',
@@ -145,7 +152,7 @@ def declarations(msg, msg_enums):
     ret += specialized_declarations(True, msg, msg_enums, field_base_location)
     ret += ['','TELEMETRY TARGET_NAME <MSGFULLNAME> %s "<MSGDESCRIPTION>"' % (msgEndian(msg))]
     if MsgParser.MessageHeader:
-        ret += header_declarations(MsgParser.MessageHeader, False)
+        ret += header_declarations(MsgParser.MessageHeader, msg, False)
     ret += [
         '',
         '  # Telemetry Fields have:       ITEM        Name  BitOffset BitSize Type               Description',
@@ -158,13 +165,13 @@ def specialized_declarations(is_cmd, msg, msg_enums, field_base_location):
     if "Fields" in msg:
         for field in msg["Fields"]:
             field_bit_location = field_base_location + 8 * MsgParser.fieldLocation(field)
-            ret.append(generic_declaration("  ", is_cmd, field, cosmosType(field["Type"]), field_bit_location, 8*MsgParser.fieldSize(field), msg_enums))
+            ret.append(generic_declaration(msg, "  ", is_cmd, field, cosmosType(field["Type"]), field_bit_location, 8*MsgParser.fieldSize(field), msg_enums))
             if "Bitfields" in field:
                 ret.append("    OVERLAP")
                 bitOffset = 0
                 for bits in field["Bitfields"]:
                     numBits = bits["NumBits"]
-                    ret.append(generic_declaration("    ", is_cmd, bits, cosmosType(field["Type"]), field_bit_location+bitOffset, numBits, msg_enums))
+                    ret.append(generic_declaration(msg, "    ", is_cmd, bits, cosmosType(field["Type"]), field_bit_location+bitOffset, numBits, msg_enums))
                     ret.append("      OVERLAP")
                     bitOffset += numBits
     return ret
