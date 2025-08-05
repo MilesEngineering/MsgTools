@@ -27,8 +27,8 @@ typedef struct
 extern "C" {
 #endif
 
-void <MSGFULLNAME>Send(const <MSGFULLNAME>Unpacked* unpackedMsg, int src, int dst);
-void <MSGFULLNAME>Receive(<MSGFULLNAME>Unpacked* unpackedMsg, int src, int dst);
+void <MSGFULLNAME>Send(const <MSGFULLNAME>Unpacked* unpackedMsg, int src = 0, int dst = 0);
+void <MSGFULLNAME>Receive(<MSGFULLNAME>Unpacked* unpackedMsg, int src = 0, int dst = 0);
 
 #ifdef __cplusplus
 }

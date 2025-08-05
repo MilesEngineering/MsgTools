@@ -16,7 +16,7 @@
 #include "simulink_message_client.h"
 
 
-void <MSGFULLNAME>Send(const <MSGFULLNAME>Unpacked* unpackedMsg, int src = 0, int dst = 0)
+void <MSGFULLNAME>Send(const <MSGFULLNAME>Unpacked* unpackedMsg, int src, int dst)
 {
     auto msg = std::make_unique<<MSGFULLNAME>Message>();
     msg->m_hdr.SetSource(src);
@@ -26,7 +26,7 @@ void <MSGFULLNAME>Send(const <MSGFULLNAME>Unpacked* unpackedMsg, int src = 0, in
 }
 
 
-void <MSGFULLNAME>Receive(<MSGFULLNAME>Unpacked* unpackedMsg, int src = 0, int dst = 0)
+void <MSGFULLNAME>Receive(<MSGFULLNAME>Unpacked* unpackedMsg, int src, int dst)
 {
     SimulinkMessageClient::Instance()->ReadAllMessages();
     Message *msgbase = SimulinkMessageClient::Instance()->RegisterRxBlock(<MSGFULLNAME>Message::MSG_ID, src, dst);
