@@ -452,12 +452,15 @@ class MsgCommandWidget(QtWidgets.QWidget):
     def returnPressed(self):
         lineOfText = self.lineEdit.text()
         self.addText(lineOfText)
-        msg = msgcsv.csvToMsg(lineOfText)
-        if msg:
-            self.messageEntered.emit(msg)
-            self.addText(" -> Msg\n")
-        else:
-            self.commandEntered.emit(lineOfText)
+        try:
+            msg = msgcsv.csvToMsg(lineOfText)
+            if msg:
+                self.messageEntered.emit(msg)
+                self.addText(" -> Msg\n")
+            else:
+                self.commandEntered.emit(lineOfText)
+        except Exception as e:
+            self.addText(repr(e))
         self.lineEdit.setText("")
 
     def addText(self, text, errorKnown=0):
@@ -503,7 +506,16 @@ class MsgCommandWidget(QtWidgets.QWidget):
             for h in history:
                 self.lineEdit.addToHistory(h)
 
+    def saveStateStructure(self):
+        return self.lineEdit.commandHistory
+
+    def restoreStateStructure(self, state):
+        if state:
+            for h in state:
+                self.lineEdit.addToHistory(h)
+
 class Gui(App, QtWidgets.QMainWindow):
+    connectionNameChanged = QtCore.pyqtSignal()
     @classmethod
     def addBaseArguments(cls, parser):
         '''
@@ -553,16 +565,18 @@ class Gui(App, QtWidgets.QMainWindow):
             disconnectAction = QtWidgets.QAction('&Disconnect', self)
 
             menubar = self.menuBar()
-            connectMenu = menubar.addMenu('&Connect')
-            connectMenu.addAction(connectAction)
-            connectMenu.addAction(disconnectAction)
+            self.connectMenu = menubar.addMenu('&Connect')
+            self.connectMenu.addAction(connectAction)
+            self.connectMenu.addAction(disconnectAction)
             connectAction.triggered.connect(self.chooseHost)
             disconnectAction.triggered.connect(self.CloseConnection)
     
     def delayedInit(self):
+        # Call our readSettings(), then call on_open() if it exists.
+        # This order will let subclass override our window state and geometry.
+        self.readSettings()
         if hasattr(self.__class__, 'on_open'):
             self.on_open()
-        self.readSettings()
 
     # open dialog box to choose host to connect to
     def chooseHost(self):
@@ -570,6 +584,7 @@ class Gui(App, QtWidgets.QMainWindow):
         if ok:
             self.connectionName = userInput
             self.OpenConnection()
+            self.connectionNameChanged.emit()
     
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())

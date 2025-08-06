@@ -136,7 +136,10 @@ class NoiseMaker(msgtools.lib.gui.Gui):
         bottom = minVal - 0.1 * (maxVal-minVal)
         range = 1.2 * (maxVal-minVal) 
         scale = self.fieldNumber / (255.0)
-        return bottom + range * scale
+        ret = bottom + range * scale
+        if len(fieldInfo.enum) > 0:
+            ret = abs(int(ret))
+        return ret
                 
     def sendMsg(self, msgClass):
         msg = msgClass()

@@ -104,6 +104,63 @@ class EquationEvaluator:
                 return name
         return None
 
+class PlotRegistry(QWidget):
+    plots_changed = QtCore.pyqtSignal()
+    def __init__(self):
+        super().__init__()
+        # dict of list of plots by msg_key
+        self.plot_list_by_key = {}
+        # list of plots
+        self.plot_list = []
+
+    def register(self, msg_key, plot):
+        if not msg_key in self.plot_list_by_key:
+            self.plot_list_by_key[msg_key] = []
+        if not plot in self.plot_list_by_key[msg_key]:
+            self.plot_list_by_key[msg_key].append(plot)
+        if not plot in self.plot_list:
+            self.plot_list.append(plot)
+        self.plots_changed.emit()
+
+    def add_plot_data(self, msg_key, msg):
+        if msg_key in self.plot_list_by_key:
+            plot_list = self.plot_list_by_key[msg_key]
+            for plot in plot_list:
+                plot.addData(msg)
+
+    def remove_plot(self, plot):
+        # Removing from the plot list requires iterating.
+        # Perhaps this should be a hash table, if the same
+        # plot never needs to be in the list more than once, which it shouldn't?!?!?
+        while plot in self.plot_list:
+            self.plot_list.remove(plot)
+
+        # Seems dumb to iterate through ALL the lists for different
+        # message keys and search them ALL for our plot.  O(N^2) :(
+        keys_list = list(self.plot_list_by_key.keys())
+        for key in keys_list:
+            plot_list = self.plot_list_by_key[key]
+            while plot in plot_list:
+                plot_list.remove(plot)
+            # if the list for a key becomes empty, delete it.
+            if len(plot_list) == 0:
+                del self.plot_list_by_key[key]
+        self.plots_changed.emit()
+
+    def remove_line(self, plot, line):
+        self.plots_changed.emit()
+
+    def clear(self):
+        self.plot_list.clear()
+        keys_list = list(self.plot_list_by_key.keys())
+
+        for key in keys_list:
+            # clear the contents of the list
+            self.plot_list_by_key[key].clear()
+            # delete the list itself
+            del self.plot_list_by_key[key]
+        self.plots_changed.emit()
+
 # I added an optimization that replaces sequences of flat data
 # with just two points, so we're starting to be a little smarter
 # about storing data.  maybe we want to decimate very old data?
@@ -125,10 +182,9 @@ class MsgPlot(QWidget):
 
     Paused = QtCore.pyqtSignal(bool)
     AddLineError = QtCore.pyqtSignal(str)
-    RegisterForMessage = QtCore.pyqtSignal(str)
     MAX_LENGTH = 4096
     MAX_TIME = 60*5
-    def __init__(self, msgClass, msgKey, fieldName, runButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None, multiple_messages=False):
+    def __init__(self, msgClass, msgKey, fieldName, runButton = None, removeLinesButton = None, clearButton = None, timeSlider = None, displayControls=True, fieldLabel=None, multiple_messages=False, plot_registry=None):
         super(QWidget,self).__init__()
         
         newFieldName, fieldIndex, evaluator = MsgPlot.split_fieldname(fieldName)
@@ -142,10 +198,13 @@ class MsgPlot(QWidget):
         self.showUnitsOnLegend = True
         self.units = fieldInfo.units
         self.lines = []
+        self.plot_registry = plot_registry
 
         yAxisLabel = fieldInfo.units
         xAxisLabel = "time (s)"
         self.plotWidget = pg.PlotWidget(labels={'left':yAxisLabel,'bottom':xAxisLabel})
+        if self.plot_registry:
+            self.plot_registry.register(msgKey, self)
         layout.addWidget(self.plotWidget)
         self.plotWidget.addLegend()
         self.addLine(msgClass, msgKey, fieldName, fieldLabel, multiple_messages)
@@ -156,18 +215,40 @@ class MsgPlot(QWidget):
         hLayout = QHBoxLayout()
         layout.addLayout(hLayout)
         
+        # Set a function to get an icon that should work with any version of Qt
+        try:
+            get_icon = QtGui.QIcon.fromTheme
+        except:
+            get_icon = QtGui.QIcon.ThemeIcon
+
         # add a Pause/Run button
         if runButton == None:
-            self.runButton = QPushButton("Pause")
+            self.runButton = QPushButton()#"Pause")
+            self.runButton.playIcon = get_icon("media-playback-start")
+            self.runButton.pauseIcon = get_icon("media-playback-pause")
+            self.runButton.setIcon(self.runButton.pauseIcon)
+
+            self.runButton.setMaximumWidth(self.runButton.sizeHint().width())
         else:
             self.runButton = runButton
         self.runButton.clicked.connect(self.pauseOrRun)
         if displayControls:
             hLayout.addWidget(self.runButton)
 
+        # add a 'Edit' button
+        if removeLinesButton == None:
+            self.removeLinesButton = QPushButton(get_icon("edit-delete"), "")
+            self.removeLinesButton.setMaximumWidth(self.removeLinesButton.sizeHint().width())
+        else:
+            self.removeLinesButton = removeLinesButton
+        self.removeLinesButton.clicked.connect(self.removePlotLines)
+        if displayControls:
+            hLayout.addWidget(self.removeLinesButton)
+
         # add a 'Clear' button
         if clearButton == None:
-            self.clearButton = QPushButton("Clear")
+            self.clearButton = QPushButton(get_icon("view-refresh"), "")
+            self.clearButton.setMaximumWidth(self.clearButton.sizeHint().width())
         else:
             self.clearButton = clearButton
         self.clearButton.clicked.connect(self.clearData)
@@ -177,7 +258,7 @@ class MsgPlot(QWidget):
         # create slider bar to control time scale
         if timeSlider == None:
             self.timeSlider = QSlider(Qt.Horizontal)
-            self.timeSlider.setMinimum(10)
+            self.timeSlider.setMinimum(1)
             self.timeSlider.setMaximum(MsgPlot.MAX_TIME)
             self.timeSlider.setSingleStep(10)
             self.timeSlider.setPageStep(50)
@@ -214,10 +295,13 @@ class MsgPlot(QWidget):
             fieldName = splits[0]
             fieldIndex = int(splits[1])
         else:
-            evaluator = EquationEvaluator(fieldName)
-            if evaluator.has_equation():
-                fieldName = evaluator.variable_name
-                fieldEvaluator = evaluator
+            try:
+                evaluator = EquationEvaluator(fieldName)
+                if evaluator.has_equation():
+                    fieldName = evaluator.variable_name
+                    fieldEvaluator = evaluator
+            except SyntaxError as e:
+                print("MsgPlot.split_fieldname(%s): exception [%s], ignoring EquationEvaluator" % (fieldName, e))
         return (fieldName, fieldIndex, fieldEvaluator)
 
     def dragEnterEvent(self, ev):
@@ -236,10 +320,15 @@ class MsgPlot(QWidget):
             msgClass = type(item.msg)
             self.addLine(msgClass, item.msg_key, item.fieldName)
             # register to receive message updates for the new line
-            self.RegisterForMessage.emit(item.msg_key)
+            if self.plot_registry:
+                self.plot_registry.register(item.msg_key, self)
         except MsgPlot.PlotError as e:
             self.AddLineError.emit(str(e))
     
+    def removePlotLines(self):
+        d = RemovePlotLinesDialog(self)
+        d.exec_()
+        
     def clearData(self):
         for line in self.lines:
             line.dataArray.clear()
@@ -331,16 +420,21 @@ class MsgPlot(QWidget):
         curve = self.plotWidget.plot(timeArray, dataArray, name=lineName, pen=(line_number,line_count_estimate))
         lineInfo = LineInfo(msgClass, msgKey, baseName, fieldInfo, fieldIndex, dataArray, timeArray, curve, evaluator)
         self.lines.append(lineInfo)
-        
+
+    def removeLine(self, line):
+        self.plotWidget.removeItem(line.curve)
+        self.lines.remove(line)
+        if self.plot_registry:
+            self.plot_registry.remove_line(self.plotWidget, line)
+
     def pauseOrRun(self):
         self.pause = not self.pause
-        self.runButton.setText("Run" if self.pause else "Pause")
+        self.runButton.setIcon(self.runButton.playIcon if self.pause else self.runButton.pauseIcon)
         self.Paused.emit(self.pause)
 
     def mouseClicked(self, ev):
         if ev.button() == QtCore.Qt.LeftButton:
-            self.runButton.clicked.emit()
-            #self.pauseOrRun()
+            self.pauseOrRun()
 
     def addData(self, msg):
         # TODO what to do for things that can't be numerically expressed?  just ascii strings, i guess?
@@ -387,6 +481,17 @@ class MsgPlot(QWidget):
                 self.refresh_timer.start()
 
     def refresh(self):
+        # If a popup is open, just return without redrawing.
+        # Otherwise a pyqtgraph context menu for scaling the graph will get
+        # confused because the auto-scale feature will keep editing the
+        # values in the X and Y scale edit boxes.
+        # In theory we'd only need to do this when a pyqtgraph context menu is open,
+        # but it turns out that's pretty hard to determine.  The type of the activePopupWidget
+        # is different for different levels of navigation in the pyqtgraph's hierarchical menu,
+        # sometimes it has pyqtgraph in the name and other times it's just QMenu.
+        if qApp.activePopupWidget() != None:
+            return
+
         # Read the time scale value from the slider
         time_scale = self.timeSlider.value()
         # look for the time of the newest data on any line on this plot
@@ -415,7 +520,7 @@ class MsgPlot(QWidget):
         self.plotWidget.setRange(yRange=[yaxis[0], yaxis[1]])
 
     @staticmethod
-    def plotFactory(new_plot_callback, msgClass, fieldNames, msgKey = None, fieldLabels = None, runButton = None, clearButton = None, timeSlider = None, displayControls=True, multiple_messages=False):
+    def plotFactory(new_plot_callback, msgClass, fieldNames, msgKey = None, fieldLabels = None, runButton = None, removeLinesButton = None, clearButton = None, timeSlider = None, displayControls=True, multiple_messages=False):
         msgPlot = None
         if len(fieldNames) == 0:
             fieldNames = [fieldInfo.name for fieldInfo in msgClass.fields]
@@ -437,7 +542,7 @@ class MsgPlot(QWidget):
             # make new plot
             if msgPlot == None:
                 try:
-                    msgPlot = MsgPlot(msgClass, msgKey, fieldName, runButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel, multiple_messages=multiple_messages)
+                    msgPlot = MsgPlot(msgClass, msgKey, fieldName, runButton, removeLinesButton, clearButton, timeSlider, displayControls, fieldLabel=fieldLabel, multiple_messages=multiple_messages)
                     msgPlot.msgClass = msgClass
                     new_plot_callback(msgPlot)
                 except MsgPlot.PlotError as e:
@@ -445,6 +550,53 @@ class MsgPlot(QWidget):
             idx += 1
         return msgPlot
 
+class RemovePlotLinesDialog(QDialog):
+    lineDeleted = QtCore.pyqtSignal(str)
+    def __init__(self, plotwidget, parent=None):
+        super(RemovePlotLinesDialog, self).__init__(parent)
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.setWindowTitle("Uncheck to Remove")
+
+        self.plotwidget = plotwidget
+        #self.resize(200, 400)
+
+        layout = QVBoxLayout()
+        self.line_list = QListWidget()
+        layout.addWidget(self.line_list)
+        self.setLayout(layout)
+
+        for line in plotwidget.lines:
+            remove = QListWidgetItem(line.curve.name())
+            remove.setFlags(remove.flags() | Qt.ItemIsUserCheckable)
+            remove.setCheckState(Qt.Checked)
+            remove.line_to_remove = line
+            self.line_list.addItem(remove)
+
+        hlayout = QHBoxLayout()
+        ok = QPushButton("OK")
+        cancel = QPushButton("Cancel")
+        hlayout.addWidget(ok)
+        hlayout.addWidget(cancel)
+        layout.addLayout(hlayout)
+        ok.clicked.connect(self.removeLinesAndClose)
+        cancel.clicked.connect(self.close)
+
+    def removeLinesAndClose(self):
+        lines_to_remove = []
+        for index in range(self.line_list.count()):
+            line = self.line_list.item(index)
+            if line.checkState() != Qt.Checked:
+                lines_to_remove.append(line)
+        
+        # call removeLine on a copy of a list so iteration doesn't
+        # get screwed up as we remove things.
+        for line in lines_to_remove:
+            self.removeLine(line)
+        self.close()
+        
+    def removeLine(self, list_item):
+        self.plotwidget.removeLine(list_item.line_to_remove)
+        self.line_list.takeItem(self.line_list.row(list_item))
 
 import msgtools.lib.gui
 
@@ -492,11 +644,12 @@ class MessagePlotGui(msgtools.lib.gui.Gui):
                     MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, **plotargs)
                 else:
                     firstPlot = MsgPlot.plotFactory(self.newPlot, msgClass, fieldNames, displayControls=False)
-                    plotargs = {"runButton":firstPlot.runButton, "clearButton":firstPlot.clearButton, "timeSlider":firstPlot.timeSlider, "displayControls":False}
+                    plotargs = {"runButton":firstPlot.runButton, "removeLinesButton":firstPlot.removeLinesButton, "clearButton":firstPlot.clearButton, "timeSlider":firstPlot.timeSlider, "displayControls":False}
         # add plot controls
         hLayout = QHBoxLayout()
         self.plotlayout.addLayout(hLayout)
         hLayout.addWidget(firstPlot.runButton)
+        hLayout.addWidget(firstPlot.removeLinesButton)
         hLayout.addWidget(firstPlot.clearButton)
         hLayout.addWidget(QLabel("Time Scale"))
         hLayout.addWidget(firstPlot.timeSlider)

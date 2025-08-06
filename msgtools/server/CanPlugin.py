@@ -105,7 +105,7 @@ class CanFragmentation(QtCore.QObject):
             self.frag_hdr = CANHeader.FragmentationHeader
             self.frag_hdr_start = CANHeader.FragmentationHeaderStart
 
-        except AttributeError:
+        except Messaging.LoadError:
             self.frag_hdr = None
             self.frag_hdr_start = None
         if self.frag_hdr and self.frag_hdr_start:

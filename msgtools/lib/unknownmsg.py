@@ -22,17 +22,17 @@ class UnknownMsg(Message):
         id = hex(self.hdr.GetMessageID())
         return "Unknown_"+id
 
-    @msg.offset('0')
-    @msg.count('64')
-    @msg.size('1')
+    @msg.offset(0)
+    @msg.count(64)
+    @msg.size(1)
     def GetRawData(self, index):
         """"""
         value = struct.unpack_from('>B', self.rawBuffer(), UnknownMsg.MSG_OFFSET + index)[0]
         return hex(value)
         
-    @msg.offset('0')
-    @msg.count('64')
-    @msg.size('1')
+    @msg.offset(0)
+    @msg.count(64)
+    @msg.size(1)
     def SetRawData(self, value, index):
         """"""
         struct.pack_into('>B', self.rawBuffer(), UnknownMsg.MSG_OFFSET + index, value)

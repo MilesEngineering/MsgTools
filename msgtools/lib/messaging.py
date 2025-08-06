@@ -81,6 +81,9 @@ class MessageAttributeLoader(object):
     def __init__(self, basename):
         self.basename = basename
     
+    def Find(self, msgname):
+        return self.__getattr__(msgname)
+
     def __getattr__(self, key):
         if self.basename:
             msgname = self.basename+"."+key
@@ -91,7 +94,7 @@ class MessageAttributeLoader(object):
             importlib.import_module(Messaging.MsgModuleFromName[msgname])
         if key in vars(self):
             return getattr(self, key)
-        raise AttributeError
+        raise Messaging.LoadError(self.basename, key)
 
 class TimestampFixer:
     def __init__(self):
@@ -104,29 +107,48 @@ class TimestampFixer:
         except KeyError:
             self.time_scale = None
     
+    def restore_timestamp(self, hdr, original_timestamp):
+        if original_timestamp != None:
+            hdr.SetTime(original_timestamp)
+
     def fix_timestamp(self, hdr):
-        # If there's a valid timestamp record it to use the next time
-        # a message comes in if it has no timestamp.
-        if self.time_info and hdr.GetTime() != 0.0:
+        # if there's no time field, don't do anything
+        if not self.time_info:
+            return None
+
+        if hdr.GetTime() == 0.0:
+            original_timestamp = hdr.GetTime()
+            # if time is zero, then check if we've previously had non-zero time
+            if self.last_rx_time == None:
+                # if we've never had time, then just use system time, but scaled
+                current_time = datetime.datetime.now().timestamp()
+                if self.time_scale != None:
+                    current_time *= self.time_scale
+                if self.time_info.type == "int":
+                    current_time = int(current_time)
+                hdr.SetTime(current_time)
+            else:
+                # if we have had time, then try scaling between wallclock time and message time.
+                # If we can scale between wallclock time and message time, compute
+                # a new time based on last rx time and elapsed time.
+                if self.time_scale != None:
+                    current_time = datetime.datetime.now().timestamp()
+                    elapsed_time = current_time - self.last_rx_time
+                    elapsed_time *= self.time_scale
+                    if self.time_info.type == "int":
+                        elapsed_time = int(elapsed_time)
+                    new_time = self.last_rx_timestamp + elapsed_time
+                    hdr.SetTime(new_time)
+                else:
+                    # otherwise, set time to timestamp of last reception
+                    hdr.SetTime(self.last_rx_timestamp)
+            return original_timestamp
+        else:
+            # If there's a valid timestamp record it to use the next time
+            # a message comes in if it has no timestamp.
             self.last_rx_time = datetime.datetime.now().timestamp()
             self.last_rx_timestamp = hdr.GetTime()
-
-        # If there's no valid timestamp, but we've previously received a,
-        # message, then compute a timestamp for this message.
-        elif self.last_rx_time != None:
-            # If we can scale between wallclock time and message time, compute
-            # a new time based on last rx time and elapsed time.
-            if self.time_scale != None:
-                current_time = datetime.datetime.now().timestamp()
-                elapsed_time = current_time - self.last_rx_time
-                elapsed_time *= self.time_scale
-                if self.time_info.type == "int":
-                    elapsed_time = int(elapsed_time)
-                new_time = self.last_rx_timestamp + elapsed_time
-                hdr.SetTime(new_time)
-            else:
-                # otherwise, set time to timestamp of last reception
-                hdr.SetTime(self.last_rx_timestamp)
+        return None
 
 class Messaging:
     hdr=None
@@ -143,6 +165,41 @@ class Messaging:
         
     debug=0
     objdir=None
+
+    class LoadError(Exception):
+        def __init__(self, basename, submsgname):
+            if basename == "":
+                fullname = "Messages"
+            else:
+                fullname = "Messages."+basename
+            txt = "'%s' does not contain '%s.%s'" % (fullname, fullname, submsgname)
+            super().__init__(txt)
+            self.basename = basename
+            self.submsgname = submsgname
+
+        def __str__(self):
+            error_text = super().__str__()
+            suggestions = self.valid_submsgs()
+            if suggestions:
+                error_text += "\nSuggestions:"
+                for suggestion in suggestions:
+                    error_text += f"\n- {suggestion}"
+            return error_text
+
+        def valid_submsgs(self):
+            ret = []
+            basename = self.basename
+            if basename == "":
+                basename = "Messages"
+            else:
+                basename = "Messages."+basename
+            for msgname in Messaging.MsgModuleFromName:
+                fullname = "Messages."+msgname
+                #print("fullname: %s" % (fullname))
+                if fullname.startswith(basename):
+                    if fullname.replace(basename, "").count(".") == 1:
+                        ret.append(fullname)
+            return ret
 
     @staticmethod
     def DetermineLoadDir(loaddir, searchdir):
@@ -570,8 +627,8 @@ class BitFieldInfo(object):
         self.enum=enum
         self.idbits=idbits
         # add a couple fields from decorators of the 'get' function
-        self.offset = int(get.offset)
-        self.size = int(get.size)
+        self.offset = get.offset
+        self.size = get.size
 
     def exists(self, msg, index=0):
         return self.parent.exists(msg, index)

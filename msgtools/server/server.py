@@ -454,9 +454,9 @@ class MessageServer(QtWidgets.QMainWindow):
             self.onStatusUpdate("cnx not in list!")
 
     def logMsg(self, hdr):
-        self.timestamp_fixer.fix_timestamp(hdr)
         #write to log, if log is open
         if self.logFile != None:
+            original_timestamp = self.timestamp_fixer.fix_timestamp(hdr)
             log = ''
             if self.logFileType == "csv":
                 msg = Messaging.MsgFactory(hdr)
@@ -476,6 +476,7 @@ class MessageServer(QtWidgets.QMainWindow):
                 log = hdr.rawBuffer().raw
             self.logFile.write(log)
             self.logFile.flush()
+            self.timestamp_fixer.restore_timestamp(msg.hdr, original_timestamp)
 
     def onMessageReceived(self, hdr):
         c = self.sender()

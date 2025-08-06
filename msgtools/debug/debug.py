@@ -401,31 +401,31 @@ class MsgDebugWidget(QtWidgets.QWidget):
         # find classes for print messages.
         try:
             self.printfMsg = Messaging.Messages.DebugPrintf
-        except AttributeError:
+        except Messaging.LoadError:
             self.printf = None
         try:
             self.printfIDMsg = Messaging.Messages.DebugPrintfID
-        except AttributeError:
+        except Messaging.LoadError:
             self.printfIDMsg = None
         try:
             self.getDeviceInfoMsg = Messaging.Messages.GetDeviceDebugInfo
-        except AttributeError:
+        except Messaging.LoadError:
             self.getDeviceInfoMsg = None
         try:
             self.getStreamInfoMsg = Messaging.Messages.GetStreamDebugInfo
-        except AttributeError:
+        except Messaging.LoadError:
             self.getStreamInfoMsg = None
         try:
             self.setThresholdMsg = Messaging.Messages.SetDebugThreshold
-        except AttributeError:
+        except Messaging.LoadError:
             self.setThresholdMsg = None
         try:
             self.deviceInfoMsg = Messaging.Messages.DebugDeviceInfo
-        except AttributeError:
+        except Messaging.LoadError:
             self.deviceInfoMsg = None
         try:
             self.streamInfoMsg = Messaging.Messages.DebugStreamInfo
-        except AttributeError:
+        except Messaging.LoadError:
             self.streamInfoMsg = None
         
         # tab widget to show multiple stream of print statements, one per tab

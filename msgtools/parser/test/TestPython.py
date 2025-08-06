@@ -23,8 +23,8 @@ class TestPython(unittest.TestCase):
 @msg.default('1')
 @msg.minVal('0')
 @msg.maxVal('4294967295')
-@msg.offset('0')
-@msg.size('4')
+@msg.offset(0)
+@msg.size(4)
 @msg.count(1)
 def GetFieldA(self):
     \"\"\"\"\"\"
@@ -36,8 +36,8 @@ def GetFieldA(self):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('2147483647')
-@msg.offset('0')
-@msg.size('0')
+@msg.offset(0)
+@msg.size(0)
 @msg.count(1)
 def GetFABitsA(self):
     \"\"\"\"\"\"
@@ -49,8 +49,8 @@ def GetFABitsA(self):
 @msg.default('2')
 @msg.minVal('0')
 @msg.maxVal('65535')
-@msg.offset('4')
-@msg.size('2')
+@msg.offset(4)
+@msg.size(2)
 @msg.count(1)
 def GetFieldB(self):
     \"\"\"\"\"\"
@@ -62,8 +62,8 @@ def GetFieldB(self):
 @msg.default('3')
 @msg.minVal('0')
 @msg.maxVal('255')
-@msg.offset('6')
-@msg.size('1')
+@msg.offset(6)
+@msg.size(1)
 @msg.count(5)
 def GetFieldC(self, idx):
     \"\"\"\"\"\"
@@ -78,8 +78,8 @@ def GetFieldC(self, idx):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('255')
-@msg.offset('11')
-@msg.size('1')
+@msg.offset(11)
+@msg.size(1)
 @msg.count(1)
 def GetFieldD(self):
     \"\"\"\"\"\"
@@ -91,8 +91,8 @@ def GetFieldD(self):
 @msg.default('7.1')
 @msg.minVal('0.0')
 @msg.maxVal('215.355')
-@msg.offset('11')
-@msg.size('0')
+@msg.offset(11)
+@msg.size(0)
 @msg.count(1)
 def GetBitsA(self, convertFloat=True):
     \"\"\"\"\"\"
@@ -106,8 +106,8 @@ def GetBitsA(self, convertFloat=True):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('7')
-@msg.offset('11')
-@msg.size('0')
+@msg.offset(11)
+@msg.size(0)
 @msg.count(1)
 def GetBitsB(self, enumAsInt=False):
     \"\"\"\"\"\"
@@ -121,8 +121,8 @@ def GetBitsB(self, enumAsInt=False):
 @msg.default('1')
 @msg.minVal('0')
 @msg.maxVal('1')
-@msg.offset('11')
-@msg.size('0')
+@msg.offset(11)
+@msg.size(0)
 @msg.count(1)
 def GetBitsC(self):
     \"\"\"\"\"\"
@@ -134,8 +134,8 @@ def GetBitsC(self):
 @msg.default('3.14159')
 @msg.minVal('0.0')
 @msg.maxVal('10.0')
-@msg.offset('12')
-@msg.size('4')
+@msg.offset(12)
+@msg.size(4)
 @msg.count(1)
 def GetFieldE(self):
     \"\"\"\"\"\"
@@ -147,8 +147,8 @@ def GetFieldE(self):
 @msg.default('')
 @msg.minVal('-2147483648')
 @msg.maxVal('2147483647')
-@msg.offset('16')
-@msg.size('4')
+@msg.offset(16)
+@msg.size(4)
 @msg.count(1)
 def GetFieldS1_Member1(self):
     \"\"\"\"\"\"
@@ -160,8 +160,8 @@ def GetFieldS1_Member1(self):
 @msg.default('')
 @msg.minVal('DBL_MIN')
 @msg.maxVal('DBL_MAX')
-@msg.offset('20')
-@msg.size('8')
+@msg.offset(20)
+@msg.size(8)
 @msg.count(1)
 def GetFieldS1_Member2(self):
     \"\"\"\"\"\"
@@ -173,8 +173,8 @@ def GetFieldS1_Member2(self):
 @msg.default('3.14')
 @msg.minVal('1.828')
 @msg.maxVal('176946.328')
-@msg.offset('28')
-@msg.size('2')
+@msg.offset(28)
+@msg.size(2)
 @msg.count(1)
 def GetFieldF(self, convertFloat=True):
     \"\"\"\"\"\"
@@ -188,8 +188,8 @@ def GetFieldF(self, convertFloat=True):
 @msg.default('')
 @msg.minVal('-2147483648')
 @msg.maxVal('2147483647')
-@msg.offset('30')
-@msg.size('4')
+@msg.offset(30)
+@msg.size(4)
 @msg.count(3)
 def GetFieldS2_Member1(self, idx):
     \"\"\"\"\"\"
@@ -204,8 +204,8 @@ def GetFieldS2_Member1(self, idx):
 @msg.default('')
 @msg.minVal('DBL_MIN')
 @msg.maxVal('DBL_MAX')
-@msg.offset('34')
-@msg.size('8')
+@msg.offset(34)
+@msg.size(8)
 @msg.count(3)
 def GetFieldS2_Member2(self, idx):
     \"\"\"\"\"\"
@@ -220,8 +220,8 @@ def GetFieldS2_Member2(self, idx):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('65535')
-@msg.offset('66')
-@msg.size('2')
+@msg.offset(66)
+@msg.size(2)
 @msg.count(3)
 def GetFieldG(self, idx):
     \"\"\"Test Field G, array of bitfields\"\"\"
@@ -236,8 +236,8 @@ def GetFieldG(self, idx):
 @msg.default('7.1')
 @msg.minVal('0.0')
 @msg.maxVal('215.355')
-@msg.offset('66')
-@msg.size('0')
+@msg.offset(66)
+@msg.size(0)
 @msg.count(3)
 def GetBitsD(self, idx, convertFloat=True):
     \"\"\"\"\"\"
@@ -251,8 +251,8 @@ def GetBitsD(self, idx, convertFloat=True):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('511')
-@msg.offset('66')
-@msg.size('0')
+@msg.offset(66)
+@msg.size(0)
 @msg.count(3)
 def GetBitsE(self, idx):
     \"\"\"\"\"\"
@@ -264,8 +264,8 @@ def GetBitsE(self, idx):
 @msg.default('1')
 @msg.minVal('0')
 @msg.maxVal('4294967295')
-@msg.offset('0')
-@msg.size('4')
+@msg.offset(0)
+@msg.size(4)
 @msg.count(1)
 def SetFieldA(self, value):
     \"\"\"\"\"\"
@@ -278,8 +278,8 @@ def SetFieldA(self, value):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('2147483647')
-@msg.offset('0')
-@msg.size('0')
+@msg.offset(0)
+@msg.size(0)
 @msg.count(1)
 def SetFABitsA(self, value):
     \"\"\"\"\"\"
@@ -291,8 +291,8 @@ def SetFABitsA(self, value):
 @msg.default('2')
 @msg.minVal('0')
 @msg.maxVal('65535')
-@msg.offset('4')
-@msg.size('2')
+@msg.offset(4)
+@msg.size(2)
 @msg.count(1)
 def SetFieldB(self, value):
     \"\"\"\"\"\"
@@ -305,8 +305,8 @@ def SetFieldB(self, value):
 @msg.default('3')
 @msg.minVal('0')
 @msg.maxVal('255')
-@msg.offset('6')
-@msg.size('1')
+@msg.offset(6)
+@msg.size(1)
 @msg.count(5)
 def SetFieldC(self, value, idx):
     \"\"\"\"\"\"
@@ -323,8 +323,8 @@ def SetFieldC(self, value, idx):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('255')
-@msg.offset('11')
-@msg.size('1')
+@msg.offset(11)
+@msg.size(1)
 @msg.count(1)
 def SetFieldD(self, value):
     \"\"\"\"\"\"
@@ -337,8 +337,8 @@ def SetFieldD(self, value):
 @msg.default('7.1')
 @msg.minVal('0.0')
 @msg.maxVal('215.355')
-@msg.offset('11')
-@msg.size('0')
+@msg.offset(11)
+@msg.size(0)
 @msg.count(1)
 def SetBitsA(self, value, convertFloat=True):
     \"\"\"\"\"\"
@@ -352,19 +352,18 @@ def SetBitsA(self, value, convertFloat=True):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('7')
-@msg.offset('11')
-@msg.size('0')
+@msg.offset(11)
+@msg.size(0)
 @msg.count(1)
 def SetBitsB(self, value):
     \"\"\"\"\"\"
-    defaultValue = 0
-    try:
-        value = int(float(value))
-    except ValueError:
-        pass
     if isinstance(value, int) or value.isdigit():
-        defaultValue = int(value)
-    value = TestCase1.EnumA.get(value, defaultValue)
+        value = int(value)
+    else:
+        try:
+            value = TestCase1.EnumA[value]
+        except KeyError:
+            raise KeyError('%s not in TestCase1.EnumA' % (value))
     value = min(max(value, 0), 7)
     self.SetFieldD((self.GetFieldD() & ~(0x7 << 4)) | ((value & 0x7) << 4))
 """)
@@ -373,8 +372,8 @@ def SetBitsB(self, value):
 @msg.default('1')
 @msg.minVal('0')
 @msg.maxVal('1')
-@msg.offset('11')
-@msg.size('0')
+@msg.offset(11)
+@msg.size(0)
 @msg.count(1)
 def SetBitsC(self, value):
     \"\"\"\"\"\"
@@ -386,8 +385,8 @@ def SetBitsC(self, value):
 @msg.default('3.14159')
 @msg.minVal('0.0')
 @msg.maxVal('10.0')
-@msg.offset('12')
-@msg.size('4')
+@msg.offset(12)
+@msg.size(4)
 @msg.count(1)
 def SetFieldE(self, value):
     \"\"\"\"\"\"
@@ -399,8 +398,8 @@ def SetFieldE(self, value):
 @msg.default('')
 @msg.minVal('-2147483648')
 @msg.maxVal('2147483647')
-@msg.offset('16')
-@msg.size('4')
+@msg.offset(16)
+@msg.size(4)
 @msg.count(1)
 def SetFieldS1_Member1(self, value):
     \"\"\"\"\"\"
@@ -413,8 +412,8 @@ def SetFieldS1_Member1(self, value):
 @msg.default('')
 @msg.minVal('DBL_MIN')
 @msg.maxVal('DBL_MAX')
-@msg.offset('20')
-@msg.size('8')
+@msg.offset(20)
+@msg.size(8)
 @msg.count(1)
 def SetFieldS1_Member2(self, value):
     \"\"\"\"\"\"
@@ -426,8 +425,8 @@ def SetFieldS1_Member2(self, value):
 @msg.default('3.14')
 @msg.minVal('1.828')
 @msg.maxVal('176946.328')
-@msg.offset('28')
-@msg.size('2')
+@msg.offset(28)
+@msg.size(2)
 @msg.count(1)
 def SetFieldF(self, value, convertFloat=True):
     \"\"\"\"\"\"
@@ -442,8 +441,8 @@ def SetFieldF(self, value, convertFloat=True):
 @msg.default('')
 @msg.minVal('-2147483648')
 @msg.maxVal('2147483647')
-@msg.offset('30')
-@msg.size('4')
+@msg.offset(30)
+@msg.size(4)
 @msg.count(3)
 def SetFieldS2_Member1(self, value, idx):
     \"\"\"\"\"\"
@@ -460,8 +459,8 @@ def SetFieldS2_Member1(self, value, idx):
 @msg.default('')
 @msg.minVal('DBL_MIN')
 @msg.maxVal('DBL_MAX')
-@msg.offset('34')
-@msg.size('8')
+@msg.offset(34)
+@msg.size(8)
 @msg.count(3)
 def SetFieldS2_Member2(self, value, idx):
     \"\"\"\"\"\"
@@ -477,8 +476,8 @@ def SetFieldS2_Member2(self, value, idx):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('65535')
-@msg.offset('66')
-@msg.size('2')
+@msg.offset(66)
+@msg.size(2)
 @msg.count(3)
 def SetFieldG(self, value, idx):
     \"\"\"Test Field G, array of bitfields\"\"\"
@@ -495,8 +494,8 @@ def SetFieldG(self, value, idx):
 @msg.default('7.1')
 @msg.minVal('0.0')
 @msg.maxVal('215.355')
-@msg.offset('66')
-@msg.size('0')
+@msg.offset(66)
+@msg.size(0)
 @msg.count(3)
 def SetBitsD(self, value, idx, convertFloat=True):
     \"\"\"\"\"\"
@@ -510,8 +509,8 @@ def SetBitsD(self, value, idx, convertFloat=True):
 @msg.default('')
 @msg.minVal('0')
 @msg.maxVal('511')
-@msg.offset('66')
-@msg.size('0')
+@msg.offset(66)
+@msg.size(0)
 @msg.count(3)
 def SetBitsE(self, value, idx):
     \"\"\"\"\"\"

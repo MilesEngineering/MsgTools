@@ -133,22 +133,22 @@ def fnHdr(field, offset, count, name):
 @msg.default('%s')
 @msg.minVal('%s')
 @msg.maxVal('%s')
-@msg.offset('%s')
-@msg.size('%s')
-@msg.count(%s)
+@msg.offset(%d)
+@msg.size(%d)
+@msg.count(%d)
 def %s(%s):
-    """%s"""''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(min), str(max), str(offset), str(fieldSize), str(count), name, param, MsgParser.fieldDescription(field))
+    """%s"""''' % (MsgParser.fieldUnits(field), str(MsgParser.fieldDefault(field)), str(min), str(max), offset, fieldSize, count, name, param, MsgParser.fieldDescription(field))
     return ret
 
 def enumLookup(msg, field):
-    lookup  = "defaultValue = 0\n"
-    lookup += "    try:\n"
-    lookup += "        value = int(float(value))\n"
-    lookup += "    except ValueError:\n"
-    lookup += "        pass\n"
-    lookup += "    if isinstance(value, int) or value.isdigit():\n"
-    lookup += "        defaultValue = int(value)\n"
-    lookup += "    value = " + msgName(msg) + "." + str(field["Enum"]) + ".get(value, defaultValue)\n"
+    enumName = msgName(msg) + "." + str(field["Enum"])
+    lookup  = "if isinstance(value, int) or value.isdigit():\n"
+    lookup += "        value = int(value)\n"
+    lookup += "    else:\n"
+    lookup += "        try:\n"
+    lookup += "            value = %s[value]\n" % (enumName)
+    lookup += "        except KeyError:\n"
+    lookup += "            raise KeyError('%%s not in %s' %% (value))\n" % (enumName)
     lookup += "    "
     return lookup
 
