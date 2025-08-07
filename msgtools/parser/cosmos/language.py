@@ -1,3 +1,4 @@
+import sys
 import msgtools.parser.parser as MsgParser
 from msgtools.parser.MsgUtils import *
 
@@ -71,8 +72,8 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
         # because the Python code generator calculates them based on field
         # size as the min/max expressable value, and that's useless clutter
         # in Cosmos dictionaries.
-        min = None #field.minVal
-        max = None #field.maxVal
+        min = field.minVal
+        max = field.maxVal
         count = field.count
         name = field.name
         default = field.get.default
@@ -90,6 +91,13 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
                 default = msg["ID"]
                 min = default
                 max = default
+    
+    # cosmos doesn't accept DBL_MIN and DBL_MAX 
+    if min == "DBL_MIN":
+        min = "MIN"
+    if max == "DBL_MAX":
+        max = "MAX"
+
     array_bitsize = bit_size * count
     if is_cmd:
         if count == 1:
@@ -98,17 +106,38 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
             ret = '%sARRAY_PARAMETER %s %d %d %s %s "%s"' % (prefix, field["Name"], bit_location, bit_size, type, array_bitsize, description)
     else:
         if count == 1:
-            ret = '%sITEM      %s %d %d  %s "%s"'  % (prefix, name, bit_location, bit_size, type, description)
+            if prefix.startswith("  ID_"):
+                # ID_ITEMs want one more field than ITEM (https://docs.openc3.com/docs/configuration/telemetry#id_item). 
+                # min and max shall be equal here, since this is a ITEM ID
+                if min == max:
+                    id_value = min
+                else: 
+                    raise Exception(f"min/max value are not equal for ID_ITEM {name}")
+                ret = '%sITEM      %s %d %d  %s %d "%s"'  % (prefix, name, bit_location, bit_size, type, id_value, description)
+            else:
+                ret = '%sITEM      %s %d %d  %s "%s"'  % (prefix, name, bit_location, bit_size, type, description)
         else:
             ret = '%sARRAY_ITEM      %s %d %d  %s %d "%s"'  % (prefix, name, bit_location, bit_size, type, array_bitsize, description)
-        if min and max:
-            # this is:
-            # Limits Set name (DEFAULT is fine)
-            # Persistence (how many violations before flagged, 1 is fine)
-            # Initial State, either ENABLED or DISABLED
-            # 4 required values: red low, yellow low, yellow high, red high
-            # 2 optional values: green low, green high (not used)
-            ret += "\n%s  LIMITS DEFAULT 1 ENABLED %s %s %s %s" % (prefix, min, min, max, max)
+        
+        if prefix.endswith("ID_"):
+            prefix = "  "
+        else:
+            if min and max:
+                # this is:
+                # Limits Set name (DEFAULT is fine)
+                # Persistence (how many violations before flagged, 1 is fine)
+                # Initial State, either ENABLED or DISABLED
+                # 4 required values: red low, yellow low, yellow high, red high
+                # 2 optional values: green low, green high (not used)
+                #
+                # Also, here we have to avoid the case in which `prefix` contains "ID_"
+                # so that we don't have an "ID_  LIMITS DEFAULT ..."
+                if min != "MIN" and max != "MAX":
+                    ret += "\n%s  LIMITS DEFAULT 1 ENABLED %s %s %s %s" % (prefix, min, min, max, max)
+                elif type == "FLOAT" and bit_size == 64:
+                    ret += "\n%s  LIMITS DEFAULT 1 ENABLED %s %s %s %s" % (prefix, "-1.7976931348623157e+308", "-1.7976931348623157e+308", "1.7976931348623157e+308", "1.7976931348623157e+308")
+                elif type == "FLOAT" and bit_size == 32:
+                    ret += "\n%s  LIMITS DEFAULT 1 ENABLED %s %s %s %s" % (prefix, "-3.402823e+38", "-3.402823e+38", "3.402823e+38", "3.402823e+38")
             
     if enumeration:
         if enumeration in msg_enums:
@@ -127,13 +156,14 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
 def header_declarations(header, msg, is_cmd):
     ret = []
     for field in header.fields:
-        ret.append(generic_declaration(msg, "  ", is_cmd, field, cosmosType(field.type), 8*field.offset, 8*field.size, field.enum))
         if len(field.bitfieldInfo) > 0:
             bit_offset = 0
             for bitfield in field.bitfieldInfo:
                 num_bits = bitfield_size(bitfield)
                 ret.append(generic_declaration(msg, "  ", is_cmd, bitfield, cosmosType(bitfield.type), 8*field.offset+bit_offset, num_bits, field.enum))
                 bit_offset += num_bits
+        else:
+            ret.append(generic_declaration(msg, "  ", is_cmd, field, cosmosType(field.type), 8*field.offset, 8*field.size, field.enum))
     return ret
 
 def declarations(msg, msg_enums):
@@ -201,6 +231,7 @@ def msgtools_connection(msg):
     msg_name = msg["Name"]
     length_field_offset_bits = None
     length_field_size_bits = None
+
     if "Fields" in msg:
         for field in msg["Fields"]:
             if field["Name"] == "DataLength":
