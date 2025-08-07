@@ -18,9 +18,6 @@
 <ENUMERATIONS>
 
 
-<ENUMERATIONS>
-
-
 typedef struct
 {
     <DECLARATIONS>
