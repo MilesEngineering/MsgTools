@@ -61,7 +61,7 @@ class Server:
         self.loop = asyncio.get_event_loop()
 
         # synchronous input/output
-        self.synchronous_tx_queue = janus.Queue(loop=self.loop)
+        self.synchronous_tx_queue = janus.Queue()
         self.synchronous_rx_queue = queue.Queue()
         asyncio.ensure_future(self.handle_synchronous_input())
 
