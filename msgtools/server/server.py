@@ -536,19 +536,19 @@ class MessageServer(QtWidgets.QMainWindow):
             for client in self.clients.values():
                 if client != c:
                     id = hdr.GetMessageID()
-                    if id in client.subscriptions or (id & client.subMask == client.subValue):
-                        try:
-                            if id in self.privateSubscriptions:
-                                # if it's a "private" message, only give it to clients that specifically said they want it
-                                # or to clients that are a hardware link.
-                                if client in self.privateSubscriptions[id] or client.isHardwareLink:
-                                    client.sendMsg(hdr)
-                            else:
+                    # if id in client.subscriptions or (id & client.subMask == client.subValue):
+                    try:
+                        if id in self.privateSubscriptions:
+                            # if it's a "private" message, only give it to clients that specifically said they want it
+                            # or to clients that are a hardware link.
+                            if client in self.privateSubscriptions[id] or client.isHardwareLink:
                                 client.sendMsg(hdr)
-                        except Exception as ex:
-                            a,b,c = sys.exc_info()
-                            exc = ''.join(traceback.format_exception(a,b,c))
-                            self.onStatusUpdate("Exception in server.py while sending to client %s:\n%s" % (client.name, exc))
+                        else:
+                            client.sendMsg(hdr)
+                    except Exception as ex:
+                        a,b,c = sys.exc_info()
+                        exc = ''.join(traceback.format_exception(a,b,c))
+                        self.onStatusUpdate("Exception in server.py while sending to client %s:\n%s" % (client.name, exc))
     def closeEvent(self, event):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())

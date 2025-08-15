@@ -1,6 +1,80 @@
-import sys
+from typing import List
 import msgtools.parser.parser as MsgParser
 from msgtools.parser.MsgUtils import *
+
+    
+class IndentationManager:
+    _indentation = ""
+
+    def __init__(self, additional_numspaces: int = None):
+        self.numspaces = additional_numspaces
+
+    def __enter__(self):
+        if self.numspaces:
+            IndentationManager._indentation += " " * self.numspaces
+        return IndentationManager._indentation
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        IndentationManager._indentation = IndentationManager._indentation[:-self.numspaces]
+
+
+
+class BitfieldElement:
+    """This is an element of a bitfield structure"""
+    def __init__(self, num_bits: int, name: str, element_type: str, endianness: str, description: str, default, min=None, max=None):
+        self.num_bits = num_bits
+        self.name = name
+        self.type = element_type
+        self.endianness = endianness
+        self.description = description
+        self.min = "MIN" if not min else min
+        self.max = "MAX" if not max else max
+        self.default = default
+
+    def write(self, tmtc: str, bit_location: int) -> str:
+        # we shall consider to add also units. In my opinion this module shall be refactored anyway, so I'll
+        # leave it like this for now
+        with IndentationManager(2) as prefix:
+            if tmtc == "ITEM":
+                out = f'{prefix}ITEM      {self.name} {bit_location} {self.num_bits} {cosmosType(self.type)} "{self.description}" {self.endianness}'
+            elif tmtc == "PARAMETER":
+                out = f'{prefix}PARAMETER      {self.name} {bit_location} {self.num_bits} {cosmosType(self.type)} {self.min} {self.max} {self.default} "{self.description}" {self.endianness}'
+        return out
+    
+class LittleEndianBitfieldStructure:
+    """
+    This class holds all the information of a bitfield whose code has to be generated in little endian manner. 
+    Description of how these type of bitfields have to be managed in Cosmos syntax can be found 
+    [here](https://docs.openc3.com/docs/guides/little-endian-bitfields).
+    """
+    def __init__(self, tmtc: str, base_offset_bytes: int):
+        """
+        `base_offset_bytes` is the offset in bytes of the full structure in the message
+        """
+        self.allfields: List[BitfieldElement] = []
+        self.base_offset_bit = base_offset_bytes * 8
+        self.tmtc = tmtc
+    
+    def _get_bitpos_at_nextbyte(self, num_bits: int) -> int:
+        """Private function, it takes a number of bits and returns the starting bit index of the next byte"""
+        return (num_bits // 8 + 1) * 8
+
+    def add_field(self, field: BitfieldElement):
+        self.allfields.append(field)
+    
+    def write(self) -> str:
+        out: List[str] = []
+        offset = self.base_offset_bit
+
+        for field in self.allfields:
+            next_bit_location = self._get_bitpos_at_nextbyte(field.num_bits) - field.num_bits
+            bit_location = offset + next_bit_location
+            offset += next_bit_location
+            out.append(field.write(self.tmtc, bit_location))
+
+        return out
+
+
 
 def accessors(msg):
     return []
@@ -8,7 +82,7 @@ def accessors(msg):
 def fieldDefault(field, as_enum=False):
     try:
         ret = field["Default"]
-    except KeyError:
+    except Exception:
         ret = 0
     return ret
 
@@ -157,13 +231,24 @@ def header_declarations(header, msg, is_cmd):
     ret = []
     for field in header.fields:
         if len(field.bitfieldInfo) > 0:
-            bit_offset = 0
-            for bitfield in field.bitfieldInfo:
-                num_bits = bitfield_size(bitfield)
-                ret.append(generic_declaration(msg, "  ", is_cmd, bitfield, cosmosType(bitfield.type), 8*field.offset+bit_offset, num_bits, field.enum))
-                bit_offset += num_bits
+            if MsgParser.big_endian:
+                bit_offset = 0
+                for bitfield in field.bitfieldInfo:
+                    num_bits = bitfield_size(bitfield)
+                    with IndentationManager(2) as prefix:
+                        ret.append(generic_declaration(msg, prefix, is_cmd, bitfield, cosmosType(bitfield.type), 8*field.offset+bit_offset, num_bits, field.enum))
+                    bit_offset += num_bits
+            else:
+                tmtc = "PARAMETER" if is_cmd else "ITEM"
+                little_endian_struct = LittleEndianBitfieldStructure(tmtc, field.offset)
+                for bitfield in field.bitfieldInfo:
+                    num_bits = bitfield_size(bitfield)
+                    element = BitfieldElement(num_bits, bitfield.name, bitfield.type, "LITTLE_ENDIAN", bitfield.description, fieldDefault(bitfield), bitfield.minVal, bitfield.maxVal)
+                    little_endian_struct.add_field(element)
+                ret += little_endian_struct.write() # merge the lists
         else:
-            ret.append(generic_declaration(msg, "  ", is_cmd, field, cosmosType(field.type), 8*field.offset, 8*field.size, field.enum))
+            with IndentationManager(2) as prefix:
+                ret.append(generic_declaration(msg, prefix, is_cmd, field, cosmosType(field.type), 8*field.offset, 8*field.size, field.enum))
     return ret
 
 def declarations(msg, msg_enums):
@@ -181,6 +266,7 @@ def declarations(msg, msg_enums):
         '  # Command Array Fields have:  ARRAY_PARAMETER  Name  BitOffset BitSize Type                   ArrayBitSize  Description']
     ret += specialized_declarations(True, msg, msg_enums, field_base_location)
     ret += ['','TELEMETRY TARGET_NAME <MSGFULLNAME> %s "<MSGDESCRIPTION>"' % (msgEndian(msg))]
+
     if MsgParser.MessageHeader:
         ret += header_declarations(MsgParser.MessageHeader, msg, False)
     ret += [
@@ -193,17 +279,40 @@ def declarations(msg, msg_enums):
 def specialized_declarations(is_cmd, msg, msg_enums, field_base_location):
     ret = []
     if "Fields" in msg:
-        for field in msg["Fields"]:
-            field_bit_location = field_base_location + 8 * MsgParser.fieldLocation(field)
-            ret.append(generic_declaration(msg, "  ", is_cmd, field, cosmosType(field["Type"]), field_bit_location, 8*MsgParser.fieldSize(field), msg_enums))
-            if "Bitfields" in field:
-                ret.append("    OVERLAP")
-                bitOffset = 0
-                for bits in field["Bitfields"]:
-                    numBits = bits["NumBits"]
-                    ret.append(generic_declaration(msg, "    ", is_cmd, bits, cosmosType(field["Type"]), field_bit_location+bitOffset, numBits, msg_enums))
-                    ret.append("      OVERLAP")
-                    bitOffset += numBits
+        with IndentationManager(2) as prefix:
+            for field in msg["Fields"]:
+                field_bit_location = field_base_location + 8 * MsgParser.fieldLocation(field)
+                if "Bitfields" not in field:
+                    ret.append(generic_declaration(msg, prefix, is_cmd, field, cosmosType(field["Type"]), field_bit_location, 8*MsgParser.fieldSize(field), msg_enums))
+
+                else:
+                    if MsgParser.big_endian:
+                        bitOffset = 0
+                        for bits in field["Bitfields"]:
+                            numBits = bits["NumBits"]
+                            with IndentationManager(4) as prefix:
+                                ret.append(generic_declaration(msg, prefix, is_cmd, bits, cosmosType(field["Type"]), field_bit_location+bitOffset, numBits, msg_enums))
+                            bitOffset += numBits
+                    else: # little endian case
+                        tmtc = "PARAMETER" if is_cmd else "ITEM"
+                        little_endian_struct = LittleEndianBitfieldStructure(tmtc, field_bit_location)
+                        for a_field in field["Bitfields"]:
+                            description = ""
+                            min = None 
+                            max = None 
+                            if "Description" in a_field:
+                                description = a_field["Description"]
+                            if "Min" in a_field:
+                                min = a_field["Min"]
+                            if "Max" in a_field:
+                                min = a_field["Max"]
+
+                            element = BitfieldElement(a_field["NumBits"], a_field["Name"], a_field["parent_field_type"], "LITTLE_ENDIAN", description, fieldDefault(a_field), min, max)
+                            little_endian_struct.add_field(element)
+
+                        ret += little_endian_struct.write()
+
+
     return ret
 
 def msgEndian(msg):
