@@ -222,7 +222,7 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
                 ret += "%s  STATE %s %s" % (name, value)
     if units:
         ret += "\n  %sUNITS %s %s" % (prefix, units, units)
-    if scale and offset:
+    if scale != None or offset != None:
         conversion = "POLY_WRITE_CONVERSION" if is_cmd else "POLY_READ_CONVERSION"
         ret += "\n  %s%s %s %s" % (prefix, conversion, str(offset), str(scale))
     return ret
