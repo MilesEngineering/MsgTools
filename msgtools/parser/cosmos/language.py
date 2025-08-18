@@ -82,8 +82,13 @@ def accessors(msg):
 def fieldDefault(field, as_enum=False):
     try:
         ret = field["Default"]
-    except Exception:
-        ret = 0
+    except (KeyError, TypeError): 
+        # let's assume field is an object here
+        try:
+            ret = field.default
+        except AttributeError:
+            # if the object has not attribute called `default`
+            ret = 0
     return ret
 
 def enums(e):
@@ -180,7 +185,7 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
             ret = '%sARRAY_PARAMETER %s %d %d %s %s "%s"' % (prefix, field["Name"], bit_location, bit_size, type, array_bitsize, description)
     else:
         if count == 1:
-            if field.idbits > 0:
+            if hasattr(field, "idbits") and field.idbits > 0:
                 # ID_ITEMs want one more field than ITEM (https://docs.openc3.com/docs/configuration/telemetry#id_item). 
                 # min and max shall be equal here, since this is a ITEM ID
                 if min == max:
@@ -193,7 +198,7 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
         else:
             ret = '%sARRAY_ITEM      %s %d %d  %s %d "%s"'  % (prefix, name, bit_location, bit_size, type, array_bitsize, description)
         
-        if field.idbits <= 0: # if field is not a ID
+        if hasattr(field, "idbits") and field.idbits <= 0: # if field is not a ID
             if min and max:
                 # this is:
                 # Limits Set name (DEFAULT is fine)
@@ -241,6 +246,10 @@ def header_declarations(header, msg, is_cmd):
                 little_endian_struct = LittleEndianBitfieldStructure(tmtc, field.offset)
                 for bitfield in field.bitfieldInfo:
                     num_bits = bitfield_size(bitfield)
+
+                    if bitfield.name == "DataLength":
+                        bitfield.default = msgSize(msg)
+
                     element = BitfieldElement(num_bits, bitfield.name, bitfield.type, "LITTLE_ENDIAN", bitfield.description, fieldDefault(bitfield), bitfield.minVal, bitfield.maxVal)
                     little_endian_struct.add_field(element)
                 ret += little_endian_struct.write() # merge the lists
