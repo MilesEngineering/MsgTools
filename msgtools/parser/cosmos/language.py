@@ -166,10 +166,10 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
                 min = default
                 max = default
     
-    # cosmos doesn't accept DBL_MIN and DBL_MAX 
-    if min == "DBL_MIN":
+    # cosmos doesn't accept DBL_MIN/FLT_MIN and DBL_MAX/FLT_MAX
+    if min == "DBL_MIN" or min == "FLT_MIN":
         min = "MIN"
-    if max == "DBL_MAX":
+    if max == "DBL_MAX" or max == "FLT_MAX":
         max = "MAX"
 
     array_bitsize = bit_size * count
@@ -193,9 +193,7 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
         else:
             ret = '%sARRAY_ITEM      %s %d %d  %s %d "%s"'  % (prefix, name, bit_location, bit_size, type, array_bitsize, description)
         
-        if prefix.endswith("ID_"):
-            prefix = "  "
-        else:
+        if not prefix.endswith("ID_"):
             if min and max:
                 # this is:
                 # Limits Set name (DEFAULT is fine)
