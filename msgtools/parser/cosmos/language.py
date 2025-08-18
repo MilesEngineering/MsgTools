@@ -180,7 +180,7 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
             ret = '%sARRAY_PARAMETER %s %d %d %s %s "%s"' % (prefix, field["Name"], bit_location, bit_size, type, array_bitsize, description)
     else:
         if count == 1:
-            if prefix.startswith("  ID_"):
+            if field.idbits > 0:
                 # ID_ITEMs want one more field than ITEM (https://docs.openc3.com/docs/configuration/telemetry#id_item). 
                 # min and max shall be equal here, since this is a ITEM ID
                 if min == max:
@@ -193,7 +193,7 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
         else:
             ret = '%sARRAY_ITEM      %s %d %d  %s %d "%s"'  % (prefix, name, bit_location, bit_size, type, array_bitsize, description)
         
-        if not prefix.endswith("ID_"):
+        if field.idbits <= 0: # if field is not a ID
             if min and max:
                 # this is:
                 # Limits Set name (DEFAULT is fine)
