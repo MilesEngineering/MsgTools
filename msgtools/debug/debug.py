@@ -402,7 +402,7 @@ class MsgDebugWidget(QtWidgets.QWidget):
         try:
             self.printfMsg = Messaging.Messages.DebugPrintf
         except Messaging.LoadError:
-            self.printf = None
+            self.printfMsg = None
         try:
             self.printfIDMsg = Messaging.Messages.DebugPrintfID
         except Messaging.LoadError:
