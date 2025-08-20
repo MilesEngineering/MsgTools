@@ -43,7 +43,7 @@ def readFile(filename):
     fileHash = fileHash.hexdigest()
     # reset the file so we can read from the beginning
     inFile.seek(0)
-    if filename.endswith(".yaml"):
+    if filename.endswith(".yaml") or filename.endswith(".yml"):
         return yaml.load(inFile, YamlLoader), fileHash
     elif filename.endswith(".json"):
         return json.load(inFile), fileHash

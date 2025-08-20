@@ -118,8 +118,8 @@ def ProcessFile(filename, outFile, inputData, subdirComponent, isHeader):
 def main(args=None):
     if len(sys.argv) < 3:
         Usage();
-    outputFilename = sys.argv[1]
-    msgDir = sys.argv[2]
+    msgDir = sys.argv[1]
+    outputFilename = sys.argv[2]
     
     global msgNames
     msgNames = {}
