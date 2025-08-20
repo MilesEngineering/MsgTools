@@ -137,10 +137,7 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
             enumeration = field["Enum"]
         else:
             enumeration = None
-        if "Units" in field and field["Units"] != "":
-            units = field["Units"].strip()
-        else:
-            units = None
+        units = fieldUnits(field)
         if fieldHasConversion(field):
             scale, offset = scale_and_offset(field)
         else:
