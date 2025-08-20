@@ -13,7 +13,7 @@ if __name__ == '__main__':
 from msgtools.parser.MsgUtils import *
 
 def Usage():
-    sys.stderr.write('Usage: ' + sys.argv[0] + ' msgdir outputfile\n')
+    sys.stderr.write('Usage: ' + sys.argv[0] + ' outputfile msgdir\n')
     sys.exit(1)
 
 def Messages(inputData):
@@ -118,8 +118,8 @@ def ProcessFile(filename, outFile, inputData, subdirComponent, isHeader):
 def main(args=None):
     if len(sys.argv) < 3:
         Usage();
-    msgDir = sys.argv[1]
-    outputFilename = sys.argv[2]
+    outputFilename = sys.argv[1]
+    msgDir = sys.argv[2]
     
     global msgNames
     msgNames = {}
