@@ -13,7 +13,7 @@ if __name__ == '__main__':
 from msgtools.parser.MsgUtils import *
 
 def Usage():
-    sys.stderr.write('Usage: ' + sys.argv[0] + ' msgdir outputfile\n')
+    sys.stderr.write('Usage: ' + sys.argv[0] + ' outputfile msgdir\n')
     sys.exit(1)
 
 def Messages(inputData):
