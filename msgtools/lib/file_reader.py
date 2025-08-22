@@ -106,4 +106,5 @@ class MessageFileReader:
         with open(filename) as f:
             for line in f:
                 msg = Message.fromJson(line, ignore_invalid)
-                self.process_message(msg)
+                if msg != None:
+                    self.process_message(msg)

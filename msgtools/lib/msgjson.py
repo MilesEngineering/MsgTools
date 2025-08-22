@@ -82,6 +82,9 @@ def dictToMsg(d, ignore_invalid=False):
         if msgName == "hdr":
             # hdr handled above, *before* message body
             pass
+        elif "FIELD_METADATA." in msgName:
+            # print("Ignoring METADATA: %s" % (d))
+            return None
         else:
             fieldDict = d[msgName]
             msgClass = Messaging.MsgClassFromName[msgName]
