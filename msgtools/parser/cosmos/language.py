@@ -162,6 +162,7 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
         # to what the message definition says they should be.
         if field.idbits > 0:
             prefix = prefix + "ID_"
+            type = "UINT"
             # Currently we're only setting them for a field named "ID"!
             if name == "ID":
                 default = msg["ID"]
