@@ -560,16 +560,15 @@ class Gui(App, QtWidgets.QMainWindow):
         self.setWindowTitle(self.name)
 
         # create menu items, connect them to socket operations
-        if(self.connectionType.lower() == "socket" or self.connectionType.lower() == "qtsocket"):
-            connectAction = QtWidgets.QAction('&Connect', self)
-            disconnectAction = QtWidgets.QAction('&Disconnect', self)
+        connectAction = QtWidgets.QAction('&Connect', self)
+        disconnectAction = QtWidgets.QAction('&Disconnect', self)
 
-            menubar = self.menuBar()
-            self.connectMenu = menubar.addMenu('&Connect')
-            self.connectMenu.addAction(connectAction)
-            self.connectMenu.addAction(disconnectAction)
-            connectAction.triggered.connect(self.chooseHost)
-            disconnectAction.triggered.connect(self.CloseConnection)
+        menubar = self.menuBar()
+        self.connectMenu = menubar.addMenu('&Connect')
+        self.connectMenu.addAction(connectAction)
+        self.connectMenu.addAction(disconnectAction)
+        connectAction.triggered.connect(self.chooseHost)
+        disconnectAction.triggered.connect(self.CloseConnection)
     
     def delayedInit(self):
         # Call our readSettings(), then call on_open() if it exists.
@@ -580,7 +579,7 @@ class Gui(App, QtWidgets.QMainWindow):
 
     # open dialog box to choose host to connect to
     def chooseHost(self):
-        userInput, ok = QInputDialog.getText(self, 'Connect',  'Server:', QLineEdit.Normal, self.connectionName)
+        userInput, ok = QtWidgets.QInputDialog.getText(self, 'Connect',  'Server:', QtWidgets.QLineEdit.Normal, self.connectionName)
         if ok:
             self.connectionName = userInput
             self.OpenConnection()

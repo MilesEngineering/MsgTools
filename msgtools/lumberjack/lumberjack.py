@@ -25,8 +25,7 @@ class Lumberjack(MessageFileReader):
         super(Lumberjack, self).__init__()
 
         parser = argparse.ArgumentParser(description=DESCRIPTION)
-        parser.add_argument('-o', '--outputdir', help='''Specifies the name of the directory to output
-            parsed data to.  Required for non-file connectionTypes.''')
+        parser.add_argument('-o', '--outputdir', help='''Specifies the name of the directory to output parsed data to.''')
         parser.add_argument('logfile', help='''The log file you want to split into CSV.  
             .log extension assumes the log is binary with NetworkHeaders.  A .txt extension assumes the 
             file was created with SerialHeaders.''')
