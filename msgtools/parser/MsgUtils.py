@@ -287,6 +287,24 @@ def msgShortName(msg):
         name = name.replace(commonSubdir+"_", "")
     return name
 
+def msgEnumValue(name, value, msg_enums):
+    try:
+        value = int(value)
+    except ValueError:
+        for enum in msg_enums:
+            enumType = enum["Name"]
+            for option in enum["Options"]:
+                if value == enumType + "." + option["Name"] or (enum["Name"] == name+"s" and value == option["Name"]):
+                    enumName = value
+                    value = int(option["Value"])
+                    #print("found value " + str(value) + " for " + enumType + "." + str(enumName))
+                    break
+    try:
+        value = int(value)
+    except ValueError:
+        raise MessageException("ERROR! Can't find value for %s in [%s]" %(str(value), str(enums)))
+    return value
+    
 def msgID(msg, enums, undefinedMsgId):
     ret = undefinedMsgId
     # check if there was an externally specified list of ID fields
@@ -314,7 +332,7 @@ def msgID(msg, enums, undefinedMsgId):
             try:
                 value = int(value)
             except ValueError:
-                raise MessageException("ERROR! Can't find value for " + str(value))
+                raise MessageException("ERROR! Can't find value for %s in [%s]" %(str(value), str(enums)))
             shiftValue = id["Bits"]
             #print("ID " + id["Name"] + " is " + str(value) + ", " + str(id["Bits"]) + " bits")
             ret = (ret << shiftValue) + value

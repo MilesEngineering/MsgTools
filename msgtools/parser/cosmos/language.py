@@ -124,11 +124,11 @@ def scale_and_offset(field):
         offset = field["Offset"]
     return (scale, offset)
 
-def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size, msg_enums):
+def generic_declaration(msg, prefix, is_cmd, field, field_type, bit_location, bit_size, msg_enums):
     ret = ""
     try:
-        min = field["Min"] if "Min" in field else "MIN"
-        max = field["Max"] if "Max" in field else "MAX"
+        min = MsgParser.fieldMin(field)
+        max = MsgParser.fieldMax(field)
         count = MsgParser.fieldCount(field)
         name = field["Name"]
         default = fieldDefault(field)
@@ -162,9 +162,19 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
         # to what the message definition says they should be.
         if field.idbits > 0:
             prefix = prefix + "ID_"
-            # Currently we're only setting them for a field named "ID"!
             if name == "ID":
-                default = msg["ID"]
+                # If there's a field named ID, handle it as the only ID field.
+                default = int(msgID(msg, msg_enums, -1))
+                min = default
+                max = default
+            elif hasattr(field, "idbits") and field.idbits > 0:
+                # If there's multiple fields not named ID but with idbits, it's tricky to get the value for each one.
+                try:
+                    id_value = msg[field.name]
+                except:
+                    print("Can't find %s in %s" % (field.name, msg))
+                    raise
+                default = msgEnumValue(field.name, id_value, msg_enums)
                 min = default
                 max = default
     
@@ -177,9 +187,9 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
     array_bitsize = bit_size * count
     if is_cmd:
         if count == 1:
-            ret = '%sPARAMETER %s %d %d  %s %s %s %s "%s"' % (prefix, name, bit_location, bit_size, type, min, max, default, description)
+            ret = '%sPARAMETER %s %d %d  %s %s %s %s "%s"' % (prefix, name, bit_location, bit_size, field_type, min, max, default, description)
         else:
-            ret = '%sARRAY_PARAMETER %s %d %d %s %s "%s"' % (prefix, field["Name"], bit_location, bit_size, type, array_bitsize, description)
+            ret = '%sARRAY_PARAMETER %s %d %d %s %s "%s"' % (prefix, field["Name"], bit_location, bit_size, field_type, array_bitsize, description)
     else:
         if count == 1:
             if hasattr(field, "idbits") and field.idbits > 0:
@@ -189,11 +199,11 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
                     id_value = min
                 else: 
                     raise Exception(f"min/max value are not equal for ID_ITEM {name}")
-                ret = '%sITEM      %s %d %d  %s %d "%s"'  % (prefix, name, bit_location, bit_size, type, id_value, description)
+                ret = '%sITEM      %s %d %d  %s %s "%s"'  % (prefix, name, bit_location, bit_size, field_type, id_value, description)
             else:
-                ret = '%sITEM      %s %d %d  %s "%s"'  % (prefix, name, bit_location, bit_size, type, description)
+                ret = '%sITEM      %s %d %d  %s "%s"'  % (prefix, name, bit_location, bit_size, field_type, description)
         else:
-            ret = '%sARRAY_ITEM      %s %d %d  %s %d "%s"'  % (prefix, name, bit_location, bit_size, type, array_bitsize, description)
+            ret = '%sARRAY_ITEM      %s %d %d  %s %d "%s"'  % (prefix, name, bit_location, bit_size, field_type, array_bitsize, description)
         
         if hasattr(field, "idbits") and field.idbits <= 0: # if field is not a ID
             if min and max:
@@ -208,9 +218,9 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
                 # so that we don't have an "ID_  LIMITS DEFAULT ..."
                 if min != "MIN" and max != "MAX":
                     ret += "\n%s  LIMITS DEFAULT 1 ENABLED %s %s %s %s" % (prefix, min, min, max, max)
-                elif type == "FLOAT" and bit_size == 64:
+                elif field_type == "FLOAT" and bit_size == 64:
                     ret += "\n%s  LIMITS DEFAULT 1 ENABLED %s %s %s %s" % (prefix, "-1.7976931348623157e+308", "-1.7976931348623157e+308", "1.7976931348623157e+308", "1.7976931348623157e+308")
-                elif type == "FLOAT" and bit_size == 32:
+                elif field_type == "FLOAT" and bit_size == 32:
                     ret += "\n%s  LIMITS DEFAULT 1 ENABLED %s %s %s %s" % (prefix, "-3.402823e+38", "-3.402823e+38", "3.402823e+38", "3.402823e+38")
             
     if enumeration:
@@ -227,7 +237,7 @@ def generic_declaration(msg, prefix, is_cmd, field, type, bit_location, bit_size
         ret += "\n  %s%s %s %s" % (prefix, conversion, str(offset), str(scale))
     return ret
 
-def header_declarations(header, msg, is_cmd):
+def header_declarations(header, msg, is_cmd, msg_enums):
     ret = []
     for field in header.fields:
         if len(field.bitfieldInfo) > 0:
@@ -236,7 +246,7 @@ def header_declarations(header, msg, is_cmd):
                 for bitfield in field.bitfieldInfo:
                     num_bits = bitfield_size(bitfield)
                     with IndentationManager(2) as prefix:
-                        ret.append(generic_declaration(msg, prefix, is_cmd, bitfield, cosmosType(bitfield.type), 8*field.offset+bit_offset, num_bits, field.enum))
+                        ret.append(generic_declaration(msg, prefix, is_cmd, bitfield, cosmosType(bitfield.type), 8*field.offset+bit_offset, num_bits, msg_enums))
                     bit_offset += num_bits
             else:
                 tmtc = "PARAMETER" if is_cmd else "ITEM"
@@ -252,7 +262,7 @@ def header_declarations(header, msg, is_cmd):
                 ret += little_endian_struct.write() # merge the lists
         else:
             with IndentationManager(2) as prefix:
-                ret.append(generic_declaration(msg, prefix, is_cmd, field, cosmosType(field.type), 8*field.offset, 8*field.size, field.enum))
+                ret.append(generic_declaration(msg, prefix, is_cmd, field, cosmosType(field.type), 8*field.offset, 8*field.size, msg_enums))
     return ret
 
 def declarations(msg, msg_enums):
@@ -263,7 +273,7 @@ def declarations(msg, msg_enums):
     ret = []
     ret += ['COMMAND TARGET_NAME <MSGFULLNAME> %s "<MSGDESCRIPTION>"' % (msgEndian(msg))]
     if MsgParser.MessageHeader:
-        ret += header_declarations(MsgParser.MessageHeader, msg, True)
+        ret += header_declarations(MsgParser.MessageHeader, msg, True, msg_enums)
     ret += [
         '',
         '  # Command Fields have:        PARAMETER        Name  BitOffset BitSize Type  Min Max  Default               Description',
@@ -272,7 +282,7 @@ def declarations(msg, msg_enums):
     ret += ['','TELEMETRY TARGET_NAME <MSGFULLNAME> %s "<MSGDESCRIPTION>"' % (msgEndian(msg))]
 
     if MsgParser.MessageHeader:
-        ret += header_declarations(MsgParser.MessageHeader, msg, False)
+        ret += header_declarations(MsgParser.MessageHeader, msg, False, msg_enums)
     ret += [
         '',
         '  # Telemetry Fields have:       ITEM        Name  BitOffset BitSize Type               Description',
