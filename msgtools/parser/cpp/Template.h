@@ -15,6 +15,8 @@
 #include <cfloat>
 #include "FieldAccess.h"
 
+#define <MSGALIAS>Message <MSGFULLNAME>Message
+
 class <MSGFULLNAME>Message : public Message
 {
     public:
