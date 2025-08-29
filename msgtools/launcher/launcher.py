@@ -2,7 +2,7 @@
 import sys, os
 import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
-import pkg_resources
+import pkg_resources, importlib
 from . import codegen_gui
 import traceback
 
@@ -72,16 +72,23 @@ class MsgLauncher(QtWidgets.QMainWindow):
             app_launcher.setText(app_info.icon_text)
 
             # set up icon
-            icon_filename = app_info.icon_filename
-            if os.path.exists(icon_filename):
-                pixmap = QtGui.QPixmap(icon_filename)
+            def load_pixmap(filename):
+                pixmap = QtGui.QPixmap(filename)
                 icon = QtGui.QIcon(pixmap)
                 app_launcher.setIcon(icon)
                 app_launcher.setIconSize(pixmap.rect().size()/2)
                 app_launcher.setFixedSize(pixmap.rect().size())
                 app_launcher.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
-            else:
-                print("ERROR!  %s does not exist!" % icon_filename)
+            try:
+                # try opening a normal file on disk
+                if os.path.exists(app_info.icon_filename):
+                    pixmap = load_pixmap(app_info.icon_filename)
+                else:
+                    print("ERROR!  %s does not exist!" % (app_info.icon_filename))
+            except TypeError:
+                # If we got a TypeError, it's probably a importlib resource, not a regular file path
+                with importlib.resources.as_file(app_info.icon_filename) as temporary_filesystem_path:
+                    pixmap = load_pixmap(str(temporary_filesystem_path))
 
             # set up launching when clicked
             app_launcher.program_name = app_info.program_name

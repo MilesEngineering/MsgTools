@@ -1,6 +1,6 @@
-import pkg_resources
+import importlib
 import collections
 
 def info():
     LauncherInfo = collections.namedtuple('LauncherInfo', ['icon_text', 'program_name', 'icon_filename'])
-    return LauncherInfo('server', 'msgserver', pkg_resources.resource_filename('msgtools', 'server/server.png'))
+    return LauncherInfo('server', 'msgserver', importlib.resources.files('msgtools') / 'server/server.png')

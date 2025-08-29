@@ -1,6 +1,6 @@
-import pkg_resources
+import importlib
 import collections
 
 def info():
     LauncherInfo = collections.namedtuple('LauncherInfo', ['icon_text', 'program_name', 'icon_filename'])
-    return LauncherInfo('script', 'msgscript', pkg_resources.resource_filename('msgtools', 'script/script.png'))
+    return LauncherInfo('script', 'msgscript', importlib.resources.files('msgtools') / 'script/script.png')
