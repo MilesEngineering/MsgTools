@@ -3,7 +3,7 @@ import sys
 import os
 import string
 import argparse
-import pkg_resources
+import importlib
 
 from time import gmtime, strftime
 
@@ -191,9 +191,10 @@ def ProcessFile(inputFilename, outDir, languageFilename, templateFilename):
         with open(languageFilename+'/'+templateFilename, 'r') as templateFile:
             template = templateFile.read().splitlines()
     else:
-        from pkg_resources import resource_string
         try:
-            template = resource_string(language.__name__, templateFilename).decode('UTF-8', 'replace').splitlines()
+            #template = resource_string(language.__name__, templateFilename).decode('UTF-8', 'replace').splitlines()
+            ref = importlib.resources.files(language.__name__).joinpath(templateFilename)
+            template = ref.read_bytes().decode('UTF-8', 'replace').splitlines()
         except FileNotFoundError:
             print("Error opening " + language.__name__ + " " + templateFilename)
             sys.exit(1)
@@ -381,7 +382,7 @@ def getAvailableLanguages():
             languages.add(file)
 
     # Discovery plugin entry points
-    for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
+    for entry_point in importlib.metadata.entry_points(group="msgtools.parser.plugin"):
         languages.add(entry_point.name)
 
     languages = list(languages)
@@ -397,8 +398,7 @@ def loadlanguage(languageName):
         sys.path.append(os.path.abspath(languageDir))
         return __import__('language')
     # if the above fails, iterate over packages that implement the plugin interface
-    import pkg_resources
-    for entry_point in pkg_resources.iter_entry_points("msgtools.parser.plugin"):
+    for entry_point in importlib.metadata.entry_points(group="msgtools.parser.plugin"):
         if entry_point.name == languageFilename:
             return entry_point.load()
     print("Error loading plugin " + languageName)

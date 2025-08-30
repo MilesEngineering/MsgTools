@@ -1,4 +1,4 @@
-import sys, os, multiprocessing
+import sys, os, multiprocessing, importlib
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from msgtools.script.edit_window import EditWindow
@@ -17,7 +17,8 @@ cxn = Client('example')
 class MsgScript(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(MsgScript, self).__init__(parent)
-        self.setWindowIcon(QtGui.QIcon(launcher.info().icon_filename))
+        with importlib.resources.as_file(launcher.info().icon_filename) as icon_path:
+            self.setWindowIcon(QIcon(str(icon_path)))
         
         self.settings = QtCore.QSettings("MsgTools", 'MsgScript')
         self.restoreGeometry(self.settings.value("geometry", QtCore.QByteArray()))

@@ -4,7 +4,7 @@ import sys
 import argparse
 import datetime
 import traceback
-import pkg_resources
+import importlib
 
 # if started via invoking this file directly (like would happen with source sitting on disk),
 # insert our relative msgtools root dir into the sys.path, so *our* msgtools is used, not
@@ -133,24 +133,25 @@ class SelectPluginDialog(QtWidgets.QDialog):
 
         tableHeader = ["Name", "Module"]
         self.pluginList.setHeaderLabels(tableHeader)
-        for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
+        for entry_point in importlib.metadata.entry_points(group="msgtools.server.plugin"):
+            module_name = entry_point.value.split(":")[0]
             try:
                 plugin_entry_point = entry_point.load()
                 try:
                     pluginInfo = plugin_entry_point
                     if pluginInfo.enabled():
-                        list = [pluginInfo.name, entry_point.module_name]
+                        list = [pluginInfo.name, module_name]
                         item = QtWidgets.QTreeWidgetItem(None, list)
                         item.plug_entrypoint_name = entry_point.name
                         self.pluginList.addTopLevelItem(item)
                     else:
                         if Messaging.debug:
-                            print("Ignoring plugin %s %s:%s is disabled" % (entry_point.name, entry_point.module_name, entry_point.attrs[0]))
+                            print("Ignoring plugin %s %s:%s is disabled" % (entry_point.name, module_name, entry_point.attr))
                 except AttributeError as e:
                     if Messaging.debug:
                         print("    " + str(e))
-                        print("No info in %s %s:%s!  must be function" % (entry_point.name, entry_point.module_name, entry_point.attrs[0]))
-                    list = [entry_point.name, entry_point.module_name]
+                        print("No info in %s %s:%s!  must be function" % (entry_point.name, module_name, entry_point.attr))
+                    list = [entry_point.name, module_name]
                     item = QtWidgets.QTreeWidgetItem(None, list)
                     item.plug_entrypoint_name = entry_point.name
                     self.pluginList.addTopLevelItem(item)
@@ -159,7 +160,7 @@ class SelectPluginDialog(QtWidgets.QDialog):
                     print(e)
                     import traceback
                     print(traceback.format_exc())                    
-                    print("Ignoring plugin %s %s:%s, exception while loading" % (entry_point.name, entry_point.module_name, entry_point.attrs[0]))
+                    print("Ignoring plugin %s %s:%s, exception while loading" % (entry_point.name, module_name, entry_point.attr))
         for i in range(0, len(tableHeader)):
             self.pluginList.resizeColumnToContents(i)
         
@@ -172,7 +173,8 @@ class SelectPluginDialog(QtWidgets.QDialog):
 class MessageServer(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
-        self.setWindowIcon(QtGui.QIcon(launcher.info().icon_filename))
+        with importlib.resources.as_file(launcher.info().icon_filename) as icon_path:
+            self.setWindowIcon(QtGui.QIcon(str(icon_path)))
         
         self.settings = QtCore.QSettings("MsgTools", "MessageServer")
         self.logFile = None
@@ -182,12 +184,13 @@ class MessageServer(QtWidgets.QMainWindow):
             formatter_class=argparse.RawDescriptionHelpFormatter)
 
         # iterate over plugins, and setup argparse for each
-        for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
+        for entry_point in importlib.metadata.entry_points(group="msgtools.server.plugin"):
+            module_name = entry_point.value.split(":")[0]
             parser.add_argument(
                 '--%s' %entry_point.name,
                 dest='last%s'%entry_point.name,
                 action='store_true',
-                help='''Load the %s plugin via %s:%s''' % (entry_point.name, entry_point.module_name, entry_point.attrs[0]))
+                help='''Load the %s plugin via %s:%s''' % (entry_point.name, module_name, entry_point.attr))
             parser.add_argument(
                 '--%s='%entry_point.name,
                 dest= entry_point.name,
@@ -240,7 +243,7 @@ class MessageServer(QtWidgets.QMainWindow):
             tcpport = args.port
             wsport = tcpport+1
         
-        for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
+        for entry_point in importlib.metadata.entry_points(group="msgtools.server.plugin"):
             # check for argparse data for the plugin
             plugin_option = getattr(args, entry_point.name)
             plugin_last_option = getattr(args, 'last'+entry_point.name)
@@ -257,7 +260,6 @@ class MessageServer(QtWidgets.QMainWindow):
                 print("loading module %s as %s" % (filename, moduleName))
 
             name = filename.replace("/", "_")
-            import importlib
             self.plugin = importlib.machinery.SourceFileLoader(name, filename).load_module(name)
 
             pluginPort = self.plugin.PluginConnection(None)
@@ -379,7 +381,7 @@ class MessageServer(QtWidgets.QMainWindow):
         d.exec_()
     
     def pluginSelected(self, plugin_name):
-        for entry_point in pkg_resources.iter_entry_points("msgtools.server.plugin"):
+        for entry_point in importlib.metadata.entry_points(group="msgtools.server.plugin"):
             if entry_point.name == plugin_name:
                 self.load_plugin(plugin_name, entry_point, None)
                 return

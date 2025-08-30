@@ -2,6 +2,7 @@
 import os
 import sys
 import argparse
+import importlib
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 # if started via invoking this file directly (like would happen with source sitting on disk),
@@ -28,7 +29,8 @@ class MsgInspector(msgtools.lib.gui.Gui):
         args=parser.parse_args()
 
         msgtools.lib.gui.Gui.__init__(self, "Message Inspector 0.1", args, parent)
-        self.setWindowIcon(QtGui.QIcon(launcher.info().icon_filename))
+        with importlib.resources.as_file(launcher.info().icon_filename) as icon_path:
+            self.setWindowIcon(QIcon(str(icon_path)))
 
         self.keyFields = {}
 

@@ -2,6 +2,7 @@
 import argparse
 import collections
 import glob
+import importlib
 import json
 import os
 import re
@@ -561,7 +562,8 @@ class MsgDebugWidget(QtWidgets.QWidget):
 class DebugPrint(msgtools.lib.gui.Gui):
     def __init__(self, args, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Debug Print 0.1", args, parent)
-        self.setWindowIcon(QtGui.QIcon(launcher.info().icon_filename))
+        with importlib.resources.as_file(launcher.info().icon_filename) as icon_path:
+            self.setWindowIcon(QIcon(str(icon_path)))
 
         if args.debugdicts:
             debugdictList = args.debugdicts.split(",")

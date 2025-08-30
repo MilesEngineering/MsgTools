@@ -2,7 +2,7 @@
 import sys, os
 import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
-import pkg_resources, importlib
+import importlib
 from . import codegen_gui
 import traceback
 
@@ -20,8 +20,10 @@ class DetachableProcess(QtCore.QProcess):
 class MsgLauncher(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         QtWidgets.QMainWindow.__init__(self,parent)
-        self.setWindowIcon(QtGui.QIcon(pkg_resources.resource_filename('msgtools', 'launcher/launcher.png')))
-        
+        icon_resource = importlib.resources.files('msgtools') / 'launcher/launcher.png'
+        with importlib.resources.as_file(icon_resource) as icon_path:
+            self.setWindowIcon(QtGui.QIcon(str(icon_path)))
+
         parser = argparse.ArgumentParser(description=DESCRIPTION)
         parser.add_argument('--connectionName', default=None,
             help='''The connection name.  For socket connections this is an IP and port e.g. 127.0.0.1:5678.  
@@ -136,8 +138,8 @@ class MsgLauncher(QtWidgets.QMainWindow):
                 if os.path.exists(dirname+'/launcher.py') and os.path.exists(png_name):
                     progs.append(LauncherInfo(filename, [sys.executable, dirname+'/'+filename+'.py'], png_name, 'msgtools.'+filename+'.launcher'))
 
-        # use pkg_resources to find programs to launch
-        for entry_point in pkg_resources.iter_entry_points("msgtools.launcher.plugin"):
+        # use importlib to find programs to launch
+        for entry_point in importlib.metadata.entry_points(group="msgtools.launcher.plugin"):
             try:
                 launcher_info_fn = entry_point.load()
                 launcher_info = launcher_info_fn()
@@ -146,9 +148,10 @@ class MsgLauncher(QtWidgets.QMainWindow):
                 print(traceback.format_exc())
                 continue
 
-            if exclude_msgtools and entry_point.module_name.startswith('msgtools.'):
+            module_name = entry_point.value.split(":")[0]
+            if exclude_msgtools and module_name.startswith('msgtools.'):
                 continue
-            progs.append(LauncherInfo(*launcher_info, module_name=entry_point.module_name))
+            progs.append(LauncherInfo(*launcher_info, module_name=module_name))
 
         # put the list into a hash table that has keys that can be sorted
         # alphabetically to give the order we want.

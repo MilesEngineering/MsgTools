@@ -4,6 +4,7 @@ import ast
 import collections
 import datetime
 import functools
+import importlib
 import os
 import sys
 import struct
@@ -90,7 +91,8 @@ class MessageScopeGui(msgtools.lib.gui.Gui):
     DEFAULT_WINDOW_HEIGHT = 600
     def __init__(self, args, parent=None):
         msgtools.lib.gui.Gui.__init__(self, "Message Scope 0.1", args, parent)
-        self.setWindowIcon(QIcon(launcher.info().icon_filename))
+        with importlib.resources.as_file(launcher.info().icon_filename) as icon_path:
+            self.setWindowIcon(QIcon(str(icon_path)))
 
         # Detection of things changing that should go into the config file
         self.connectionNameChanged.connect(self.set_config_file_modified_true)
