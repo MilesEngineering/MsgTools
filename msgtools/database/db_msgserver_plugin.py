@@ -1,15 +1,14 @@
-from msgtools.database.influxdb import InfluxDBConnection
 from msgtools.lib.messaging import Messaging
 from PyQt5 import QtCore, QtGui, QtWidgets
 import time
 
-class InfluxServerPlugin(QtCore.QObject):
+class DatabaseServerPlugin(QtCore.QObject):
     statusUpdate = QtCore.pyqtSignal(str)
     messagereceived = QtCore.pyqtSignal(object)
     disconnected = QtCore.pyqtSignal(object)
     
-    def __init__(self, param):
-        super(InfluxServerPlugin, self).__init__(None)
+    def __init__(self, connection_class, name, param):
+        super(DatabaseServerPlugin, self).__init__(None)
         
         # split up params, and use them to construct the DB connection.
         params = param.split("|")
@@ -17,15 +16,15 @@ class InfluxServerPlugin(QtCore.QObject):
         # which we'd like to treat as no parameters
         if len(params) == 1 and params[0] == '':
             params = []
-        self.db = InfluxDBConnection(self, *params)
+        self.db = connection_class(self, *params)
 
         # these are for interfacing to msgserver
-        self.name = "InfluxDB"
+        self.name = name
         self.subscriptions = {}
         self.subMask = 0
         self.subValue = 0
         self.isHardwareLink = False
-        self.statusLabel = QtWidgets.QLabel("influxdb %s:%d" % (self.db.hostname, self.db.port))
+        self.statusLabel = QtWidgets.QLabel("%s %s:%d" % (name, self.db.hostname, self.db.port))
         self.summaryLabel = QtWidgets.QLabel(self.db.stats.report_stats(None, 1))
 
         self.removeClient = QtWidgets.QPushButton("Remove")
@@ -60,7 +59,7 @@ class InfluxServerPlugin(QtCore.QObject):
         msg = Messaging.MsgFactory(hdr)
         self.db.handle_message(msg)
     
-    # for influxdb telling us to send
+    # for db telling us to send
     def send_message(self, hdr):
         self.messagereceived.emit(hdr)
     
@@ -68,13 +67,25 @@ class InfluxServerPlugin(QtCore.QObject):
         stats = self.db.stats.report_stats(None, self.display_timer.interval() / 1000.0)
         self.summaryLabel.setText(stats)
 
-def PluginConnection(param=""):
-    isp = InfluxServerPlugin(param)
-    return isp
+def InfluxDBPluginConnection(param=""):
+    from msgtools.database.influxdb import InfluxDBConnection
+    plugin = DatabaseServerPlugin(InfluxDBConnection, "InfluxDB", param)
+    return plugin
 
-def PluginEnabled():
+def QuestDBPluginConnection(param=""):
+    from msgtools.database.questdb import QuestDBConnection
+    plugin = DatabaseServerPlugin(QuestDBConnection, "QuestDB", param)
+    return plugin
+
+def InfluxDBPluginEnabled():
+    from msgtools.database.influxdb import InfluxDBConnection
+    return True
+
+def QuestDBPluginEnabled():
+    from msgtools.database.questdb import QuestDBConnection
     return True
 
 import collections
 PluginInfo = collections.namedtuple('PluginInfo', ['name', 'enabled', 'connect_function'])
-plugin_info = PluginInfo('InfluxDB', PluginEnabled, PluginConnection)
+influxdb_plugin_info = PluginInfo('InfluxDB', InfluxDBPluginEnabled, InfluxDBPluginConnection)
+questdb_plugin_info = PluginInfo('QuestDB', QuestDBPluginEnabled, QuestDBPluginConnection)

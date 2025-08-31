@@ -3,7 +3,7 @@ import os
 
 setup(name='msgtools',
     python_requires='>=3.5',
-    version='0.40.9',
+    version='0.40.10',
     description='Tools for fixed binary protocols',
     url='https://github.com/MilesEngineering/MsgTools/',
     author='Miles Gazic',
@@ -62,7 +62,8 @@ setup(name='msgtools',
                                    'bluetoothSPP=msgtools.server.SerialPlugin:bt_plugin_info',
                                    'bluetoothRFCOMM=msgtools.server.BluetoothRFCOMM:plugin_info',
                                    'bluetoothRFCOMMQt=msgtools.server.BluetoothRFCOMMQt:plugin_info',
-                                   'influxdb=msgtools.database.influx_msgserver_plugin:plugin_info',
+                                   'influxdb=msgtools.database.db_msgserver_plugin:influxdb_plugin_info',
+                                   'questdb=msgtools.database.db_msgserver_plugin:questdb_plugin_info',
                                    'can=msgtools.server.CanPlugin:plugin_info'],
         'msgtools.launcher.plugin': ['scope=msgtools.scope.launcher:info',
                                    'script=msgtools.script.launcher:info',
@@ -87,6 +88,8 @@ setup(name='msgtools',
         # However, on Ubuntu at least, the dependency can be resolved with apt:
         # sudo apt install python3-pyqt5.qsci
         'gui':  ["pyqtgraph", "pyqt5", "setuptools"],
+        'influxdb': ["influxdb"],
+        'questdb': ["questdb", "psycopg"],
     },
     package_data={
         # Include all Template files for the code generator and web app tool
